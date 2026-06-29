@@ -13,6 +13,7 @@ class MasterDataSiswaController extends Controller
     public function index(Request $request)
     {
         $query = Siswa::query()
+            ->with('orangTua')
             ->when($request->search, function ($q) use ($request) {
                 $q->where('nama_lengkap', 'like', "%{$request->search}%")
                     ->orWhere('nisn', 'like', "%{$request->search}%")
@@ -29,7 +30,7 @@ class MasterDataSiswaController extends Controller
 
     public function show($nisn)
     {
-        $siswa = Siswa::with(['kelas.kelas'])->where('nisn', $nisn)->firstOrFail();
+        $siswa = Siswa::with(['kelas.kelas', 'orangTua'])->where('nisn', $nisn)->firstOrFail();
         return response()->json(['success' => true, 'data' => $siswa]);
     }
 
@@ -62,36 +63,15 @@ class MasterDataSiswaController extends Controller
             'status_pd' => 'required|in:Aktif,Mutasi Keluar,Lulus,Dropout,Meninggal',
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
+            ...$this->orangTuaValidationRules(),
         ]);
 
-        $siswa = Siswa::create($request->only([
-            'nisn',
-            'nik',
-            'no_induk',
-            'nama_lengkap',
-            'jenis_kelamin',
-            'tanggal_lahir',
-            'tempat_lahir',
-            'agama',
-            'status_dalam_keluarga',
-            'anak_ke',
-            'no_kk',
-            'no_akta_lahir',
-            'nama_ibu_kandung',
-            'kewarganegaraan',
-            'alamat_jalan',
-            'rt',
-            'rw',
-            'desa',
-            'kecamatan',
-            'kabupaten',
-            'provinsi',
-            'kode_pos',
-            'no_hp',
-            'status_pd',
-            'asal_sekolah',
-            'tanggal_masuk',
-        ]));
+        $siswa = DB::transaction(function () use ($request) {
+            $siswa = Siswa::create($request->only($this->siswaFields()));
+            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung);
+
+            return $siswa->load('orangTua');
+        });
 
         return response()->json([
             'success' => true,
@@ -130,9 +110,24 @@ class MasterDataSiswaController extends Controller
             'status_pd' => 'required|in:Aktif,Mutasi Keluar,Lulus,Dropout,Meninggal',
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
+            ...$this->orangTuaValidationRules(),
         ]);
 
-        $siswa->update($request->only([
+        DB::transaction(function () use ($request, $siswa) {
+            $siswa->update($request->only($this->siswaFields(false)));
+            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa berhasil diperbarui.',
+            'data' => $siswa->fresh('orangTua'),
+        ]);
+    }
+
+    private function siswaFields(bool $includeNisn = true): array
+    {
+        $fields = [
             'nik',
             'no_induk',
             'nama_lengkap',
@@ -158,13 +153,81 @@ class MasterDataSiswaController extends Controller
             'status_pd',
             'asal_sekolah',
             'tanggal_masuk',
-        ]));
+        ];
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data siswa berhasil diperbarui.',
-            'data' => $siswa,
-        ]);
+        return $includeNisn ? ['nisn', ...$fields] : $fields;
+    }
+
+    private function orangTuaValidationRules(): array
+    {
+        $penghasilan = 'Tidak Berpenghasilan,< 500rb,500rb - 1jt,1jt - 2jt,2jt - 3jt,3jt - 5jt,> 5jt';
+        $pendidikan = 'Tidak Sekolah,SD,SMP,SMA,D1,D2,D3,S1,S2,S3';
+        $yearRule = 'nullable|integer|min:1900|max:' . now()->year;
+
+        return [
+            'orang_tua' => 'nullable|array',
+            'orang_tua.nama_ayah' => 'nullable|string|max:100',
+            'orang_tua.nik_ayah' => 'nullable|string|max:16',
+            'orang_tua.tahun_lahir_ayah' => $yearRule,
+            'orang_tua.pendidikan_ayah' => "nullable|in:{$pendidikan}",
+            'orang_tua.pekerjaan_ayah' => 'nullable|string|max:100',
+            'orang_tua.penghasilan_ayah' => "nullable|in:{$penghasilan}",
+            'orang_tua.nama_ibu' => 'nullable|string|max:100',
+            'orang_tua.nik_ibu' => 'nullable|string|max:16',
+            'orang_tua.tahun_lahir_ibu' => $yearRule,
+            'orang_tua.pendidikan_ibu' => "nullable|in:{$pendidikan}",
+            'orang_tua.pekerjaan_ibu' => 'nullable|string|max:100',
+            'orang_tua.penghasilan_ibu' => "nullable|in:{$penghasilan}",
+            'orang_tua.nama_wali' => 'nullable|string|max:100',
+            'orang_tua.nik_wali' => 'nullable|string|max:16',
+            'orang_tua.hubungan_wali' => 'nullable|string|max:50',
+            'orang_tua.pekerjaan_wali' => 'nullable|string|max:100',
+            'orang_tua.penghasilan_wali' => "nullable|in:{$penghasilan}",
+            'orang_tua.no_hp_ayah' => 'nullable|string|max:20',
+            'orang_tua.no_hp_ibu' => 'nullable|string|max:20',
+            'orang_tua.no_hp_wali' => 'nullable|string|max:20',
+            'orang_tua.email' => 'nullable|email|max:100',
+            'orang_tua.alamat' => 'nullable|string',
+        ];
+    }
+
+    private function syncOrangTua(Siswa $siswa, array $input, ?string $namaIbuKandung): void
+    {
+        $data = [
+            'nama_ayah' => $input['nama_ayah'] ?? null,
+            'nik_ayah' => $input['nik_ayah'] ?? null,
+            'tanggal_lahir_ayah' => $this->yearToDate($input['tahun_lahir_ayah'] ?? null),
+            'pendidikan_ayah' => $input['pendidikan_ayah'] ?? null,
+            'pekerjaan_ayah' => $input['pekerjaan_ayah'] ?? null,
+            'penghasilan_ayah' => $input['penghasilan_ayah'] ?? null,
+            'nama_ibu' => $input['nama_ibu'] ?? $namaIbuKandung,
+            'nik_ibu' => $input['nik_ibu'] ?? null,
+            'tanggal_lahir_ibu' => $this->yearToDate($input['tahun_lahir_ibu'] ?? null),
+            'pendidikan_ibu' => $input['pendidikan_ibu'] ?? null,
+            'pekerjaan_ibu' => $input['pekerjaan_ibu'] ?? null,
+            'penghasilan_ibu' => $input['penghasilan_ibu'] ?? null,
+            'nama_wali' => $input['nama_wali'] ?? null,
+            'nik_wali' => $input['nik_wali'] ?? null,
+            'hubungan_wali' => $input['hubungan_wali'] ?? null,
+            'pekerjaan_wali' => $input['pekerjaan_wali'] ?? null,
+            'penghasilan_wali' => $input['penghasilan_wali'] ?? null,
+            'no_hp_ayah' => $input['no_hp_ayah'] ?? null,
+            'no_hp_ibu' => $input['no_hp_ibu'] ?? null,
+            'no_hp_wali' => $input['no_hp_wali'] ?? null,
+            'email' => $input['email'] ?? null,
+            'alamat' => $input['alamat'] ?? null,
+        ];
+
+        if (!collect($data)->filter(fn($value) => filled($value))->isNotEmpty()) {
+            return;
+        }
+
+        $siswa->orangTua()->updateOrCreate(['nisn' => $siswa->nisn], $data);
+    }
+
+    private function yearToDate($year): ?string
+    {
+        return filled($year) ? ((int) $year) . '-01-01' : null;
     }
 
     public function uploadFoto(Request $request, $nisn)

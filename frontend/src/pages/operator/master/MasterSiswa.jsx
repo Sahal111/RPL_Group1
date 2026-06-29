@@ -21,6 +21,41 @@ const statusPdOpts = [
   "Meninggal",
 ];
 const keluargaOpts = ["Anak Kandung", "AnakTiri", "Anak Angkat"];
+const pendidikanOpts = ["Tidak Sekolah", "SD", "SMP", "SMA", "D1", "D2", "D3", "S1", "S2", "S3"];
+const penghasilanOpts = [
+  "Tidak Berpenghasilan",
+  "< 500rb",
+  "500rb - 1jt",
+  "1jt - 2jt",
+  "2jt - 3jt",
+  "3jt - 5jt",
+  "> 5jt",
+];
+
+const emptyOrangTua = {
+  nama_ayah: "",
+  nik_ayah: "",
+  tahun_lahir_ayah: "",
+  pendidikan_ayah: "",
+  pekerjaan_ayah: "",
+  penghasilan_ayah: "",
+  nama_ibu: "",
+  nik_ibu: "",
+  tahun_lahir_ibu: "",
+  pendidikan_ibu: "",
+  pekerjaan_ibu: "",
+  penghasilan_ibu: "",
+  nama_wali: "",
+  nik_wali: "",
+  hubungan_wali: "",
+  pekerjaan_wali: "",
+  penghasilan_wali: "",
+  no_hp_ayah: "",
+  no_hp_ibu: "",
+  no_hp_wali: "",
+  email: "",
+  alamat: "",
+};
 
 const defaultForm = {
   nisn: "",
@@ -49,7 +84,23 @@ const defaultForm = {
   status_pd: "Aktif",
   asal_sekolah: "",
   tanggal_masuk: "",
+  orang_tua: emptyOrangTua,
 };
+
+const yearFromDate = (value) => (value ? String(value).slice(0, 4) : "");
+
+const normalizeOrangTua = (ortu = {}) => ({
+  ...emptyOrangTua,
+  ...ortu,
+  tahun_lahir_ayah: ortu.tahun_lahir_ayah ?? yearFromDate(ortu.tanggal_lahir_ayah),
+  tahun_lahir_ibu: ortu.tahun_lahir_ibu ?? yearFromDate(ortu.tanggal_lahir_ibu),
+});
+
+const normalizeForm = (data) => ({
+  ...defaultForm,
+  ...(data ?? {}),
+  orang_tua: normalizeOrangTua(data?.orang_tua),
+});
 
 function ModalSiswa({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
@@ -57,10 +108,15 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
   const [preview, setPreview] = useState(null);
   const fileRef = useRef();
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const setOrangTua = (k, v) =>
+    setForm((f) => ({
+      ...f,
+      orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), [k]: v },
+    }));
 
   useEffect(() => {
     if (open) {
-      setForm(editData ?? defaultForm);
+      setForm(normalizeForm(editData));
       setPreview(
         editData?.foto
           ? `http://127.0.0.1:8001/storage/${editData.foto}`
@@ -107,7 +163,7 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-4">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h3 className="font-semibold text-gray-800">
             {isEdit ? "Edit Data Siswa" : "Tambah Data Siswa"}
@@ -361,6 +417,222 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
             </div>
           </div>
 
+          <FamilySection title="Data Ayah Kandung">
+            <Field label="Nama Lengkap" className="col-span-2">
+              <input
+                value={form.orang_tua?.nama_ayah ?? ""}
+                onChange={(e) => setOrangTua("nama_ayah", e.target.value)}
+                className="input-field"
+                placeholder="Sesuai KK atau akta kelahiran"
+              />
+            </Field>
+            <Field label="NIK">
+              <input
+                value={form.orang_tua?.nik_ayah ?? ""}
+                onChange={(e) => setOrangTua("nik_ayah", e.target.value)}
+                className="input-field"
+                placeholder="16 digit NIK"
+              />
+            </Field>
+            <Field label="Tahun Lahir">
+              <input
+                type="number"
+                value={form.orang_tua?.tahun_lahir_ayah ?? ""}
+                onChange={(e) => setOrangTua("tahun_lahir_ayah", e.target.value)}
+                className="input-field"
+                min="1900"
+                max={new Date().getFullYear()}
+                placeholder="1980"
+              />
+            </Field>
+            <Field label="Pendidikan Terakhir">
+              <select
+                value={form.orang_tua?.pendidikan_ayah ?? ""}
+                onChange={(e) => setOrangTua("pendidikan_ayah", e.target.value)}
+                className="input-field"
+              >
+                <option value="">-- Pilih --</option>
+                {pendidikanOpts.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Pekerjaan Utama">
+              <input
+                value={form.orang_tua?.pekerjaan_ayah ?? ""}
+                onChange={(e) => setOrangTua("pekerjaan_ayah", e.target.value)}
+                className="input-field"
+                placeholder="PNS, Karyawan, Wiraswasta, dll."
+              />
+            </Field>
+            <Field label="Penghasilan Bulanan">
+              <select
+                value={form.orang_tua?.penghasilan_ayah ?? ""}
+                onChange={(e) => setOrangTua("penghasilan_ayah", e.target.value)}
+                className="input-field"
+              >
+                <option value="">-- Pilih --</option>
+                {penghasilanOpts.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Nomor Telepon/HP">
+              <input
+                value={form.orang_tua?.no_hp_ayah ?? ""}
+                onChange={(e) => setOrangTua("no_hp_ayah", e.target.value)}
+                className="input-field"
+                placeholder="Nomor aktif / WhatsApp"
+              />
+            </Field>
+          </FamilySection>
+
+          <FamilySection title="Data Ibu Kandung">
+            <Field label="Nama Lengkap" className="col-span-2">
+              <input
+                value={form.orang_tua?.nama_ibu ?? ""}
+                onChange={(e) => setOrangTua("nama_ibu", e.target.value)}
+                className="input-field"
+                placeholder="Sesuai KK atau akta kelahiran"
+              />
+            </Field>
+            <Field label="NIK">
+              <input
+                value={form.orang_tua?.nik_ibu ?? ""}
+                onChange={(e) => setOrangTua("nik_ibu", e.target.value)}
+                className="input-field"
+                placeholder="16 digit NIK"
+              />
+            </Field>
+            <Field label="Tahun Lahir">
+              <input
+                type="number"
+                value={form.orang_tua?.tahun_lahir_ibu ?? ""}
+                onChange={(e) => setOrangTua("tahun_lahir_ibu", e.target.value)}
+                className="input-field"
+                min="1900"
+                max={new Date().getFullYear()}
+                placeholder="1980"
+              />
+            </Field>
+            <Field label="Pendidikan Terakhir">
+              <select
+                value={form.orang_tua?.pendidikan_ibu ?? ""}
+                onChange={(e) => setOrangTua("pendidikan_ibu", e.target.value)}
+                className="input-field"
+              >
+                <option value="">-- Pilih --</option>
+                {pendidikanOpts.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Pekerjaan Utama">
+              <input
+                value={form.orang_tua?.pekerjaan_ibu ?? ""}
+                onChange={(e) => setOrangTua("pekerjaan_ibu", e.target.value)}
+                className="input-field"
+                placeholder="PNS, Karyawan, IRT, dll."
+              />
+            </Field>
+            <Field label="Penghasilan Bulanan">
+              <select
+                value={form.orang_tua?.penghasilan_ibu ?? ""}
+                onChange={(e) => setOrangTua("penghasilan_ibu", e.target.value)}
+                className="input-field"
+              >
+                <option value="">-- Pilih --</option>
+                {penghasilanOpts.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Nomor Telepon/HP">
+              <input
+                value={form.orang_tua?.no_hp_ibu ?? ""}
+                onChange={(e) => setOrangTua("no_hp_ibu", e.target.value)}
+                className="input-field"
+                placeholder="Nomor aktif / WhatsApp"
+              />
+            </Field>
+          </FamilySection>
+
+          <FamilySection title="Data Wali">
+            <Field label="Nama Lengkap" className="col-span-2">
+              <input
+                value={form.orang_tua?.nama_wali ?? ""}
+                onChange={(e) => setOrangTua("nama_wali", e.target.value)}
+                className="input-field"
+                placeholder="Diisi jika siswa tinggal/ditanggung wali"
+              />
+            </Field>
+            <Field label="NIK">
+              <input
+                value={form.orang_tua?.nik_wali ?? ""}
+                onChange={(e) => setOrangTua("nik_wali", e.target.value)}
+                className="input-field"
+                placeholder="16 digit NIK"
+              />
+            </Field>
+            <Field label="Hubungan dengan Siswa">
+              <input
+                value={form.orang_tua?.hubungan_wali ?? ""}
+                onChange={(e) => setOrangTua("hubungan_wali", e.target.value)}
+                className="input-field"
+                placeholder="Kakek, Nenek, Paman, dll."
+              />
+            </Field>
+            <Field label="Pekerjaan Utama">
+              <input
+                value={form.orang_tua?.pekerjaan_wali ?? ""}
+                onChange={(e) => setOrangTua("pekerjaan_wali", e.target.value)}
+                className="input-field"
+                placeholder="Pekerjaan wali"
+              />
+            </Field>
+            <Field label="Penghasilan Bulanan">
+              <select
+                value={form.orang_tua?.penghasilan_wali ?? ""}
+                onChange={(e) => setOrangTua("penghasilan_wali", e.target.value)}
+                className="input-field"
+              >
+                <option value="">-- Pilih --</option>
+                {penghasilanOpts.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Nomor Telepon/HP">
+              <input
+                value={form.orang_tua?.no_hp_wali ?? ""}
+                onChange={(e) => setOrangTua("no_hp_wali", e.target.value)}
+                className="input-field"
+                placeholder="Nomor aktif / WhatsApp"
+              />
+            </Field>
+          </FamilySection>
+
+          <FamilySection title="Kontak & Domisili Orang Tua/Wali">
+            <Field label="Email" className="col-span-2 sm:col-span-1">
+              <input
+                type="email"
+                value={form.orang_tua?.email ?? ""}
+                onChange={(e) => setOrangTua("email", e.target.value)}
+                className="input-field"
+                placeholder="email@example.com"
+              />
+            </Field>
+            <Field label="Alamat Domisili" className="col-span-2">
+              <textarea
+                value={form.orang_tua?.alamat ?? ""}
+                onChange={(e) => setOrangTua("alamat", e.target.value)}
+                className="input-field resize-none"
+                rows={2}
+                placeholder="Alamat tinggal saat ini jika berbeda dari alamat KK"
+              />
+            </Field>
+          </FamilySection>
+
           {/* Alamat */}
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-2">
             Alamat
@@ -520,6 +792,28 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FamilySection({ title, children }) {
+  return (
+    <div className="border-t border-gray-100 pt-4">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+        {title}
+      </p>
+      <div className="grid grid-cols-2 gap-4">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, children, className = "" }) {
+  return (
+    <div className={className}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

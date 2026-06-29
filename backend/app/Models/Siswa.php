@@ -55,4 +55,9 @@ class Siswa extends Model
     {
         return $this->hasOne(UserOrtu::class, 'nisn', 'nisn');
     }
+
+    public function orangTua()
+    {
+        return $this->hasOne(OrangTua::class, 'nisn', 'nisn');
+    }
 }
