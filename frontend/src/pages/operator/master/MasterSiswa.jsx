@@ -89,17 +89,24 @@ const defaultForm = {
 
 const yearFromDate = (value) => (value ? String(value).slice(0, 4) : "");
 
-const normalizeOrangTua = (ortu = {}) => ({
-  ...emptyOrangTua,
-  ...ortu,
-  tahun_lahir_ayah: ortu.tahun_lahir_ayah ?? yearFromDate(ortu.tanggal_lahir_ayah),
-  tahun_lahir_ibu: ortu.tahun_lahir_ibu ?? yearFromDate(ortu.tanggal_lahir_ibu),
-});
+const normalizeOrangTua = (ortu) => {
+  const data = ortu ?? {};
+
+  return {
+    ...emptyOrangTua,
+    ...data,
+    tahun_lahir_ayah: data.tahun_lahir_ayah ?? yearFromDate(data.tanggal_lahir_ayah),
+    tahun_lahir_ibu: data.tahun_lahir_ibu ?? yearFromDate(data.tanggal_lahir_ibu),
+  };
+};
 
 const normalizeForm = (data) => ({
   ...defaultForm,
   ...(data ?? {}),
-  orang_tua: normalizeOrangTua(data?.orang_tua),
+  orang_tua: {
+    ...normalizeOrangTua(data?.orang_tua),
+    nama_ibu: data?.orang_tua?.nama_ibu ?? data?.nama_ibu_kandung ?? "",
+  },
 });
 
 function ModalSiswa({ open, onClose, editData, queryClient }) {
@@ -112,6 +119,12 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
     setForm((f) => ({
       ...f,
       orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), [k]: v },
+    }));
+  const setNamaIbu = (value) =>
+    setForm((f) => ({
+      ...f,
+      nama_ibu_kandung: value,
+      orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), nama_ibu: value },
     }));
 
   useEffect(() => {
@@ -335,17 +348,6 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
                 <option value="WNA">WNA</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                No. HP Ortu
-              </label>
-              <input
-                value={form.no_hp}
-                onChange={(e) => set("no_hp", e.target.value)}
-                className="input-field"
-                placeholder="Nomor HP"
-              />
-            </div>
           </div>
 
           {/* Data Keluarga */}
@@ -353,17 +355,6 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
             Data Keluarga
           </p>
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Ibu Kandung <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={form.nama_ibu_kandung}
-                onChange={(e) => set("nama_ibu_kandung", e.target.value)}
-                className="input-field"
-                placeholder="Nama ibu kandung"
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Status dalam Keluarga <span className="text-red-500">*</span>
@@ -491,7 +482,7 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
             <Field label="Nama Lengkap" className="col-span-2">
               <input
                 value={form.orang_tua?.nama_ibu ?? ""}
-                onChange={(e) => setOrangTua("nama_ibu", e.target.value)}
+                onChange={(e) => setNamaIbu(e.target.value)}
                 className="input-field"
                 placeholder="Sesuai KK atau akta kelahiran"
               />

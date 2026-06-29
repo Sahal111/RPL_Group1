@@ -200,7 +200,7 @@ class MasterDataSiswaController extends Controller
             'pendidikan_ayah' => $input['pendidikan_ayah'] ?? null,
             'pekerjaan_ayah' => $input['pekerjaan_ayah'] ?? null,
             'penghasilan_ayah' => $input['penghasilan_ayah'] ?? null,
-            'nama_ibu' => $input['nama_ibu'] ?? $namaIbuKandung,
+            'nama_ibu' => filled($input['nama_ibu'] ?? null) ? $input['nama_ibu'] : $namaIbuKandung,
             'nik_ibu' => $input['nik_ibu'] ?? null,
             'tanggal_lahir_ibu' => $this->yearToDate($input['tahun_lahir_ibu'] ?? null),
             'pendidikan_ibu' => $input['pendidikan_ibu'] ?? null,

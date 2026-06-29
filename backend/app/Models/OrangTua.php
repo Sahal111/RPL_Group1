@@ -7,13 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrangTua extends Model
 {
-    /** @use HasFactory<\Database\Factories\OrangTuaFactory> */
     use HasFactory;
 
     protected $table = 'orang_tua';
 
     protected $fillable = [
-        'nisn',
         'nama_ayah',
         'nik_ayah',
         'tanggal_lahir_ayah',
@@ -38,13 +36,14 @@ class OrangTua extends Model
         'alamat',
     ];
 
-    protected $casts = [
-        'tanggal_lahir_ayah' => 'date',
-        'tanggal_lahir_ibu' => 'date',
-    ];
-
     public function siswa()
     {
-        return $this->belongsTo(Siswa::class, 'nisn', 'nisn');
+        return $this->belongsToMany(Siswa::class, 'siswa_orang_tua', 'id_ortu', 'nisn', 'id', 'nisn')
+            ->withTimestamps();
+    }
+
+    public function dokumen()
+    {
+        return $this->hasMany(OrangTuaDokumen::class, 'id_ortu');
     }
 }

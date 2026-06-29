@@ -330,7 +330,7 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     public function listOrtu(Request $request)
     {
-        $query = User::with(['ortuProfile.siswa'])
+        $query = User::with(['ortuProfile.siswa.orangTua'])
             ->where('role_id', 3);
 
         if ($request->search) {
@@ -362,7 +362,7 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     public function detailOrtu($id)
     {
-        $user = User::with(['ortuProfile.siswa'])
+        $user = User::with(['ortuProfile.siswa.orangTua'])
             ->where('role_id', 3)
             ->findOrFail($id);
 
@@ -409,7 +409,7 @@ class OperatorController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data orang tua berhasil diperbarui.',
-            'data' => $user->load('ortuProfile.siswa'),
+            'data' => $user->load('ortuProfile.siswa.orangTua'),
         ]);
     }
 

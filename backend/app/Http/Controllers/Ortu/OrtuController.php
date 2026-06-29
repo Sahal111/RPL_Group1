@@ -18,7 +18,10 @@ class OrtuController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        $userOrtu = UserOrtu::with('siswa')->where('user_id', $user->id)->first();
+        $nisn = $request->query('nisn');
+
+        $query = UserOrtu::with('siswa')->where('user_id', $user->id);
+        $userOrtu = $nisn ? $query->where('nisn', $nisn)->first() : $query->first();
 
         if (!$userOrtu || !$userOrtu->siswa) {
             return response()->json([
@@ -57,7 +60,7 @@ class OrtuController extends Controller
         ];
 
         // Status hari ini berdasarkan aturan 50% untuk menentukan status harian
-        $absensiHariIni = $absensiBulanIni->filter(function($item) use ($hariIni) {
+        $absensiHariIni = $absensiBulanIni->filter(function ($item) use ($hariIni) {
             return Carbon::parse($item->tanggal)->format('Y-m-d') == $hariIni;
         });
 
@@ -68,7 +71,7 @@ class OrtuController extends Controller
             $totalMapel = $absensiHariIni->count();
             $jmlHadir = $absensiHariIni->where('status', 'Hadir')->count();
             $jmlAlpa = $absensiHariIni->where('status', 'Alpa')->count();
-            
+
             if ($totalMapel > 0 && ($jmlHadir / $totalMapel) >= 0.5) {
                 $absensiHariIniStatus = 'Hadir';
                 if ($jmlAlpa > 0) {
@@ -77,7 +80,7 @@ class OrtuController extends Controller
             } else {
                 $jmlSakit = $absensiHariIni->where('status', 'Sakit')->count();
                 $jmlIzin = $absensiHariIni->where('status', 'Izin')->count();
-                
+
                 if ($jmlAlpa >= $jmlSakit && $jmlAlpa >= $jmlIzin) {
                     $absensiHariIniStatus = 'Alpa';
                 } elseif ($jmlSakit >= $jmlIzin) {
@@ -117,7 +120,10 @@ class OrtuController extends Controller
     public function profilAnak(Request $request)
     {
         $user = $request->user();
-        $userOrtu = UserOrtu::with('siswa')->where('user_id', $user->id)->first();
+        $nisn = $request->query('nisn');
+
+        $query = UserOrtu::with('siswa')->where('user_id', $user->id);
+        $userOrtu = $nisn ? $query->where('nisn', $nisn)->first() : $query->first();
 
         if (!$userOrtu || !$userOrtu->siswa) {
             return response()->json([
@@ -135,7 +141,10 @@ class OrtuController extends Controller
     public function riwayatAbsensi(Request $request)
     {
         $user = $request->user();
-        $userOrtu = UserOrtu::with('siswa')->where('user_id', $user->id)->first();
+        $nisn = $request->query('nisn');
+
+        $query = UserOrtu::with('siswa')->where('user_id', $user->id);
+        $userOrtu = $nisn ? $query->where('nisn', $nisn)->first() : $query->first();
 
         if (!$userOrtu || !$userOrtu->siswa) {
             return response()->json([
@@ -145,80 +154,98 @@ class OrtuController extends Controller
         }
 
         $siswa = $userOrtu->siswa;
-        
+
         $query = Absensi::with(['jadwal.mataPelajaran'])->where('nisn', $siswa->nisn);
-        
+
         $filter = $request->query('filter', 'bulan'); // default bulan
-        
+
         if ($filter === 'minggu') {
             $query->whereBetween('tanggal', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
         } elseif ($filter === 'bulan') {
             $query->whereMonth('tanggal', Carbon::now()->month)
-                  ->whereYear('tanggal', Carbon::now()->year);
+                ->whereYear('tanggal', Carbon::now()->year);
         } elseif ($filter === 'semester') {
             // Ambil kelas aktif
             $siswaKelas = SiswaKelas::where('nisn', $siswa->nisn)
                 ->where('status_keluar', 'Aktif')
                 ->first();
-                
+
             if ($siswaKelas) {
                 $query->where('id_kelas', $siswaKelas->id_kelas);
             }
         }
-        
+
         $absensi = $query->orderBy('tanggal', 'desc')->orderBy('id_jadwal')->get();
-        
+
         // Summary: count raw per mapel (sama seperti halaman guru)
         $summary = [
             'hadir' => $absensi->where('status', 'Hadir')->count(),
             'sakit' => $absensi->where('status', 'Sakit')->count(),
-            'izin'  => $absensi->where('status', 'Izin')->count(),
-            'alpa'  => $absensi->where('status', 'Alpa')->count(),
+            'izin' => $absensi->where('status', 'Izin')->count(),
+            'alpa' => $absensi->where('status', 'Alpa')->count(),
         ];
-        
+
         // Kelompokkan per tanggal agar orang tua bisa lihat harian
         $grouped = $absensi->groupBy(function ($item) {
             return $item->tanggal->format('Y-m-d');
         })->map(function ($rows, $tanggal) {
             return [
                 'tanggal' => $tanggal,
-                'mapel'   => $rows->map(function ($a) {
+                'mapel' => $rows->map(function ($a) {
                     return [
-                        'id'         => $a->id,
-                        'id_jadwal'  => $a->id_jadwal,
+                        'id' => $a->id,
+                        'id_jadwal' => $a->id_jadwal,
                         'nama_mapel' => $a->jadwal?->mataPelajaran?->nama_mapel ?? 'Umum',
-                        'jam_mulai'  => $a->jadwal?->jam_mulai,
+                        'jam_mulai' => $a->jadwal?->jam_mulai,
                         'jam_selesai' => $a->jadwal?->jam_selesai,
-                        'status'     => $a->status,
+                        'status' => $a->status,
                         'keterangan' => $a->keterangan,
                         'created_at' => $a->created_at,
                     ];
                 })->values(),
             ];
         })->values();
-        
+
         return response()->json([
             'success' => true,
             'data' => [
-                'nisn'    => $siswa->nisn,
+                'nisn' => $siswa->nisn,
                 'summary' => $summary,
-                'detail'  => $grouped,
+                'detail' => $grouped,
             ]
+        ]);
+    }
+
+    public function daftarAnak(Request $request)
+    {
+        $user = $request->user();
+        $anak = UserOrtu::with('siswa')->where('user_id', $user->id)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $anak->map(function ($ua) {
+                return [
+                    'nisn' => $ua->siswa->nisn,
+                    'nama_lengkap' => $ua->siswa->nama_lengkap,
+                    'foto' => $ua->siswa->foto,
+                    'hubungan' => $ua->hubungan,
+                ];
+            }),
         ]);
     }
 
     public function pengumuman(Request $request)
     {
         $kategori = $request->query('kategori'); // filter by kategori
-        
+
         $query = Pengumuman::orderBy('created_at', 'desc');
-        
+
         if ($kategori && $kategori !== 'semua') {
             $query->where('kategori', $kategori);
         }
-        
+
         $pengumuman = $query->paginate(10);
-        
+
         return response()->json([
             'success' => true,
             'data' => $pengumuman
@@ -228,7 +255,10 @@ class OrtuController extends Controller
     public function profil(Request $request)
     {
         $user = $request->user();
-        $userOrtu = UserOrtu::with('siswa')->where('user_id', $user->id)->first();
+        $nisn = $request->query('nisn');
+
+        $query = UserOrtu::with('siswa')->where('user_id', $user->id);
+        $userOrtu = $nisn ? $query->where('nisn', $nisn)->first() : $query->first();
 
         if (!$userOrtu || !$userOrtu->siswa) {
             return response()->json([
@@ -238,7 +268,7 @@ class OrtuController extends Controller
         }
 
         $siswa = $userOrtu->siswa;
-        
+
         // Ambil kelas aktif siswa
         $siswaKelas = SiswaKelas::with(['kelas'])
             ->where('nisn', $siswa->nisn)

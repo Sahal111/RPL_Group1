@@ -53,11 +53,12 @@ class Siswa extends Model
 
     public function userOrtu()
     {
-        return $this->hasOne(UserOrtu::class, 'nisn', 'nisn');
+        return $this->hasMany(UserOrtu::class, 'nisn', 'nisn');
     }
 
     public function orangTua()
     {
-        return $this->hasOne(OrangTua::class, 'nisn', 'nisn');
+        return $this->belongsToMany(OrangTua::class, 'siswa_orang_tua', 'nisn', 'id_ortu', 'nisn', 'id')
+            ->withTimestamps();
     }
 }
