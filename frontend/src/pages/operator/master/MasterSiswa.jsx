@@ -21,7 +21,18 @@ const statusPdOpts = [
   "Meninggal",
 ];
 const keluargaOpts = ["Anak Kandung", "AnakTiri", "Anak Angkat"];
-const pendidikanOpts = ["Tidak Sekolah", "SD", "SMP", "SMA", "D1", "D2", "D3", "S1", "S2", "S3"];
+const pendidikanOpts = [
+  "Tidak Sekolah",
+  "SD",
+  "SMP",
+  "SMA",
+  "D1",
+  "D2",
+  "D3",
+  "S1",
+  "S2",
+  "S3",
+];
 const penghasilanOpts = [
   "Tidak Berpenghasilan",
   "< 500rb",
@@ -90,9 +101,14 @@ const defaultForm = {
 
 const yearFromDate = (value) => (value ? String(value).slice(0, 4) : "");
 
-const getPrimaryOrangTua = (ortu) => (Array.isArray(ortu) ? (ortu[0] ?? {}) : (ortu ?? {}));
+const getPrimaryOrangTua = (ortu) =>
+  Array.isArray(ortu) ? (ortu[0] ?? {}) : (ortu ?? {});
 const parentDisplayName = (ortu) =>
-  ortu?.nama_ayah || ortu?.nama_ibu || ortu?.nama_wali || ortu?.email || `Orang tua #${ortu?.id}`;
+  ortu?.nama_ayah ||
+  ortu?.nama_ibu ||
+  ortu?.nama_wali ||
+  ortu?.email ||
+  `Orang tua #${ortu?.id}`;
 
 const normalizeOrangTua = (ortu) => {
   const data = getPrimaryOrangTua(ortu);
@@ -100,8 +116,10 @@ const normalizeOrangTua = (ortu) => {
   return {
     ...emptyOrangTua,
     ...data,
-    tahun_lahir_ayah: data.tahun_lahir_ayah ?? yearFromDate(data.tanggal_lahir_ayah),
-    tahun_lahir_ibu: data.tahun_lahir_ibu ?? yearFromDate(data.tanggal_lahir_ibu),
+    tahun_lahir_ayah:
+      data.tahun_lahir_ayah ?? yearFromDate(data.tanggal_lahir_ayah),
+    tahun_lahir_ibu:
+      data.tahun_lahir_ibu ?? yearFromDate(data.tanggal_lahir_ibu),
   };
 };
 
@@ -111,7 +129,10 @@ const normalizeForm = (data) => ({
   orang_tua_id: getPrimaryOrangTua(data?.orang_tua)?.id ?? "",
   orang_tua: {
     ...normalizeOrangTua(data?.orang_tua),
-    nama_ibu: getPrimaryOrangTua(data?.orang_tua)?.nama_ibu ?? data?.nama_ibu_kandung ?? "",
+    nama_ibu:
+      getPrimaryOrangTua(data?.orang_tua)?.nama_ibu ??
+      data?.nama_ibu_kandung ??
+      "",
   },
 });
 
@@ -120,16 +141,20 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
   const [form, setForm] = useState(defaultForm);
   const [preview, setPreview] = useState(null);
   const [parentSearch, setParentSearch] = useState("");
+  const [searchBy, setSearchBy] = useState("all");
+  const [nisnError, setNisnError] = useState("");
   const fileRef = useRef();
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const setOrangTua = (k, v) =>
     setForm((f) => ({
       ...f,
+      unlink_orang_tua: false,
       orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), [k]: v },
     }));
   const setNamaIbu = (value) =>
     setForm((f) => ({
       ...f,
+      unlink_orang_tua: false,
       nama_ibu_kandung: value,
       orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), nama_ibu: value },
     }));
@@ -143,14 +168,18 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
           : null,
       );
       setParentSearch("");
+      setSearchBy("all");
+      setNisnError("");
     }
   }, [open, editData]);
 
   const { data: parentOptions = [], isFetching: isFetchingParents } = useQuery({
-    queryKey: ["orang-tua-options", parentSearch, open],
+    queryKey: ["orang-tua-options", parentSearch, searchBy, open],
     queryFn: () =>
       api
-        .get("/operator/master-data/orang-tua", { params: { search: parentSearch } })
+        .get("/operator/master-data/siswa/orang-tua-options", {
+          params: { search: parentSearch, search_by: searchBy },
+        })
         .then((res) => res.data.data ?? []),
     enabled: open && parentSearch.trim().length >= 2,
   });
@@ -161,9 +190,11 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
     setForm((prev) => ({
       ...prev,
       orang_tua_id: ortu.id,
+      unlink_orang_tua: false,
       nama_ibu_kandung: normalized.nama_ibu || prev.nama_ibu_kandung,
       orang_tua: normalized,
     }));
+    
     setParentSearch(parentDisplayName(ortu));
     toast.success("Data orang tua lama dipakai untuk siswa ini.");
   };
@@ -173,8 +204,10 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
       ...prev,
       orang_tua_id: "",
       orang_tua: emptyOrangTua,
+      unlink_orang_tua: true,
     }));
     setParentSearch("");
+    setSearchBy("all");
   };
 
   const mutation = useMutation({
@@ -206,8 +239,16 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
     },
     onError: (err) => {
       const errors = err.response?.data?.errors;
-      if (errors) Object.values(errors).forEach((e) => toast.error(e[0]));
-      else toast.error(err.response?.data?.message ?? "Gagal menyimpan.");
+      if (errors) {
+        Object.entries(errors).forEach(([field, messages]) => {
+          if (field === "nisn") {
+            setNisnError(messages[0]);
+          }
+          messages.forEach((msg) => toast.error(msg));
+        });
+      } else {
+        toast.error(err.response?.data?.message ?? "Gagal menyimpan.");
+      }
     },
   });
 
@@ -400,7 +441,8 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
                   Pakai Data Orang Tua yang Sudah Ada
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Cari berdasarkan nama, NIK, nomor HP, atau email. Setelah dipilih, data keluarga otomatis terisi.
+                  Cari berdasarkan nama, NIK, nomor HP, atau email. Setelah
+                  dipilih, data keluarga otomatis terisi.
                 </p>
               </div>
               {form.orang_tua_id && (
@@ -414,26 +456,73 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
               )}
             </div>
 
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Cari Berdasarkan
+              </label>
+              <select
+                value={searchBy}
+                onChange={(e) => {
+                  setSearchBy(e.target.value);
+                  setParentSearch("");
+                }}
+                className="input-field bg-white"
+              >
+                <option value="all">
+                  Semua (Nama, NIK, HP, Email, NISN Anak, No. KK)
+                </option>
+                <option value="nik">NIK Ayah/Ibu/Wali</option>
+                <option value="no_kk">No. KK Anak</option>
+                <option value="nama">Nama Ayah/Ibu/Wali</option>
+                <option value="no_hp">Nomor HP/WA</option>
+                <option value="nisn">NISN atau Nama Anak</option>
+              </select>
+            </div>
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 value={parentSearch}
                 onChange={(e) => setParentSearch(e.target.value)}
                 className="input-field pl-9 bg-white"
-                placeholder="Ketik minimal 2 huruf, contoh: Budi / NIK / no HP"
+                placeholder={
+                  searchBy === "nik"
+                    ? "Ketik NIK, contoh: 1234567890765432"
+                    : searchBy === "no_kk"
+                      ? "Ketik No. KK, contoh: 1234567890123456"
+                      : searchBy === "nama"
+                        ? "Ketik nama ayah/ibu/wali"
+                        : searchBy === "no_hp"
+                          ? "Ketik nomor HP/WA"
+                          : searchBy === "nisn"
+                            ? "Ketik NISN atau nama anak"
+                            : "Ketik minimal 2 huruf untuk mencari"
+                }
               />
+              {parentSearch && (
+                <button
+                  type="button"
+                  onClick={() => setParentSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {form.orang_tua_id && (
               <div className="rounded-lg bg-white border border-indigo-100 p-3 text-sm text-indigo-800">
-                Data orang tua terpilih: <b>{parentDisplayName(form.orang_tua)}</b>
+                Data orang tua terpilih:{" "}
+                <b>{parentDisplayName(form.orang_tua)}</b>
               </div>
             )}
 
             {parentSearch.trim().length >= 2 && !form.orang_tua_id && (
               <div className="rounded-lg bg-white border border-gray-100 divide-y divide-gray-100 overflow-hidden">
                 {isFetchingParents ? (
-                  <p className="p-3 text-sm text-gray-400">Mencari data orang tua...</p>
+                  <p className="p-3 text-sm text-gray-400">
+                    Mencari data orang tua...
+                  </p>
                 ) : parentOptions.length > 0 ? (
                   parentOptions.map((ortu) => (
                     <button
@@ -443,18 +532,42 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
                       className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm font-semibold text-gray-800">
                             {parentDisplayName(ortu)}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            Ayah: {ortu.nama_ayah || "-"} · Ibu: {ortu.nama_ibu || "-"}
+                          <p className="text-xs text-gray-500 mt-1">
+                            Ayah: {ortu.nama_ayah || "-"} · Ibu:{" "}
+                            {ortu.nama_ibu || "-"}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            NIK: {ortu.nik_ayah || ortu.nik_ibu || ortu.nik_wali || "-"} · HP: {ortu.no_hp_ayah || ortu.no_hp_ibu || ortu.no_hp_wali || "-"}
-                          </p>
+                          <div className="text-xs text-gray-400 mt-0.5 space-y-0.5">
+                            <p>
+                              NIK:{" "}
+                              {ortu.nik_ayah ||
+                                ortu.nik_ibu ||
+                                ortu.nik_wali ||
+                                "-"}
+                            </p>
+                            <p>
+                              HP:{" "}
+                              {ortu.no_hp_ayah ||
+                                ortu.no_hp_ibu ||
+                                ortu.no_hp_wali ||
+                                "-"}
+                            </p>
+                            {ortu.siswa && ortu.siswa.length > 0 && (
+                              <p className="text-indigo-600 font-medium">
+                                Anak:{" "}
+                                {ortu.siswa
+                                  .map((s) => s.nama_lengkap)
+                                  .join(", ")}
+                                {ortu.siswa[0]?.no_kk &&
+                                  ` • KK: ${ortu.siswa[0].no_kk}`}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-indigo-600 font-medium">
+                        <span className="text-xs text-indigo-600 font-medium shrink-0">
                           {ortu.siswa?.length ?? 0} anak
                         </span>
                       </div>
@@ -462,7 +575,8 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
                   ))
                 ) : (
                   <p className="p-3 text-sm text-gray-400">
-                    Data orang tua tidak ditemukan. Isi data keluarga baru di bawah.
+                    Data orang tua tidak ditemukan. Isi data keluarga baru di
+                    bawah.
                   </p>
                 )}
               </div>
@@ -544,7 +658,9 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
               <input
                 type="number"
                 value={form.orang_tua?.tahun_lahir_ayah ?? ""}
-                onChange={(e) => setOrangTua("tahun_lahir_ayah", e.target.value)}
+                onChange={(e) =>
+                  setOrangTua("tahun_lahir_ayah", e.target.value)
+                }
                 className="input-field"
                 min="1900"
                 max={new Date().getFullYear()}
@@ -559,7 +675,9 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
               >
                 <option value="">-- Pilih --</option>
                 {pendidikanOpts.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -574,12 +692,16 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
             <Field label="Penghasilan Bulanan">
               <select
                 value={form.orang_tua?.penghasilan_ayah ?? ""}
-                onChange={(e) => setOrangTua("penghasilan_ayah", e.target.value)}
+                onChange={(e) =>
+                  setOrangTua("penghasilan_ayah", e.target.value)
+                }
                 className="input-field"
               >
                 <option value="">-- Pilih --</option>
                 {penghasilanOpts.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -629,7 +751,9 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
               >
                 <option value="">-- Pilih --</option>
                 {pendidikanOpts.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -649,7 +773,9 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
               >
                 <option value="">-- Pilih --</option>
                 {penghasilanOpts.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -699,12 +825,16 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
             <Field label="Penghasilan Bulanan">
               <select
                 value={form.orang_tua?.penghasilan_wali ?? ""}
-                onChange={(e) => setOrangTua("penghasilan_wali", e.target.value)}
+                onChange={(e) =>
+                  setOrangTua("penghasilan_wali", e.target.value)
+                }
                 className="input-field"
               >
                 <option value="">-- Pilih --</option>
                 {penghasilanOpts.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
             </Field>

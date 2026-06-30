@@ -8,6 +8,7 @@ use App\Http\Controllers\Guru\GuruController;
 use App\Http\Controllers\Kepsek\KepsekController;
 use App\Http\Controllers\MasterData\MasterDataGuruController;
 use App\Http\Controllers\MasterData\MasterDataSiswaController;
+use App\Http\Controllers\MasterData\MasterDataOrtuController;
 use App\Http\Controllers\MasterData\MasterDataKelasController;
 use App\Http\Controllers\MasterData\TahunAjaranController;
 use App\Http\Controllers\MasterData\NaikKelasController;
@@ -101,12 +102,16 @@ Route::middleware('auth:sanctum')->group(function () {
             // Siswa
             Route::get('/siswa', [MasterDataSiswaController::class, 'index']);
             Route::post('/siswa', [MasterDataSiswaController::class, 'store']);
-            Route::get('/orang-tua', [MasterDataSiswaController::class, 'orangTuaOptions']);
+            Route::get('/siswa/orang-tua-options', [MasterDataSiswaController::class, 'orangTuaOptions']);
             Route::get('/siswa/{nisn}', [MasterDataSiswaController::class, 'show']);
             Route::put('/siswa/{nisn}', [MasterDataSiswaController::class, 'update']);
             Route::delete('/siswa/{nisn}', [MasterDataSiswaController::class, 'destroy']);
             Route::post('/siswa/{nisn}/assign-kelas', [MasterDataSiswaController::class, 'assignKelas']);
             Route::post('/siswa/{nisn}/foto', [MasterDataSiswaController::class, 'uploadFoto']);
+            
+            // Orang Tua
+            Route::get('/orang-tua', [MasterDataOrtuController::class, 'index']);
+            Route::get('/orang-tua/{id}', [MasterDataOrtuController::class, 'show']);
             
             // Tahun Ajaran — HARUS SEBELUM /kelas/{id}
             Route::get('/kelas/tahun-ajaran', [MasterDataKelasController::class, 'tahunAjaranDropdown']);

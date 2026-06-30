@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import api from "../../../lib/axios";
-import { Eye, Mail, Phone, Search, Users } from "lucide-react";
+import { CheckCircle2, Eye, Mail, Phone, Search, Users } from "lucide-react";
 
 const parentDisplayName = (ortu) =>
   ortu?.nama_ayah ||
@@ -11,7 +11,8 @@ const parentDisplayName = (ortu) =>
   ortu?.email ||
   `Orang tua #${ortu?.id}`;
 
-const getLinkedStudents = (ortu) => (Array.isArray(ortu?.siswa) ? ortu.siswa : []);
+const getLinkedStudents = (ortu) =>
+  Array.isArray(ortu?.siswa) ? ortu.siswa : [];
 const firstFilled = (...values) => values.find((value) => value) ?? "-";
 
 export default function MasterOrtu() {
@@ -100,7 +101,6 @@ export default function MasterOrtu() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {ortuList.map((ortu, idx) => {
                     const students = getLinkedStudents(ortu);
-                    const firstStudent = students[0];
 
                     return (
                       <tr key={ortu.id} className="hover:bg-gray-50">
@@ -119,20 +119,41 @@ export default function MasterOrtu() {
                         </td>
                         <td className="px-6 py-4">
                           {students.length > 0 ? (
-                            <div className="space-y-1">
-                              {students.map((siswa) => (
-                                <div key={`${ortu.id}-${siswa.nisn}`} className="leading-tight">
-                                  <div className="font-medium text-gray-900">
-                                    {siswa.nama_lengkap || "-"}
+                            <div className="space-y-1.5">
+                              {students.map((siswa) => {
+                                const hasAccount =
+                                  (siswa.user_ortu?.length ?? 0) > 0;
+
+                                return (
+                                  <div
+                                    key={`${ortu.id}-${siswa.nisn}`}
+                                    className="leading-tight"
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium text-gray-900">
+                                        {siswa.nama_lengkap || "-"}
+                                      </span>
+                                      {hasAccount && (
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      NISN: {siswa.nisn || "-"}
+                                      {hasAccount && (
+                                        <span className="text-green-600">
+                                          {" "}
+                                          · sudah punya akun
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-gray-500">
-                                    NISN: {siswa.nisn || "-"}
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400">Belum ada anak tertaut</span>
+                            <span className="text-sm text-gray-400">
+                              Belum ada anak tertaut
+                            </span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
@@ -140,7 +161,11 @@ export default function MasterOrtu() {
                             <div className="flex items-center gap-1">
                               <Phone className="w-3 h-3 text-gray-400" />
                               <span>
-                                {firstFilled(ortu.no_hp_ayah, ortu.no_hp_ibu, ortu.no_hp_wali)}
+                                {firstFilled(
+                                  ortu.no_hp_ayah,
+                                  ortu.no_hp_ibu,
+                                  ortu.no_hp_wali,
+                                )}
                               </span>
                             </div>
                             {ortu.email && (
@@ -152,20 +177,18 @@ export default function MasterOrtu() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                          <span className="line-clamp-2">{ortu.alamat || "-"}</span>
+                          <span className="line-clamp-2">
+                            {ortu.alamat || "-"}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {firstStudent?.nisn ? (
-                            <Link
-                              to={`/operator/master/siswa/${firstStudent.nisn}`}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              Lihat Siswa
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
+                          <Link
+                            to={`/operator/master/ortu/keluarga/${ortu.id}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Lihat Detail
+                          </Link>
                         </td>
                       </tr>
                     );

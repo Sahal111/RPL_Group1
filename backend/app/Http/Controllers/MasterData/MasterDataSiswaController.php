@@ -14,25 +14,72 @@ class MasterDataSiswaController extends Controller
     public function orangTuaOptions(Request $request)
     {
         $search = $request->query('search');
+        $searchBy = $request->query('search_by', 'all'); // all, nik, no_kk, nama, no_hp, nisn
 
         $query = OrangTua::query()
-            ->with('siswa:nisn,nama_lengkap')
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nama_ayah', 'like', "%{$search}%")
-                        ->orWhere('nama_ibu', 'like', "%{$search}%")
-                        ->orWhere('nama_wali', 'like', "%{$search}%")
-                        ->orWhere('nik_ayah', 'like', "%{$search}%")
-                        ->orWhere('nik_ibu', 'like', "%{$search}%")
-                        ->orWhere('nik_wali', 'like', "%{$search}%")
-                        ->orWhere('no_hp_ayah', 'like', "%{$search}%")
-                        ->orWhere('no_hp_ibu', 'like', "%{$search}%")
-                        ->orWhere('no_hp_wali', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
-                            $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
-                                ->orWhere('nisn', 'like', "%{$search}%");
-                        });
+            ->with('siswa:nisn,nama_lengkap,no_kk')
+            ->when($search, function ($query) use ($search, $searchBy) {
+                $query->where(function ($q) use ($search, $searchBy) {
+                    switch ($searchBy) {
+                        case 'nik':
+                            // Pencarian khusus NIK (exact match lebih prioritas)
+                            $q->where('nik_ayah', $search)
+                                ->orWhere('nik_ibu', $search)
+                                ->orWhere('nik_wali', $search)
+                                ->orWhere('nik_ayah', 'like', "%{$search}%")
+                                ->orWhere('nik_ibu', 'like', "%{$search}%")
+                                ->orWhere('nik_wali', 'like', "%{$search}%");
+                            break;
+
+                        case 'no_kk':
+                            // Pencarian berdasarkan No. KK anak
+                            $q->whereHas('siswa', function ($siswaQuery) use ($search) {
+                                $siswaQuery->where('no_kk', $search)
+                                    ->orWhere('no_kk', 'like', "%{$search}%");
+                            });
+                            break;
+
+                        case 'nama':
+                            // Pencarian khusus nama
+                            $q->where('nama_ayah', 'like', "%{$search}%")
+                                ->orWhere('nama_ibu', 'like', "%{$search}%")
+                                ->orWhere('nama_wali', 'like', "%{$search}%");
+                            break;
+
+                        case 'no_hp':
+                            // Pencarian khusus nomor HP
+                            $q->where('no_hp_ayah', 'like', "%{$search}%")
+                                ->orWhere('no_hp_ibu', 'like', "%{$search}%")
+                                ->orWhere('no_hp_wali', 'like', "%{$search}%");
+                            break;
+
+                        case 'nisn':
+                            // Pencarian berdasarkan NISN anak
+                            $q->whereHas('siswa', function ($siswaQuery) use ($search) {
+                                $siswaQuery->where('nisn', $search)
+                                    ->orWhere('nisn', 'like', "%{$search}%")
+                                    ->orWhere('nama_lengkap', 'like', "%{$search}%");
+                            });
+                            break;
+
+                        default:
+                            // Pencarian global (all)
+                            $q->where('nama_ayah', 'like', "%{$search}%")
+                                ->orWhere('nama_ibu', 'like', "%{$search}%")
+                                ->orWhere('nama_wali', 'like', "%{$search}%")
+                                ->orWhere('nik_ayah', 'like', "%{$search}%")
+                                ->orWhere('nik_ibu', 'like', "%{$search}%")
+                                ->orWhere('nik_wali', 'like', "%{$search}%")
+                                ->orWhere('no_hp_ayah', 'like', "%{$search}%")
+                                ->orWhere('no_hp_ibu', 'like', "%{$search}%")
+                                ->orWhere('no_hp_wali', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
+                                $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
+                                    ->orWhere('nisn', 'like', "%{$search}%")
+                                    ->orWhere('no_kk', 'like', "%{$search}%");
+                            });
+                    }
                 });
             })
             ->orderBy('nama_ayah')
@@ -99,12 +146,19 @@ class MasterDataSiswaController extends Controller
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
             'orang_tua_id' => 'nullable|integer|exists:orang_tua,id',
+            'unlink_orang_tua' => 'nullable|boolean',
             ...$this->orangTuaValidationRules(),
         ]);
 
         $siswa = DB::transaction(function () use ($request) {
             $siswa = Siswa::create($request->only($this->siswaFields()));
-            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung, $request->input('orang_tua_id'));
+            $this->syncOrangTua(
+                $siswa,
+                $request->input('orang_tua', []),
+                $request->nama_ibu_kandung,
+                $request->filled('orang_tua_id') ? (int) $request->input('orang_tua_id') : null,
+                $request->boolean('unlink_orang_tua'),
+            );
 
             return $siswa->load('orangTua');
         });
@@ -147,12 +201,19 @@ class MasterDataSiswaController extends Controller
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
             'orang_tua_id' => 'nullable|integer|exists:orang_tua,id',
+            'unlink_orang_tua' => 'nullable|boolean',
             ...$this->orangTuaValidationRules(),
         ]);
 
         DB::transaction(function () use ($request, $siswa) {
             $siswa->update($request->only($this->siswaFields(false)));
-            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung, $request->input('orang_tua_id'));
+            $this->syncOrangTua(
+                $siswa,
+                $request->input('orang_tua', []),
+                $request->nama_ibu_kandung,
+                $request->filled('orang_tua_id') ? (int) $request->input('orang_tua_id') : null,
+                $request->boolean('unlink_orang_tua'),
+            );
         });
 
         return response()->json([
@@ -228,9 +289,15 @@ class MasterDataSiswaController extends Controller
         ];
     }
 
-    private function syncOrangTua(Siswa $siswa, array $input, ?string $namaIbuKandung, ?int $orangTuaId = null): void
+    private function syncOrangTua(Siswa $siswa, array $input, ?string $namaIbuKandung, ?int $orangTuaId = null, bool $unlink = false): void
     {
-        $data = [
+        if ($unlink) {
+            $siswa->orangTua()->sync([]);
+
+            return;
+        }
+
+        $incoming = [
             'nama_ayah' => $input['nama_ayah'] ?? null,
             'nik_ayah' => $input['nik_ayah'] ?? null,
             'tanggal_lahir_ayah' => $this->yearToDate($input['tahun_lahir_ayah'] ?? null),
@@ -255,24 +322,35 @@ class MasterDataSiswaController extends Controller
             'alamat' => $input['alamat'] ?? null,
         ];
 
-        if (!collect($data)->filter(fn($value) => filled($value))->isNotEmpty()) {
-            if ($orangTuaId) {
-                $siswa->orangTua()->sync([$orangTuaId]);
-            }
+        // Hanya field yang BENAR-BENAR diisi di submission ini yang boleh menimpa.
+        // Field kosong TIDAK BOLEH menghapus data yang sudah tersimpan, karena
+        // satu orang_tua bisa dipakai bareng oleh beberapa siswa (kakak-adik).
+        $filledIncoming = array_filter($incoming, fn($value) => filled($value));
+
+        if (empty($filledIncoming) && !$orangTuaId) {
+            return;
+        }
+
+        if (empty($filledIncoming) && $orangTuaId) {
+            // Cuma menautkan ke ortu yang sudah ada, tanpa ubah data apa pun.
+            $siswa->orangTua()->sync([$orangTuaId]);
 
             return;
         }
 
-        $orangTua = $orangTuaId ? OrangTua::findOrFail($orangTuaId) : $siswa->orangTua()->first();
+        $orangTua = $orangTuaId
+            ? OrangTua::findOrFail($orangTuaId)
+            : ($siswa->orangTua()->first() ?? $this->findMatchingOrangTua($incoming));
 
         if (!$orangTua) {
-            $orangTua = $this->findMatchingOrangTua($data) ?? OrangTua::create($data);
+            $orangTua = OrangTua::create($incoming);
         } else {
-            $orangTua->update($data);
-        }
-
-        if (!$orangTua->wasRecentlyCreated) {
-            $orangTua->update($data);
+            // Merge: field yang diisi menimpa, field yang kosong tetap pakai nilai lama
+            // -> data anak ke-2, ke-3, dst tetap sinkron & selengkap anak pertama.
+            $orangTua->update(array_merge(
+                $orangTua->only(array_keys($incoming)),
+                $filledIncoming,
+            ));
         }
 
         $siswa->orangTua()->sync([$orangTua->id]);

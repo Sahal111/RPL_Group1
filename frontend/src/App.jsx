@@ -24,6 +24,7 @@ import DetailTahunAjaran from "./pages/operator/master/DetailTahunAjaran";
 import MasterMapel from "./pages/operator/master/MasterMapel";
 import MasterJadwal from "./pages/operator/master/MasterJadwal";
 import PengumumanOperator from "./pages/operator/master/PengumumanOperator";
+import DetailDataOrtu from "./pages/operator/master/DetailDataOrtu"; // sesuaikan path import
 
 // Guru
 import GuruLayout from "./pages/guru/GuruLayout";
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="master/mapel" element={<MasterMapel />} />
         <Route path="master/jadwal-pelajaran" element={<MasterJadwal />} />
         <Route path="master/pengumuman" element={<PengumumanOperator />} />
+        <Route path="master/ortu/keluarga/:id" element={<DetailDataOrtu />} />
       </Route>
 
       {/* Guru */}
@@ -97,7 +99,10 @@ export default function App() {
         <Route index element={<DashboardGuru />} />
         <Route path="siswa" element={<DataSiswaGuru />} />
         <Route path="siswa/:nisn" element={<DetailSiswaGuru />} />
-        <Route path="siswa/:nisn/riwayat" element={<RiwayatAbsensiSiswaGuru />} />
+        <Route
+          path="siswa/:nisn/riwayat"
+          element={<RiwayatAbsensiSiswaGuru />}
+        />
         <Route path="absensi" element={<InputAbsensi />} />
         <Route path="rekap-absensi" element={<RekapAbsensiGuru />} />
         <Route path="jadwal" element={<JadwalMengajarGuru />} />
