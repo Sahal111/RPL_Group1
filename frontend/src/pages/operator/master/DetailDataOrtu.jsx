@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../lib/axios";
@@ -9,7 +9,9 @@ import {
   Eye,
   KeyRound,
   Mail,
+  Pencil,
   Phone,
+  Save,
   Shield,
   ShieldOff,
   User,
@@ -18,7 +20,11 @@ import {
 
 const yearOnly = (date) => (date ? String(date).slice(0, 4) : "-");
 const parentDisplayName = (ortu) =>
-  ortu?.nama_ayah || ortu?.nama_ibu || ortu?.nama_wali || ortu?.email || `Orang tua #${ortu?.id}`;
+  ortu?.nama_ayah ||
+  ortu?.nama_ibu ||
+  ortu?.nama_wali ||
+  ortu?.email ||
+  `Orang tua #${ortu?.id}`;
 
 // Kumpulkan semua akun login yang tertaut ke keluarga ini lintas semua anak,
 // lalu dedupe per akun (satu akun bisa tertaut ke lebih dari satu anak di keluarga yang sama).
@@ -50,36 +56,123 @@ export default function DetailDataOrtu() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const [resetTarget, setResetTarget] = useState(null);
-  const [passwordData, setPasswordData] = useState({ password: "", password_confirmation: "" });
+  const [passwordData, setPasswordData] = useState({
+    password: "",
+    password_confirmation: "",
+  });
+  const [isEdit, setIsEdit] = useState(false);
+  const emptyForm = {
+    nama_ayah: "",
+    nik_ayah: "",
+    tanggal_lahir_ayah: "",
+    pendidikan_ayah: "",
+    pekerjaan_ayah: "",
+    penghasilan_ayah: "",
+    no_hp_ayah: "",
+    nama_ibu: "",
+    nik_ibu: "",
+    tanggal_lahir_ibu: "",
+    pendidikan_ibu: "",
+    pekerjaan_ibu: "",
+    penghasilan_ibu: "",
+    no_hp_ibu: "",
+    nama_wali: "",
+    nik_wali: "",
+    hubungan_wali: "",
+    pekerjaan_wali: "",
+    penghasilan_wali: "",
+    no_hp_wali: "",
+    email: "",
+    alamat: "",
+  };
+  const [formData, setFormData] = useState(emptyForm);
 
   const { data: ortu, isLoading } = useQuery({
     queryKey: ["detail-data-ortu", id],
-    queryFn: () => api.get(`/operator/master-data/orang-tua/${id}`).then((res) => res.data.data),
+    queryFn: () =>
+      api
+        .get(`/operator/master-data/orang-tua/${id}`)
+        .then((res) => res.data.data),
   });
 
+  useEffect(() => {
+    if (!ortu) return;
+    setFormData({
+      nama_ayah: ortu.nama_ayah || "",
+      nik_ayah: ortu.nik_ayah || "",
+      tanggal_lahir_ayah: ortu.tanggal_lahir_ayah || "",
+      pendidikan_ayah: ortu.pendidikan_ayah || "",
+      pekerjaan_ayah: ortu.pekerjaan_ayah || "",
+      penghasilan_ayah: ortu.penghasilan_ayah || "",
+      no_hp_ayah: ortu.no_hp_ayah || "",
+      nama_ibu: ortu.nama_ibu || "",
+      nik_ibu: ortu.nik_ibu || "",
+      tanggal_lahir_ibu: ortu.tanggal_lahir_ibu || "",
+      pendidikan_ibu: ortu.pendidikan_ibu || "",
+      pekerjaan_ibu: ortu.pekerjaan_ibu || "",
+      penghasilan_ibu: ortu.penghasilan_ibu || "",
+      no_hp_ibu: ortu.no_hp_ibu || "",
+      nama_wali: ortu.nama_wali || "",
+      nik_wali: ortu.nik_wali || "",
+      hubungan_wali: ortu.hubungan_wali || "",
+      pekerjaan_wali: ortu.pekerjaan_wali || "",
+      penghasilan_wali: ortu.penghasilan_wali || "",
+      no_hp_wali: ortu.no_hp_wali || "",
+      email: ortu.email || "",
+      alamat: ortu.alamat || "",
+    });
+  }, [ortu]);
+
   const toggleActiveMutation = useMutation({
-    mutationFn: (userId) => api.patch(`/operator/users/${userId}/toggle-active`),
+    mutationFn: (userId) =>
+      api.patch(`/operator/users/${userId}/toggle-active`),
     onSuccess: () => {
       toast.success("Status akun berhasil diubah.");
       queryClient.invalidateQueries(["detail-data-ortu", id]);
     },
-    onError: (error) => toast.error(error.response?.data?.message ?? "Gagal mengubah status akun."),
+    onError: (error) =>
+      toast.error(
+        error.response?.data?.message ?? "Gagal mengubah status akun.",
+      ),
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: ({ userId, data }) => api.patch(`/operator/users/${userId}/reset-password`, data),
+    mutationFn: ({ userId, data }) =>
+      api.patch(`/operator/users/${userId}/reset-password`, data),
     onSuccess: () => {
       toast.success("Password berhasil direset.");
       setResetTarget(null);
       setPasswordData({ password: "", password_confirmation: "" });
     },
-    onError: (error) => toast.error(error.response?.data?.message ?? "Gagal reset password."),
+    onError: (error) =>
+      toast.error(error.response?.data?.message ?? "Gagal reset password."),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: (data) =>
+      api.put(`/operator/master-data/orang-tua/${id}`, data),
+    onSuccess: () => {
+      toast.success("Data orang tua berhasil diperbarui.");
+      queryClient.invalidateQueries(["detail-data-ortu", id]);
+      queryClient.invalidateQueries(["master-ortu"]);
+      setIsEdit(false);
+    },
+    onError: (error) =>
+      toast.error(error.response?.data?.message ?? "Gagal memperbarui data."),
+  });
+
+  const handleUpdateSubmit = (event) => {
+    event.preventDefault();
+    updateMutation.mutate(formData);
+  };
 
   const handleResetPassword = (event) => {
     event.preventDefault();
     if (!resetTarget) return;
-    resetPasswordMutation.mutate({ userId: resetTarget.id, data: passwordData });
+    resetPasswordMutation.mutate({
+      userId: resetTarget.id,
+      data: passwordData,
+    });
   };
 
   if (isLoading) {
@@ -104,73 +197,258 @@ export default function DetailDataOrtu() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/operator/master/ortu"
-          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">{parentDisplayName(ortu)}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Data keluarga, anak tertaut, dan akun login orang tua
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/operator/master/ortu"
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">
+              {parentDisplayName(ortu)}
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Data keluarga, anak tertaut, dan akun login orang tua
+            </p>
+          </div>
         </div>
+
+        {!isEdit && (
+          <button
+            onClick={() => setIsEdit(true)}
+            className="btn-primary flex items-center gap-2 flex-shrink-0"
+          >
+            <Pencil className="w-4 h-4" />
+            Edit
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 card space-y-8">
+        <form
+          onSubmit={handleUpdateSubmit}
+          className="xl:col-span-2 card space-y-8"
+        >
           <Section title="Data Ayah Kandung">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <InfoItem label="Nama Lengkap" value={ortu.nama_ayah} />
+                <EditableField
+                  label="Nama Lengkap"
+                  editing={isEdit}
+                  value={isEdit ? formData.nama_ayah : ortu.nama_ayah}
+                  onChange={(v) => setFormData((p) => ({ ...p, nama_ayah: v }))}
+                />
               </div>
-              <InfoItem label="NIK" value={ortu.nik_ayah} mono />
-              <InfoItem label="Tahun Lahir" value={yearOnly(ortu.tanggal_lahir_ayah)} />
-              <InfoItem label="Pendidikan Terakhir" value={ortu.pendidikan_ayah} />
-              <InfoItem label="Pekerjaan Utama" value={ortu.pekerjaan_ayah} />
-              <InfoItem label="Penghasilan Bulanan" value={ortu.penghasilan_ayah} />
-              <InfoItem label="Nomor Telepon/HP" value={ortu.no_hp_ayah} />
+              <EditableField
+                label="NIK"
+                mono
+                editing={isEdit}
+                value={isEdit ? formData.nik_ayah : ortu.nik_ayah}
+                onChange={(v) => setFormData((p) => ({ ...p, nik_ayah: v }))}
+              />
+              <EditableField
+                label="Tanggal Lahir"
+                editing={isEdit}
+                value={
+                  isEdit
+                    ? formData.tanggal_lahir_ayah
+                    : yearOnly(ortu.tanggal_lahir_ayah)
+                }
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, tanggal_lahir_ayah: v }))
+                }
+              />
+              <EditableField
+                label="Pendidikan Terakhir"
+                editing={isEdit}
+                value={isEdit ? formData.pendidikan_ayah : ortu.pendidikan_ayah}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, pendidikan_ayah: v }))
+                }
+              />
+              <EditableField
+                label="Pekerjaan Utama"
+                editing={isEdit}
+                value={isEdit ? formData.pekerjaan_ayah : ortu.pekerjaan_ayah}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, pekerjaan_ayah: v }))
+                }
+              />
+              <EditableField
+                label="Penghasilan Bulanan"
+                editing={isEdit}
+                value={
+                  isEdit ? formData.penghasilan_ayah : ortu.penghasilan_ayah
+                }
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, penghasilan_ayah: v }))
+                }
+              />
+              <EditableField
+                label="Nomor Telepon/HP"
+                editing={isEdit}
+                value={isEdit ? formData.no_hp_ayah : ortu.no_hp_ayah}
+                onChange={(v) => setFormData((p) => ({ ...p, no_hp_ayah: v }))}
+              />
             </div>
           </Section>
 
           <Section title="Data Ibu Kandung">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <InfoItem label="Nama Lengkap" value={ortu.nama_ibu} />
+                <EditableField
+                  label="Nama Lengkap"
+                  editing={isEdit}
+                  value={isEdit ? formData.nama_ibu : ortu.nama_ibu}
+                  onChange={(v) => setFormData((p) => ({ ...p, nama_ibu: v }))}
+                />
               </div>
-              <InfoItem label="NIK" value={ortu.nik_ibu} mono />
-              <InfoItem label="Tahun Lahir" value={yearOnly(ortu.tanggal_lahir_ibu)} />
-              <InfoItem label="Pendidikan Terakhir" value={ortu.pendidikan_ibu} />
-              <InfoItem label="Pekerjaan Utama" value={ortu.pekerjaan_ibu} />
-              <InfoItem label="Penghasilan Bulanan" value={ortu.penghasilan_ibu} />
-              <InfoItem label="Nomor Telepon/HP" value={ortu.no_hp_ibu} />
+              <EditableField
+                label="NIK"
+                mono
+                editing={isEdit}
+                value={isEdit ? formData.nik_ibu : ortu.nik_ibu}
+                onChange={(v) => setFormData((p) => ({ ...p, nik_ibu: v }))}
+              />
+              <EditableField
+                label="Tanggal Lahir"
+                editing={isEdit}
+                value={
+                  isEdit
+                    ? formData.tanggal_lahir_ibu
+                    : yearOnly(ortu.tanggal_lahir_ibu)
+                }
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, tanggal_lahir_ibu: v }))
+                }
+              />
+              <EditableField
+                label="Pendidikan Terakhir"
+                editing={isEdit}
+                value={isEdit ? formData.pendidikan_ibu : ortu.pendidikan_ibu}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, pendidikan_ibu: v }))
+                }
+              />
+              <EditableField
+                label="Pekerjaan Utama"
+                editing={isEdit}
+                value={isEdit ? formData.pekerjaan_ibu : ortu.pekerjaan_ibu}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, pekerjaan_ibu: v }))
+                }
+              />
+              <EditableField
+                label="Penghasilan Bulanan"
+                editing={isEdit}
+                value={isEdit ? formData.penghasilan_ibu : ortu.penghasilan_ibu}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, penghasilan_ibu: v }))
+                }
+              />
+              <EditableField
+                label="Nomor Telepon/HP"
+                editing={isEdit}
+                value={isEdit ? formData.no_hp_ibu : ortu.no_hp_ibu}
+                onChange={(v) => setFormData((p) => ({ ...p, no_hp_ibu: v }))}
+              />
             </div>
           </Section>
 
           <Section title="Data Wali">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <InfoItem label="Nama Lengkap" value={ortu.nama_wali} />
+                <EditableField
+                  label="Nama Lengkap"
+                  editing={isEdit}
+                  value={isEdit ? formData.nama_wali : ortu.nama_wali}
+                  onChange={(v) => setFormData((p) => ({ ...p, nama_wali: v }))}
+                />
               </div>
-              <InfoItem label="NIK" value={ortu.nik_wali} mono />
-              <InfoItem label="Hubungan dengan Siswa" value={ortu.hubungan_wali} />
-              <InfoItem label="Pekerjaan Utama" value={ortu.pekerjaan_wali} />
-              <InfoItem label="Penghasilan Bulanan" value={ortu.penghasilan_wali} />
-              <InfoItem label="Nomor Telepon/HP" value={ortu.no_hp_wali} />
+              <EditableField
+                label="NIK"
+                mono
+                editing={isEdit}
+                value={isEdit ? formData.nik_wali : ortu.nik_wali}
+                onChange={(v) => setFormData((p) => ({ ...p, nik_wali: v }))}
+              />
+              <EditableField
+                label="Hubungan dengan Siswa"
+                editing={isEdit}
+                value={isEdit ? formData.hubungan_wali : ortu.hubungan_wali}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, hubungan_wali: v }))
+                }
+              />
+              <EditableField
+                label="Pekerjaan Utama"
+                editing={isEdit}
+                value={isEdit ? formData.pekerjaan_wali : ortu.pekerjaan_wali}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, pekerjaan_wali: v }))
+                }
+              />
+              <EditableField
+                label="Penghasilan Bulanan"
+                editing={isEdit}
+                value={
+                  isEdit ? formData.penghasilan_wali : ortu.penghasilan_wali
+                }
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, penghasilan_wali: v }))
+                }
+              />
+              <EditableField
+                label="Nomor Telepon/HP"
+                editing={isEdit}
+                value={isEdit ? formData.no_hp_wali : ortu.no_hp_wali}
+                onChange={(v) => setFormData((p) => ({ ...p, no_hp_wali: v }))}
+              />
             </div>
           </Section>
 
           <Section title="Kontak & Domisili Orang Tua/Wali">
             <div className="grid grid-cols-2 gap-4">
-              <InfoItem label="Email" value={ortu.email} />
+              <EditableField
+                label="Email"
+                type="email"
+                editing={isEdit}
+                value={isEdit ? formData.email : ortu.email}
+                onChange={(v) => setFormData((p) => ({ ...p, email: v }))}
+              />
               <div className="col-span-2">
-                <InfoItem label="Alamat Domisili" value={ortu.alamat} />
+                <EditableField
+                  label="Alamat Domisili"
+                  editing={isEdit}
+                  value={isEdit ? formData.alamat : ortu.alamat}
+                  onChange={(v) => setFormData((p) => ({ ...p, alamat: v }))}
+                />
               </div>
             </div>
           </Section>
-        </div>
+
+          {isEdit && (
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsEdit(false)}
+                className="btn-secondary"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {updateMutation.isPending ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          )}
+        </form>
 
         <div className="space-y-6">
           <div className="card">
@@ -187,7 +465,9 @@ export default function DetailDataOrtu() {
                         <p className="text-sm font-semibold text-gray-800 truncate">
                           {siswa.nama_lengkap}
                         </p>
-                        <p className="text-xs text-gray-500 font-mono">NISN: {siswa.nisn}</p>
+                        <p className="text-xs text-gray-500 font-mono">
+                          NISN: {siswa.nisn}
+                        </p>
                       </div>
                       <Eye className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     </Link>
@@ -204,13 +484,18 @@ export default function DetailDataOrtu() {
               {akunList.length > 0 ? (
                 <div className="space-y-3">
                   {akunList.map((akun) => (
-                    <div key={akun.id} className="rounded-lg border border-gray-100 p-3 space-y-2">
+                    <div
+                      key={akun.id}
+                      className="rounded-lg border border-gray-100 p-3 space-y-2"
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-800 truncate">
                             {akun.nama_lengkap}
                           </p>
-                          <p className="text-xs text-gray-500">@{akun.username}</p>
+                          <p className="text-xs text-gray-500">
+                            @{akun.username}
+                          </p>
                         </div>
                         {akun.is_active ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 flex-shrink-0">
@@ -237,7 +522,11 @@ export default function DetailDataOrtu() {
                         <div className="flex items-start gap-1">
                           <Users className="w-3 h-3 mt-0.5 flex-shrink-0" />
                           <span>
-                            {akun.anak.map((a) => `${a.hubungan} dari ${a.nama_lengkap}`).join(", ")}
+                            {akun.anak
+                              .map(
+                                (a) => `${a.hubungan} dari ${a.nama_lengkap}`,
+                              )
+                              .join(", ")}
                           </span>
                         </div>
                       </div>
@@ -279,8 +568,12 @@ export default function DetailDataOrtu() {
       {resetTarget && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-1">Reset Password</h3>
-            <p className="text-sm text-gray-500 mb-4">Akun: {resetTarget.nama_lengkap}</p>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">
+              Reset Password
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Akun: {resetTarget.nama_lengkap}
+            </p>
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -290,7 +583,10 @@ export default function DetailDataOrtu() {
                   type="password"
                   value={passwordData.password}
                   onChange={(event) =>
-                    setPasswordData((prev) => ({ ...prev, password: event.target.value }))
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
                   }
                   className="input-field"
                   placeholder="Minimal 8 karakter"
@@ -305,7 +601,10 @@ export default function DetailDataOrtu() {
                   type="password"
                   value={passwordData.password_confirmation}
                   onChange={(event) =>
-                    setPasswordData((prev) => ({ ...prev, password_confirmation: event.target.value }))
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      password_confirmation: event.target.value,
+                    }))
                   }
                   className="input-field"
                   placeholder="Ulangi password"
@@ -339,7 +638,9 @@ export default function DetailDataOrtu() {
 function Section({ title, children }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{title}</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        {title}
+      </p>
       {children}
     </div>
   );
@@ -349,7 +650,36 @@ function InfoItem({ label, value, mono = false }) {
   return (
     <div>
       <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className={`text-sm text-gray-700 ${mono ? "font-mono" : "font-medium"}`}>{value || "-"}</p>
+      <p
+        className={`text-sm text-gray-700 ${mono ? "font-mono" : "font-medium"}`}
+      >
+        {value || "-"}
+      </p>
+    </div>
+  );
+}
+
+function EditableField({
+  label,
+  value,
+  onChange,
+  editing,
+  mono = false,
+  type = "text",
+}) {
+  if (!editing) {
+    return <InfoItem label={label} value={value} mono={mono} />;
+  }
+
+  return (
+    <div>
+      <label className="block text-xs text-gray-400 mb-1">{label}</label>
+      <input
+        type={type}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        className="input-field"
+      />
     </div>
   );
 }

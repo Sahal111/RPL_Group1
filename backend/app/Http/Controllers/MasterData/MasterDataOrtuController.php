@@ -50,4 +50,103 @@ class MasterDataOrtuController extends Controller
 
         return response()->json(['success' => true, 'data' => $orangTua]);
     }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'nama_ayah' => 'nullable|string|max:100',
+            'nik_ayah' => 'nullable|string|max:16',
+            'tanggal_lahir_ayah' => 'nullable|date',
+            'pendidikan_ayah' => 'nullable|string|max:50',
+            'pekerjaan_ayah' => 'nullable|string|max:100',
+            'penghasilan_ayah' => 'nullable|string|max:50',
+            'no_hp_ayah' => 'nullable|string|max:20',
+
+            'nama_ibu' => 'nullable|string|max:100',
+            'nik_ibu' => 'nullable|string|max:16',
+            'tanggal_lahir_ibu' => 'nullable|date',
+            'pendidikan_ibu' => 'nullable|string|max:50',
+            'pekerjaan_ibu' => 'nullable|string|max:100',
+            'penghasilan_ibu' => 'nullable|string|max:50',
+            'no_hp_ibu' => 'nullable|string|max:20',
+
+            'nama_wali' => 'nullable|string|max:100',
+            'nik_wali' => 'nullable|string|max:16',
+            'hubungan_wali' => 'nullable|string|max:50',
+            'pekerjaan_wali' => 'nullable|string|max:100',
+            'penghasilan_wali' => 'nullable|string|max:50',
+            'no_hp_wali' => 'nullable|string|max:20',
+
+            'email' => 'nullable|email|max:100',
+            'alamat' => 'nullable|string',
+        ]);
+
+        $orangTua = OrangTua::create($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data orang tua berhasil ditambahkan.',
+            'data' => $orangTua,
+        ], 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $orangTua = OrangTua::findOrFail($id);
+
+        $data = $request->validate([
+            'nama_ayah' => 'nullable|string|max:100',
+            'nik_ayah' => 'nullable|string|max:16',
+            'tanggal_lahir_ayah' => 'nullable|date',
+            'pendidikan_ayah' => 'nullable|string|max:50',
+            'pekerjaan_ayah' => 'nullable|string|max:100',
+            'penghasilan_ayah' => 'nullable|string|max:50',
+            'no_hp_ayah' => 'nullable|string|max:20',
+
+            'nama_ibu' => 'nullable|string|max:100',
+            'nik_ibu' => 'nullable|string|max:16',
+            'tanggal_lahir_ibu' => 'nullable|date',
+            'pendidikan_ibu' => 'nullable|string|max:50',
+            'pekerjaan_ibu' => 'nullable|string|max:100',
+            'penghasilan_ibu' => 'nullable|string|max:50',
+            'no_hp_ibu' => 'nullable|string|max:20',
+
+            'nama_wali' => 'nullable|string|max:100',
+            'nik_wali' => 'nullable|string|max:16',
+            'hubungan_wali' => 'nullable|string|max:50',
+            'pekerjaan_wali' => 'nullable|string|max:100',
+            'penghasilan_wali' => 'nullable|string|max:50',
+            'no_hp_wali' => 'nullable|string|max:20',
+
+            'email' => 'nullable|email|max:100',
+            'alamat' => 'nullable|string',
+        ]);
+
+        $orangTua->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data orang tua berhasil diperbarui.',
+            'data' => $orangTua,
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $orangTua = OrangTua::findOrFail($id);
+
+        if ($orangTua->siswa()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data ini masih tertaut ke siswa. Lepas tautan anak dulu sebelum hapus.',
+            ], 422);
+        }
+
+        $orangTua->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data orang tua berhasil dihapus.',
+        ]);
+    }
 }

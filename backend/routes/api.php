@@ -82,7 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/guru/{nuptk}', [MasterDataGuruController::class, 'destroy']);
             Route::post('/guru/{nuptk}/foto', [MasterDataGuruController::class, 'uploadFoto']);
             // Lookup akun yang terhubung ke NUPTK
-            Route::get('/guru/{nuptk}/akun', function(\Illuminate\Http\Request $req, $nuptk) {
+            Route::get('/guru/{nuptk}/akun', function (\Illuminate\Http\Request $req, $nuptk) {
                 $userGuru = \App\Models\UserGuru::where('nuptk', $nuptk)->with('user')->first();
                 if (!$userGuru || !$userGuru->user) {
                     return response()->json(['success' => true, 'data' => null]);
@@ -108,10 +108,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/siswa/{nisn}', [MasterDataSiswaController::class, 'destroy']);
             Route::post('/siswa/{nisn}/assign-kelas', [MasterDataSiswaController::class, 'assignKelas']);
             Route::post('/siswa/{nisn}/foto', [MasterDataSiswaController::class, 'uploadFoto']);
-            
+
             // Orang Tua
             Route::get('/orang-tua', [MasterDataOrtuController::class, 'index']);
+            Route::post('/orang-tua', [MasterDataOrtuController::class, 'store']);
             Route::get('/orang-tua/{id}', [MasterDataOrtuController::class, 'show']);
+            Route::put('/orang-tua/{id}', [MasterDataOrtuController::class, 'update']);
+            Route::delete('/orang-tua/{id}', [MasterDataOrtuController::class, 'destroy']);
             
             // Tahun Ajaran — HARUS SEBELUM /kelas/{id}
             Route::get('/kelas/tahun-ajaran', [MasterDataKelasController::class, 'tahunAjaranDropdown']);
@@ -184,7 +187,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/kelas/{id_kelas}/rekap', [AbsensiController::class, 'rekap']);
         Route::get('/kelas/{id_kelas}/jadwal-hari-ini', [AbsensiController::class, 'jadwalHariIni']);
         Route::get('/jadwal', [GuruController::class, 'jadwalMengajar']);
-        
+
         // Profil
         Route::get('/profil', [GuruController::class, 'profil']);
         Route::post('/profil/update', [GuruController::class, 'updateProfil']);
