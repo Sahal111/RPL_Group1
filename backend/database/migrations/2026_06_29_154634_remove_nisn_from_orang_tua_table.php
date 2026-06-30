@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('orang_tua', function (Blueprint $table) {
-            //
+            $table->dropForeign('fk_ortu_siswa');
+            $table->dropUnique('nisn');
+            $table->dropIndex('idx_ortu_nisn');
+            $table->dropColumn('nisn');
         });
     }
 
@@ -22,7 +25,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('orang_tua', function (Blueprint $table) {
-            //
+            $table->string('nisn', 10)->after('id');
+            $table->unique('nisn', 'nisn');
+            $table->index('nisn', 'idx_ortu_nisn');
+            $table->foreign('nisn', 'fk_ortu_siswa')
+                ->references('nisn')
+                ->on('siswa')
+                ->cascadeOnDelete();
         });
     }
 };

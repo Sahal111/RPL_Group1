@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/ortu', [OperatorController::class, 'listOrtu']);
         Route::get('/ortu/{id}', [OperatorController::class, 'detailOrtu']);
         Route::put('/ortu/{id}', [OperatorController::class, 'updateOrtu']);
+        Route::post('/ortu/{id}/anak', [OperatorController::class, 'attachAnakOrtu']);
         Route::patch('/users/{id}/reset-password', [OperatorController::class, 'resetPassword']);
         Route::delete('/users/{id}', [OperatorController::class, 'destroy']);
         Route::prefix('master-data')->group(function () {
@@ -100,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
             // Siswa
             Route::get('/siswa', [MasterDataSiswaController::class, 'index']);
             Route::post('/siswa', [MasterDataSiswaController::class, 'store']);
+            Route::get('/orang-tua', [MasterDataSiswaController::class, 'orangTuaOptions']);
             Route::get('/siswa/{nisn}', [MasterDataSiswaController::class, 'show']);
             Route::put('/siswa/{nisn}', [MasterDataSiswaController::class, 'update']);
             Route::delete('/siswa/{nisn}', [MasterDataSiswaController::class, 'destroy']);
@@ -195,7 +197,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profil-anak', [\App\Http\Controllers\Ortu\OrtuController::class, 'profilAnak']);
         Route::get('/absensi', [\App\Http\Controllers\Ortu\OrtuController::class, 'riwayatAbsensi']);
         Route::get('/pengumuman', [\App\Http\Controllers\Ortu\OrtuController::class, 'pengumuman']);
-        Route::get('/ortu/daftar-anak', [\App\Http\Controllers\Ortu\OrtuController::class, 'daftarAnak']);
+        Route::get('/daftar-anak', [\App\Http\Controllers\Ortu\OrtuController::class, 'daftarAnak']);
         Route::get('/profil', [\App\Http\Controllers\Ortu\OrtuController::class, 'profil']);
         Route::post('/profil', [\App\Http\Controllers\Ortu\OrtuController::class, 'updateProfil']);
     });

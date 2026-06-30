@@ -12,6 +12,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Plus,
   Save,
   Shield,
   ShieldOff,
@@ -26,6 +27,21 @@ dayjs.locale("id");
 
 const yearOnly = (date) => (date ? String(date).slice(0, 4) : "-");
 const formatDate = (date) => date ? dayjs(date).format("DD MMMM YYYY") : "-";
+const getOrtuProfiles = (ortu) => {
+  if (Array.isArray(ortu?.ortu_profiles) && ortu.ortu_profiles.length > 0) {
+    return ortu.ortu_profiles;
+  }
+
+  return ortu?.ortu_profile ? [ortu.ortu_profile] : [];
+};
+const profileNisn = (profile) => profile?.nisn ?? profile?.siswa?.nisn ?? "";
+const getPrimaryOrangTua = (siswa) => {
+  if (Array.isArray(siswa?.orang_tua)) {
+    return siswa.orang_tua[0] ?? null;
+  }
+
+  return siswa?.orang_tua ?? null;
+};
 
 export default function DetailOrtu() {
   const { id } = useParams();
@@ -34,6 +50,11 @@ export default function DetailOrtu() {
   const [isEdit, setIsEdit] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedNisn, setSelectedNisn] = useState("");
+  const [linkData, setLinkData] = useState({
+    nisn: "",
+    hubungan: "Ayah",
+  });
 
   const [formData, setFormData] = useState({
     email: "",
@@ -54,13 +75,19 @@ export default function DetailOrtu() {
 
   useEffect(() => {
     if (!ortu) return;
+    const profiles = getOrtuProfiles(ortu);
+    const firstProfile = profiles[0] ?? {};
+    const nextSelected = profileNisn(firstProfile);
 
     setFormData({
       email: ortu.email || "",
       no_hp: ortu.no_hp || "",
-      hubungan: ortu.ortu_profile?.hubungan || "",
-      pekerjaan: ortu.ortu_profile?.pekerjaan || "",
+      hubungan: firstProfile.hubungan || "",
+      pekerjaan: firstProfile.pekerjaan || "",
     });
+    setSelectedNisn((current) =>
+      profiles.some((profile) => profileNisn(profile) === current) ? current : nextSelected,
+    );
   }, [ortu]);
 
   const updateMutation = useMutation({
@@ -98,6 +125,21 @@ export default function DetailOrtu() {
     },
   });
 
+  const linkAnakMutation = useMutation({
+    mutationFn: (data) => api.post(`/operator/ortu/${id}/anak`, data),
+    onSuccess: () => {
+      toast.success("Anak berhasil ditautkan.");
+      queryClient.invalidateQueries(["detail-ortu", id]);
+      queryClient.invalidateQueries(["master-ortu"]);
+      setLinkData({ nisn: "", hubungan: "Ayah" });
+    },
+    onError: (error) => {
+      const errors = error.response?.data?.errors;
+      if (errors) Object.values(errors).forEach((item) => toast.error(item[0]));
+      else toast.error(error.response?.data?.message || "Gagal menautkan anak");
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/operator/users/${id}`),
     onSuccess: () => {
@@ -119,6 +161,11 @@ export default function DetailOrtu() {
     resetPasswordMutation.mutate(passwordData);
   };
 
+  const handleLinkAnak = (event) => {
+    event.preventDefault();
+    linkAnakMutation.mutate(linkData);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -136,8 +183,10 @@ export default function DetailOrtu() {
     );
   }
 
-  const siswa = ortu.ortu_profile?.siswa;
-  const dataKeluarga = siswa?.orang_tua;
+  const profiles = getOrtuProfiles(ortu);
+  const selectedProfile = profiles.find((profile) => profileNisn(profile) === selectedNisn) ?? profiles[0];
+  const siswa = selectedProfile?.siswa;
+  const dataKeluarga = getPrimaryOrangTua(siswa);
   const fotoUrl = ortu.foto ? `http://127.0.0.1:8001/storage/${ortu.foto}` : null;
 
   return (
@@ -302,23 +351,84 @@ export default function DetailOrtu() {
 
           <div className="card">
             <Section title="Data Anak">
-              {siswa ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <InfoItem label="Nama Siswa" value={siswa.nama_lengkap} />
-                  </div>
-                  <InfoItem label="NISN" value={siswa.nisn} mono />
-                  <InfoItem label="Jenis Kelamin" value={siswa.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"} />
-                  <InfoItem label="Tempat Lahir" value={siswa.tempat_lahir ?? "-"} />
-                  <InfoItem label="Tanggal Lahir" value={formatDate(siswa.tanggal_lahir)} />
-                  <div className="col-span-2">
-                    <InfoItem label="Alamat Siswa" value={siswa.alamat_jalan ?? "-"} />
-                  </div>
+              {profiles.length > 0 ? (
+                <div className="space-y-3">
+                  {profiles.map((profile) => {
+                    const child = profile.siswa;
+                    const nisn = profileNisn(profile);
+
+                    return (
+                      <button
+                        key={nisn}
+                        type="button"
+                        onClick={() => setSelectedNisn(nisn)}
+                        className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                          nisn === selectedNisn
+                            ? "border-indigo-300 bg-indigo-50"
+                            : "border-gray-100 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">
+                              {child?.nama_lengkap ?? "-"}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono">NISN: {nisn || "-"}</p>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                            {profile.hubungan ?? "-"}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  {siswa && (
+                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                      <InfoItem label="Jenis Kelamin" value={siswa.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"} />
+                      <InfoItem label="Tempat Lahir" value={siswa.tempat_lahir ?? "-"} />
+                      <InfoItem label="Tanggal Lahir" value={formatDate(siswa.tanggal_lahir)} />
+                      <div className="col-span-2">
+                        <InfoItem label="Alamat Siswa" value={siswa.alamat_jalan ?? "-"} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-400">Data anak tidak tersedia.</p>
               )}
             </Section>
+
+            <form onSubmit={handleLinkAnak} className="mt-5 pt-5 border-t border-gray-100 space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Tautkan Anak Lain
+              </p>
+              <input
+                type="text"
+                value={linkData.nisn}
+                onChange={(event) => setLinkData((prev) => ({ ...prev, nisn: event.target.value }))}
+                className="input-field"
+                placeholder="Masukkan NISN anak"
+                required
+              />
+              <select
+                value={linkData.hubungan}
+                onChange={(event) => setLinkData((prev) => ({ ...prev, hubungan: event.target.value }))}
+                className="input-field bg-white"
+              >
+                <option value="Ayah">Ayah</option>
+                <option value="Ibu">Ibu</option>
+                <option value="Wali">Wali</option>
+              </select>
+              <button
+                type="submit"
+                disabled={linkAnakMutation.isPending}
+                className="btn-primary w-full flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                {linkAnakMutation.isPending ? "Menautkan..." : "Tautkan Anak"}
+              </button>
+            </form>
           </div>
         </div>
 

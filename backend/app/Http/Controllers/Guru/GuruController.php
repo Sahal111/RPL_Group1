@@ -123,7 +123,7 @@ class GuruController extends Controller
         }
 
         $data = $query->orderBy('id_kelas')->orderBy('no_absen')->get()->map(function ($sk) {
-            $ortu = $sk->siswa->userOrtu;
+            $ortu = $sk->siswa->userOrtu->first();
             return [
                 'nisn'         => $sk->nisn,
                 'no_induk'     => $sk->siswa->no_induk,

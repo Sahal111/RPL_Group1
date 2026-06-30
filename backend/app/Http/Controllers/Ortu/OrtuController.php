@@ -219,7 +219,10 @@ class OrtuController extends Controller
     public function daftarAnak(Request $request)
     {
         $user = $request->user();
-        $anak = UserOrtu::with('siswa')->where('user_id', $user->id)->get();
+        $anak = UserOrtu::with('siswa')
+            ->where('user_id', $user->id)
+            ->get()
+            ->filter(fn ($ua) => $ua->siswa);
 
         return response()->json([
             'success' => true,
@@ -230,7 +233,7 @@ class OrtuController extends Controller
                     'foto' => $ua->siswa->foto,
                     'hubungan' => $ua->hubungan,
                 ];
-            }),
+            })->values(),
         ]);
     }
 

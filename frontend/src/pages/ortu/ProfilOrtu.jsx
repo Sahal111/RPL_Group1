@@ -8,7 +8,6 @@ import {
   Phone, 
   Lock, 
   Save, 
-  Upload, 
   Camera,
   UserCircle,
   Briefcase,
@@ -21,11 +20,13 @@ import {
 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
+import useSelectedAnak from "../../hooks/useSelectedAnak";
 
 dayjs.locale("id");
 
 export default function ProfilOrtu() {
   const queryClient = useQueryClient();
+  const { selectedNisn } = useSelectedAnak();
   const [isEditPassword, setIsEditPassword] = useState(false);
   const [preview, setPreview] = useState(null);
 
@@ -39,8 +40,11 @@ export default function ProfilOrtu() {
   });
 
   const { data: profil, isLoading, isError } = useQuery({
-    queryKey: ["ortu-profil"],
-    queryFn: () => api.get("/ortu/profil").then((res) => res.data.data),
+    queryKey: ["ortu-profil", selectedNisn],
+    queryFn: () =>
+      api
+        .get("/ortu/profil", { params: selectedNisn ? { nisn: selectedNisn } : {} })
+        .then((res) => res.data.data),
     onSuccess: (data) => {
       setFormData((prev) => ({
         ...prev,

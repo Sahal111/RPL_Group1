@@ -53,6 +53,11 @@ class User extends Authenticatable
         return $this->hasOne(UserOrtu::class, 'user_id');
     }
 
+    public function ortuProfiles()
+    {
+        return $this->hasMany(UserOrtu::class, 'user_id');
+    }
+
     public function kepsekProfile()
     {
         return $this->hasOne(UserKepsek::class, 'user_id');

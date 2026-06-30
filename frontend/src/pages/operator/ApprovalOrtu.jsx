@@ -3,6 +3,14 @@ import api from "../../lib/axios";
 import toast from "react-hot-toast";
 import { UserCheck, UserX, Clock, User } from "lucide-react";
 
+const getOrtuProfiles = (ortu) => {
+  if (Array.isArray(ortu.ortu_profiles) && ortu.ortu_profiles.length > 0) {
+    return ortu.ortu_profiles;
+  }
+
+  return ortu.ortu_profile ? [ortu.ortu_profile] : [];
+};
+
 export default function ApprovalOrtu() {
   const queryClient = useQueryClient();
 
@@ -79,7 +87,10 @@ export default function ApprovalOrtu() {
       {/* List */}
       {!isLoading && list.length > 0 && (
         <div className="space-y-4">
-          {list.map((u) => (
+          {list.map((u) => {
+            const profiles = getOrtuProfiles(u);
+
+            return (
             <div
               key={u.id}
               className="card flex items-center justify-between gap-4"
@@ -105,17 +116,21 @@ export default function ApprovalOrtu() {
               </div>
 
               {/* Info anak */}
-              {u.ortu_profile?.siswa && (
+              {profiles.length > 0 && (
                 <div className="hidden md:flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 flex-1 max-w-xs">
                   <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <div>
+                  <div className="space-y-1">
                     <p className="text-xs text-gray-400 mb-0.5">Data Anak</p>
-                    <p className="text-sm font-medium text-gray-700">
-                      {u.ortu_profile.siswa.nama_lengkap}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      NISN: {u.ortu_profile.nisn} · {u.ortu_profile.hubungan}
-                    </p>
+                    {profiles.map((profile) => (
+                      <div key={`${u.id}-${profile.nisn}`}>
+                        <p className="text-sm font-medium text-gray-700">
+                          {profile.siswa?.nama_lengkap ?? "-"}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          NISN: {profile.nisn} · {profile.hubungan}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -162,7 +177,8 @@ export default function ApprovalOrtu() {
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

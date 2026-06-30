@@ -4,6 +4,7 @@ import api from "../../lib/axios";
 import { CalendarDays, Filter, Clock, Info, BookOpen } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
+import useSelectedAnak from "../../hooks/useSelectedAnak";
 
 dayjs.locale("id");
 
@@ -17,11 +18,19 @@ const STATUS_STYLE = {
 
 export default function RiwayatAbsensiAnak() {
   const [filter, setFilter] = useState("bulan");
+  const { selectedNisn } = useSelectedAnak();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["ortu-riwayat-absensi", filter],
+    queryKey: ["ortu-riwayat-absensi", filter, selectedNisn],
     queryFn: () =>
-      api.get(`/ortu/absensi?filter=${filter}`).then((res) => res.data.data),
+      api
+        .get("/ortu/absensi", {
+          params: {
+            filter,
+            ...(selectedNisn ? { nisn: selectedNisn } : {}),
+          },
+        })
+        .then((res) => res.data.data),
     keepPreviousData: true,
   });
 

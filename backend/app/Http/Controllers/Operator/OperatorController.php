@@ -252,7 +252,7 @@ class OperatorController extends Controller
                 'hubungan' => $request->hubungan,
             ]);
 
-            return $user->load('ortuProfile.siswa');
+            return $user->load(['ortuProfile.siswa', 'ortuProfiles.siswa']);
         });
 
         return response()->json([
@@ -313,7 +313,7 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     public function pendingOrtu()
     {
-        $pending = User::with('ortuProfile.siswa')
+        $pending = User::with(['ortuProfile.siswa', 'ortuProfiles.siswa'])
             ->where('role_id', 3)
             ->where('is_active', 0)
             ->orderBy('created_at', 'asc')
@@ -330,7 +330,7 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     public function listOrtu(Request $request)
     {
-        $query = User::with(['ortuProfile.siswa.orangTua'])
+        $query = User::with(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua'])
             ->where('role_id', 3);
 
         if ($request->search) {
@@ -338,7 +338,7 @@ class OperatorController extends Controller
                 $q->where('nama_lengkap', 'like', "%{$request->search}%")
                   ->orWhere('username', 'like', "%{$request->search}%")
                   ->orWhere('no_hp', 'like', "%{$request->search}%")
-                  ->orWhereHas('ortuProfile.siswa', function ($q) use ($request) {
+                  ->orWhereHas('ortuProfiles.siswa', function ($q) use ($request) {
                       $q->where('nama_lengkap', 'like', "%{$request->search}%")
                         ->orWhere('nisn', 'like', "%{$request->search}%");
                   });
@@ -362,7 +362,7 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     public function detailOrtu($id)
     {
-        $user = User::with(['ortuProfile.siswa.orangTua'])
+        $user = User::with(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua'])
             ->where('role_id', 3)
             ->findOrFail($id);
 
@@ -383,7 +383,6 @@ class OperatorController extends Controller
             'email' => 'nullable|email|max:100|unique:users,email,' . $user->id,
             'no_hp' => 'nullable|string|max:20',
             'hubungan' => 'nullable|in:Ayah,Ibu,Wali',
-            'pekerjaan' => 'nullable|string|max:100',
         ]);
 
         DB::transaction(function () use ($request, $user) {
@@ -395,22 +394,52 @@ class OperatorController extends Controller
             }
             $user->save();
 
-            if ($user->ortuProfile) {
-                if ($request->filled('hubungan')) {
-                    $user->ortuProfile->hubungan = $request->hubungan;
-                }
-                if ($request->filled('pekerjaan')) {
-                    $user->ortuProfile->pekerjaan = $request->pekerjaan;
-                }
-                $user->ortuProfile->save();
+            if ($request->filled('hubungan')) {
+                $user->ortuProfiles()->update(['hubungan' => $request->hubungan]);
             }
         });
 
         return response()->json([
             'success' => true,
             'message' => 'Data orang tua berhasil diperbarui.',
-            'data' => $user->load('ortuProfile.siswa.orangTua'),
+            'data' => $user->load(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua']),
         ]);
+    }
+
+    // -------------------------------------------------------
+    // TAUTKAN ANAK TAMBAHAN KE AKUN ORTU
+    // -------------------------------------------------------
+    public function attachAnakOrtu(Request $request, $id)
+    {
+        $user = User::where('role_id', 3)->findOrFail($id);
+
+        $request->validate([
+            'nisn' => 'required|string|max:10|exists:siswa,nisn',
+            'hubungan' => 'required|in:Ayah,Ibu,Wali',
+        ]);
+
+        $exists = UserOrtu::where('user_id', $user->id)
+            ->where('nisn', $request->nisn)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anak ini sudah tertaut ke akun orang tua tersebut.',
+            ], 422);
+        }
+
+        UserOrtu::create([
+            'user_id' => $user->id,
+            'nisn' => $request->nisn,
+            'hubungan' => $request->hubungan,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anak berhasil ditautkan ke akun orang tua.',
+            'data' => $user->load(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua']),
+        ], 201);
     }
 
     // -------------------------------------------------------
@@ -452,7 +481,7 @@ class OperatorController extends Controller
             // Hapus profil dulu
             $user->operatorProfile?->delete();
             $user->guruProfile?->delete();
-            $user->ortuProfile?->delete();
+            $user->ortuProfiles()->delete();
             $user->kepsekProfile?->delete();
             // Hapus semua token
             $user->tokens()->delete();

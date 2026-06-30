@@ -4,13 +4,18 @@ import { User, CalendarCheck, UserCheck, Megaphone, School, AlertCircle, AlertTr
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import dayjs from "dayjs";
 import 'dayjs/locale/id';
+import useSelectedAnak from "../../hooks/useSelectedAnak";
 
 dayjs.locale('id');
 
 export default function AbsensiAnak() {
+  const { selectedNisn } = useSelectedAnak();
   const { data: dashboard, isLoading, isError } = useQuery({
-    queryKey: ["ortu-dashboard"],
-    queryFn: () => api.get("/ortu/dashboard").then((res) => res.data.data),
+    queryKey: ["ortu-dashboard", selectedNisn],
+    queryFn: () =>
+      api
+        .get("/ortu/dashboard", { params: selectedNisn ? { nisn: selectedNisn } : {} })
+        .then((res) => res.data.data),
     retry: false
   });
 

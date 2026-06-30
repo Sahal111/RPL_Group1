@@ -1,15 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../../lib/axios";
-import { User, MapPin, Calendar, FileText, Phone } from "lucide-react";
+import { User, MapPin, Calendar, FileText } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
+import useSelectedAnak from "../../hooks/useSelectedAnak";
 
 dayjs.locale("id");
 
 export default function DataAnak() {
+  const { selectedNisn } = useSelectedAnak();
   const { data: siswa, isLoading, isError } = useQuery({
-    queryKey: ["ortu-profil-anak"],
-    queryFn: () => api.get("/ortu/profil-anak").then((res) => res.data.data),
+    queryKey: ["ortu-profil-anak", selectedNisn],
+    queryFn: () =>
+      api
+        .get("/ortu/profil-anak", { params: selectedNisn ? { nisn: selectedNisn } : {} })
+        .then((res) => res.data.data),
     retry: false,
   });
 

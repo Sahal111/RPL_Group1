@@ -173,7 +173,7 @@ class AuthController extends Controller
         return match ($user->role_id) {
             1 => $user->operatorProfile,
             2 => $user->guruProfile?->load('guru'),
-            3 => $user->ortuProfile?->load('siswa'),
+            3 => $user->ortuProfiles()->with('siswa')->get(),
             4 => $user->kepsekProfile?->load('guru'),
             default => null,
         };

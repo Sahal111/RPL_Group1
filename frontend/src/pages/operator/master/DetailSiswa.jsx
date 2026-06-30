@@ -3,7 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../lib/axios";
 import toast from "react-hot-toast";
-import { ArrowLeft, Camera, User, Shield } from "lucide-react";
+import { ArrowLeft, Camera } from "lucide-react";
+
+const getPrimaryOrangTua = (ortu) => {
+  if (Array.isArray(ortu)) return ortu[0] ?? null;
+  return ortu ?? null;
+};
+
+const yearOnly = (date) => (date ? String(date).slice(0, 4) : "-");
 
 export default function DetailSiswa() {
   const { nisn } = useParams();
@@ -50,6 +57,7 @@ export default function DetailSiswa() {
     ? `http://127.0.0.1:8001/storage/${siswa.foto}`
     : null;
   const isL = siswa.jenis_kelamin === "L";
+  const dataOrangTua = getPrimaryOrangTua(siswa.orang_tua);
 
   return (
     <div>
@@ -166,6 +174,54 @@ export default function DetailSiswa() {
                 />
               </div>
             </Section>
+
+            <Section title="Data Orang Tua/Wali Tertaut">
+              {dataOrangTua ? (
+                <div className="space-y-5">
+                  <FamilyBlock title="Ayah Kandung">
+                    <InfoItem label="Nama Lengkap" value={dataOrangTua.nama_ayah ?? "-"} />
+                    <InfoItem label="NIK" value={dataOrangTua.nik_ayah ?? "-"} mono />
+                    <InfoItem label="Tahun Lahir" value={yearOnly(dataOrangTua.tanggal_lahir_ayah)} />
+                    <InfoItem label="Pendidikan" value={dataOrangTua.pendidikan_ayah ?? "-"} />
+                    <InfoItem label="Pekerjaan" value={dataOrangTua.pekerjaan_ayah ?? "-"} />
+                    <InfoItem label="Penghasilan" value={dataOrangTua.penghasilan_ayah ?? "-"} />
+                    <InfoItem label="No. HP" value={dataOrangTua.no_hp_ayah ?? "-"} />
+                  </FamilyBlock>
+
+                  <FamilyBlock title="Ibu Kandung">
+                    <InfoItem label="Nama Lengkap" value={dataOrangTua.nama_ibu ?? "-"} />
+                    <InfoItem label="NIK" value={dataOrangTua.nik_ibu ?? "-"} mono />
+                    <InfoItem label="Tahun Lahir" value={yearOnly(dataOrangTua.tanggal_lahir_ibu)} />
+                    <InfoItem label="Pendidikan" value={dataOrangTua.pendidikan_ibu ?? "-"} />
+                    <InfoItem label="Pekerjaan" value={dataOrangTua.pekerjaan_ibu ?? "-"} />
+                    <InfoItem label="Penghasilan" value={dataOrangTua.penghasilan_ibu ?? "-"} />
+                    <InfoItem label="No. HP" value={dataOrangTua.no_hp_ibu ?? "-"} />
+                  </FamilyBlock>
+
+                  <FamilyBlock title="Wali">
+                    <InfoItem label="Nama Lengkap" value={dataOrangTua.nama_wali ?? "-"} />
+                    <InfoItem label="NIK" value={dataOrangTua.nik_wali ?? "-"} mono />
+                    <InfoItem label="Hubungan" value={dataOrangTua.hubungan_wali ?? "-"} />
+                    <InfoItem label="Pekerjaan" value={dataOrangTua.pekerjaan_wali ?? "-"} />
+                    <InfoItem label="Penghasilan" value={dataOrangTua.penghasilan_wali ?? "-"} />
+                    <InfoItem label="No. HP" value={dataOrangTua.no_hp_wali ?? "-"} />
+                  </FamilyBlock>
+
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoItem label="Email" value={dataOrangTua.email ?? "-"} />
+                      <div className="col-span-2">
+                        <InfoItem label="Alamat Domisili" value={dataOrangTua.alamat ?? "-"} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                  Belum ada data orang tua/wali yang tertaut ke siswa ini.
+                </div>
+              )}
+            </Section>
           </div>
 
           {/* Kolom Kanan */}
@@ -216,6 +272,15 @@ function Section({ title, children }) {
         {title}
       </p>
       {children}
+    </div>
+  );
+}
+
+function FamilyBlock({ title, children }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+      <p className="text-sm font-semibold text-gray-700 mb-3">{title}</p>
+      <div className="grid grid-cols-2 gap-4">{children}</div>
     </div>
   );
 }

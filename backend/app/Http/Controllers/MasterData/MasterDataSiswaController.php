@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Models\OrangTua;
 use App\Models\Siswa;
 use App\Models\SiswaKelas;
 use Illuminate\Http\Request;
@@ -10,6 +11,40 @@ use Illuminate\Support\Facades\DB;
 
 class MasterDataSiswaController extends Controller
 {
+    public function orangTuaOptions(Request $request)
+    {
+        $search = $request->query('search');
+
+        $query = OrangTua::query()
+            ->with('siswa:nisn,nama_lengkap')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_ayah', 'like', "%{$search}%")
+                        ->orWhere('nama_ibu', 'like', "%{$search}%")
+                        ->orWhere('nama_wali', 'like', "%{$search}%")
+                        ->orWhere('nik_ayah', 'like', "%{$search}%")
+                        ->orWhere('nik_ibu', 'like', "%{$search}%")
+                        ->orWhere('nik_wali', 'like', "%{$search}%")
+                        ->orWhere('no_hp_ayah', 'like', "%{$search}%")
+                        ->orWhere('no_hp_ibu', 'like', "%{$search}%")
+                        ->orWhere('no_hp_wali', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
+                            $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
+                                ->orWhere('nisn', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('nama_ayah')
+            ->orderBy('nama_ibu');
+
+        $data = $request->boolean('paginate')
+            ? $query->paginate(15)
+            : $query->limit(10)->get();
+
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
     public function index(Request $request)
     {
         $query = Siswa::query()
@@ -63,12 +98,13 @@ class MasterDataSiswaController extends Controller
             'status_pd' => 'required|in:Aktif,Mutasi Keluar,Lulus,Dropout,Meninggal',
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
+            'orang_tua_id' => 'nullable|integer|exists:orang_tua,id',
             ...$this->orangTuaValidationRules(),
         ]);
 
         $siswa = DB::transaction(function () use ($request) {
             $siswa = Siswa::create($request->only($this->siswaFields()));
-            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung);
+            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung, $request->input('orang_tua_id'));
 
             return $siswa->load('orangTua');
         });
@@ -110,12 +146,13 @@ class MasterDataSiswaController extends Controller
             'status_pd' => 'required|in:Aktif,Mutasi Keluar,Lulus,Dropout,Meninggal',
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
+            'orang_tua_id' => 'nullable|integer|exists:orang_tua,id',
             ...$this->orangTuaValidationRules(),
         ]);
 
         DB::transaction(function () use ($request, $siswa) {
             $siswa->update($request->only($this->siswaFields(false)));
-            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung);
+            $this->syncOrangTua($siswa, $request->input('orang_tua', []), $request->nama_ibu_kandung, $request->input('orang_tua_id'));
         });
 
         return response()->json([
@@ -191,7 +228,7 @@ class MasterDataSiswaController extends Controller
         ];
     }
 
-    private function syncOrangTua(Siswa $siswa, array $input, ?string $namaIbuKandung): void
+    private function syncOrangTua(Siswa $siswa, array $input, ?string $namaIbuKandung, ?int $orangTuaId = null): void
     {
         $data = [
             'nama_ayah' => $input['nama_ayah'] ?? null,
@@ -219,10 +256,44 @@ class MasterDataSiswaController extends Controller
         ];
 
         if (!collect($data)->filter(fn($value) => filled($value))->isNotEmpty()) {
+            if ($orangTuaId) {
+                $siswa->orangTua()->sync([$orangTuaId]);
+            }
+
             return;
         }
 
-        $siswa->orangTua()->updateOrCreate(['nisn' => $siswa->nisn], $data);
+        $orangTua = $orangTuaId ? OrangTua::findOrFail($orangTuaId) : $siswa->orangTua()->first();
+
+        if (!$orangTua) {
+            $orangTua = $this->findMatchingOrangTua($data) ?? OrangTua::create($data);
+        } else {
+            $orangTua->update($data);
+        }
+
+        if (!$orangTua->wasRecentlyCreated) {
+            $orangTua->update($data);
+        }
+
+        $siswa->orangTua()->sync([$orangTua->id]);
+    }
+
+    private function findMatchingOrangTua(array $data): ?OrangTua
+    {
+        $fields = ['nik_ayah', 'nik_ibu', 'nik_wali', 'email'];
+        $hasIdentifier = collect($fields)->contains(fn($field) => filled($data[$field] ?? null));
+
+        if (!$hasIdentifier) {
+            return null;
+        }
+
+        return OrangTua::where(function ($query) use ($fields, $data) {
+            foreach ($fields as $field) {
+                if (filled($data[$field] ?? null)) {
+                    $query->orWhere($field, $data[$field]);
+                }
+            }
+        })->first();
     }
 
     private function yearToDate($year): ?string

@@ -84,13 +84,18 @@ const defaultForm = {
   status_pd: "Aktif",
   asal_sekolah: "",
   tanggal_masuk: "",
+  orang_tua_id: "",
   orang_tua: emptyOrangTua,
 };
 
 const yearFromDate = (value) => (value ? String(value).slice(0, 4) : "");
 
+const getPrimaryOrangTua = (ortu) => (Array.isArray(ortu) ? (ortu[0] ?? {}) : (ortu ?? {}));
+const parentDisplayName = (ortu) =>
+  ortu?.nama_ayah || ortu?.nama_ibu || ortu?.nama_wali || ortu?.email || `Orang tua #${ortu?.id}`;
+
 const normalizeOrangTua = (ortu) => {
-  const data = ortu ?? {};
+  const data = getPrimaryOrangTua(ortu);
 
   return {
     ...emptyOrangTua,
@@ -103,9 +108,10 @@ const normalizeOrangTua = (ortu) => {
 const normalizeForm = (data) => ({
   ...defaultForm,
   ...(data ?? {}),
+  orang_tua_id: getPrimaryOrangTua(data?.orang_tua)?.id ?? "",
   orang_tua: {
     ...normalizeOrangTua(data?.orang_tua),
-    nama_ibu: data?.orang_tua?.nama_ibu ?? data?.nama_ibu_kandung ?? "",
+    nama_ibu: getPrimaryOrangTua(data?.orang_tua)?.nama_ibu ?? data?.nama_ibu_kandung ?? "",
   },
 });
 
@@ -113,6 +119,7 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
   const [form, setForm] = useState(defaultForm);
   const [preview, setPreview] = useState(null);
+  const [parentSearch, setParentSearch] = useState("");
   const fileRef = useRef();
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const setOrangTua = (k, v) =>
@@ -135,8 +142,40 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
           ? `http://127.0.0.1:8001/storage/${editData.foto}`
           : null,
       );
+      setParentSearch("");
     }
   }, [open, editData]);
+
+  const { data: parentOptions = [], isFetching: isFetchingParents } = useQuery({
+    queryKey: ["orang-tua-options", parentSearch, open],
+    queryFn: () =>
+      api
+        .get("/operator/master-data/orang-tua", { params: { search: parentSearch } })
+        .then((res) => res.data.data ?? []),
+    enabled: open && parentSearch.trim().length >= 2,
+  });
+
+  const selectExistingParent = (ortu) => {
+    const normalized = normalizeOrangTua(ortu);
+
+    setForm((prev) => ({
+      ...prev,
+      orang_tua_id: ortu.id,
+      nama_ibu_kandung: normalized.nama_ibu || prev.nama_ibu_kandung,
+      orang_tua: normalized,
+    }));
+    setParentSearch(parentDisplayName(ortu));
+    toast.success("Data orang tua lama dipakai untuk siswa ini.");
+  };
+
+  const clearSelectedParent = () => {
+    setForm((prev) => ({
+      ...prev,
+      orang_tua_id: "",
+      orang_tua: emptyOrangTua,
+    }));
+    setParentSearch("");
+  };
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -354,6 +393,82 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-2">
             Data Keluarga
           </p>
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">
+                  Pakai Data Orang Tua yang Sudah Ada
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Cari berdasarkan nama, NIK, nomor HP, atau email. Setelah dipilih, data keluarga otomatis terisi.
+                </p>
+              </div>
+              {form.orang_tua_id && (
+                <button
+                  type="button"
+                  onClick={clearSelectedParent}
+                  className="text-xs font-medium text-red-600 hover:text-red-700"
+                >
+                  Bersihkan
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                value={parentSearch}
+                onChange={(e) => setParentSearch(e.target.value)}
+                className="input-field pl-9 bg-white"
+                placeholder="Ketik minimal 2 huruf, contoh: Budi / NIK / no HP"
+              />
+            </div>
+
+            {form.orang_tua_id && (
+              <div className="rounded-lg bg-white border border-indigo-100 p-3 text-sm text-indigo-800">
+                Data orang tua terpilih: <b>{parentDisplayName(form.orang_tua)}</b>
+              </div>
+            )}
+
+            {parentSearch.trim().length >= 2 && !form.orang_tua_id && (
+              <div className="rounded-lg bg-white border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+                {isFetchingParents ? (
+                  <p className="p-3 text-sm text-gray-400">Mencari data orang tua...</p>
+                ) : parentOptions.length > 0 ? (
+                  parentOptions.map((ortu) => (
+                    <button
+                      key={ortu.id}
+                      type="button"
+                      onClick={() => selectExistingParent(ortu)}
+                      className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {parentDisplayName(ortu)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Ayah: {ortu.nama_ayah || "-"} · Ibu: {ortu.nama_ibu || "-"}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            NIK: {ortu.nik_ayah || ortu.nik_ibu || ortu.nik_wali || "-"} · HP: {ortu.no_hp_ayah || ortu.no_hp_ibu || ortu.no_hp_wali || "-"}
+                          </p>
+                        </div>
+                        <span className="text-xs text-indigo-600 font-medium">
+                          {ortu.siswa?.length ?? 0} anak
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="p-3 text-sm text-gray-400">
+                    Data orang tua tidak ditemukan. Isi data keluarga baru di bawah.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
