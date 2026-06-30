@@ -131,6 +131,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/kelas/{id}', [MasterDataKelasController::class, 'destroy']);
             Route::post('/kelas/{id}/siswa', [MasterDataKelasController::class, 'tambahSiswa']);
             Route::patch('/kelas/{id}/siswa/{siswaKelasId}/keluar', [MasterDataKelasController::class, 'keluarkanSiswa']);
+            Route::patch('/kelas/{id}/siswa/{siswaKelasId}/batalkan-keluar', [MasterDataKelasController::class, 'batalkanKeluar']);
 
             // Tahun Ajaran
             Route::get('/tahun-ajaran', [TahunAjaranController::class, 'index']);

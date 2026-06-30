@@ -24,7 +24,6 @@ function ModalTambahSiswa({
 }) {
   const [form, setForm] = useState({
     nisn: "",
-    no_absen: "",
     status_masuk: "Baru",
     tahun_ajaran: tahunAjaran ?? "",
     semester: semester ?? "1",
@@ -51,7 +50,6 @@ function ModalTambahSiswa({
       onClose();
       setForm({
         nisn: "",
-        no_absen: "",
         status_masuk: "Baru",
         tahun_ajaran: tahunAjaran ?? "",
         semester: semester ?? "1",
@@ -113,7 +111,7 @@ function ModalTambahSiswa({
             )}
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               No. Absen <span className="text-red-500">*</span>
             </label>
@@ -127,7 +125,7 @@ function ModalTambahSiswa({
               placeholder="1"
               min="1"
             />
-          </div>
+          </div> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -180,6 +178,89 @@ function ModalTambahSiswa({
   );
 }
 
+function ModalKeluarkanSiswa({ open, onClose, idKelas, siswa, queryClient }) {
+  const [statusKeluar, setStatusKeluar] = useState("Lulus");
+  const [alasan, setAlasan] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.patch(
+        `/operator/master-data/kelas/${idKelas}/siswa/${siswa.id}/keluar`,
+        { status_keluar: statusKeluar, alasan_keluar: alasan || null },
+      ),
+    onSuccess: () => {
+      toast.success("Siswa berhasil dikeluarkan dari kelas.");
+      queryClient.invalidateQueries(["kelas-detail", idKelas]);
+      onClose();
+      setStatusKeluar("Lulus");
+      setAlasan("");
+    },
+    onError: (err) => toast.error(err.response?.data?.message ?? "Gagal."),
+  });
+
+  if (!open || !siswa) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h3 className="font-semibold text-gray-800">
+            Keluarkan {siswa.siswa?.nama_lengkap}
+          </h3>
+          <button onClick={onClose}>
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="px-6 py-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status Keluar <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={statusKeluar}
+              onChange={(e) => setStatusKeluar(e.target.value)}
+              className="input-field"
+            >
+              {statusKeluarOpts.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Alasan (opsional)
+            </label>
+            <textarea
+              value={alasan}
+              onChange={(e) => setAlasan(e.target.value)}
+              className="input-field"
+              rows={3}
+              placeholder="Contoh: Pindah ke sekolah lain"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 px-6 py-4 border-t">
+          <button onClick={onClose} className="btn-secondary flex-1">
+            Batal
+          </button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="btn-primary flex-1"
+          >
+            {mutation.isPending ? "Menyimpan..." : "Keluarkan"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DetailKelas() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -192,14 +273,15 @@ export default function DetailKelas() {
       api.get(`/operator/master-data/kelas/${id}`).then((r) => r.data.data),
   });
 
-  const keluarkan = useMutation({
-    mutationFn: ({ siswaKelasId, status }) =>
+  const [siswaKeluarDipilih, setSiswaKeluarDipilih] = useState(null);
+
+  const batalkanKeluar = useMutation({
+    mutationFn: (siswaKelasId) =>
       api.patch(
-        `/operator/master-data/kelas/${id}/siswa/${siswaKelasId}/keluar`,
-        { status_keluar: status },
+        `/operator/master-data/kelas/${id}/siswa/${siswaKelasId}/batalkan-keluar`,
       ),
     onSuccess: () => {
-      toast.success("Siswa berhasil dikeluarkan.");
+      toast.success("Siswa dikembalikan ke status aktif.");
       queryClient.invalidateQueries(["kelas-detail", id]);
     },
     onError: (err) => toast.error(err.response?.data?.message ?? "Gagal."),
@@ -378,20 +460,95 @@ export default function DetailKelas() {
                   <td className="px-6 py-4">
                     <div className="flex justify-end">
                       <button
-                        onClick={() => {
-                          const status = prompt(
-                            `Status keluar untuk ${sk.siswa?.nama_lengkap}?\n${statusKeluarOpts.join(", ")}`,
-                          );
-                          if (status && statusKeluarOpts.includes(status)) {
-                            keluarkan.mutate({ siswaKelasId: sk.id, status });
-                          } else if (status) {
-                            toast.error("Status tidak valid.");
-                          }
-                        }}
+                        onClick={() => setSiswaKeluarDipilih(sk)}
                         className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
                         title="Keluarkan dari kelas"
                       >
                         <UserMinus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {/* Riwayat Siswa Keluar */}
+      <div className="card p-0 overflow-hidden mt-6">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-semibold text-gray-800">Riwayat Siswa Keluar</h2>
+          <span className="text-sm text-gray-500">
+            {kelas.siswa_keluar?.length ?? 0} siswa
+          </span>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                Nama Siswa
+              </th>
+              <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                NISN
+              </th>
+              <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                Status Keluar
+              </th>
+              <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                Tanggal Keluar
+              </th>
+              <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                Alasan
+              </th>
+              <th className="text-right px-6 py-3 text-gray-500 font-medium">
+                Aksi
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {!kelas.siswa_keluar || kelas.siswa_keluar.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-12 text-gray-400">
+                  Belum ada siswa yang keluar dari kelas ini.
+                </td>
+              </tr>
+            ) : (
+              kelas.siswa_keluar.map((sk) => (
+                <tr key={sk.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-800">
+                    {sk.siswa?.nama_lengkap}
+                  </td>
+                  <td className="px-6 py-4 font-mono text-xs text-gray-600">
+                    {sk.nisn}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                        sk.status_keluar === "Lulus"
+                          ? "bg-green-50 text-green-700"
+                          : sk.status_keluar === "Mutasi Keluar"
+                            ? "bg-yellow-50 text-yellow-700"
+                            : "bg-red-50 text-red-700"
+                      }`}
+                    >
+                      {sk.status_keluar}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {sk.tanggal_keluar ?? "-"}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {sk.alasan_keluar ?? "-"}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => batalkanKeluar.mutate(sk.id)}
+                        disabled={batalkanKeluar.isPending}
+                        className="text-xs font-medium text-primary-600 hover:underline"
+                        title="Kembalikan ke status aktif"
+                      >
+                        Batalkan
                       </button>
                     </div>
                   </td>
@@ -408,6 +565,14 @@ export default function DetailKelas() {
         idKelas={id}
         tahunAjaran={kelas.tahun_ajaran?.nama}
         semester={kelas.semester}
+        queryClient={queryClient}
+      />
+
+      <ModalKeluarkanSiswa
+        open={!!siswaKeluarDipilih}
+        onClose={() => setSiswaKeluarDipilih(null)}
+        idKelas={id}
+        siswa={siswaKeluarDipilih}
         queryClient={queryClient}
       />
     </div>

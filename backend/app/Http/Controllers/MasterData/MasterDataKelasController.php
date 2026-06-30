@@ -44,12 +44,20 @@ class MasterDataKelasController extends Controller
             ->orderBy('no_absen')
             ->get();
 
+        // Ambil daftar siswa yang sudah keluar (Lulus, Mutasi Keluar, Dropout, Meninggal)
+        $siswaKeluarList = SiswaKelas::with('siswa')
+            ->where('id_kelas', $id)
+            ->where('status_keluar', '!=', 'Aktif')
+            ->orderByDesc('tanggal_keluar')
+            ->get();
+
         return response()->json([
             'success' => true,
             'data' => array_merge($kelas->toArray(), [
                 'tahun_ajaran' => $tahunAjaran,
                 'total_siswa' => $siswaList->count(),
                 'siswa' => $siswaList,
+                'siswa_keluar' => $siswaKeluarList,
             ]),
         ]);
     }
@@ -168,7 +176,6 @@ class MasterDataKelasController extends Controller
     {
         $request->validate([
             'nisn' => 'required|string|exists:siswa,nisn',
-            'no_absen' => 'required|integer|min:1',
             'tahun_ajaran' => 'required|string|max:20',
             'semester' => 'required|in:1,2',
             'status_masuk' => 'required|in:Baru,Naik Kelas,Tinggal Kelas,Mutasi Masuk',
@@ -188,10 +195,15 @@ class MasterDataKelasController extends Controller
             ], 422);
         }
 
+        // No. absen otomatis: ambil nomor terbesar yang aktif di kelas ini, lalu +1
+        $noAbsenBaru = (SiswaKelas::where('id_kelas', $id)
+            ->where('status_keluar', 'Aktif')
+            ->max('no_absen') ?? 0) + 1;
+
         SiswaKelas::create([
             'nisn' => $request->nisn,
             'id_kelas' => $id,
-            'no_absen' => $request->no_absen,
+            'no_absen' => $noAbsenBaru,
             'semester' => $request->semester,
             'tahun_ajaran' => $request->tahun_ajaran,
             'status_masuk' => $request->status_masuk,
@@ -226,6 +238,24 @@ class MasterDataKelasController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Siswa berhasil dikeluarkan dari kelas.',
+        ]);
+    }
+
+    public function batalkanKeluar($id, $siswaKelasId)
+    {
+        $siswaKelas = SiswaKelas::where('id', $siswaKelasId)
+            ->where('id_kelas', $id)
+            ->firstOrFail();
+
+        $siswaKelas->update([
+            'status_keluar' => 'Aktif',
+            'tanggal_keluar' => null,
+            'alasan_keluar' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status siswa berhasil dikembalikan ke aktif.',
         ]);
     }
 }
