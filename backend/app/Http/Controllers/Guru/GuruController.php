@@ -195,11 +195,6 @@ class GuruController extends Controller
             'orangTua.siswa.userOrtu.user',
         ])->where('nisn', $nisn)->first();
 
-        // Kumpulkan semua akun ortu unik — mirip collectAkun() di halaman operator:
-// 1) Dari user_ortu siswa ini sendiri
-// 2) Dari user_ortu saudara kandung (via orang_tua → siswa_orang_tua)
-//    sehingga jika akun mamat hanya tertaut ke "ucup" tapi bukan ke "ade ucup",
-//    halaman detail "ade ucup" tetap bisa menampilkan mamat karena mereka satu keluarga.
         $akunMap = [];
 
         foreach ($siswa->userOrtu as $rel) {
@@ -256,12 +251,31 @@ class GuruController extends Controller
                 ]);
             }
         }
+        
+        $biodataOrtu = $siswa->orangTua->first();
 
         return response()->json([
             'success' => true,
             'data' => array_merge($siswa->toArray(), [
                 'user_ortu' => $enrichedUserOrtu,
                 'saudara' => $saudara->unique('nisn')->values(),
+                'biodata_ortu' => $biodataOrtu ? [
+                    'nama_ayah' => $biodataOrtu->nama_ayah,
+                    'pekerjaan_ayah' => $biodataOrtu->pekerjaan_ayah,
+                    'penghasilan_ayah' => $biodataOrtu->penghasilan_ayah,
+                    'no_hp_ayah' => $biodataOrtu->no_hp_ayah,
+                    'nama_ibu' => $biodataOrtu->nama_ibu,
+                    'pekerjaan_ibu' => $biodataOrtu->pekerjaan_ibu,
+                    'penghasilan_ibu' => $biodataOrtu->penghasilan_ibu,
+                    'no_hp_ibu' => $biodataOrtu->no_hp_ibu,
+                    'nama_wali' => $biodataOrtu->nama_wali,
+                    'hubungan_wali' => $biodataOrtu->hubungan_wali,
+                    'pekerjaan_wali' => $biodataOrtu->pekerjaan_wali,
+                    'penghasilan_wali' => $biodataOrtu->penghasilan_wali,
+                    'no_hp_wali' => $biodataOrtu->no_hp_wali,
+                    'email' => $biodataOrtu->email,
+                    'alamat' => $biodataOrtu->alamat,
+                ] : null,
             ]),
         ]);
     }

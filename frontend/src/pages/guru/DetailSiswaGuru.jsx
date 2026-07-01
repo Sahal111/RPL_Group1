@@ -32,7 +32,7 @@ export default function DetailSiswaGuru() {
   const isL = siswa.jenis_kelamin === "L";
   const ortuList = Array.isArray(siswa.user_ortu) ? siswa.user_ortu : [];
   const saudaraList = Array.isArray(siswa.saudara) ? siswa.saudara : [];
-
+  const biodataOrtu = siswa.biodata_ortu ?? null;
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
@@ -110,7 +110,79 @@ export default function DetailSiswaGuru() {
                 />
               </div>
             </Section>
+            <Section title="Biodata Orang Tua / Wali (Master Data)">
+              {!biodataOrtu ? (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-sm text-gray-500 italic">
+                    Biodata orang tua belum diisi di Master Data Ortu.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoItem
+                    label="Nama Ayah"
+                    value={biodataOrtu.nama_ayah ?? "-"}
+                  />
+                  <InfoItem
+                    label="No. HP Ayah"
+                    value={biodataOrtu.no_hp_ayah ?? "-"}
+                  />
+                  <InfoItem
+                    label="Pekerjaan Ayah"
+                    value={biodataOrtu.pekerjaan_ayah ?? "-"}
+                  />
+                  <InfoItem
+                    label="Penghasilan Ayah"
+                    value={biodataOrtu.penghasilan_ayah ?? "-"}
+                  />
 
+                  <InfoItem
+                    label="Nama Ibu"
+                    value={biodataOrtu.nama_ibu ?? "-"}
+                  />
+                  <InfoItem
+                    label="No. HP Ibu"
+                    value={biodataOrtu.no_hp_ibu ?? "-"}
+                  />
+                  <InfoItem
+                    label="Pekerjaan Ibu"
+                    value={biodataOrtu.pekerjaan_ibu ?? "-"}
+                  />
+                  <InfoItem
+                    label="Penghasilan Ibu"
+                    value={biodataOrtu.penghasilan_ibu ?? "-"}
+                  />
+
+                  {biodataOrtu.nama_wali && (
+                    <>
+                      <InfoItem
+                        label="Nama Wali"
+                        value={biodataOrtu.nama_wali}
+                      />
+                      <InfoItem
+                        label="Hubungan Wali"
+                        value={biodataOrtu.hubungan_wali ?? "-"}
+                      />
+                      <InfoItem
+                        label="No. HP Wali"
+                        value={biodataOrtu.no_hp_wali ?? "-"}
+                      />
+                      <InfoItem
+                        label="Pekerjaan Wali"
+                        value={biodataOrtu.pekerjaan_wali ?? "-"}
+                      />
+                    </>
+                  )}
+
+                  <div className="col-span-2">
+                    <InfoItem
+                      label="Alamat"
+                      value={biodataOrtu.alamat ?? "-"}
+                    />
+                  </div>
+                </div>
+              )}
+            </Section>
             <Section
               title={`Data Orang Tua / Wali${ortuList.length > 0 ? ` (${ortuList.length} terdaftar)` : ""}`}
             >
