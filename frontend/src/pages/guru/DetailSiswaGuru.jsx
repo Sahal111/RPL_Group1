@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../lib/axios";
-import { ArrowLeft, User, Phone } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, AtSign, Users } from "lucide-react";
 
 export default function DetailSiswaGuru() {
   const { nisn } = useParams();
@@ -9,8 +9,7 @@ export default function DetailSiswaGuru() {
 
   const { data: siswa, isLoading } = useQuery({
     queryKey: ["guru-siswa-detail", nisn],
-    queryFn: () =>
-      api.get(`/guru/siswa/${nisn}`).then((r) => r.data.data),
+    queryFn: () => api.get(`/guru/siswa/${nisn}`).then((r) => r.data.data),
   });
 
   if (isLoading)
@@ -31,7 +30,7 @@ export default function DetailSiswaGuru() {
     ? `http://127.0.0.1:8001/storage/${siswa.foto}`
     : null;
   const isL = siswa.jenis_kelamin === "L";
-  const ortu = siswa.user_ortu;
+  const ortuList = Array.isArray(siswa.user_ortu) ? siswa.user_ortu : [];
 
   return (
     <div>
@@ -117,8 +116,12 @@ export default function DetailSiswaGuru() {
                   <>
                     <div className="flex items-center gap-2 mb-2">
                       <User className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-700">{ortu.user?.nama_lengkap}</span>
-                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{ortu.hubungan}</span>
+                      <span className="font-semibold text-gray-700">
+                        {ortu.user?.nama_lengkap}
+                      </span>
+                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
+                        {ortu.hubungan}
+                      </span>
                     </div>
                     {ortu.user?.no_hp && (
                       <a
@@ -133,7 +136,9 @@ export default function DetailSiswaGuru() {
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-gray-500 italic">Belum ada akun orang tua yang terhubung.</p>
+                  <p className="text-sm text-gray-500 italic">
+                    Belum ada akun orang tua yang terhubung.
+                  </p>
                 )}
               </div>
             </Section>

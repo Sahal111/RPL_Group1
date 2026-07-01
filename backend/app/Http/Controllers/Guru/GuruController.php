@@ -23,7 +23,8 @@ class GuruController extends Controller
     public function dashboard(Request $request)
     {
         $nuptk = $request->user()->guruProfile?->nuptk;
-        if (!$nuptk) return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
+        if (!$nuptk)
+            return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
         $guru = Guru::where('nuptk', $nuptk)->first();
 
@@ -45,15 +46,15 @@ class GuruController extends Controller
             $totalSiswaKelas = SiswaKelas::where('id_kelas', $k->id)->where('status_keluar', 'Aktif')->count();
             $absen = Absensi::where('id_kelas', $k->id)->where('tanggal', $today)->get();
             return [
-                'id'         => $k->id,
+                'id' => $k->id,
                 'nama_kelas' => $k->nama_kelas,
-                'tingkat'    => $k->tingkat,
-                'total_siswa'=> $totalSiswaKelas,
-                'sudah_absen'=> $absen->isNotEmpty(),
-                'hadir'      => $absen->where('status', 'Hadir')->count(),
-                'sakit'      => $absen->where('status', 'Sakit')->count(),
-                'izin'       => $absen->where('status', 'Izin')->count(),
-                'alpa'       => $absen->where('status', 'Alpa')->count(),
+                'tingkat' => $k->tingkat,
+                'total_siswa' => $totalSiswaKelas,
+                'sudah_absen' => $absen->isNotEmpty(),
+                'hadir' => $absen->where('status', 'Hadir')->count(),
+                'sakit' => $absen->where('status', 'Sakit')->count(),
+                'izin' => $absen->where('status', 'Izin')->count(),
+                'alpa' => $absen->where('status', 'Alpa')->count(),
             ];
         });
 
@@ -66,23 +67,23 @@ class GuruController extends Controller
             'success' => true,
             'data' => [
                 'guru' => [
-                    'nama'   => $guru?->nama_lengkap ?? $request->user()->nama_lengkap,
-                    'nuptk'  => $nuptk,
-                    'foto'   => $request->user()->foto,
+                    'nama' => $guru?->nama_lengkap ?? $request->user()->nama_lengkap,
+                    'nuptk' => $nuptk,
+                    'foto' => $request->user()->foto,
                 ],
-                'total_kelas'  => $kelasWali->count(),
-                'total_siswa'  => $totalSiswa,
+                'total_kelas' => $kelasWali->count(),
+                'total_siswa' => $totalSiswa,
                 'absensi_hari_ini' => [
                     'hadir' => $absensiHariIni->where('status', 'Hadir')->count(),
                     'sakit' => $absensiHariIni->where('status', 'Sakit')->count(),
-                    'izin'  => $absensiHariIni->where('status', 'Izin')->count(),
-                    'alpa'  => $absensiHariIni->where('status', 'Alpa')->count(),
+                    'izin' => $absensiHariIni->where('status', 'Izin')->count(),
+                    'alpa' => $absensiHariIni->where('status', 'Alpa')->count(),
                 ],
                 'absensi_bulan_ini' => [
                     'hadir' => $absenBulanIni->where('status', 'Hadir')->count(),
                     'sakit' => $absenBulanIni->where('status', 'Sakit')->count(),
-                    'izin'  => $absenBulanIni->where('status', 'Izin')->count(),
-                    'alpa'  => $absenBulanIni->where('status', 'Alpa')->count(),
+                    'izin' => $absenBulanIni->where('status', 'Izin')->count(),
+                    'alpa' => $absenBulanIni->where('status', 'Alpa')->count(),
                 ],
                 'kelas' => $kelasRingkasan,
             ],
@@ -95,11 +96,12 @@ class GuruController extends Controller
     public function siswaSaya(Request $request)
     {
         $nuptk = $request->user()->guruProfile?->nuptk;
-        if (!$nuptk) return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
+        if (!$nuptk)
+            return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
         $idKelas = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->pluck('id')->toArray();
 
-        $search   = $request->search;
+        $search = $request->search;
         $idKelasFilter = $request->id_kelas;
 
         $query = SiswaKelas::with([
@@ -107,8 +109,8 @@ class GuruController extends Controller
             'kelas',
             'siswa.userOrtu.user',
         ])
-        ->whereIn('id_kelas', $idKelas)
-        ->where('status_keluar', 'Aktif');
+            ->whereIn('id_kelas', $idKelas)
+            ->where('status_keluar', 'Aktif');
 
         if ($idKelasFilter) {
             $query->where('id_kelas', $idKelasFilter);
@@ -117,31 +119,31 @@ class GuruController extends Controller
         if ($search) {
             $query->whereHas('siswa', function ($q) use ($search) {
                 $q->where('nama_lengkap', 'like', "%{$search}%")
-                  ->orWhere('nisn', 'like', "%{$search}%")
-                  ->orWhere('no_induk', 'like', "%{$search}%");
+                    ->orWhere('nisn', 'like', "%{$search}%")
+                    ->orWhere('no_induk', 'like', "%{$search}%");
             });
         }
 
         $data = $query->orderBy('id_kelas')->orderBy('no_absen')->get()->map(function ($sk) {
             $ortu = $sk->siswa->userOrtu->first();
             return [
-                'nisn'         => $sk->nisn,
-                'no_induk'     => $sk->siswa->no_induk,
-                'no_absen'     => $sk->no_absen,
+                'nisn' => $sk->nisn,
+                'no_induk' => $sk->siswa->no_induk,
+                'no_absen' => $sk->no_absen,
                 'nama_lengkap' => $sk->siswa->nama_lengkap,
-                'jenis_kelamin'=> $sk->siswa->jenis_kelamin,
-                'id_kelas'     => $sk->id_kelas,
-                'nama_kelas'   => $sk->kelas?->nama_kelas,
-                'foto'         => $sk->siswa->foto,
-                'nama_ortu'    => $ortu?->user?->nama_lengkap,
-                'no_hp_ortu'   => $ortu?->user?->no_hp,
-                'hubungan_ortu'=> $ortu?->hubungan,
+                'jenis_kelamin' => $sk->siswa->jenis_kelamin,
+                'id_kelas' => $sk->id_kelas,
+                'nama_kelas' => $sk->kelas?->nama_kelas,
+                'foto' => $sk->siswa->foto,
+                'nama_ortu' => $ortu?->user?->nama_lengkap,
+                'no_hp_ortu' => $ortu?->user?->no_hp,
+                'hubungan_ortu' => $ortu?->hubungan,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -151,7 +153,8 @@ class GuruController extends Controller
     public function detailSiswa(Request $request, $nisn)
     {
         $nuptk = $request->user()->guruProfile?->nuptk;
-        if (!$nuptk) return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
+        if (!$nuptk)
+            return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
         // Pastikan siswa ini ada di kelas yang diwali oleh guru ini
         $idKelasWali = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->pluck('id')->toArray();
@@ -165,6 +168,11 @@ class GuruController extends Controller
         }
 
         $siswa = Siswa::with('userOrtu.user')->where('nisn', $nisn)->first();
+
+        // userOrtu di model Siswa itu relasi hasMany (array), tapi halaman Detail Siswa
+        // di sisi guru cuma butuh satu kontak ortu utama. Ambil yang pertama saja
+        // supaya formatnya jadi objek tunggal (atau null kalau belum ada ortu terhubung).
+        $siswa->setRelation('userOrtu', $siswa->userOrtu->first());
 
         return response()->json([
             'success' => true,
@@ -332,7 +340,7 @@ class GuruController extends Controller
     // -------------------------------------------------------
     public function jadwalMengajar(Request $request)
     {
-        $user  = $request->user();
+        $user = $request->user();
         $nuptk = $user->guruProfile?->nuptk;
 
         if (!$nuptk) {
@@ -349,16 +357,16 @@ class GuruController extends Controller
         $grouped = $jadwal->groupBy('hari')->map(function ($items) {
             return $items->map(function ($j) {
                 return [
-                    'id'          => $j->id,
-                    'hari'        => $j->hari,
-                    'jam_mulai'   => $j->jam_mulai,
+                    'id' => $j->id,
+                    'hari' => $j->hari,
+                    'jam_mulai' => $j->jam_mulai,
                     'jam_selesai' => $j->jam_selesai,
                     'mata_pelajaran' => $j->mataPelajaran?->nama_mapel,
-                    'kode_mapel'  => $j->mataPelajaran?->kode_mapel,
-                    'nama_kelas'  => $j->kelas?->nama_kelas,
-                    'tingkat'     => $j->kelas?->tingkat,
-                    'semester'    => $j->semester,
-                    'tahun_ajaran'=> $j->tahun_ajaran,
+                    'kode_mapel' => $j->mataPelajaran?->kode_mapel,
+                    'nama_kelas' => $j->kelas?->nama_kelas,
+                    'tingkat' => $j->kelas?->tingkat,
+                    'semester' => $j->semester,
+                    'tahun_ajaran' => $j->tahun_ajaran,
                 ];
             })->values();
         });
@@ -378,9 +386,9 @@ class GuruController extends Controller
     public function profil(Request $request)
     {
         $user = $request->user();
-        
+
         $nuptk = $user->guruProfile?->nuptk;
-        
+
         // Ambil data master guru jika ada
         $masterGuru = null;
         if ($nuptk) {
