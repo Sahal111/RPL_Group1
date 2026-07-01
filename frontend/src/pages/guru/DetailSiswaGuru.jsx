@@ -110,37 +110,92 @@ export default function DetailSiswaGuru() {
               </div>
             </Section>
 
-            <Section title="Data Orang Tua / Wali">
-              <div className="bg-gray-50 p-4 rounded-xl space-y-3">
-                {ortu ? (
-                  <>
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className="font-semibold text-gray-700">
-                        {ortu.user?.nama_lengkap}
-                      </span>
-                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                        {ortu.hubungan}
-                      </span>
-                    </div>
-                    {ortu.user?.no_hp && (
-                      <a
-                        href={`https://wa.me/${ortu.user.no_hp.replace(/^0/, "62")}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium"
-                      >
-                        <Phone className="w-4 h-4" />
-                        Hubungi via WhatsApp ({ortu.user.no_hp})
-                      </a>
-                    )}
-                  </>
-                ) : (
+            <Section
+              title={`Data Orang Tua / Wali${ortuList.length > 0 ? ` (${ortuList.length} terdaftar)` : ""}`}
+            >
+              {ortuList.length === 0 ? (
+                <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 italic">
                     Belum ada akun orang tua yang terhubung.
                   </p>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {ortuList.map((ortu, idx) => (
+                    <div
+                      key={ortu.user_id ?? idx}
+                      className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3"
+                    >
+                      {/* Nama + Badge Hubungan */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-indigo-600" />
+                          </div>
+                          <span className="font-semibold text-gray-800">
+                            {ortu.user?.nama_lengkap ?? "-"}
+                          </span>
+                        </div>
+                        <span className="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full">
+                          {ortu.hubungan}
+                        </span>
+                      </div>
+
+                      {/* Detail kontak */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                        {/* Username */}
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <AtSign className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="font-mono text-xs">
+                            {ortu.user?.username ?? "-"}
+                          </span>
+                        </div>
+
+                        {/* Email */}
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Mail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="text-xs truncate">
+                            {ortu.user?.email ?? "-"}
+                          </span>
+                        </div>
+
+                        {/* No HP + WhatsApp */}
+                        {ortu.user?.no_hp ? (
+                          <a
+                            href={`https://wa.me/${ortu.user.no_hp.replace(/^0/, "62")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium col-span-full"
+                          >
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                            {ortu.user.no_hp}
+                            <span className="text-xs text-green-500 font-normal">
+                              (Hubungi via WhatsApp)
+                            </span>
+                          </a>
+                        ) : (
+                          <div className="flex items-center gap-2 text-gray-400 col-span-full">
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="text-xs italic">
+                              No. HP belum diisi
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status akun */}
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${ortu.user?.is_active ? "bg-green-500" : "bg-gray-300"}`}
+                        />
+                        <span className="text-xs text-gray-400">
+                          Akun {ortu.user?.is_active ? "aktif" : "tidak aktif"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Section>
 
             <Section title="Data Keluarga">

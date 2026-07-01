@@ -169,10 +169,6 @@ class GuruController extends Controller
 
         $siswa = Siswa::with('userOrtu.user')->where('nisn', $nisn)->first();
 
-        // userOrtu di model Siswa itu relasi hasMany (array), tapi halaman Detail Siswa
-        // di sisi guru cuma butuh satu kontak ortu utama. Ambil yang pertama saja
-        // supaya formatnya jadi objek tunggal (atau null kalau belum ada ortu terhubung).
-        $siswa->setRelation('userOrtu', $siswa->userOrtu->first());
 
         return response()->json([
             'success' => true,
