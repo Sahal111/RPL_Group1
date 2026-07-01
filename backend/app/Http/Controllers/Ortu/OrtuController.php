@@ -397,7 +397,7 @@ class OrtuController extends Controller
         }
 
         // Ambil kelas aktif siswa
-        $siswaKelas = SiswaKelas::with(['kelas'])
+        $siswaKelas = SiswaKelas::with(['kelas.wali'])
             ->where('nisn', $siswa->nisn)
             ->where('status_keluar', 'Aktif')
             ->first();
@@ -429,6 +429,11 @@ class OrtuController extends Controller
                     'kelas' => $siswaKelas ? [
                         'nama_kelas' => $siswaKelas->kelas->nama_kelas,
                         'tingkat' => $siswaKelas->kelas->tingkat,
+                        'wali_kelas' => $siswaKelas->kelas->wali ? [
+                            'nama_lengkap' => $siswaKelas->kelas->wali->nama_lengkap,
+                            'no_hp' => $siswaKelas->kelas->wali->no_hp,
+                            'foto' => $siswaKelas->kelas->wali->foto,
+                        ] : null,
                     ] : null,
                 ],
             ]

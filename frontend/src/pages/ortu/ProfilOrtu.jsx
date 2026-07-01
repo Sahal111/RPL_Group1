@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../lib/axios";
 import toast from "react-hot-toast";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Lock, 
-  Save, 
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Save,
   Camera,
   UserCircle,
   Briefcase,
@@ -16,7 +17,8 @@ import {
   MapPin,
   Calendar,
   School,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
@@ -24,8 +26,21 @@ import useSelectedAnak from "../../hooks/useSelectedAnak";
 
 dayjs.locale("id");
 
+// Ubah no_hp lokal (08xxx / +62xxx / 62xxx) jadi format internasional utk wa.me
+function formatNoHpToWa(noHp) {
+  if (!noHp) return null;
+  let digits = noHp.replace(/[^0-9]/g, "");
+  if (digits.startsWith("0")) {
+    digits = "62" + digits.slice(1);
+  } else if (digits.startsWith("620")) {
+    digits = "62" + digits.slice(3);
+  }
+  return digits;
+}
+
 export default function ProfilOrtu() {
   const queryClient = useQueryClient();
+  const { updateUser } = useAuth();
   const { selectedNisn } = useSelectedAnak();
   const [isEditPassword, setIsEditPassword] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -39,20 +54,31 @@ export default function ProfilOrtu() {
     password_baru_confirmation: "",
   });
 
-  const { data: profil, isLoading, isError } = useQuery({
+  const {
+    data: profil,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["ortu-profil", selectedNisn],
     queryFn: () =>
       api
-        .get("/ortu/profil", { params: selectedNisn ? { nisn: selectedNisn } : {} })
+        .get("/ortu/profil", {
+          params: selectedNisn ? { nisn: selectedNisn } : {},
+        })
         .then((res) => res.data.data),
-    onSuccess: (data) => {
+  });
+
+  // react-query v5 sudah menghapus opsi onSuccess pada useQuery,
+  // jadi sync formData dilakukan lewat useEffect saat data profil berubah.
+  useEffect(() => {
+    if (profil?.user) {
       setFormData((prev) => ({
         ...prev,
-        email: data.user.email || "",
-        no_hp: data.user.no_hp || "",
+        email: profil.user.email || "",
+        no_hp: profil.user.no_hp || "",
       }));
-    },
-  });
+    }
+  }, [profil]);
 
   const updateMutation = useMutation({
     mutationFn: (data) => {
@@ -60,17 +86,35 @@ export default function ProfilOrtu() {
       if (data.email) formDataToSend.append("email", data.email);
       if (data.no_hp) formDataToSend.append("no_hp", data.no_hp);
       if (data.foto) formDataToSend.append("foto", data.foto);
-      if (data.password_lama) formDataToSend.append("password_lama", data.password_lama);
-      if (data.password_baru) formDataToSend.append("password_baru", data.password_baru);
-      if (data.password_baru_confirmation) formDataToSend.append("password_baru_confirmation", data.password_baru_confirmation);
+      if (data.password_lama)
+        formDataToSend.append("password_lama", data.password_lama);
+      if (data.password_baru)
+        formDataToSend.append("password_baru", data.password_baru);
+      if (data.password_baru_confirmation)
+        formDataToSend.append(
+          "password_baru_confirmation",
+          data.password_baru_confirmation,
+        );
 
       return api.post("/ortu/profil", formDataToSend, {
         headers: { "Content-Type": "multipart/form-data" },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success("Profil berhasil diperbarui!");
       queryClient.invalidateQueries(["ortu-profil"]);
+
+      // Sync data terbaru (termasuk foto) ke AuthContext & localStorage
+      // supaya Sidebar ikut update tanpa perlu reload/login ulang.
+      const updatedUser = res?.data?.data;
+      if (updatedUser) {
+        updateUser({
+          email: updatedUser.email,
+          no_hp: updatedUser.no_hp,
+          foto: updatedUser.foto,
+        });
+      }
+
       setIsEditPassword(false);
       setFormData((prev) => ({
         ...prev,
@@ -113,15 +157,23 @@ export default function ProfilOrtu() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Gagal Memuat Profil</h2>
-        <p className="text-gray-500">Silakan refresh halaman atau hubungi admin.</p>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          Gagal Memuat Profil
+        </h2>
+        <p className="text-gray-500">
+          Silakan refresh halaman atau hubungi admin.
+        </p>
       </div>
     );
   }
 
   const { user, ortu, siswa } = profil;
-  const fotoUrl = user.foto ? `http://127.0.0.1:8001/storage/${user.foto}` : null;
-  const fotoSiswaUrl = siswa.foto ? `http://127.0.0.1:8001/storage/${siswa.foto}` : null;
+  const fotoUrl = user.foto
+    ? `http://127.0.0.1:8001/storage/${user.foto}`
+    : null;
+  const fotoSiswaUrl = siswa.foto
+    ? `http://127.0.0.1:8001/storage/${siswa.foto}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -143,17 +195,25 @@ export default function ProfilOrtu() {
               <GraduationCap className="w-5 h-5 text-indigo-600" />
               Data Anak
             </h2>
-            
+
             <div className="flex flex-col items-center text-center mb-4">
               <div className="w-24 h-24 bg-indigo-100 rounded-full overflow-hidden mb-3 border-4 border-white shadow-lg">
                 {fotoSiswaUrl ? (
-                  <img src={fotoSiswaUrl} alt={siswa.nama_lengkap} className="w-full h-full object-cover" />
+                  <img
+                    src={fotoSiswaUrl}
+                    alt={siswa.nama_lengkap}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <User className="w-12 h-12 text-indigo-400 mt-5 mx-auto" />
                 )}
               </div>
-              <h3 className="text-xl font-bold text-gray-800">{siswa.nama_lengkap}</h3>
-              <p className="text-sm text-indigo-600 font-medium">NISN: {siswa.nisn}</p>
+              <h3 className="text-xl font-bold text-gray-800">
+                {siswa.nama_lengkap}
+              </h3>
+              <p className="text-sm text-indigo-600 font-medium">
+                NISN: {siswa.nisn}
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -162,16 +222,47 @@ export default function ProfilOrtu() {
                 <div>
                   <p className="text-xs text-gray-500">Kelas</p>
                   <p className="text-sm font-semibold text-gray-800">
-                    {siswa.kelas ? `${siswa.kelas.nama_kelas} (${siswa.kelas.tingkat})` : "Belum ada kelas"}
+                    {siswa.kelas
+                      ? `${siswa.kelas.nama_kelas} (${siswa.kelas.tingkat})`
+                      : "Belum ada kelas"}
                   </p>
                 </div>
               </div>
+
+              {siswa.kelas?.wali_kelas && (
+                <div className="flex items-start gap-3 bg-white rounded-lg p-3">
+                  <Users className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500">Wali Kelas</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {siswa.kelas.wali_kelas.nama_lengkap}
+                    </p>
+                    {siswa.kelas.wali_kelas.no_hp ? (
+                      <a
+                        href={`https://wa.me/${formatNoHpToWa(siswa.kelas.wali_kelas.no_hp)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors px-3 py-1.5 rounded-lg"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Chat WA Wali Kelas
+                      </a>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic mt-1">
+                        No. HP wali kelas belum tersedia
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-start gap-3 bg-white rounded-lg p-3">
                 <User className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500">Jenis Kelamin</p>
-                  <p className="text-sm font-semibold text-gray-800">{siswa.jenis_kelamin}</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {siswa.jenis_kelamin}
+                  </p>
                 </div>
               </div>
 
@@ -180,7 +271,8 @@ export default function ProfilOrtu() {
                 <div>
                   <p className="text-xs text-gray-500">Tempat, Tanggal Lahir</p>
                   <p className="text-sm font-semibold text-gray-800">
-                    {siswa.tempat_lahir}, {dayjs(siswa.tanggal_lahir).format("DD MMMM YYYY")}
+                    {siswa.tempat_lahir},{" "}
+                    {dayjs(siswa.tanggal_lahir).format("DD MMMM YYYY")}
                   </p>
                 </div>
               </div>
@@ -189,7 +281,9 @@ export default function ProfilOrtu() {
                 <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500">Alamat</p>
-                  <p className="text-sm font-semibold text-gray-800">{siswa.alamat}</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {siswa.alamat}
+                  </p>
                 </div>
               </div>
             </div>
@@ -222,10 +316,17 @@ export default function ProfilOrtu() {
                   </div>
                   <label className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg">
                     <Camera className="w-5 h-5" />
-                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
                   </label>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Format: JPG, PNG (Maks. 2MB)</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Format: JPG, PNG (Maks. 2MB)
+                </p>
               </div>
 
               {/* Data User */}
@@ -269,7 +370,9 @@ export default function ProfilOrtu() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       className="input pl-10"
                       placeholder="email@contoh.com"
                     />
@@ -285,7 +388,9 @@ export default function ProfilOrtu() {
                     <input
                       type="tel"
                       value={formData.no_hp}
-                      onChange={(e) => setFormData({ ...formData, no_hp: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, no_hp: e.target.value })
+                      }
                       className="input pl-10"
                       placeholder="08123456789"
                     />
@@ -331,7 +436,9 @@ export default function ProfilOrtu() {
                   className="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-2"
                 >
                   <Lock className="w-4 h-4" />
-                  {isEditPassword ? "Batalkan Ganti Password" : "Ganti Password"}
+                  {isEditPassword
+                    ? "Batalkan Ganti Password"
+                    : "Ganti Password"}
                 </button>
               </div>
 
@@ -347,7 +454,12 @@ export default function ProfilOrtu() {
                       <input
                         type="password"
                         value={formData.password_lama}
-                        onChange={(e) => setFormData({ ...formData, password_lama: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            password_lama: e.target.value,
+                          })
+                        }
                         className="input pl-10"
                         placeholder="Masukkan password lama"
                       />
@@ -363,7 +475,12 @@ export default function ProfilOrtu() {
                       <input
                         type="password"
                         value={formData.password_baru}
-                        onChange={(e) => setFormData({ ...formData, password_baru: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            password_baru: e.target.value,
+                          })
+                        }
                         className="input pl-10"
                         placeholder="Minimal 6 karakter"
                       />
@@ -379,7 +496,12 @@ export default function ProfilOrtu() {
                       <input
                         type="password"
                         value={formData.password_baru_confirmation}
-                        onChange={(e) => setFormData({ ...formData, password_baru_confirmation: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            password_baru_confirmation: e.target.value,
+                          })
+                        }
                         className="input pl-10"
                         placeholder="Ulangi password baru"
                       />
