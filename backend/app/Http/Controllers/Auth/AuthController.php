@@ -174,7 +174,7 @@ class AuthController extends Controller
             1 => $user->operatorProfile,
             2 => $user->guruProfile?->load('guru'),
             3 => $user->ortuProfiles()->with('siswa')->get(),
-            4 => $user->kepsekProfile?->load('guru'),
+            4 => $user->kepsekProfile,
             default => null,
         };
     }
