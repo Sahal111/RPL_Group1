@@ -108,7 +108,10 @@ class OrtuController extends Controller
                 'kelas' => $kelas ? [
                     'nama_kelas' => $kelas->nama_kelas,
                     'tingkat' => $kelas->tingkat,
-                    'wali_kelas' => $waliKelas ? $waliKelas->nama_lengkap : null
+                    'wali_kelas' => $waliKelas ? [
+                        'nama_lengkap' => $waliKelas->nama_lengkap,
+                        'no_hp' => $waliKelas->no_hp,
+                    ] : null,
                 ] : null,
                 'absensi_hari_ini' => $absensiHariIniStatus,
                 'bolos_hari_ini' => $bolosHariIni,
