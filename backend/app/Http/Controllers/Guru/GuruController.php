@@ -167,12 +167,81 @@ class GuruController extends Controller
             return response()->json(['success' => false, 'message' => 'Siswa tidak ditemukan atau bukan bagian dari kelas perwalian Anda.'], 404);
         }
 
-        $siswa = Siswa::with('userOrtu.user')->where('nisn', $nisn)->first();
+        // Load siswa + akun ortu langsung + data keluarga (orang_tua) beserta
+// saudara kandung dan akun ortu mereka (untuk kasus 1 ortu punya 2 anak)
+        $siswa = Siswa::with([
+            'userOrtu.user',
+            'orangTua.siswa.userOrtu.user',
+        ])->where('nisn', $nisn)->first();
 
+        // Kumpulkan semua akun ortu unik — mirip collectAkun() di halaman operator:
+// 1) Dari user_ortu siswa ini sendiri
+// 2) Dari user_ortu saudara kandung (via orang_tua → siswa_orang_tua)
+//    sehingga jika akun mamat hanya tertaut ke "ucup" tapi bukan ke "ade ucup",
+//    halaman detail "ade ucup" tetap bisa menampilkan mamat karena mereka satu keluarga.
+        $akunMap = [];
+
+        foreach ($siswa->userOrtu as $rel) {
+            if (!$rel->user || isset($akunMap[$rel->user_id]))
+                continue;
+            $akunMap[$rel->user_id] = [
+                'user_id' => $rel->user_id,
+                'hubungan' => $rel->hubungan,
+                'user' => $rel->user,
+            ];
+        }
+
+        foreach ($siswa->orangTua as $family) {
+            foreach ($family->siswa as $sibling) {
+                if ($sibling->nisn === $nisn)
+                    continue;
+                foreach ($sibling->userOrtu as $rel) {
+                    if (!$rel->user || isset($akunMap[$rel->user_id]))
+                        continue;
+                    $akunMap[$rel->user_id] = [
+                        'user_id' => $rel->user_id,
+                        'hubungan' => $rel->hubungan,
+                        'user' => $rel->user,
+                    ];
+                }
+            }
+        }
+
+        // Untuk setiap akun ortu, cari anak lain yang terhubung ke akun tsb
+        $enrichedUserOrtu = collect($akunMap)->map(function ($item) use ($nisn) {
+            $anakLain = \App\Models\UserOrtu::where('user_id', $item['user_id'])
+                ->where('nisn', '!=', $nisn)
+                ->with('siswa:nisn,nama_lengkap,jenis_kelamin')
+                ->get()
+                ->map(fn($r) => [
+                    'nisn' => $r->nisn,
+                    'nama_lengkap' => $r->siswa?->nama_lengkap,
+                    'jenis_kelamin' => $r->siswa?->jenis_kelamin,
+                    'hubungan' => $r->hubungan,
+                ]);
+            return array_merge($item, ['anak_lain' => $anakLain->values()]);
+        })->values();
+
+        // Kumpulkan saudara kandung dari data keluarga (orang_tua → siswa_orang_tua)
+        $saudara = collect();
+        foreach ($siswa->orangTua as $family) {
+            foreach ($family->siswa as $sibling) {
+                if ($sibling->nisn === $nisn)
+                    continue;
+                $saudara->push([
+                    'nisn' => $sibling->nisn,
+                    'nama_lengkap' => $sibling->nama_lengkap,
+                    'jenis_kelamin' => $sibling->jenis_kelamin,
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $siswa
+            'data' => array_merge($siswa->toArray(), [
+                'user_ortu' => $enrichedUserOrtu,
+                'saudara' => $saudara->unique('nisn')->values(),
+            ]),
         ]);
     }
 

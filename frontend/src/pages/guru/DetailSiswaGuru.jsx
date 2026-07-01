@@ -31,6 +31,7 @@ export default function DetailSiswaGuru() {
     : null;
   const isL = siswa.jenis_kelamin === "L";
   const ortuList = Array.isArray(siswa.user_ortu) ? siswa.user_ortu : [];
+  const saudaraList = Array.isArray(siswa.saudara) ? siswa.saudara : [];
 
   return (
     <div>
@@ -192,6 +193,44 @@ export default function DetailSiswaGuru() {
                           Akun {ortu.user?.is_active ? "aktif" : "tidak aktif"}
                         </span>
                       </div>
+
+                      {/* Anak lain dari akun ortu yang sama */}
+                      {ortu.anak_lain && ortu.anak_lain.length > 0 && (
+                        <div className="pt-2 border-t border-gray-100">
+                          <p className="text-xs font-semibold text-gray-400 uppercase mb-2 flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Anak lain yang terhubung ke akun ini (
+                            {ortu.anak_lain.length})
+                          </p>
+                          <div className="space-y-1.5">
+                            {ortu.anak_lain.map((anak) => (
+                              <div
+                                key={anak.nisn}
+                                className="flex items-center gap-2 text-xs"
+                              >
+                                <div
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 ${
+                                    anak.jenis_kelamin === "L"
+                                      ? "bg-blue-400"
+                                      : "bg-pink-400"
+                                  }`}
+                                >
+                                  {anak.nama_lengkap?.charAt(0)?.toUpperCase()}
+                                </div>
+                                <span className="font-medium text-gray-700">
+                                  {anak.nama_lengkap}
+                                </span>
+                                <span className="text-gray-400">
+                                  ({anak.hubungan})
+                                </span>
+                                <span className="font-mono text-gray-300 ml-auto">
+                                  {anak.nisn}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -236,6 +275,46 @@ export default function DetailSiswaGuru() {
                 <InfoItem label="Kode Pos" value={siswa.kode_pos ?? "-"} />
               </div>
             </Section>
+
+            {saudaraList.length > 0 && (
+              <Section title={`Saudara Kandung (${saudaraList.length})`}>
+                <div className="space-y-2">
+                  {saudaraList.map((s) => (
+                    <div
+                      key={s.nisn}
+                      className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl"
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${
+                          s.jenis_kelamin === "L"
+                            ? "bg-blue-400"
+                            : "bg-pink-400"
+                        }`}
+                      >
+                        {s.nama_lengkap?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {s.nama_lengkap}
+                        </p>
+                        <p className="text-xs font-mono text-gray-400">
+                          NISN: {s.nisn}
+                        </p>
+                      </div>
+                      <span
+                        className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
+                          s.jenis_kelamin === "L"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-pink-50 text-pink-700"
+                        }`}
+                      >
+                        {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
           </div>
         </div>
       </div>
