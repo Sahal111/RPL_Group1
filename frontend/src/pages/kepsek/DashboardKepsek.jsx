@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import api from "../../lib/axios";
 import {
   BarChart,
   Bar,
@@ -26,9 +27,6 @@ import {
 // ---------------------------------------------------------
 // SESUAIKAN DENGAN SETUP PROJECT KAMU
 // ---------------------------------------------------------
-const API_BASE_URL = "/api";
-const TOKEN_KEY = "token"; // key localStorage tempat token disimpan setelah login
-
 function StatCard({ icon: Icon, label, value, color }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
@@ -61,20 +59,10 @@ export default function DashboardKepsek() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const token = localStorage.getItem(TOKEN_KEY);
-        const res = await fetch(`${API_BASE_URL}/kepsek/dashboard`, {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("Gagal memuat data dashboard.");
-
-        const json = await res.json();
-        setData(json.data);
+        const res = await api.get("/kepsek/dashboard");
+        setData(res.data.data);
       } catch (err) {
-        setError(err.message);
+        setError("Gagal memuat data dashboard.");
       } finally {
         setLoading(false);
       }

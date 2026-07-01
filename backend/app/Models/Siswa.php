@@ -70,6 +70,14 @@ class Siswa extends Model
         return $this->hasMany(SiswaKelas::class, 'nisn', 'nisn');
     }
 
+    public function kelasAktif()
+    {
+        return $this->belongsToMany(Kelas::class, 'siswa_kelas', 'nisn', 'id_kelas', 'nisn', 'id')
+            ->wherePivot('status_keluar', null)
+            ->where('kelas.is_active', 1)
+            ->withPivot('no_absen', 'tahun_ajaran', 'semester', 'status_masuk', 'tanggal_masuk');
+    }
+
     public function userOrtu()
     {
         return $this->hasMany(UserOrtu::class, 'nisn', 'nisn');

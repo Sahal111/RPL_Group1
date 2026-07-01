@@ -32,7 +32,7 @@ class Kelas extends Model
 
     public function tahunAjaran()
     {
-        return $this->belongsTo(\Illuminate\Support\Facades\DB::table('tahun_ajaran'), 'id_tahun_ajaran');
+        return $this->belongsTo(TahunAjaran::class, 'id_tahun_ajaran', 'id');
     }
 
     public function wali()

@@ -199,6 +199,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [KepsekController::class, 'dashboard']);
         Route::get('/rekap', [KepsekController::class, 'rekapSemuaKelas']);
         Route::get('/siswa-alpa', [KepsekController::class, 'siswaAlpaTerbanyak']);
+
+        // Data Guru (read-only)
+        Route::get('/guru', [KepsekController::class, 'daftarGuru']);
+        Route::get('/guru/{nuptk}', [KepsekController::class, 'detailGuru']);
+
+        // Data Siswa (read-only)
+        Route::get('/siswa', [KepsekController::class, 'daftarSiswa']);
+        Route::get('/siswa/{nisn}', [KepsekController::class, 'detailSiswa']);
+        Route::get('/kelas-filter', [KepsekController::class, 'daftarKelasFilter']);
     });
 
     // Ortu
