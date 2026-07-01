@@ -222,7 +222,7 @@ class OrtuController extends Controller
         $anak = UserOrtu::with('siswa')
             ->where('user_id', $user->id)
             ->get()
-            ->filter(fn ($ua) => $ua->siswa);
+            ->filter(fn($ua) => $ua->siswa);
 
         return response()->json([
             'success' => true,
@@ -260,7 +260,7 @@ class OrtuController extends Controller
         $user = $request->user();
         $nisn = $request->query('nisn');
 
-        $query = UserOrtu::with('siswa')->where('user_id', $user->id);
+        $query = UserOrtu::with('siswa.orangTua')->where('user_id', $user->id);
         $userOrtu = $nisn ? $query->where('nisn', $nisn)->first() : $query->first();
 
         if (!$userOrtu || !$userOrtu->siswa) {
@@ -271,6 +271,21 @@ class OrtuController extends Controller
         }
 
         $siswa = $userOrtu->siswa;
+
+        // Biodata resmi keluarga anak yang SEDANG DIPILIH (bukan anak lain)
+        $biodataOrtu = $siswa->orangTua->first();
+
+        // Pekerjaan diambil sesuai hubungan akun INI ke anak INI
+// (bukan fallback ayah->ibu->wali, karena kita udah tau persis akun ini "siapa")
+        $pekerjaanOrtu = null;
+        if ($biodataOrtu) {
+            $pekerjaanOrtu = match ($userOrtu->hubungan) {
+                'Ayah' => $biodataOrtu->pekerjaan_ayah,
+                'Ibu' => $biodataOrtu->pekerjaan_ibu,
+                'Wali' => $biodataOrtu->pekerjaan_wali,
+                default => null,
+            };
+        }
 
         // Ambil kelas aktif siswa
         $siswaKelas = SiswaKelas::with(['kelas'])
@@ -291,7 +306,7 @@ class OrtuController extends Controller
                 ],
                 'ortu' => [
                     'hubungan' => $userOrtu->hubungan,
-                    'pekerjaan' => $userOrtu->pekerjaan,
+                    'pekerjaan' => $pekerjaanOrtu,
                 ],
                 'siswa' => [
                     'nisn' => $siswa->nisn,
@@ -300,7 +315,7 @@ class OrtuController extends Controller
                     'jenis_kelamin' => $siswa->jenis_kelamin,
                     'tempat_lahir' => $siswa->tempat_lahir,
                     'tanggal_lahir' => $siswa->tanggal_lahir,
-                    'alamat' => $siswa->alamat,
+                    'alamat' => $siswa->alamat_jalan,
                     'foto' => $siswa->foto,
                     'kelas' => $siswaKelas ? [
                         'nama_kelas' => $siswaKelas->kelas->nama_kelas,
