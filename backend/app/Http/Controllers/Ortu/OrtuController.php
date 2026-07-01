@@ -294,6 +294,58 @@ class OrtuController extends Controller
         ], 201);
     }
 
+    public function updateAnak(Request $request, $nisn)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'hubungan' => 'required|in:Ayah,Ibu,Wali',
+        ]);
+
+        $userOrtu = UserOrtu::where('user_id', $user->id)
+            ->where('nisn', $nisn)
+            ->first();
+
+        if (!$userOrtu) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data anak tidak ditemukan di akun ini.',
+            ], 404);
+        }
+
+        $userOrtu->hubungan = $request->hubungan;
+        $userOrtu->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status hubungan berhasil diperbarui.',
+            'data' => $userOrtu,
+        ]);
+    }
+
+    public function hapusAnak(Request $request, $nisn)
+    {
+        $user = $request->user();
+
+        $userOrtu = UserOrtu::where('user_id', $user->id)
+            ->where('nisn', $nisn)
+            ->first();
+
+        if (!$userOrtu) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data anak tidak ditemukan di akun ini.',
+            ], 404);
+        }
+
+        $userOrtu->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anak berhasil dihapus dari akun kamu.',
+        ]);
+    }
+
     public function pengumuman(Request $request)
     {
         $kategori = $request->query('kategori'); // filter by kategori

@@ -209,6 +209,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/pengumuman', [\App\Http\Controllers\Ortu\OrtuController::class, 'pengumuman']);
         Route::get('/daftar-anak', [\App\Http\Controllers\Ortu\OrtuController::class, 'daftarAnak']);
         Route::post('/anak', [\App\Http\Controllers\Ortu\OrtuController::class, 'tambahAnak']);
+        Route::put('/anak/{nisn}', [\App\Http\Controllers\Ortu\OrtuController::class, 'updateAnak']);
+        Route::delete('/anak/{nisn}', [\App\Http\Controllers\Ortu\OrtuController::class, 'hapusAnak']);
         Route::get('/profil', [\App\Http\Controllers\Ortu\OrtuController::class, 'profil']);
         Route::post('/profil', [\App\Http\Controllers\Ortu\OrtuController::class, 'updateProfil']);
     });
