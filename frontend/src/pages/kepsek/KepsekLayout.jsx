@@ -1,12 +1,25 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../../components/layout/Sidebar";
-import { LayoutDashboard, BarChart2, Users, GraduationCap } from "lucide-react";
+import {
+  LayoutDashboard,
+  BarChart2,
+  Users,
+  GraduationCap,
+  ClipboardCheck,
+  Megaphone,
+} from "lucide-react";
 
 const menus = [
   { path: "/kepsek", label: "Dashboard", icon: LayoutDashboard, end: true },
+  {
+    path: "/kepsek/monitoring-absensi",
+    label: "Monitoring Absensi",
+    icon: ClipboardCheck,
+  },
   { path: "/kepsek/rekap", label: "Rekap Absensi", icon: BarChart2 },
   { path: "/kepsek/guru", label: "Data Guru", icon: Users },
   { path: "/kepsek/siswa", label: "Data Siswa", icon: GraduationCap },
+  { path: "/kepsek/pengumuman", label: "Pengumuman", icon: Megaphone },
 ];
 
 export default function KepsekLayout() {

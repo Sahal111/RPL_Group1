@@ -208,6 +208,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/siswa', [KepsekController::class, 'daftarSiswa']);
         Route::get('/siswa/{nisn}', [KepsekController::class, 'detailSiswa']);
         Route::get('/kelas-filter', [KepsekController::class, 'daftarKelasFilter']);
+        Route::post('/pengumuman', [\App\Http\Controllers\PengumumanController::class, 'store']);
+        Route::put('/pengumuman/{id}', [\App\Http\Controllers\PengumumanController::class, 'update']);
+        Route::delete('/pengumuman/{id}', [\App\Http\Controllers\PengumumanController::class, 'destroy']);
     });
 
     // Ortu

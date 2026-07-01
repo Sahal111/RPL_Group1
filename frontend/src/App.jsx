@@ -45,6 +45,8 @@ import DataGuruKepsek from "./pages/kepsek/DataGuruKepsek";
 import DetailGuruKepsek from "./pages/kepsek/DetailGuruKepsek";
 import DataSiswaKepsek from "./pages/kepsek/DataSiswaKepsek";
 import DetailSiswaKepsek from "./pages/kepsek/DetailSiswaKepsek";
+import MonitoringAbsensi from "./pages/kepsek/MonitoringAbsensi";
+import PengumumanKepsek from "./pages/kepsek/PengumumanKepsek";
 
 // Ortu
 import OrtuLayout from "./pages/ortu/OrtuLayout";
@@ -125,10 +127,12 @@ export default function App() {
         }
       >
         <Route index element={<DashboardKepsek />} />
+        <Route path="monitoring-absensi" element={<MonitoringAbsensi />} />
         <Route path="guru" element={<DataGuruKepsek />} />
         <Route path="guru/:nuptk" element={<DetailGuruKepsek />} />
         <Route path="siswa" element={<DataSiswaKepsek />} />
         <Route path="siswa/:nisn" element={<DetailSiswaKepsek />} />
+        <Route path="pengumuman" element={<PengumumanKepsek />} />
       </Route>
 
       {/* Ortu */}

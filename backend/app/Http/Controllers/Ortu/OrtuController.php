@@ -351,9 +351,14 @@ class OrtuController extends Controller
 
     public function pengumuman(Request $request)
     {
-        $kategori = $request->query('kategori'); // filter by kategori
+        $kategori = $request->query('kategori');
 
-        $query = Pengumuman::orderBy('created_at', 'desc');
+        $query = Pengumuman::orderBy('created_at', 'desc')
+            ->whereIn('target', ['semua', 'ortu'])
+            ->where(function ($q) {
+                $q->whereNull('publish_at')
+                    ->orWhere('publish_at', '<=', now());
+            });
 
         if ($kategori && $kategori !== 'semua') {
             $query->where('kategori', $kategori);
@@ -363,7 +368,7 @@ class OrtuController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $pengumuman
+            'data' => $pengumuman,
         ]);
     }
 

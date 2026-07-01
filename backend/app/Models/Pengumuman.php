@@ -12,7 +12,12 @@ class Pengumuman extends Model
         'judul',
         'konten',
         'kategori',
-        'penulis_id'
+        'target',
+        'penulis_id',
+        'publish_at',
+    ];
+    protected $casts = [
+        'publish_at' => 'datetime',
     ];
 
     public function penulis()
