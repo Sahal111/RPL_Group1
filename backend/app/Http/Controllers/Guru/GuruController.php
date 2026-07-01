@@ -107,7 +107,7 @@ class GuruController extends Controller
         $query = SiswaKelas::with([
             'siswa',
             'kelas',
-            'siswa.userOrtu.user',
+            'siswa.orangTua',
         ])
             ->whereIn('id_kelas', $idKelas)
             ->where('status_keluar', 'Aktif');
@@ -125,7 +125,28 @@ class GuruController extends Controller
         }
 
         $data = $query->orderBy('id_kelas')->orderBy('no_absen')->get()->map(function ($sk) {
-            $ortu = $sk->siswa->userOrtu->first();
+            $ortu = $sk->siswa->orangTua->first();
+
+            $namaOrtu = null;
+            $noHpOrtu = null;
+            $hubunganOrtu = null;
+
+            if ($ortu) {
+                if ($ortu->nama_ayah) {
+                    $namaOrtu = $ortu->nama_ayah;
+                    $noHpOrtu = $ortu->no_hp_ayah;
+                    $hubunganOrtu = 'Ayah';
+                } elseif ($ortu->nama_ibu) {
+                    $namaOrtu = $ortu->nama_ibu;
+                    $noHpOrtu = $ortu->no_hp_ibu;
+                    $hubunganOrtu = 'Ibu';
+                } elseif ($ortu->nama_wali) {
+                    $namaOrtu = $ortu->nama_wali;
+                    $noHpOrtu = $ortu->no_hp_wali;
+                    $hubunganOrtu = $ortu->hubungan_wali ?? 'Wali';
+                }
+            }
+
             return [
                 'nisn' => $sk->nisn,
                 'no_induk' => $sk->siswa->no_induk,
@@ -135,9 +156,9 @@ class GuruController extends Controller
                 'id_kelas' => $sk->id_kelas,
                 'nama_kelas' => $sk->kelas?->nama_kelas,
                 'foto' => $sk->siswa->foto,
-                'nama_ortu' => $ortu?->user?->nama_lengkap,
-                'no_hp_ortu' => $ortu?->user?->no_hp,
-                'hubungan_ortu' => $ortu?->hubungan,
+                'nama_ortu' => $namaOrtu,
+                'no_hp_ortu' => $noHpOrtu,
+                'hubungan_ortu' => $hubunganOrtu,
             ];
         });
 
