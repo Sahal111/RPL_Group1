@@ -26,11 +26,6 @@ const fetchKode = () =>
     .get("/operator/pengaturan/kode-registrasi")
     .then((r) => r.data.data.kode_registrasi);
 
-const fetchKodeTambahAnak = () =>
-  api
-    .get("/operator/pengaturan/kode-tambah-anak")
-    .then((r) => r.data.data.kode_tambah_anak);
-
 // ── Badge role ─────────────────────────────────────────────
 const roleBadge = {
   operator: "bg-purple-100 text-purple-700",
@@ -438,101 +433,6 @@ function KodeRegistrasiPanel() {
   );
 }
 
-// ── Komponen Kode Tambah Anak ──────────────────────────────
-function KodeTambahAnakPanel() {
-  const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
-
-  const { data: kode, isLoading } = useQuery({
-    queryKey: ["kode-tambah-anak"],
-    queryFn: fetchKodeTambahAnak,
-  });
-
-  const mutation = useMutation({
-    mutationFn: (newKode) =>
-      api.post("/operator/pengaturan/kode-tambah-anak", { kode_anak: newKode }),
-    onSuccess: (res) => {
-      toast.success("Kode tambah anak berhasil diperbarui.");
-      queryClient.setQueryData(
-        ["kode-tambah-anak"],
-        res.data.data.kode_tambah_anak,
-      );
-      setIsEditing(false);
-    },
-    onError: (err) => {
-      toast.error(err.response?.data?.message ?? "Gagal memperbarui kode.");
-    },
-  });
-
-  if (isLoading) return null;
-
-  return (
-    <div className="card mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-          <KeyRound className="w-5 h-5" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-gray-800">
-            Kode Tambah Anak (Ortu 2+ Anak)
-          </h3>
-          {isEditing ? (
-            <div className="mt-1 flex items-center gap-2">
-              <input
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="input-field py-1 px-2 text-sm w-40"
-                autoFocus
-              />
-              <button
-                onClick={() => mutation.mutate(editValue)}
-                disabled={mutation.isPending || !editValue}
-                className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                title="Simpan"
-              >
-                <Check className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="p-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
-                title="Batal"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="mt-1 flex items-center gap-2">
-              <code className="text-lg font-bold text-amber-700 bg-white px-2 py-0.5 rounded border border-amber-200">
-                {kode}
-              </code>
-              <button
-                onClick={() => {
-                  setEditValue(kode);
-                  setIsEditing(true);
-                }}
-                className="text-gray-400 hover:text-amber-600 transition-colors"
-                title="Ubah Kode"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="text-right hidden sm:block">
-        <p className="text-xs text-gray-500">
-          Kode ini beda dari kode registrasi di atas.
-        </p>
-        <p className="text-xs text-gray-500">
-          Dipakai ortu saat menautkan anak ke-2 dst.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ── Main Page ──────────────────────────────────────────────
 export default function ManajemenAkun() {
   const queryClient = useQueryClient();
@@ -588,7 +488,6 @@ export default function ManajemenAkun() {
 
       {/* Panel Kode Registrasi */}
       <KodeRegistrasiPanel />
-      <KodeTambahAnakPanel />
 
       {/* Filter & Search */}
       <div className="card mb-6 p-4">

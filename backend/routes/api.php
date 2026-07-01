@@ -59,8 +59,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:operator')->prefix('operator')->group(function () {
         Route::get('/pengaturan/kode-registrasi', [OperatorController::class, 'getKodeRegistrasi']);
         Route::post('/pengaturan/kode-registrasi', [OperatorController::class, 'updateKodeRegistrasi']);
-        Route::get('/pengaturan/kode-tambah-anak', [OperatorController::class, 'getKodeTambahAnak']);
-        Route::post('/pengaturan/kode-tambah-anak', [OperatorController::class, 'updateKodeTambahAnak']);
         Route::get('/users', [OperatorController::class, 'index']);
         Route::post('/operator', [OperatorController::class, 'createOperator']);
         Route::post('/guru', [OperatorController::class, 'createGuru']);
@@ -110,6 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/siswa/{nisn}', [MasterDataSiswaController::class, 'destroy']);
             Route::post('/siswa/{nisn}/assign-kelas', [MasterDataSiswaController::class, 'assignKelas']);
             Route::post('/siswa/{nisn}/foto', [MasterDataSiswaController::class, 'uploadFoto']);
+            Route::post('/siswa/{nisn}/regenerate-kode-anak', [MasterDataSiswaController::class, 'regenerateKodeAnak']);
 
             // Orang Tua
             Route::get('/orang-tua', [MasterDataOrtuController::class, 'index']);

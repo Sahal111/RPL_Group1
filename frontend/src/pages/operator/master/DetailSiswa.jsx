@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../lib/axios";
 import toast from "react-hot-toast";
-import { ArrowLeft, Camera } from "lucide-react";
+import { ArrowLeft, Camera, KeyRound, RefreshCw, Copy } from "lucide-react";
 
 const getPrimaryOrangTua = (ortu) => {
   if (Array.isArray(ortu)) return ortu[0] ?? null;
@@ -38,6 +38,24 @@ export default function DetailSiswa() {
     },
     onError: () => toast.error("Gagal upload foto."),
   });
+
+  const regenerateKode = useMutation({
+    mutationFn: () =>
+      api.post(`/operator/master-data/siswa/${nisn}/regenerate-kode-anak`),
+    onSuccess: (res) => {
+      toast.success("Kode anak berhasil dibuat ulang.");
+      queryClient.setQueryData(["siswa-detail", nisn], (old) =>
+        old ? { ...old, kode_anak: res.data.data.kode_anak } : old,
+      );
+    },
+    onError: () => toast.error("Gagal membuat ulang kode."),
+  });
+
+  const salinKode = () => {
+    if (!siswa?.kode_anak) return;
+    navigator.clipboard.writeText(siswa.kode_anak);
+    toast.success("Kode disalin.");
+  };
 
   if (isLoading)
     return (
@@ -135,6 +153,47 @@ export default function DetailSiswa() {
           </div>
         </div>
 
+        {/* Kode Anak — buat ortu tautkan siswa ini sbg anak ke-2 dst */}
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">
+                Kode Tambah Anak
+              </h3>
+              <div className="mt-1 flex items-center gap-2">
+                <code className="text-lg font-bold text-amber-700 bg-white px-2 py-0.5 rounded border border-amber-200">
+                  {siswa.kode_anak ?? "-"}
+                </code>
+                <button
+                  onClick={salinKode}
+                  className="text-gray-400 hover:text-amber-600 transition-colors"
+                  title="Salin Kode"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => regenerateKode.mutate()}
+                  disabled={regenerateKode.isPending}
+                  className="text-gray-400 hover:text-amber-600 transition-colors"
+                  title="Buat Ulang Kode"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${regenerateKode.isPending ? "animate-spin" : ""}`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 max-w-xs text-right">
+            Berikan kode ini ke orang tua/wali siswa ini kalau mereka mau
+            menautkan anak ke-2 dst lewat menu "Tambah Anak". Kode ini cuma
+            berlaku untuk siswa ini saja.
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 gap-8">
           {/* Kolom Kiri */}
           <div className="space-y-6">
@@ -179,39 +238,108 @@ export default function DetailSiswa() {
               {dataOrangTua ? (
                 <div className="space-y-5">
                   <FamilyBlock title="Ayah Kandung">
-                    <InfoItem label="Nama Lengkap" value={dataOrangTua.nama_ayah ?? "-"} />
-                    <InfoItem label="NIK" value={dataOrangTua.nik_ayah ?? "-"} mono />
-                    <InfoItem label="Tahun Lahir" value={yearOnly(dataOrangTua.tanggal_lahir_ayah)} />
-                    <InfoItem label="Pendidikan" value={dataOrangTua.pendidikan_ayah ?? "-"} />
-                    <InfoItem label="Pekerjaan" value={dataOrangTua.pekerjaan_ayah ?? "-"} />
-                    <InfoItem label="Penghasilan" value={dataOrangTua.penghasilan_ayah ?? "-"} />
-                    <InfoItem label="No. HP" value={dataOrangTua.no_hp_ayah ?? "-"} />
+                    <InfoItem
+                      label="Nama Lengkap"
+                      value={dataOrangTua.nama_ayah ?? "-"}
+                    />
+                    <InfoItem
+                      label="NIK"
+                      value={dataOrangTua.nik_ayah ?? "-"}
+                      mono
+                    />
+                    <InfoItem
+                      label="Tahun Lahir"
+                      value={yearOnly(dataOrangTua.tanggal_lahir_ayah)}
+                    />
+                    <InfoItem
+                      label="Pendidikan"
+                      value={dataOrangTua.pendidikan_ayah ?? "-"}
+                    />
+                    <InfoItem
+                      label="Pekerjaan"
+                      value={dataOrangTua.pekerjaan_ayah ?? "-"}
+                    />
+                    <InfoItem
+                      label="Penghasilan"
+                      value={dataOrangTua.penghasilan_ayah ?? "-"}
+                    />
+                    <InfoItem
+                      label="No. HP"
+                      value={dataOrangTua.no_hp_ayah ?? "-"}
+                    />
                   </FamilyBlock>
 
                   <FamilyBlock title="Ibu Kandung">
-                    <InfoItem label="Nama Lengkap" value={dataOrangTua.nama_ibu ?? "-"} />
-                    <InfoItem label="NIK" value={dataOrangTua.nik_ibu ?? "-"} mono />
-                    <InfoItem label="Tahun Lahir" value={yearOnly(dataOrangTua.tanggal_lahir_ibu)} />
-                    <InfoItem label="Pendidikan" value={dataOrangTua.pendidikan_ibu ?? "-"} />
-                    <InfoItem label="Pekerjaan" value={dataOrangTua.pekerjaan_ibu ?? "-"} />
-                    <InfoItem label="Penghasilan" value={dataOrangTua.penghasilan_ibu ?? "-"} />
-                    <InfoItem label="No. HP" value={dataOrangTua.no_hp_ibu ?? "-"} />
+                    <InfoItem
+                      label="Nama Lengkap"
+                      value={dataOrangTua.nama_ibu ?? "-"}
+                    />
+                    <InfoItem
+                      label="NIK"
+                      value={dataOrangTua.nik_ibu ?? "-"}
+                      mono
+                    />
+                    <InfoItem
+                      label="Tahun Lahir"
+                      value={yearOnly(dataOrangTua.tanggal_lahir_ibu)}
+                    />
+                    <InfoItem
+                      label="Pendidikan"
+                      value={dataOrangTua.pendidikan_ibu ?? "-"}
+                    />
+                    <InfoItem
+                      label="Pekerjaan"
+                      value={dataOrangTua.pekerjaan_ibu ?? "-"}
+                    />
+                    <InfoItem
+                      label="Penghasilan"
+                      value={dataOrangTua.penghasilan_ibu ?? "-"}
+                    />
+                    <InfoItem
+                      label="No. HP"
+                      value={dataOrangTua.no_hp_ibu ?? "-"}
+                    />
                   </FamilyBlock>
 
                   <FamilyBlock title="Wali">
-                    <InfoItem label="Nama Lengkap" value={dataOrangTua.nama_wali ?? "-"} />
-                    <InfoItem label="NIK" value={dataOrangTua.nik_wali ?? "-"} mono />
-                    <InfoItem label="Hubungan" value={dataOrangTua.hubungan_wali ?? "-"} />
-                    <InfoItem label="Pekerjaan" value={dataOrangTua.pekerjaan_wali ?? "-"} />
-                    <InfoItem label="Penghasilan" value={dataOrangTua.penghasilan_wali ?? "-"} />
-                    <InfoItem label="No. HP" value={dataOrangTua.no_hp_wali ?? "-"} />
+                    <InfoItem
+                      label="Nama Lengkap"
+                      value={dataOrangTua.nama_wali ?? "-"}
+                    />
+                    <InfoItem
+                      label="NIK"
+                      value={dataOrangTua.nik_wali ?? "-"}
+                      mono
+                    />
+                    <InfoItem
+                      label="Hubungan"
+                      value={dataOrangTua.hubungan_wali ?? "-"}
+                    />
+                    <InfoItem
+                      label="Pekerjaan"
+                      value={dataOrangTua.pekerjaan_wali ?? "-"}
+                    />
+                    <InfoItem
+                      label="Penghasilan"
+                      value={dataOrangTua.penghasilan_wali ?? "-"}
+                    />
+                    <InfoItem
+                      label="No. HP"
+                      value={dataOrangTua.no_hp_wali ?? "-"}
+                    />
                   </FamilyBlock>
 
                   <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <InfoItem label="Email" value={dataOrangTua.email ?? "-"} />
+                      <InfoItem
+                        label="Email"
+                        value={dataOrangTua.email ?? "-"}
+                      />
                       <div className="col-span-2">
-                        <InfoItem label="Alamat Domisili" value={dataOrangTua.alamat ?? "-"} />
+                        <InfoItem
+                          label="Alamat Domisili"
+                          value={dataOrangTua.alamat ?? "-"}
+                        />
                       </div>
                     </div>
                   </div>

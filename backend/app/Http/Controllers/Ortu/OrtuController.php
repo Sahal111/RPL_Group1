@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Ortu;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\UserOrtu;
+use App\Models\Siswa;
 use App\Models\SiswaKelas;
 use App\Models\Absensi;
 use App\Models\Pengumuman;
@@ -246,13 +247,14 @@ class OrtuController extends Controller
             'hubungan' => 'required|in:Ayah,Ibu,Wali',
         ]);
 
-        // Validasi kode khusus tambah anak (BUKAN kode registrasi akun awal)
-        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_tambah_anak')->first();
-        $kodeValid = $pengaturan ? $pengaturan->value : config('school.kode_tambah_anak');
-        if ($request->kode_anak !== $kodeValid) {
+        // Kode HARUS cocok dengan NISN yang diinput — ini kode unik per siswa,
+        // dikasih operator ke ortu yang memang benar orang tua/wali anak itu.
+        // Bukan kode global, supaya ortu gak bisa asal klaim NISN anak orang lain.
+        $siswa = Siswa::where('nisn', $request->nisn)->first();
+        if (!$siswa || $siswa->kode_anak !== strtoupper($request->kode_anak)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kode tambah anak tidak valid.',
+                'message' => 'Kode tidak sesuai dengan NISN yang dimasukkan. Pastikan kode didapat dari operator sekolah untuk anak ini.',
             ], 422);
         }
 

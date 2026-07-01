@@ -57,8 +57,9 @@ export default function TambahAnak() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Tambah Anak</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Tautkan anak lain ke akun kamu menggunakan NISN dan kode tambah anak
-          dari operator.
+          Tautkan anak lain ke akun kamu. Kode di bawah khusus untuk anak dengan
+          NISN yang kamu masukkan — minta ke operator sekolah untuk anak
+          tersebut.
         </p>
       </div>
 
@@ -105,7 +106,7 @@ export default function TambahAnak() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kode Tambah Anak
+              Kode Anak
             </label>
             <input
               type="text"
@@ -113,12 +114,12 @@ export default function TambahAnak() {
               value={form.kode_anak}
               onChange={(e) => set("kode_anak", e.target.value)}
               className="input-field"
-              placeholder="Dapatkan dari operator sekolah"
+              placeholder="Kode khusus anak ini dari operator"
               disabled={loading}
             />
             <p className="text-xs text-gray-400 mt-1">
-              Kode ini beda dengan kode registrasi akun awal. Minta ke operator
-              sekolah.
+              Setiap siswa punya kode berbeda. Kode ini cuma bisa dipakai untuk
+              NISN di atas — bukan kode registrasi akun awal.
             </p>
           </div>
           <div className="pt-2">

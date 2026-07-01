@@ -6,14 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Siswa extends Model
 {
-    protected $table      = 'siswa';
+    protected $table = 'siswa';
     protected $primaryKey = 'nisn';
-    public $incrementing  = false;
-    protected $keyType    = 'string';
-    public $timestamps    = false;
+    public $incrementing = false;
+    protected $keyType = 'string';
+    public $timestamps = false;
 
     protected $fillable = [
         'nisn',
+        'kode_anak',
         'nik',
         'no_induk',
         'nama_lengkap',
@@ -45,6 +46,24 @@ class Siswa extends Model
     protected $casts = [
         'anak_ke' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Siswa $siswa) {
+            if (empty($siswa->kode_anak)) {
+                $siswa->kode_anak = static::generateKodeAnak();
+            }
+        });
+    }
+
+    public static function generateKodeAnak(): string
+    {
+        do {
+            $kode = strtoupper(\Illuminate\Support\Str::random(6));
+        } while (static::where('kode_anak', $kode)->exists());
+
+        return $kode;
+    }
 
     public function kelas()
     {

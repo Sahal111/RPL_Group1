@@ -52,43 +52,6 @@ class OperatorController extends Controller
     }
 
     // -------------------------------------------------------
-    // PENGATURAN KODE TAMBAH ANAK (khusus link anak ke-2, dst)
-    // -------------------------------------------------------
-    public function getKodeTambahAnak()
-    {
-        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_tambah_anak')->first();
-        $kode = $pengaturan ? $pengaturan->value : config('school.kode_tambah_anak');
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'kode_tambah_anak' => $kode
-            ]
-        ]);
-    }
-
-    public function updateKodeTambahAnak(Request $request)
-    {
-        $request->validate([
-            'kode_tambah_anak' => 'required|string|max:20'
-        ]);
-
-        $pengaturan = \App\Models\Pengaturan::firstOrCreate(
-            ['key' => 'kode_tambah_anak'],
-            ['value' => $request->kode_tambah_anak]
-        );
-        $pengaturan->update(['value' => $request->kode_tambah_anak]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kode tambah anak berhasil diperbarui.',
-            'data' => [
-                'kode_tambah_anak' => $pengaturan->value
-            ]
-        ]);
-    }
-
-    // -------------------------------------------------------
     // LIST SEMUA USER (semua role)
     // -------------------------------------------------------
     public function index(Request $request)

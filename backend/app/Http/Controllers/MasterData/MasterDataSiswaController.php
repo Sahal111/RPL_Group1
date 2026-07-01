@@ -116,6 +116,19 @@ class MasterDataSiswaController extends Controller
         return response()->json(['success' => true, 'data' => $siswa]);
     }
 
+    public function regenerateKodeAnak($nisn)
+    {
+        $siswa = Siswa::where('nisn', $nisn)->firstOrFail();
+        $siswa->kode_anak = Siswa::generateKodeAnak();
+        $siswa->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kode anak berhasil dibuat ulang.',
+            'data' => ['kode_anak' => $siswa->kode_anak],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
