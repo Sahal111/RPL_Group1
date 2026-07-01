@@ -448,7 +448,7 @@ class MasterDataSiswaController extends Controller
         // Cek apakah sudah ada di kelas yang sama
         $sudahAda = SiswaKelas::where('nisn', $nisn)
             ->where('id_kelas', $request->id_kelas)
-            ->whereNull('status_keluar')
+            ->where('status_keluar', 'Aktif')
             ->exists();
 
         if ($sudahAda) {
@@ -466,6 +466,7 @@ class MasterDataSiswaController extends Controller
             'semester' => $request->semester,
             'status_masuk' => 'Baru',
             'tanggal_masuk' => now()->toDateString(),
+            'status_keluar' => 'Aktif',
         ]);
 
         return response()->json([

@@ -168,7 +168,7 @@ class KepsekController extends Controller
 
         $rekap = $kelasList->map(function ($kelas) use ($request) {
             $totalSiswa = SiswaKelas::where('id_kelas', $kelas->id)
-                ->whereNull('status_keluar')
+                ->where('status_keluar', 'Aktif')
                 ->count();
 
             $absensi = Absensi::where('id_kelas', $kelas->id)
@@ -311,7 +311,7 @@ class KepsekController extends Controller
             ->when($request->id_kelas, function ($q) use ($request) {
                 $q->whereHas('kelasAktif', function ($subQ) use ($request) {
                     $subQ->where('siswa_kelas.id_kelas', $request->id_kelas)
-                        ->whereNull('siswa_kelas.status_keluar')
+                        ->where('siswa_kelas.status_keluar', 'Aktif')
                         ->where('kelas.is_active', 1);
                 });
             })
@@ -323,7 +323,7 @@ class KepsekController extends Controller
             })
             ->with(['kelasAktif' => function ($q) {
                 $q->where('kelas.is_active', 1)
-                  ->whereNull('siswa_kelas.status_keluar');
+                  ->where('siswa_kelas.status_keluar', 'Aktif');
             }])
             ->orderBy('nama_lengkap')
             ->paginate($request->per_page ?? 15);

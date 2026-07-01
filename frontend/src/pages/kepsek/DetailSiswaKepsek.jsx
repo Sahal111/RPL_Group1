@@ -169,10 +169,7 @@ export default function DetailSiswaKepsek() {
             <Section title="Alamat" icon={Home}>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <InfoItem
-                    label="Jalan"
-                    value={siswa.alamat_jalan ?? "-"}
-                  />
+                  <InfoItem label="Jalan" value={siswa.alamat_jalan ?? "-"} />
                 </div>
                 <InfoItem
                   label="RT / RW"
@@ -261,7 +258,7 @@ export default function DetailSiswaKepsek() {
                         <p className="font-semibold text-gray-800">
                           {rk.nama_kelas ?? "-"}
                         </p>
-                        {rk.status_keluar ? (
+                        {rk.status_keluar && rk.status_keluar !== "Aktif" ? (
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
                             Keluar
                           </span>
@@ -281,16 +278,16 @@ export default function DetailSiswaKepsek() {
                           Masuk:{" "}
                           {rk.tanggal_masuk
                             ? new Date(rk.tanggal_masuk).toLocaleDateString(
-                                "id-ID"
+                                "id-ID",
                               )
                             : "-"}
                         </p>
-                        {rk.status_keluar && (
+                        {rk.status_keluar && rk.status_keluar !== "Aktif" && (
                           <p>
                             Keluar:{" "}
                             {rk.tanggal_keluar
                               ? new Date(rk.tanggal_keluar).toLocaleDateString(
-                                  "id-ID"
+                                  "id-ID",
                                 )
                               : "-"}
                           </p>
@@ -325,7 +322,7 @@ export default function DetailSiswaKepsek() {
 
                 <div className="space-y-2">
                   <StatItem
-                    label="Total Hari Efektif"
+                    label="Total Pertemuan"
                     value={statistikAbsensi.total}
                     color="gray"
                   />
@@ -356,9 +353,7 @@ export default function DetailSiswaKepsek() {
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <BarChart className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500">
-                  Belum ada data absensi.
-                </p>
+                <p className="text-sm text-gray-500">Belum ada data absensi.</p>
               </div>
             )}
           </div>
@@ -397,9 +392,7 @@ export default function DetailSiswaKepsek() {
                     </div>
 
                     <div className="text-xs text-gray-500 space-y-1 pt-1">
-                      {ortu.nik && (
-                        <p className="font-mono">NIK: {ortu.nik}</p>
-                      )}
+                      {ortu.nik && <p className="font-mono">NIK: {ortu.nik}</p>}
                       {ortu.no_hp && (
                         <p className="flex items-center gap-1">
                           <Phone className="w-3 h-3" /> {ortu.no_hp}

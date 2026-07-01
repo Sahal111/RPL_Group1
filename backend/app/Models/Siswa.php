@@ -73,9 +73,9 @@ class Siswa extends Model
     public function kelasAktif()
     {
         return $this->belongsToMany(Kelas::class, 'siswa_kelas', 'nisn', 'id_kelas', 'nisn', 'id')
-            ->wherePivot('status_keluar', null)
+            ->wherePivot('status_keluar', 'Aktif')
             ->where('kelas.is_active', 1)
-            ->withPivot('no_absen', 'tahun_ajaran', 'semester', 'status_masuk', 'tanggal_masuk');
+            ->withPivot('no_absen', 'tahun_ajaran', 'semester', 'status_masuk', 'tanggal_masuk', 'status_keluar');
     }
 
     public function userOrtu()
