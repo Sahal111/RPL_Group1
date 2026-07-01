@@ -236,6 +236,61 @@ class OrtuController extends Controller
             })->values(),
         ]);
     }
+    public function tambahAnak(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'nisn' => 'required|string|size:10|exists:siswa,nisn',
+            'kode_anak' => 'required|string',
+            'hubungan' => 'required|in:Ayah,Ibu,Wali',
+        ]);
+
+        // Validasi kode khusus tambah anak (BUKAN kode registrasi akun awal)
+        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_tambah_anak')->first();
+        $kodeValid = $pengaturan ? $pengaturan->value : config('school.kode_tambah_anak');
+        if ($request->kode_anak !== $kodeValid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode tambah anak tidak valid.',
+            ], 422);
+        }
+
+        // NISN cuma boleh tertaut ke satu akun ortu di seluruh sistem
+        $sudahAda = UserOrtu::where('nisn', $request->nisn)->exists();
+        if ($sudahAda) {
+            return response()->json([
+                'success' => false,
+                'message' => 'NISN ini sudah terdaftar di akun orang tua (akun ini atau akun lain).',
+            ], 422);
+        }
+
+        UserOrtu::create([
+            'user_id' => $user->id,
+            'nisn' => $request->nisn,
+            'hubungan' => $request->hubungan,
+        ]);
+
+        $anak = UserOrtu::with('siswa')
+            ->where('user_id', $user->id)
+            ->get()
+            ->filter(fn($ua) => $ua->siswa)
+            ->map(function ($ua) {
+                return [
+                    'nisn' => $ua->siswa->nisn,
+                    'nama_lengkap' => $ua->siswa->nama_lengkap,
+                    'foto' => $ua->siswa->foto,
+                    'hubungan' => $ua->hubungan,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anak berhasil ditautkan ke akun kamu.',
+            'data' => $anak,
+        ], 201);
+    }
 
     public function pengumuman(Request $request)
     {

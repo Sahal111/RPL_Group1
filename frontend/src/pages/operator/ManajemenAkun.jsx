@@ -22,7 +22,14 @@ const fetchUsers = (role, search) =>
     .then((r) => r.data.data);
 
 const fetchKode = () =>
-  api.get("/operator/pengaturan/kode-registrasi").then((r) => r.data.data.kode_registrasi);
+  api
+    .get("/operator/pengaturan/kode-registrasi")
+    .then((r) => r.data.data.kode_registrasi);
+
+const fetchKodeTambahAnak = () =>
+  api
+    .get("/operator/pengaturan/kode-tambah-anak")
+    .then((r) => r.data.data.kode_tambah_anak);
 
 // ── Badge role ─────────────────────────────────────────────
 const roleBadge = {
@@ -87,7 +94,9 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
     },
     onError: (err) => {
       if (err.response?.data?.errors) {
-        Object.values(err.response.data.errors).forEach((e) => toast.error(e[0]));
+        Object.values(err.response.data.errors).forEach((e) =>
+          toast.error(e[0]),
+        );
       } else {
         toast.error(err.response?.data?.message ?? "Gagal membuat akun.");
       }
@@ -159,21 +168,29 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
             {tipe === "kepsek" && (
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">No SK</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    No SK
+                  </label>
                   <input
                     type="text"
                     placeholder="Opsional"
                     value={form.no_sk}
-                    onChange={(e) => setForm({ ...form, no_sk: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, no_sk: e.target.value })
+                    }
                     className="input-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">TMT Jabatan</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    TMT Jabatan
+                  </label>
                   <input
                     type="date"
                     value={form.tmt_jabatan}
-                    onChange={(e) => setForm({ ...form, tmt_jabatan: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, tmt_jabatan: e.target.value })
+                    }
                     className="input-field"
                   />
                 </div>
@@ -202,7 +219,9 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
                   </label>
                   <select
                     value={form.hubungan}
-                    onChange={(e) => setForm({ ...form, hubungan: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, hubungan: e.target.value })
+                    }
                     className="input-field"
                   >
                     <option value="Ayah">Ayah</option>
@@ -228,7 +247,9 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
                 type="text"
                 placeholder="Nama lengkap"
                 value={form.nama_lengkap}
-                onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, nama_lengkap: e.target.value })
+                }
                 className="input-field"
                 required
               />
@@ -244,7 +265,9 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
                   type="text"
                   placeholder="Untuk login"
                   value={form.username}
-                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, username: e.target.value })
+                  }
                   className="input-field"
                   required
                 />
@@ -257,7 +280,9 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
                   type="password"
                   placeholder="Min. 8 karakter"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
                   className="input-field"
                   required
                 />
@@ -280,7 +305,9 @@ function ModalTambahAkun({ open, onClose, queryClient }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">No. HP</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  No. HP
+                </label>
                 <input
                   type="text"
                   placeholder="Opsional"
@@ -326,10 +353,16 @@ function KodeRegistrasiPanel() {
   });
 
   const mutation = useMutation({
-    mutationFn: (newKode) => api.post("/operator/pengaturan/kode-registrasi", { kode_registrasi: newKode }),
+    mutationFn: (newKode) =>
+      api.post("/operator/pengaturan/kode-registrasi", {
+        kode_registrasi: newKode,
+      }),
     onSuccess: (res) => {
       toast.success("Kode registrasi berhasil diperbarui.");
-      queryClient.setQueryData(["kode-registrasi"], res.data.data.kode_registrasi);
+      queryClient.setQueryData(
+        ["kode-registrasi"],
+        res.data.data.kode_registrasi,
+      );
       setIsEditing(false);
     },
     onError: (err) => {
@@ -346,7 +379,9 @@ function KodeRegistrasiPanel() {
           <KeyRound className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-gray-800">Kode Registrasi Orang Tua</h3>
+          <h3 className="text-sm font-semibold text-gray-800">
+            Kode Registrasi Orang Tua
+          </h3>
           {isEditing ? (
             <div className="mt-1 flex items-center gap-2">
               <input
@@ -392,8 +427,107 @@ function KodeRegistrasiPanel() {
         </div>
       </div>
       <div className="text-right hidden sm:block">
-        <p className="text-xs text-gray-500">Berikan kode ini kepada orang tua siswa</p>
-        <p className="text-xs text-gray-500">agar mereka bisa mendaftar di sistem.</p>
+        <p className="text-xs text-gray-500">
+          Berikan kode ini kepada orang tua siswa
+        </p>
+        <p className="text-xs text-gray-500">
+          agar mereka bisa mendaftar di sistem.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Komponen Kode Tambah Anak ──────────────────────────────
+function KodeTambahAnakPanel() {
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+
+  const { data: kode, isLoading } = useQuery({
+    queryKey: ["kode-tambah-anak"],
+    queryFn: fetchKodeTambahAnak,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (newKode) =>
+      api.post("/operator/pengaturan/kode-tambah-anak", { kode_anak: newKode }),
+    onSuccess: (res) => {
+      toast.success("Kode tambah anak berhasil diperbarui.");
+      queryClient.setQueryData(
+        ["kode-tambah-anak"],
+        res.data.data.kode_tambah_anak,
+      );
+      setIsEditing(false);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message ?? "Gagal memperbarui kode.");
+    },
+  });
+
+  if (isLoading) return null;
+
+  return (
+    <div className="card mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+          <KeyRound className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">
+            Kode Tambah Anak (Ortu 2+ Anak)
+          </h3>
+          {isEditing ? (
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="input-field py-1 px-2 text-sm w-40"
+                autoFocus
+              />
+              <button
+                onClick={() => mutation.mutate(editValue)}
+                disabled={mutation.isPending || !editValue}
+                className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                title="Simpan"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="p-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
+                title="Batal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="mt-1 flex items-center gap-2">
+              <code className="text-lg font-bold text-amber-700 bg-white px-2 py-0.5 rounded border border-amber-200">
+                {kode}
+              </code>
+              <button
+                onClick={() => {
+                  setEditValue(kode);
+                  setIsEditing(true);
+                }}
+                className="text-gray-400 hover:text-amber-600 transition-colors"
+                title="Ubah Kode"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="text-right hidden sm:block">
+        <p className="text-xs text-gray-500">
+          Kode ini beda dari kode registrasi di atas.
+        </p>
+        <p className="text-xs text-gray-500">
+          Dipakai ortu saat menautkan anak ke-2 dst.
+        </p>
       </div>
     </div>
   );
@@ -454,6 +588,7 @@ export default function ManajemenAkun() {
 
       {/* Panel Kode Registrasi */}
       <KodeRegistrasiPanel />
+      <KodeTambahAnakPanel />
 
       {/* Filter & Search */}
       <div className="card mb-6 p-4">

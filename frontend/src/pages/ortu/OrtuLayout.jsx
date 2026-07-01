@@ -1,13 +1,25 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../../components/layout/Sidebar";
-import { CalendarCheck, BookUser, ClipboardList, Megaphone, UserCircle } from "lucide-react";
+import {
+  CalendarCheck,
+  BookUser,
+  ClipboardList,
+  Megaphone,
+  UserCircle,
+  UserPlus,
+} from "lucide-react";
 import useSelectedAnak from "../../hooks/useSelectedAnak";
 
 const menus = [
   { path: "/ortu", label: "Dashboard", icon: CalendarCheck, end: true },
-  { path: "/ortu/riwayat-absensi", label: "Riwayat Absensi", icon: ClipboardList },
+  {
+    path: "/ortu/riwayat-absensi",
+    label: "Riwayat Absensi",
+    icon: ClipboardList,
+  },
   { path: "/ortu/pengumuman", label: "Pengumuman", icon: Megaphone },
   { path: "/ortu/data-anak", label: "Data Anak", icon: BookUser },
+  { path: "/ortu/tambah-anak", label: "Tambah Anak", icon: UserPlus },
   { path: "/ortu/profil", label: "Profil", icon: UserCircle },
 ];
 

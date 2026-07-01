@@ -49,6 +49,7 @@ import RiwayatAbsensiAnak from "./pages/ortu/RiwayatAbsensiAnak";
 import PengumumanOrtu from "./pages/ortu/PengumumanOrtu";
 import ProfilOrtu from "./pages/ortu/ProfilOrtu";
 import DataAnak from "./pages/ortu/DataAnak";
+import TambahAnak from "./pages/ortu/TambahAnak";
 
 export default function App() {
   return (
@@ -135,6 +136,7 @@ export default function App() {
         <Route path="riwayat-absensi" element={<RiwayatAbsensiAnak />} />
         <Route path="pengumuman" element={<PengumumanOrtu />} />
         <Route path="data-anak" element={<DataAnak />} />
+        <Route path="tambah-anak" element={<TambahAnak />} />
         <Route path="profil" element={<ProfilOrtu />} />
       </Route>
     </Routes>
