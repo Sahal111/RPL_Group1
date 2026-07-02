@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { ArrowRight, CheckCircle2, Lightbulb, Flag } from "lucide-react";
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
+import aboutImage from "../../assets/about.jpg";
 
 const C = {
   primary: "#012d1d",
@@ -70,7 +71,7 @@ export default function AboutPage() {
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <section className="pt-12 md:pt-20 pb-10 md:pb-16 px-4 md:px-12 max-w-[1200px] mx-auto text-center relative overflow-hidden">
           <div
-            className="absolute top-[-20%] left-[-10%] w-72 md:w-96 h-72 md:h-96 rounded-full -z-10 pointer-events-none"
+            className="absolute top-[-20%] left-0 w-64 md:w-96 h-64 md:h-96 rounded-full -z-10 pointer-events-none"
             style={{
               background: C.primaryContainer,
               opacity: 0.06,
@@ -78,7 +79,7 @@ export default function AboutPage() {
             }}
           />
           <div
-            className="absolute bottom-0 right-[-10%] w-72 md:w-96 h-72 md:h-96 rounded-full -z-10 pointer-events-none"
+            className="absolute bottom-0 right-0 w-64 md:w-96 h-64 md:h-96 rounded-full -z-10 pointer-events-none"
             style={{
               background: C.tertiaryFixed,
               opacity: 0.15,
@@ -119,17 +120,19 @@ export default function AboutPage() {
           >
             {/* Image */}
             <div
-              className="rounded-[20px] md:rounded-[24px] overflow-hidden relative"
+              className="rounded-[24px] overflow-hidden relative h-64 md:h-[420px] group"
               style={{
-                height: "320px",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.06)",
+                boxShadow: "0 20px 50px rgba(1,45,29,0.12)",
               }}
             >
               <img
-                className="w-full h-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUaTjBAGGYhpLIvAbQe7XfofgYQZAr65IdMZMnynZdBKy-gow6DI3DNXDRsA4QU9etz9mkL0BtYBpgWhxSLtLArRldU8Kmk9M8BnGrZO7bBxg4BeSZaKpMvqVY7vg9yv19CoueuJX-jQrl0Pzyc3xtFFpmeltL-BRzShK0eiyXMG8aOMfANHE56Tysd5ZObH53dHNb-CFhoGbhZvxqfgNabFl1PZQT5ChPCi3Cx2l1ItqeBZpGl7atAJ9-CZE5LpHO_BivEGIAaDI"
-                alt="Gedung MI Nurul Huda 3"
+                src={aboutImage}
+                alt="Guru dan Tenaga Pendidik MI Nurul Huda 3"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
             </div>
 
             {/* Text */}
@@ -138,33 +141,19 @@ export default function AboutPage() {
                 className="text-2xl md:text-3xl font-bold"
                 style={{ color: C.primary }}
               >
-                Menyemai Kebaikan Sejak Dini
+                Tentang MI Nurul Huda 3
               </h2>
               <p
                 className="text-sm md:text-base leading-relaxed"
                 style={{ color: C.onSurfaceVariant }}
               >
-                Berdiri sejak tahun 1985, MI Nurul Huda 3 telah mendedikasikan
-                diri untuk menyediakan pendidikan dasar Islam yang berkualitas.
-                Perjalanan kami dimulai dengan sebuah visi sederhana:
-                menciptakan lingkungan belajar yang menggabungkan keunggulan
-                akademis dengan penanaman nilai-nilai moral yang kuat.
+                MI Nurul Huda 3 merupakan madrasah ibtidaiyah yang berkomitmen
+                memberikan pendidikan berkualitas dengan mengintegrasikan ilmu
+                pengetahuan, teknologi, dan nilai-nilai keislaman. Didukung oleh
+                tenaga pendidik yang profesional dan lingkungan belajar yang
+                nyaman, kami berupaya mencetak generasi yang cerdas,
+                berprestasi, serta berakhlakul karimah.
               </p>
-              <p
-                className="text-sm md:text-base leading-relaxed"
-                style={{ color: C.onSurfaceVariant }}
-              >
-                Seiring berjalannya waktu, sekolah kami terus berkembang,
-                beradaptasi dengan kemajuan teknologi dan metodologi pendidikan
-                modern, tanpa pernah meninggalkan akar tradisi Islam yang
-                menjadi identitas utama kami.
-              </p>
-              <button
-                className="flex items-center gap-2 font-semibold text-sm transition-opacity hover:opacity-70"
-                style={{ color: C.primaryContainer }}
-              >
-                Baca Selengkapnya <ArrowRight size={15} />
-              </button>
             </div>
           </div>
         </section>
@@ -200,7 +189,7 @@ export default function AboutPage() {
             >
               {/* Visi card */}
               <div
-                className="p-8 md:p-10 rounded-[24px] md:rounded-[32px] relative overflow-hidden group transition-transform duration-300 hover:-translate-y-1"
+                className="p-5 sm:p-8 md:p-10 rounded-[20px] md:rounded-[32px] relative overflow-hidden group transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   background: "#fff",
                   boxShadow: "0 20px 40px rgba(1,45,29,0.04)",
@@ -234,7 +223,7 @@ export default function AboutPage() {
 
               {/* Misi card */}
               <div
-                className="p-8 md:p-10 rounded-[24px] md:rounded-[32px] relative overflow-hidden group transition-transform duration-300 hover:-translate-y-1"
+                className="p-5 sm:p-8 md:p-10 rounded-[20px] md:rounded-[32px] relative overflow-hidden group transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   background: "#fff",
                   boxShadow: "0 20px 40px rgba(203,167,47,0.06)",

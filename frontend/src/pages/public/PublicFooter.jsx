@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { BookOpen, MapPin, Phone, Mail } from "lucide-react";
+import logoMi from "../../assets/logo.png";
 
 const C = {
   primary: "#012d1d",
@@ -21,19 +22,25 @@ export default function PublicFooter() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 max-w-[1200px] mx-auto py-10 md:py-12 px-4 md:px-12">
         {/* Brand */}
         <div className="sm:col-span-2 md:col-span-2">
-          <div className="flex items-center gap-2 mb-3 md:mb-4">
-            <div
-              className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-              style={{ background: C.primaryContainer }}
-            >
-              <BookOpen size={15} color="#fff" />
+          <div className="flex items-center gap-3 mb-4">
+            <img
+              src={logoMi}
+              alt="Logo MI Nurul Huda 3"
+              className="w-12 h-12 object-contain"
+            />
+
+            <div>
+              <h3
+                className="text-lg md:text-xl font-bold leading-tight"
+                style={{ color: C.primary }}
+              >
+                MI Nurul Huda 3
+              </h3>
+
+              <p className="text-xs" style={{ color: C.onSurfaceVariant }}>
+                Madrasah Ibtidaiyah
+              </p>
             </div>
-            <span
-              className="text-lg md:text-xl font-bold"
-              style={{ color: C.primary }}
-            >
-              MI Nurul Huda 3
-            </span>
           </div>
           <p
             className="text-sm md:text-base max-w-sm"
@@ -82,9 +89,9 @@ export default function PublicFooter() {
           </h4>
           <div className="space-y-2">
             {[
-              { icon: MapPin, text: "Jl. Pendidikan No. 123" },
-              { icon: Phone, text: "(021) 555-0123" },
-              { icon: Mail, text: "info@minurulhuda3.sch.id" },
+              { icon: MapPin, text: "Jl. Kencana Rt01 Rw 02 " },
+              { icon: Phone, text: "+6285811723878" },
+              { icon: Mail, text: "minurulhuda3nh@gmail.com" },
             ].map(({ icon: Icon, text }) => (
               <p
                 key={text}

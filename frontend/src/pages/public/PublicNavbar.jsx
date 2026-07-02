@@ -1,17 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BookOpen, LogIn, Menu, X } from "lucide-react";
-
-const C = {
-  primary: "#012d1d",
-  primaryContainer: "#1b4332",
-  secondary: "#2c694e",
-  tertiaryContainer: "#cba72f",
-  surface: "#f8f9fa",
-  onSurface: "#191c1d",
-  onSurfaceVariant: "#414844",
-  outlineVariant: "#c1c8c2",
-};
+import logoMi from "../../assets/logo.png";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -20,118 +10,78 @@ const navItems = [
   { label: "Contact", path: "/contact" },
 ];
 
-export default function PublicNavbar() {
+export default function ModernNavbar() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
   return (
-    <nav
-      className="fixed top-0 w-full z-50 border-b shadow-sm backdrop-blur-md"
-      style={{
-        background: C.surface + "e6",
-        borderColor: C.outlineVariant + "4d",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        .pub-nav-link {
-          position: relative; font-weight: 600; font-size: 14px;
-          transition: color 0.2s; text-decoration: none;
-        }
-        .pub-nav-link::after {
-          content: ''; position: absolute; bottom: -4px; left: 0;
-          width: 100%; height: 3px; background-color: #cba72f;
-          border-radius: 9999px; transform: scaleX(0);
-          transform-origin: right; transition: transform 0.3s ease;
-        }
-        .pub-nav-link:hover::after, .pub-nav-link.active::after {
-          transform: scaleX(1); transform-origin: left;
-        }
-        .pub-mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
-        .pub-mobile-menu.open { max-height: 320px; }
-      `}</style>
-
-      <div className="flex justify-between items-center max-w-[1200px] mx-auto px-4 md:px-12 h-16 md:h-20">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div
-            className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: C.primaryContainer }}
-          >
-            <BookOpen size={18} color="#fff" />
-          </div>
-          <span
-            className="text-base md:text-xl font-bold"
-            style={{ color: C.primary }}
-          >
-            MI Nurul Huda 3
-          </span>
-        </Link>
-
-        {/* Desktop links */}
-        <div className="hidden md:flex gap-8">
-          {navItems.map(({ label, path }) => {
-            const isActive = pathname === path;
-            return (
-              <Link
-                key={path}
-                to={path}
-                className={`pub-nav-link ${isActive ? "active" : ""}`}
-                style={{
-                  color: isActive ? C.tertiaryContainer : C.onSurfaceVariant,
-                }}
-              >
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          <Link
-            to="/login"
-            className="flex items-center gap-1.5 px-4 md:px-6 py-2 rounded-xl font-semibold text-sm text-white transition-opacity hover:opacity-90"
-            style={{ background: C.primaryContainer }}
-          >
-            <LogIn size={15} />
-            <span>Login</span>
+    <nav className="fixed top-4 left-4 right-4 z-50">
+      <div className="max-w-[1100px] mx-auto rounded-2xl border border-white/40 bg-white/80 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden">
+        <div className="flex justify-between items-center px-5 h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5">
+            <img src={logoMi} alt="Logo MI Nurul Huda 3" className="w-9 h-9 rounded-lg" />
+            <span className="font-bold text-lg tracking-tight text-[#012d1d]">
+              MI Nurul Huda 3
+            </span>
           </Link>
-          <button
-            className="md:hidden p-2 rounded-lg transition-colors"
-            style={{ color: C.primary }}
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {open ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
-      </div>
 
-      {/* Mobile menu */}
-      <div
-        className={`pub-mobile-menu md:hidden border-t ${open ? "open" : ""}`}
-        style={{ background: C.surface, borderColor: C.outlineVariant + "33" }}
-      >
-        <div className="px-4 py-3 flex flex-col gap-1">
-          {navItems.map(({ label, path }) => {
-            const isActive = pathname === path;
-            return (
-              <Link
-                key={path}
-                to={path}
-                className="py-2.5 px-3 rounded-lg font-semibold text-sm transition-colors"
-                style={{
-                  color: isActive ? C.tertiaryContainer : C.onSurfaceVariant,
-                }}
-                onClick={() => setOpen(false)}
-              >
-                {label}
-              </Link>
-            );
-          })}
+          {/* Desktop links */}
+          <div className="hidden md:flex gap-1">
+            {navItems.map(({ label, path }) => {
+              const isActive = pathname === path;
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "text-[#cba72f] bg-[#cba72f]/10"
+                      : "text-[#414844] hover:text-[#012d1d] hover:bg-black/5"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Login Button & Mobile Toggle */}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-sm text-white bg-[#012d1d] transition-all hover:bg-[#1b4332] hover:scale-105 active:scale-95"
+            >
+              <LogIn size={14} />
+              <span className="hidden sm:inline">Login</span>
+            </Link>
+
+            <button
+              className="md:hidden p-2 rounded-lg text-[#012d1d] hover:bg-black/5"
+              onClick={() => setOpen(!open)}
+            >
+              {open ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {open && (
+          <div className="md:hidden border-t border-black/5 p-4 bg-white/50 backdrop-blur-md">
+            <div className="flex flex-col gap-1">
+              {navItems.map(({ label, path }) => (
+                <Link
+                  key={path}
+                  to={path}
+                  className="px-4 py-3 rounded-lg font-medium text-sm text-[#414844] hover:bg-[#012d1d]/5 hover:text-[#012d1d]"
+                  onClick={() => setOpen(false)}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

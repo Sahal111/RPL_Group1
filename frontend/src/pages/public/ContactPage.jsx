@@ -192,9 +192,8 @@ export default function ContactPage() {
 
               {/* Map placeholder */}
               <div
-                className="rounded-[20px] md:rounded-[24px] overflow-hidden relative"
+                className="rounded-[20px] md:rounded-[24px] overflow-hidden relative h-44 md:h-56"
                 style={{
-                  height: "220px",
                   boxShadow: "0 20px 40px rgba(0,0,0,0.04)",
                 }}
               >

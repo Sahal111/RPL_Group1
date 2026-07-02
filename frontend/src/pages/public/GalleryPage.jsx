@@ -192,7 +192,7 @@ export default function GalleryPage() {
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <section className="pt-12 md:pt-20 pb-8 md:pb-12 px-4 md:px-12 max-w-[1200px] mx-auto text-center relative overflow-hidden">
           <div
-            className="absolute top-[-20%] left-[-10%] w-72 md:w-96 h-72 md:h-96 rounded-full -z-10 pointer-events-none"
+            className="absolute top-[-20%] left-0 w-64 md:w-96 h-64 md:h-96 rounded-full -z-10 pointer-events-none"
             style={{
               background: "#8df7c1",
               opacity: 0.12,
@@ -200,7 +200,7 @@ export default function GalleryPage() {
             }}
           />
           <div
-            className="absolute bottom-[-20%] right-[-10%] w-72 md:w-96 h-72 md:h-96 rounded-full -z-10 pointer-events-none"
+            className="absolute bottom-[-20%] right-0 w-64 md:w-96 h-64 md:h-96 rounded-full -z-10 pointer-events-none"
             style={{
               background: "#ffe088",
               opacity: 0.12,

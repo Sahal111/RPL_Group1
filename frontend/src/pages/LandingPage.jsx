@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import heroImage from "../assets/background.jpg";
+import logoMi from "../assets/logo.png";
 import {
   Users,
   BookOpen,
@@ -24,9 +26,9 @@ import {
   Phone,
   Mail,
   LogIn,
-  Menu,
-  X,
 } from "lucide-react";
+import PublicNavbar from "./public/PublicNavbar";
+import PublicFooter from "./public/PublicFooter";
 
 const C = {
   primary: "#012d1d",
@@ -172,7 +174,6 @@ export default function LandingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const revealRefs = useRef([]);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -201,13 +202,7 @@ export default function LandingPage() {
   const addReveal = (el) => {
     if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
   };
-
-  const navLinks = [
-    { label: "Home", path: "/" },
-    { label: "About", path: "/about" },
-    { label: "Gallery", path: "/gallery" },
-    { label: "Contact", path: "/contact" },
-  ];
+  
 
   return (
     <div
@@ -280,100 +275,18 @@ export default function LandingPage() {
 
       <div className="lp">
         {/* ── Navbar ─────────────────────────────────────────────────── */}
-        <nav
-          className="fixed top-0 w-full z-50 border-b shadow-sm backdrop-blur-md"
-          style={{
-            background: C.surface + "e6",
-            borderColor: C.outlineVariant + "4d",
-          }}
-        >
-          <div className="flex justify-between items-center max-w-[1200px] mx-auto px-4 md:px-12 h-16 md:h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div
-                className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: C.primaryContainer }}
-              >
-                <BookOpen size={18} color="#fff" />
-              </div>
-              <span
-                className="text-base md:text-xl font-bold"
-                style={{ color: C.primary }}
-              >
-                MI Nurul Huda 3
-              </span>
-            </div>
 
-            {/* Desktop nav links */}
-            <div className="hidden md:flex gap-8">
-              {navLinks.map(({ label, path }, i) => (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`nav-link ${i === 0 ? "active" : ""}`}
-                  style={{
-                    color: i === 0 ? C.tertiaryContainer : C.onSurfaceVariant,
-                  }}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Right side */}
-            <div className="flex items-center gap-2">
-              <Link
-                to="/login"
-                className="flex items-center gap-1.5 px-4 md:px-6 py-2 rounded-xl font-semibold text-sm text-white transition-opacity hover:opacity-90"
-                style={{ background: C.primaryContainer }}
-              >
-                <LogIn size={15} />
-                <span>Login</span>
-              </Link>
-              {/* Hamburger (mobile only) */}
-              <button
-                className="md:hidden p-2 rounded-lg transition-colors"
-                style={{ color: C.primary }}
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile dropdown menu */}
-          <div
-            className={`mobile-menu md:hidden border-t ${mobileMenuOpen ? "open" : ""}`}
-            style={{
-              background: C.surface,
-              borderColor: C.outlineVariant + "33",
-            }}
-          >
-            <div className="px-4 py-3 flex flex-col gap-1">
-              {navLinks.map(({ label, path }, i) => (
-                <Link
-                  key={path}
-                  to={path}
-                  className="py-2.5 px-3 rounded-lg font-semibold text-sm transition-colors"
-                  style={{
-                    color: i === 0 ? C.tertiaryContainer : C.onSurfaceVariant,
-                  }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </nav>
+        <PublicNavbar />
 
         {/* ── Hero ───────────────────────────────────────────────────── */}
         <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden pt-16 md:pt-20">
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCvcN3l9gGfx3kSgiJ0QVskn-ZTakegLFS0666Fka9qMpi0ukLabsXXIG9Srbc18EMC_8QD1jEGNn_07PdiOE-OpuhUykZsJu4d8axBTOfjyIyqLPRYICB7cBe8T5NoL9-gvLSuWx0_i1DvA0JqzSxPr-jsgHvPx9o11shwxOdgk-QEUKP3m06ydQsz__y_n0GZK1YzV7L-4z-ixOcQB93fcpCIrdQ4GRYgomTH4dLlb5WMOvOxjDscbqyyzHbJnXTMJ5e9G2jP-sjO')`,
+              backgroundImage: `url(${heroImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
             }}
           />
           <div
@@ -383,12 +296,12 @@ export default function LandingPage() {
             }}
           />
           <div className="relative z-10 text-center px-5 md:px-12 max-w-[1200px] mx-auto flex flex-col items-center py-16 md:py-0">
-            <div
-              className="w-20 h-20 md:w-28 md:h-28 mb-6 md:mb-8 rounded-xl flex items-center justify-center fade-in-up"
-              style={{ background: "rgba(255,255,255,0.12)" }}
-            >
-              <BookOpen size={44} color="#fff" className="md:hidden" />
-              <BookOpen size={60} color="#fff" className="hidden md:block" />
+            <div className="mb-6 md:mb-8 fade-in-up">
+              <img
+                src={logoMi}
+                alt="Logo MI Nurul Huda 3"
+                className="w-24 md:w-36 lg:w-40 h-auto mx-auto drop-shadow-2xl"
+              />
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold text-white mb-4 leading-tight fade-in-up d100">
               Selamat Datang di{" "}
@@ -668,170 +581,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── Berita Terbaru ─────────────────────────────────────────── */}
-        <section className="py-12 md:py-20" style={{ background: C.surface }}>
-          <div className="max-w-[1200px] mx-auto px-4 md:px-12">
-            <div
-              className="text-center mb-8 md:mb-12 reveal-section"
-              ref={addReveal}
-            >
-              <h2
-                className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4"
-                style={{ color: C.primary }}
-              >
-                Berita Terbaru
-              </h2>
-              <p
-                className="text-sm md:text-lg max-w-2xl mx-auto"
-                style={{ color: C.onSurfaceVariant }}
-              >
-                Informasi dan kabar terkini seputar sekolah.
-              </p>
-            </div>
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 reveal-section"
-              ref={addReveal}
-            >
-              <NewsCard
-                date="12 Oktober 2024"
-                title="Peringatan Maulid Nabi Muhammad SAW 1446 H"
-                excerpt="Alhamdulillah, pelaksanaan peringatan Maulid Nabi berjalan dengan khidmat dihadiri oleh seluruh siswa, wali murid dan dewan guru."
-              />
-              <NewsCard
-                date="05 Oktober 2024"
-                title="Prestasi Gemilang di Ajang PORSENI Tingkat Kecamatan"
-                excerpt="Siswa-siswi MI Nurul Huda 3 berhasil meraih juara umum pada perhelatan PORSENI tahun ini membawa pulang 5 piala."
-              />
-              <NewsCard
-                date="28 September 2024"
-                title="Pembukaan PPDB Tahun Ajaran 2025/2026"
-                excerpt="Telah dibuka pendaftaran peserta didik baru gelombang pertama. Dapatkan penawaran khusus bagi pendaftar bulan ini."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ── CTA ────────────────────────────────────────────────────── */}
-        <section
-          className="py-14 md:py-24 relative overflow-hidden"
-          style={{ background: C.primary }}
-        >
-          <div className="absolute inset-0 islamic-pattern opacity-10" />
-          <div
-            className="relative z-10 max-w-[1200px] mx-auto px-5 md:px-12 text-center reveal-section"
-            ref={addReveal}
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 md:mb-4">
-              Mari Bergabung Bersama Kami
-            </h2>
-            <p
-              className="text-sm md:text-lg max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed"
-              style={{ color: C.primaryFixedDim }}
-            >
-              Bentuk generasi Qur'ani yang berprestasi dan berakhlakul karimah.
-              Daftarkan putra-putri Anda sekarang juga di MI Nurul Huda 3.
-            </p>
-            <button
-              className="px-7 md:px-8 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg inline-flex items-center gap-2 shadow-lg transition-opacity hover:opacity-90"
-              style={{ background: C.tertiaryContainer, color: C.primary }}
-            >
-              Daftar Sekarang <UserPlus size={18} />
-            </button>
-          </div>
-        </section>
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
-        <footer style={{ background: "#e7e8e9" }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 max-w-[1200px] mx-auto py-10 md:py-12 px-4 md:px-12">
-            <div className="sm:col-span-2 md:col-span-2">
-              <div className="flex items-center gap-2 mb-3 md:mb-4">
-                <div
-                  className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-                  style={{ background: C.primaryContainer }}
-                >
-                  <BookOpen size={15} color="#fff" />
-                </div>
-                <span
-                  className="text-lg md:text-xl font-bold"
-                  style={{ color: C.primary }}
-                >
-                  MI Nurul Huda 3
-                </span>
-              </div>
-              <p
-                className="text-sm md:text-base max-w-sm"
-                style={{ color: C.onSurfaceVariant }}
-              >
-                Membentuk generasi Rabbani yang unggul dalam prestasi dan
-                berakhlakul karimah.
-              </p>
-            </div>
-            <div>
-              <h4
-                className="text-base md:text-xl font-bold mb-3 md:mb-4"
-                style={{ color: C.primary }}
-              >
-                Links
-              </h4>
-              <ul className="space-y-1.5 md:space-y-2">
-                {[
-                  "Home",
-                  "About",
-                  "Gallery",
-                  "Programs",
-                  "News",
-                  "Contact",
-                ].map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
-                      className="text-sm md:text-base transition-opacity hover:opacity-80"
-                      style={{ color: C.onSurfaceVariant }}
-                    >
-                      {item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4
-                className="text-base md:text-xl font-bold mb-3 md:mb-4"
-                style={{ color: C.primary }}
-              >
-                Contact Us
-              </h4>
-              <div className="space-y-2">
-                {[
-                  { icon: MapPin, text: "Jl. Pendidikan No. 123" },
-                  { icon: Phone, text: "(021) 1234567" },
-                  { icon: Mail, text: "info@minurulhuda3.sch.id" },
-                ].map(({ icon: Icon, text }) => (
-                  <p
-                    key={text}
-                    className="text-sm md:text-base flex items-start gap-2"
-                    style={{ color: C.onSurfaceVariant }}
-                  >
-                    <Icon
-                      size={16}
-                      className="flex-shrink-0 mt-0.5"
-                      style={{ color: C.tertiaryContainer }}
-                    />
-                    {text}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div
-            className="border-t py-4 text-center"
-            style={{ borderColor: C.outlineVariant + "4d" }}
-          >
-            <p className="text-xs" style={{ color: C.onSurfaceVariant }}>
-              © 2024 MI Nurul Huda 3. All Rights Reserved.
-            </p>
-          </div>
-        </footer>
+        <PublicFooter />
       </div>
     </div>
   );
