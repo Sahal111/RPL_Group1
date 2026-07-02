@@ -17,22 +17,22 @@ const CONTACT_INFO = [
   {
     icon: MapPin,
     label: "Alamat Sekolah",
-    value: "Jl. Pendidikan No. 123, Kecamatan Sukamaju, Kota Harapan, 45678",
+    value: "Jl. Kencana Rt 01/02, Kel. Kencana, Kec. Tanah Sareal, Kota Bogor ",
   },
   {
     icon: Phone,
     label: "Telepon",
-    value: "(021) 555-0123",
+    value: "+62 858 1172 3878",
   },
   {
     icon: Mail,
     label: "Email",
-    value: "info@minurulhuda3.sch.id",
+    value: "minurulhuda3nh@gmail.com",
   },
   {
     icon: Clock,
     label: "Jam Operasional",
-    value: "Senin - Jumat: 07.00 - 15.00 WIB",
+    value: "Senin - Sabtu: 07.00 - 13.00 WIB",
   },
 ];
 
@@ -190,26 +190,23 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* Map placeholder */}
+              {/* Map embed */}
               <div
-                className="rounded-[20px] md:rounded-[24px] overflow-hidden relative h-44 md:h-56"
+                className="rounded-[20px] md:rounded-[24px] overflow-hidden h-44 md:h-56"
                 style={{
                   boxShadow: "0 20px 40px rgba(0,0,0,0.04)",
                 }}
               >
-                <img
-                  className="w-full h-full object-cover opacity-80"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFboYNvJ3QM4kij3z7F07GURexVTvQZY7PuDmvhq_Wjkaaq0GDiVjxhuW_5vN76PYaiwAl6BxwVuiZyY7r1ZS3k-UWgZstl_pmG8a6AdhrzGPOVwvRuy-gJs_r8twQKSxur99IM7qpSTl42EzRVBELZyVUjavXXPDUuttny2r-d39Pu8mPDSfQro0ao3vSYqdr6r8QOmIYD-PPHGoYp8zsQlRhS0Mx2n5zcWo8XKRNTzHS_5XiBJLmJLqSCjk9VePGtowfplXpWRY"
-                  alt="Peta lokasi sekolah"
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4299.407971394033!2d106.7893666!3d-6.531793599999999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c393e84a8c93%3A0xd2d2e8c1c14ccbf8!2sMI%20NURUL%20HUDA%203!5e1!3m2!1sid!2sid!4v1782985129400!5m2!1sid!2sid"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0, display: "block" }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  title="Lokasi MI Nurul Huda 3"
                 />
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div
-                    className="p-3 rounded-full shadow-lg"
-                    style={{ background: C.primaryContainer }}
-                  >
-                    <MapPin size={22} color="#fff" />
-                  </div>
-                </div>
               </div>
             </div>
 

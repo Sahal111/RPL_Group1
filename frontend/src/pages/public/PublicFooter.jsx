@@ -90,7 +90,7 @@ export default function PublicFooter() {
           <div className="space-y-2">
             {[
               { icon: MapPin, text: "Jl. Kencana Rt01 Rw 02 " },
-              { icon: Phone, text: "+6285811723878" },
+              { icon: Phone, text: "+62 858 1172 3878" },
               { icon: Mail, text: "minurulhuda3nh@gmail.com" },
             ].map(({ icon: Icon, text }) => (
               <p
