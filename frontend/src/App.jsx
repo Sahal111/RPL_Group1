@@ -7,6 +7,11 @@ import LoginPage from "./pages/auth/LoginPage";
 import RegisterOrtuPage from "./pages/auth/RegisterOrtuPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 
+// Public pages
+import GalleryPage from "./pages/public/GalleryPage";
+import AboutPage from "./pages/public/AboutPage";
+import ContactPage from "./pages/public/ContactPage";
+
 // Operator
 import OperatorLayout from "./pages/operator/OperatorLayout";
 import ManajemenAkun from "./pages/operator/ManajemenAkun";
@@ -65,6 +70,9 @@ export default function App() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/gallery" element={<GalleryPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register-ortu" element={<RegisterOrtuPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />

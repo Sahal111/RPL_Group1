@@ -202,7 +202,12 @@ export default function LandingPage() {
     if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
   };
 
-  const navLinks = ["Home", "About", "Gallery"];
+  const navLinks = [
+    { label: "Home", path: "/" },
+    { label: "About", path: "/about" },
+    { label: "Gallery", path: "/gallery" },
+    { label: "Contact", path: "/contact" },
+  ];
 
   return (
     <div
@@ -301,17 +306,17 @@ export default function LandingPage() {
 
             {/* Desktop nav links */}
             <div className="hidden md:flex gap-8">
-              {navLinks.map((item, i) => (
-                <a
-                  key={item}
-                  href="#"
+              {navLinks.map(({ label, path }, i) => (
+                <Link
+                  key={path}
+                  to={path}
                   className={`nav-link ${i === 0 ? "active" : ""}`}
                   style={{
                     color: i === 0 ? C.tertiaryContainer : C.onSurfaceVariant,
                   }}
                 >
-                  {item}
-                </a>
+                  {label}
+                </Link>
               ))}
             </div>
 
@@ -346,18 +351,18 @@ export default function LandingPage() {
             }}
           >
             <div className="px-4 py-3 flex flex-col gap-1">
-              {navLinks.map((item, i) => (
-                <a
-                  key={item}
-                  href="#"
+              {navLinks.map(({ label, path }, i) => (
+                <Link
+                  key={path}
+                  to={path}
                   className="py-2.5 px-3 rounded-lg font-semibold text-sm transition-colors"
                   style={{
                     color: i === 0 ? C.tertiaryContainer : C.onSurfaceVariant,
                   }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item}
-                </a>
+                  {label}
+                </Link>
               ))}
             </div>
           </div>
@@ -402,15 +407,16 @@ export default function LandingPage() {
               Rabbani yang cerdas intelektual dan berakhlakul karimah.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto fade-in-up d300">
-              <button
-                className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold text-white shadow-lg transition-opacity hover:opacity-90"
+              <Link
+                to="/about"
+                className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold text-white shadow-lg transition-opacity hover:opacity-90 text-center"
                 style={{
                   background: C.primary,
                   border: `2px solid ${C.primaryContainer}`,
                 }}
               >
                 Tentang Kami
-              </button>
+              </Link>
               <Link
                 to="/login"
                 className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold text-white transition-all hover:bg-white/10 flex items-center justify-center gap-2"
@@ -603,13 +609,13 @@ export default function LandingPage() {
                   Momen-momen berharga siswa-siswi MI Nurul Huda 3.
                 </p>
               </div>
-              <a
-                href="#"
+              <Link
+                to="/gallery"
                 className="hidden md:inline-flex items-center gap-2 font-semibold text-sm hover:opacity-80 transition-opacity flex-shrink-0 ml-4"
                 style={{ color: C.tertiaryContainer }}
               >
                 Lihat Semua <ArrowRight size={15} />
-              </a>
+              </Link>
             </div>
             <div
               className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 reveal-section"
@@ -648,8 +654,8 @@ export default function LandingPage() {
               className="mt-6 text-center md:hidden reveal-section"
               ref={addReveal}
             >
-              <a
-                href="#"
+              <Link
+                to="/gallery"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm"
                 style={{
                   background: C.primaryContainer + "1a",
@@ -657,7 +663,7 @@ export default function LandingPage() {
                 }}
               >
                 Lihat Semua Galeri <ArrowRight size={14} />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
