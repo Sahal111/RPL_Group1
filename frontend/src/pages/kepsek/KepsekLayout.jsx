@@ -7,6 +7,7 @@ import {
   GraduationCap,
   ClipboardCheck,
   Megaphone,
+  CalendarDays,
 } from "lucide-react";
 
 const menus = [
@@ -20,6 +21,7 @@ const menus = [
   { path: "/kepsek/guru", label: "Data Guru", icon: Users },
   { path: "/kepsek/siswa", label: "Data Siswa", icon: GraduationCap },
   { path: "/kepsek/pengumuman", label: "Pengumuman", icon: Megaphone },
+  { path: "/kepsek/kalender", label: "Kalender Akademik", icon: CalendarDays },
 ];
 
 export default function KepsekLayout() {

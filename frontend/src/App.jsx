@@ -47,6 +47,7 @@ import DataSiswaKepsek from "./pages/kepsek/DataSiswaKepsek";
 import DetailSiswaKepsek from "./pages/kepsek/DetailSiswaKepsek";
 import MonitoringAbsensi from "./pages/kepsek/MonitoringAbsensi";
 import PengumumanKepsek from "./pages/kepsek/PengumumanKepsek";
+import KalenderAkademik from "./pages/kepsek/KalenderAkademik";
 
 // Ortu
 import OrtuLayout from "./pages/ortu/OrtuLayout";
@@ -133,6 +134,7 @@ export default function App() {
         <Route path="siswa" element={<DataSiswaKepsek />} />
         <Route path="siswa/:nisn" element={<DetailSiswaKepsek />} />
         <Route path="pengumuman" element={<PengumumanKepsek />} />
+        <Route path="kalender" element={<KalenderAkademik />} />
       </Route>
 
       {/* Ortu */}

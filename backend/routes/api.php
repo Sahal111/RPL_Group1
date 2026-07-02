@@ -211,6 +211,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/pengumuman', [\App\Http\Controllers\PengumumanController::class, 'store']);
         Route::put('/pengumuman/{id}', [\App\Http\Controllers\PengumumanController::class, 'update']);
         Route::delete('/pengumuman/{id}', [\App\Http\Controllers\PengumumanController::class, 'destroy']);
+
+        // Kalender Akademik
+        Route::get('/kalender', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'index']);
+        Route::post('/kalender', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'store']);
+        Route::put('/kalender/{id}', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'update']);
+        Route::delete('/kalender/{id}', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'destroy']);
     });
 
     // Ortu
