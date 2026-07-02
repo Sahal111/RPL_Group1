@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import heroImage from "../assets/background.jpg";
 import logoMi from "../assets/logo.png";
+import api from "../lib/axios";
 import {
   Users,
   BookOpen,
@@ -174,6 +175,16 @@ export default function LandingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const revealRefs = useRef([]);
+  const [galeriPreview, setGaleriPreview] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/galeri")
+      .then((res) => {
+        if (res.data.success) setGaleriPreview(res.data.data.slice(0, 6));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -534,34 +545,27 @@ export default function LandingPage() {
               className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 reveal-section"
               ref={addReveal}
             >
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-xl overflow-hidden group"
-                  style={{ background: C.surfaceVariant }}
-                >
-                  <div
-                    className="w-full h-full flex items-center justify-center transition-transform duration-500 group-hover:scale-110"
-                    style={{
-                      background:
-                        i % 2 === 0
-                          ? C.primaryContainer + "33"
-                          : C.tertiaryContainer + "33",
-                    }}
-                  >
-                    <Image
-                      size={36}
-                      style={{ color: C.onSurfaceVariant + "80" }}
-                      className="md:hidden"
+              {galeriPreview.length === 0
+                ? [...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-square rounded-xl overflow-hidden"
+                      style={{ background: C.surfaceVariant }}
                     />
-                    <Image
-                      size={48}
-                      style={{ color: C.onSurfaceVariant + "80" }}
-                      className="hidden md:block"
-                    />
-                  </div>
-                </div>
-              ))}
+                  ))
+                : galeriPreview.map((item) => (
+                    <Link
+                      to="/gallery"
+                      key={item.id}
+                      className="aspect-square rounded-xl overflow-hidden group block"
+                    >
+                      <img
+                        src={item.foto_url}
+                        alt={item.judul}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    </Link>
+                  ))}
             </div>
             <div
               className="mt-6 text-center md:hidden reveal-section"
@@ -580,7 +584,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
         <PublicFooter />

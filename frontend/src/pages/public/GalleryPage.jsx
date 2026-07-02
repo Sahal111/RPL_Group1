@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ImageOff, ChevronDown, Loader2 } from "lucide-react";
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
+import api from "../../lib/axios";
 
 const C = {
   primary: "#012d1d",
@@ -101,11 +102,10 @@ export default function GalleryPage() {
   // Fetch data dari API
   useEffect(() => {
     window.scrollTo(0, 0);
-    const apiBase = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8001/api";
-    fetch(`${apiBase}/galeri`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setGaleri(json.data);
+    api
+      .get("/galeri")
+      .then((res) => {
+        if (res.data.success) setGaleri(res.data.data);
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
@@ -149,8 +149,9 @@ export default function GalleryPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-        .reveal-section { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
-        .reveal-section.reveal-active { opacity: 1; transform: translateY(0); }
+       /* SESUDAH */
+.reveal-section { opacity: 1; transform: translateY(0); }
+.reveal-section.reveal-active { opacity: 1; transform: translateY(0); }
 
         @media (hover: hover) {
           .card-overlay { opacity: 0; transition: opacity 0.3s ease; }
