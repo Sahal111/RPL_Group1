@@ -23,6 +23,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/register-ortu', [AuthController::class, 'registerOrtu']);
 });
 
+// Galeri publik (tidak perlu login)
+Route::get('/galeri', [\App\Http\Controllers\GaleriController::class, 'index']);
+
 // -------------------------------------------------------
 // PROTECTED — perlu token Sanctum
 // -------------------------------------------------------
@@ -169,6 +172,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/pengumuman', [\App\Http\Controllers\PengumumanController::class, 'store']);
         Route::put('/pengumuman/{id}', [\App\Http\Controllers\PengumumanController::class, 'update']);
         Route::delete('/pengumuman/{id}', [\App\Http\Controllers\PengumumanController::class, 'destroy']);
+
+        // Galeri Foto
+        Route::post('/galeri', [\App\Http\Controllers\GaleriController::class, 'store']);
+        Route::delete('/galeri/{id}', [\App\Http\Controllers\GaleriController::class, 'destroy']);
     });
 
 
@@ -217,7 +224,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/kalender', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'store']);
         Route::put('/kalender/{id}', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'update']);
         Route::delete('/kalender/{id}', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'destroy']);
-        Route::get('/profil',         [\App\Http\Controllers\Kepsek\KepsekController::class, 'profil']);
+        Route::get('/profil', [\App\Http\Controllers\Kepsek\KepsekController::class, 'profil']);
         Route::post('/profil/update', [\App\Http\Controllers\Kepsek\KepsekController::class, 'updateProfil']);
     });
 

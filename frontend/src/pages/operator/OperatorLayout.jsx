@@ -13,6 +13,7 @@ import {
   Clock,
   Megaphone,
   UserCircle,
+  Images,
 } from "lucide-react";
 
 const menus = [
@@ -58,6 +59,11 @@ const menus = [
     path: "/operator/master/pengumuman",
     label: "Pengumuman",
     icon: Megaphone,
+  },
+  {
+    path: "/operator/master/galeri",
+    label: "Galeri Foto",
+    icon: Images,
   },
 ];
 

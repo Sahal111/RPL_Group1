@@ -30,6 +30,7 @@ import DetailTahunAjaran from "./pages/operator/master/DetailTahunAjaran";
 import MasterMapel from "./pages/operator/master/MasterMapel";
 import MasterJadwal from "./pages/operator/master/MasterJadwal";
 import PengumumanOperator from "./pages/operator/master/PengumumanOperator";
+import GaleriOperator from "./pages/operator/master/GaleriOperator";
 import DetailDataOrtu from "./pages/operator/master/DetailDataOrtu"; // sesuaikan path import
 
 // Guru
@@ -102,6 +103,7 @@ export default function App() {
         <Route path="master/mapel" element={<MasterMapel />} />
         <Route path="master/jadwal-pelajaran" element={<MasterJadwal />} />
         <Route path="master/pengumuman" element={<PengumumanOperator />} />
+        <Route path="master/galeri" element={<GaleriOperator />} />
         <Route path="master/ortu/keluarga/:id" element={<DetailDataOrtu />} />
       </Route>
 

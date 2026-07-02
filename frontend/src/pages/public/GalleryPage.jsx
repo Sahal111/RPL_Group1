@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { ImageOff, ChevronDown } from "lucide-react";
+import { ImageOff, ChevronDown, Loader2 } from "lucide-react";
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
 
@@ -18,54 +17,6 @@ const C = {
   primaryFixedDim: "#a5d0b9",
 };
 
-const GALLERY_ITEMS = [
-  {
-    id: 1,
-    category: "acara",
-    label: "Acara",
-    title: "Upacara Hari Kemerdekaan",
-    desc: "Membangun semangat nasionalisme sejak dini.",
-    src: "https://lh3.googleusercontent.com/aida-public/AB6AXuC7FuZPG-wiPXXYfxyM_ssSXUtpWUHLLqf_1eLYrjNkW_6r45UPDxGtdHq72T_l2OI2P5lsCE4vKQocwSQcYInUd5h29vn-8fCzH44Sm_DMgW4YiXKuL6lEQkDbFrOln4Q_PjPfS2f0AP2wGPH3gbgHTNDi0h99g83yNUz02P0XpvwfQKtR55Hmr5iKhA3zDQ2HF4iPO2u4l1Ivj62jg357L_f4vz2xTVQgiCCMqd2T9VB00EBl8TZC7Ake-V2qv8AZglVN8plGKTs",
-    size: "large", // col-span 8, row-span 2
-  },
-  {
-    id: 2,
-    category: "kegiatan",
-    label: "Kegiatan",
-    title: "Kelas Kaligrafi",
-    desc: null,
-    src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDKu4MpLBXgR8PeWbVgzqLLzrngzrGaH_GZEC1g9ImbxL91l0661UHP3gZScz4g0B-4R4VKzbPnlkgMtHRhDap_i5gzDKZ8UojN6BS9hj_yJGoV9_pIzc7OAu3CsM9xzVF1oUB7yd8VDurOxghZe8U9K65F5xGrWwMe9Bbc4TijjPOlozaqyfO-cvqOMazQwipwcsbBcWoAJJi8SF4eSstTqiGo2K-VCCPPid1Tf7zI5SL1mmzbIvmxB5Hjz8k6x8Qqte_jKiHUK_k",
-    size: "small",
-  },
-  {
-    id: 3,
-    category: "fasilitas",
-    label: "Fasilitas",
-    title: "Perpustakaan Digital",
-    desc: null,
-    src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCBTXPrYEn3f57f93zUoD1IO2gGfagl6RLGDmiMtDHahbGBfyfQhPZy59wl6BL3dMIieHTFY2xPDUWJbQGiv0y-ja2EMBR6g87B_MMcXJMaDVlfxhHBWKkFxwkp0TynXLwiNUfkwLb5V4OB9aoP8U6itT8YrYcyJnjBkPZBUj7VY5Y3wpmlvY9lsJsJdQR9P7IYmeF_pgI14xnVARrTL0oRRATQQ9Mtqum1KN2P4CTJP-VIHRIvnCpr3fC_Dwsp7hg-Tws1Dx3xjAk",
-    size: "small",
-  },
-  {
-    id: 4,
-    category: "prestasi",
-    label: "Prestasi",
-    title: "Juara Umum Olimpiade Sains",
-    desc: "Tingkat Kabupaten tahun 2024.",
-    src: "https://lh3.googleusercontent.com/aida-public/AB6AXuD3lAZtajrD2ZVO3GZNdX68wpUyY5gUTOeB6FSbEOQdfvMB_xUKp9nye3509ob7EddgiL9NL7pGiGCTq9GUdf0uHpmqN_BxCjJWkgZeaO5-4YWTw4eS-WONLyQBStHRJtbZ5bbbhEkbtidOFbYbRGXfokbD35C9BqAWWWoXdrpdUG8BQC7X-uOBQhAy1Fvo9AJHFZR7jsAdbLsDeDycpAtA_BDIHPfAzj7LMWhOckahaQgokdB15Hv-NXnSfDEdtKWcjf0BqNbn3QE",
-    size: "small",
-  },
-  {
-    id: 5,
-    category: "ekstrakurikuler",
-    label: "Ekstrakurikuler",
-    title: "Latihan Pencak Silat",
-    desc: null,
-    src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDuSw3aOuPjZCHI08Xyj2nSVC1BRlzF1pQuMPMUtbozG5gIrE7LCN_x5OwcXO1t3WEnq06XTPGxRF3GETBpxLIUQhHCIGgy_dRp3wEfQ66YGc5GWNSHxtQNH4Bw-khKVDhCWks-WGNvKxE4ZALruNTwFgMuVoriWbXTHaEUcp5RuqAnBRLLZXnfuHNL24gmAZ8ut0OhUX_M-x0y7p80xxiH1VwvhIj0zpVYBCieUU7uNWkl8ZkyjAaPaM",
-    size: "wide", // col-span 8
-  },
-];
-
 const FILTERS = [
   { key: "all", label: "Semua" },
   { key: "kegiatan", label: "Kegiatan" },
@@ -75,8 +26,16 @@ const FILTERS = [
   { key: "acara", label: "Acara" },
 ];
 
+const KATEGORI_LABEL = {
+  kegiatan: "Kegiatan",
+  prestasi: "Prestasi",
+  ekstrakurikuler: "Ekstrakurikuler",
+  fasilitas: "Fasilitas",
+  acara: "Acara",
+};
+
 function GalleryCard({ item, isMobile }) {
-  const isPrestasi = item.category === "prestasi";
+  const isPrestasi = item.kategori === "prestasi";
   const labelBg = isPrestasi ? "rgba(203,167,47,0.9)" : "rgba(1,45,29,0.15)";
   const labelColor = isPrestasi ? C.primary : "#a5d0b9";
   const labelBorder = isPrestasi
@@ -90,11 +49,10 @@ function GalleryCard({ item, isMobile }) {
     >
       <img
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        src={item.src}
-        alt={item.title}
+        src={item.foto_url}
+        alt={item.judul}
         loading="lazy"
       />
-      {/* Overlay — always visible on touch, hover only on pointer devices */}
       <div
         className="card-overlay absolute inset-0 flex flex-col justify-end"
         style={{
@@ -111,16 +69,16 @@ function GalleryCard({ item, isMobile }) {
               borderColor: labelBorder,
             }}
           >
-            {item.label}
+            {KATEGORI_LABEL[item.kategori] || item.kategori}
           </span>
           <h3
             className={`font-bold text-white leading-tight ${isMobile ? "text-base" : "text-lg md:text-2xl"}`}
           >
-            {item.title}
+            {item.judul}
           </h3>
-          {item.desc && (
+          {item.deskripsi && (
             <p className="text-xs md:text-sm mt-1" style={{ color: "#d8e3fa" }}>
-              {item.desc}
+              {item.deskripsi}
             </p>
           )}
         </div>
@@ -131,14 +89,36 @@ function GalleryCard({ item, isMobile }) {
 
 export default function GalleryPage() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [galeri, setGaleri] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(9);
   const revealRefs = useRef([]);
 
   const addReveal = (el) => {
     if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
   };
 
+  // Fetch data dari API
   useEffect(() => {
     window.scrollTo(0, 0);
+    const apiBase = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8001/api";
+    fetch(`${apiBase}/galeri`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setGaleri(json.data);
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Kosongkan refs lama saat filter atau data berubah,
+  // agar observer berikutnya hanya melihat elemen baru
+  useEffect(() => {
+    revealRefs.current = [];
+  }, [activeFilter, galeri]);
+
+  // Observe elemen setelah render (refs sudah terisi lewat addReveal)
+  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
@@ -148,12 +128,15 @@ export default function GalleryPage() {
     );
     revealRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [activeFilter, galeri]);
 
   const filtered =
     activeFilter === "all"
-      ? GALLERY_ITEMS
-      : GALLERY_ITEMS.filter((i) => i.category === activeFilter);
+      ? galeri
+      : galeri.filter((i) => i.kategori === activeFilter);
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   return (
     <div
@@ -169,12 +152,10 @@ export default function GalleryPage() {
         .reveal-section { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
         .reveal-section.reveal-active { opacity: 1; transform: translateY(0); }
 
-        /* hover devices: overlay on hover */
         @media (hover: hover) {
           .card-overlay { opacity: 0; transition: opacity 0.3s ease; }
           .gallery-card:hover .card-overlay { opacity: 1; }
         }
-        /* touch devices: overlay always visible */
         @media (hover: none) {
           .card-overlay { opacity: 1; }
         }
@@ -232,7 +213,7 @@ export default function GalleryPage() {
             makna.
           </p>
 
-          {/* Filter chips — scrollable on mobile */}
+          {/* Filter chips */}
           <div className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
             <div className="flex gap-2 md:gap-3 md:flex-wrap md:justify-center w-max md:w-auto mx-auto">
               {FILTERS.map(({ key, label }) => {
@@ -240,7 +221,10 @@ export default function GalleryPage() {
                 return (
                   <button
                     key={key}
-                    onClick={() => setActiveFilter(key)}
+                    onClick={() => {
+                      setActiveFilter(key);
+                      setVisibleCount(9);
+                    }}
                     className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
                     style={{
                       background: isActive ? C.primaryContainer : "#e7eeff",
@@ -258,116 +242,72 @@ export default function GalleryPage() {
           </div>
         </section>
 
-        {/* ── Gallery ──────────────────────────────────────────────────── */}
+        {/* ── Gallery Grid ─────────────────────────────────────────────── */}
         <section className="px-4 md:px-12 max-w-[1200px] mx-auto pb-16 md:pb-24">
-          {filtered.length === 0 ? (
+          {/* Loading */}
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-24 gap-3">
+              <Loader2
+                size={36}
+                className="animate-spin"
+                style={{ color: C.primaryContainer }}
+              />
+              <p style={{ color: C.onSurfaceVariant }}>Memuat galeri...</p>
+            </div>
+          )}
+
+          {/* Empty */}
+          {!isLoading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <ImageOff size={52} style={{ color: C.outlineVariant }} />
               <p style={{ color: C.onSurfaceVariant }}>
                 Tidak ada foto untuk kategori ini.
               </p>
             </div>
-          ) : (
-            <>
-              {/* ── Desktop bento grid (md+) ─────────────────────────── */}
-              <div
-                className="hidden md:grid reveal-section"
-                ref={addReveal}
-                style={{
-                  gridTemplateColumns: "repeat(12, 1fr)",
-                  gridTemplateRows: "250px 250px 250px",
-                  gap: "24px",
-                }}
-              >
-                {/* Item 1 — large hero */}
-                {(activeFilter === "all" || activeFilter === "acara") && (
-                  <div
-                    style={{ gridColumn: "1 / span 8", gridRow: "1 / span 2" }}
-                  >
-                    <GalleryCard item={GALLERY_ITEMS[0]} />
-                  </div>
-                )}
+          )}
 
-                {/* Items 2 & 3 — right column small */}
-                {(activeFilter === "all" || activeFilter === "kegiatan") && (
-                  <div style={{ gridColumn: "9 / span 4", gridRow: "1" }}>
-                    <GalleryCard item={GALLERY_ITEMS[1]} />
-                  </div>
-                )}
-                {(activeFilter === "all" || activeFilter === "fasilitas") && (
-                  <div style={{ gridColumn: "9 / span 4", gridRow: "2" }}>
-                    <GalleryCard item={GALLERY_ITEMS[2]} />
-                  </div>
-                )}
-
-                {/* Item 4 — prestasi */}
-                {(activeFilter === "all" || activeFilter === "prestasi") && (
-                  <div style={{ gridColumn: "1 / span 4", gridRow: "3" }}>
-                    <GalleryCard item={GALLERY_ITEMS[3]} />
-                  </div>
-                )}
-
-                {/* Item 5 — wide */}
-                {(activeFilter === "all" ||
-                  activeFilter === "ekstrakurikuler") && (
-                  <div style={{ gridColumn: "5 / span 8", gridRow: "3" }}>
-                    <GalleryCard item={GALLERY_ITEMS[4]} />
-                  </div>
-                )}
-
-                {/* Fallback: when filter yields nothing in bento, show message */}
-                {activeFilter !== "all" && filtered.length === 0 && (
-                  <div
-                    style={{ gridColumn: "1 / -1", gridRow: "1" }}
-                    className="flex items-center justify-center"
-                  >
-                    <p style={{ color: C.onSurfaceVariant }}>
-                      Tidak ada foto untuk kategori ini.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* ── Mobile / tablet grid ─────────────────────────────── */}
-              <div
-                className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 reveal-section"
-                ref={addReveal}
-              >
-                {filtered.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className={`h-52 ${item.size === "wide" && idx === filtered.length - 1 ? "sm:col-span-2 sm:h-56" : ""}`}
-                  >
-                    <GalleryCard item={item} isMobile />
-                  </div>
-                ))}
-              </div>
-            </>
+          {/* Grid responsif — key memaksa remount saat filter berubah
+               supaya class reveal-active di-reset dan animasi jalan ulang */}
+          {!isLoading && visible.length > 0 && (
+            <div
+              key={activeFilter}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 reveal-section"
+              ref={addReveal}
+            >
+              {visible.map((item) => (
+                <div key={item.id} className="h-60 md:h-72">
+                  <GalleryCard item={item} />
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Load more */}
-          <div
-            className="mt-10 md:mt-14 flex justify-center reveal-section"
-            ref={addReveal}
-          >
-            <button
-              className="flex items-center gap-2 px-7 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-80"
-              style={{
-                border: `2px solid ${C.outlineVariant}`,
-                color: C.primary,
-                background: "transparent",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.borderColor = C.primaryContainer)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor = C.outlineVariant)
-              }
+          {!isLoading && hasMore && (
+            <div
+              className="mt-10 md:mt-14 flex justify-center reveal-section"
+              ref={addReveal}
             >
-              Muat Lebih Banyak
-              <ChevronDown size={16} />
-            </button>
-          </div>
+              <button
+                className="flex items-center gap-2 px-7 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-80"
+                style={{
+                  border: `2px solid ${C.outlineVariant}`,
+                  color: C.primary,
+                  background: "transparent",
+                }}
+                onClick={() => setVisibleCount((c) => c + 9)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = C.primaryContainer)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = C.outlineVariant)
+                }
+              >
+                Muat Lebih Banyak
+                <ChevronDown size={16} />
+              </button>
+            </div>
+          )}
         </section>
       </main>
 
