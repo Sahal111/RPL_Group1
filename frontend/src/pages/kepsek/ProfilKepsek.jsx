@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../lib/axios";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   User,
   Mail,
@@ -44,6 +45,7 @@ function InfoRow({ label, value }) {
 
 export default function ProfilKepsek() {
   const queryClient = useQueryClient();
+  const { updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(FORM_DEFAULT);
   const [previewImage, setPreviewImage] = useState(null);
@@ -73,8 +75,14 @@ export default function ProfilKepsek() {
         headers: { "Content-Type": "multipart/form-data" },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success("Profil berhasil diperbarui");
+      // Backend mengembalikan { success, message, data: userObject }
+      // Sync ke AuthContext & localStorage agar foto sidebar langsung update
+      const updatedUser = res?.data?.data;
+      if (updatedUser) {
+        updateUser(updatedUser);
+      }
       queryClient.invalidateQueries(["kepsek-profil"]);
       queryClient.invalidateQueries(["auth-user"]);
       setIsEditing(false);

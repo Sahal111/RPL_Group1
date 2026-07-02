@@ -3,6 +3,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import toast from "react-hot-toast";
 import { BookOpen, LogOut } from "lucide-react";
 
+const BASE_URL =
+  import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
+
 export default function Sidebar({ menus }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -34,7 +37,7 @@ export default function Sidebar({ menus }) {
           <div className="w-9 h-9 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center flex-shrink-0">
             {user?.foto ? (
               <img
-                src={`http://127.0.0.1:8001/storage/${user.foto}`}
+                src={`${BASE_URL}/storage/${user.foto}`}
                 alt={user?.nama_lengkap}
                 className="w-full h-full object-cover"
               />
