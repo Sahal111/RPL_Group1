@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   Megaphone,
   CalendarDays,
+  UserCircle,
 } from "lucide-react";
 
 const menus = [
@@ -22,6 +23,7 @@ const menus = [
   { path: "/kepsek/siswa", label: "Data Siswa", icon: GraduationCap },
   { path: "/kepsek/pengumuman", label: "Pengumuman", icon: Megaphone },
   { path: "/kepsek/kalender", label: "Kalender Akademik", icon: CalendarDays },
+  { path: "/kepsek/profil", label: "Profil Saya", icon: UserCircle },
 ];
 
 export default function KepsekLayout() {

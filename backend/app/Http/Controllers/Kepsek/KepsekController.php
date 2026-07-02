@@ -15,6 +15,10 @@ use App\Models\Pengumuman;
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use App\Models\UserKepsek;
+
 
 class KepsekController extends Controller
 {
@@ -499,6 +503,89 @@ class KepsekController extends Controller
         return response()->json([
             'success' => true,
             'data' => $kelas,
+        ]);
+    }
+
+    // -------------------------------------------------------
+    // PROFIL KEPSEK
+    // -------------------------------------------------------
+    public function profil(Request $request)
+    {
+        $user = $request->user()->load('kepsekProfile');
+
+        $nuptk = $user->kepsekProfile?->nuptk;
+
+        $masterGuru = null;
+        if ($nuptk) {
+            $masterGuru = Guru::where('nuptk', $nuptk)->first();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'nama_lengkap' => $user->nama_lengkap,
+                    'no_hp' => $user->no_hp,
+                    'foto' => $user->foto,
+                ],
+                'kepsek' => [
+                    'nuptk' => $user->kepsekProfile?->nuptk,
+                    'no_sk' => $user->kepsekProfile?->no_sk,
+                    'tmt_jabatan' => $user->kepsekProfile?->tmt_jabatan,
+                ],
+                'master' => $masterGuru,
+            ],
+        ]);
+    }
+
+    // -------------------------------------------------------
+    // UPDATE PROFIL KEPSEK
+    // -------------------------------------------------------
+    public function updateProfil(Request $request)
+    {
+        $user = User::find($request->user()->id);
+
+        $request->validate([
+            'email' => 'nullable|email|unique:users,email,' . $user->id,
+            'no_hp' => 'nullable|string|max:20',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'password_lama' => 'nullable|string',
+            'password_baru' => 'nullable|string|min:6|confirmed',
+            'password_baru_confirmation' => 'nullable|string',
+        ]);
+
+        if ($request->filled('password_baru')) {
+            if (!$request->filled('password_lama')) {
+                return response()->json(['success' => false, 'message' => 'Password lama wajib diisi.'], 400);
+            }
+            if (!\Illuminate\Support\Facades\Hash::check($request->password_lama, $user->password)) {
+                return response()->json(['success' => false, 'message' => 'Password lama tidak cocok.'], 400);
+            }
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->password_baru);
+        }
+
+        if ($request->filled('email'))
+            $user->email = $request->email;
+        if ($request->filled('no_hp'))
+            $user->no_hp = $request->no_hp;
+
+        if ($request->hasFile('foto')) {
+            if ($user->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->foto)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto);
+            }
+            $path = $request->file('foto')->store('foto-kepsek', 'public');
+            $user->foto = $path;
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui.',
+            'data' => $user,
         ]);
     }
 }

@@ -217,6 +217,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/kalender', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'store']);
         Route::put('/kalender/{id}', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'update']);
         Route::delete('/kalender/{id}', [\App\Http\Controllers\Kepsek\KalenderAkademikController::class, 'destroy']);
+        Route::get('/profil',         [\App\Http\Controllers\Kepsek\KepsekController::class, 'profil']);
+        Route::post('/profil/update', [\App\Http\Controllers\Kepsek\KepsekController::class, 'updateProfil']);
     });
 
     // Ortu
