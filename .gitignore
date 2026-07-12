@@ -1,0 +1,10 @@
+node_modules/
+.env
+PROMPT_TEMPLATE.md
+node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/vendor/
+backend/.env
+.env
+.DS_Store
