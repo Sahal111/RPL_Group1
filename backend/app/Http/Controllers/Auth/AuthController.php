@@ -175,6 +175,8 @@ class AuthController extends Controller
             2 => $user->guruProfile?->load('guru'),
             3 => $user->ortuProfiles()->with('siswa')->get(),
             4 => $user->kepsekProfile,
+            5 => $user->bendaharaProfile,
+            6 => $user->waliKelasProfile?->load('guru', 'kelas'),
             default => null,
         };
     }

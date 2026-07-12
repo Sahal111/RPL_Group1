@@ -8,6 +8,8 @@ use App\Models\Guru;
 use App\Models\UserGuru;
 use App\Models\UserKepsek;
 use App\Models\UserOrtu;
+use App\Models\UserBendahara;
+use App\Models\UserWaliKelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -58,7 +60,7 @@ class OperatorController extends Controller
     {
         $query = User::with('role')
             ->when($request->role, function ($q) use ($request) {
-                $slugMap = ['operator' => 1, 'guru' => 2, 'ortu' => 3, 'kepsek' => 4];
+                $slugMap = ['operator' => 1, 'guru' => 2, 'ortu' => 3, 'kepsek' => 4, 'bendahara' => 5, 'walikelas' => 6];
                 $roleId = $slugMap[$request->role] ?? null;
                 if ($roleId)
                     $q->where('role_id', $roleId);
@@ -336,12 +338,12 @@ class OperatorController extends Controller
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('nama_lengkap', 'like', "%{$request->search}%")
-                  ->orWhere('username', 'like', "%{$request->search}%")
-                  ->orWhere('no_hp', 'like', "%{$request->search}%")
-                  ->orWhereHas('ortuProfiles.siswa', function ($q) use ($request) {
-                      $q->where('nama_lengkap', 'like', "%{$request->search}%")
-                        ->orWhere('nisn', 'like', "%{$request->search}%");
-                  });
+                    ->orWhere('username', 'like', "%{$request->search}%")
+                    ->orWhere('no_hp', 'like', "%{$request->search}%")
+                    ->orWhereHas('ortuProfiles.siswa', function ($q) use ($request) {
+                        $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                            ->orWhere('nisn', 'like', "%{$request->search}%");
+                    });
             });
         }
 
@@ -445,6 +447,108 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // RESET PASSWORD USER
     // -------------------------------------------------------
+    // -------------------------------------------------------
+    // BUAT AKUN BENDAHARA
+    // -------------------------------------------------------
+    public function createBendahara(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|email|max:100|unique:users,email',
+            'password' => 'required|string|min:8',
+            'nama_lengkap' => 'required|string|max:100',
+            'no_hp' => 'nullable|string|max:20',
+            'nip' => 'nullable|string|max:18',
+            'jabatan' => 'nullable|string|max:100',
+            'no_sk' => 'nullable|string|max:60',
+            'tmt_jabatan' => 'nullable|date',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $user = User::create([
+                'role_id' => 5,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'nama_lengkap' => $request->nama_lengkap,
+                'no_hp' => $request->no_hp,
+                'is_active' => 1,
+                'created_by' => auth()->id(),
+            ]);
+
+            UserBendahara::create([
+                'user_id' => $user->id,
+                'nip' => $request->nip,
+                'jabatan' => $request->jabatan ?? 'Bendahara Sekolah',
+                'no_sk' => $request->no_sk,
+                'tmt_jabatan' => $request->tmt_jabatan,
+                'akses_modul' => json_encode(['keuangan', 'tagihan', 'pembayaran']),
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Akun bendahara berhasil dibuat.',
+        ], 201);
+    }
+
+    // -------------------------------------------------------
+    // BUAT AKUN WALI KELAS
+    // (Wali kelas harus sudah terdaftar sebagai guru dulu)
+    // -------------------------------------------------------
+    public function createWaliKelas(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|email|max:100|unique:users,email',
+            'password' => 'required|string|min:8',
+            'nama_lengkap' => 'required|string|max:100',
+            'no_hp' => 'nullable|string|max:20',
+            'nuptk' => 'required|string|max:16|exists:guru,nuptk',
+            'id_kelas' => 'nullable|string|max:20|exists:kelas,id',
+            'no_sk' => 'nullable|string|max:60',
+            'tmt_jabatan' => 'nullable|date',
+        ]);
+
+        // Cek NUPTK belum punya akun walikelas
+        $sudahAda = UserWaliKelas::where('nuptk', $request->nuptk)->exists();
+        if ($sudahAda) {
+            return response()->json([
+                'success' => false,
+                'message' => 'NUPTK ini sudah terdaftar sebagai wali kelas.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($request) {
+            $user = User::create([
+                'role_id' => 6,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'nama_lengkap' => $request->nama_lengkap,
+                'no_hp' => $request->no_hp,
+                'is_active' => 1,
+                'created_by' => auth()->id(),
+            ]);
+
+            UserWaliKelas::create([
+                'user_id' => $user->id,
+                'nuptk' => $request->nuptk,
+                'id_kelas' => $request->id_kelas,
+                'no_sk' => $request->no_sk,
+                'tmt_jabatan' => $request->tmt_jabatan,
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Akun wali kelas berhasil dibuat.',
+        ], 201);
+    }
+
+    // -------------------------------------------------------
+    // RESET PASSWORD USER
+    // -------------------------------------------------------
     public function resetPassword(Request $request, $id)
     {
         $request->validate([
@@ -483,6 +587,8 @@ class OperatorController extends Controller
             $user->guruProfile?->delete();
             $user->ortuProfiles()->delete();
             $user->kepsekProfile?->delete();
+            $user->bendaharaProfile?->delete();
+            $user->waliKelasProfile?->delete();
             // Hapus semua token
             $user->tokens()->delete();
             // Hapus user

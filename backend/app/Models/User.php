@@ -63,6 +63,16 @@ class User extends Authenticatable
         return $this->hasOne(UserKepsek::class, 'user_id');
     }
 
+    public function bendaharaProfile()
+    {
+        return $this->hasOne(UserBendahara::class, 'user_id');
+    }
+
+    public function waliKelasProfile()
+    {
+        return $this->hasOne(UserWaliKelas::class, 'user_id');
+    }
+
     // Helper: cek role
     public function isOperator(): bool
     {
@@ -79,5 +89,13 @@ class User extends Authenticatable
     public function isKepsek(): bool
     {
         return $this->role_id === 4;
+    }
+    public function isBendahara(): bool
+    {
+        return $this->role_id === 5;
+    }
+    public function isWaliKelas(): bool
+    {
+        return $this->role_id === 6;
     }
 }

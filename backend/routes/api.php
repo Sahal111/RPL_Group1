@@ -67,6 +67,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/guru', [OperatorController::class, 'createGuru']);
         Route::post('/kepsek', [OperatorController::class, 'createKepsek']);
         Route::post('/ortu', [OperatorController::class, 'createOrtu']);
+        Route::post('/bendahara', [OperatorController::class, 'createBendahara']);
+        Route::post('/walikelas', [OperatorController::class, 'createWaliKelas']);
         Route::patch('/users/{id}/toggle-active', [OperatorController::class, 'toggleActive']);
         Route::patch('/users/{id}/approve-ortu', [OperatorController::class, 'approveOrtu']);
         Route::get('/ortu/pending', [OperatorController::class, 'pendingOrtu']);
