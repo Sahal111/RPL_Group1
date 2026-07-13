@@ -7,13 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class Pengaturan extends Model
 {
     protected $table = 'pengaturans';
+
+    // Tidak ada created_at, hanya updated_at
     public $timestamps = false;
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'key',
         'value',
-        'label',
-        'tipe',
         'grup',
+        'deskripsi',
+        'updated_by',
     ];
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }

@@ -3,20 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TahunAjaran extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'tahun_ajarans';
 
     protected $fillable = [
-        'tahun', 
-        'is_active'
-        ];
-        
+        'tahun',       // format: "2025/2026"
+        'is_active',
+    ];
+
     protected $casts = [
-        'is_active' => 'boolean'
-        ];
-        
+        'is_active' => 'boolean',
+    ];
+
+    // ── Relasi ──────────────────────────────────────────────
+
     public function semesters()
     {
         return $this->hasMany(Semester::class, 'tahun_ajaran_id');
@@ -27,7 +32,8 @@ class TahunAjaran extends Model
         return $this->hasMany(Kelas::class, 'tahun_ajaran_id');
     }
 
-    // Scope: ambil tahun ajaran yang sedang aktif
+    // ── Scopes ──────────────────────────────────────────────
+
     public function scopeAktif($query)
     {
         return $query->where('is_active', true);

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -16,16 +17,26 @@ class OrangTua extends Model
         'nik',
         'hubungan',
         'status',
-        'no_hp',
-        'email',
-        'alamat',
+        'status_hidup',
+        'tempat_lahir',
+        'tahun_lahir',
+        'jenis_kelamin',
+        'agama',
+        'kewarganegaraan',
+        'kebutuhan_khusus',
         'pendidikan',
         'pekerjaan',
         'penghasilan',
-        'jenis_kelamin',
-        'agama',
-        'tahun_lahir',
+        'no_hp',
+        'email',
+        'alamat',
     ];
+
+    protected $casts = [
+        'tahun_lahir' => 'integer',
+    ];
+
+    // ── Relasi ──────────────────────────────────────────────
 
     public function user()
     {

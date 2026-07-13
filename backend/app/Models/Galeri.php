@@ -11,14 +11,9 @@ class Galeri extends Model
     protected $fillable = [
         'judul',
         'deskripsi',
-        'foto',
         'kategori',
-        'is_published',
+        'foto',
         'uploaded_by',
-    ];
-
-    protected $casts = [
-        'is_published' => 'boolean',
     ];
 
     public function uploader()

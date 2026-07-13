@@ -7,24 +7,32 @@ use Illuminate\Database\Eloquent\Model;
 class UserBendahara extends Model
 {
     protected $table = 'bendaharas';
-    public $timestamps = false;
 
     protected $fillable = [
         'user_id',
-        'nip',
-        'jabatan',
+        'guru_id',
+        'jenis_bendahara',
         'no_sk',
-        'tmt_jabatan',
-        'akses_modul',
+        'tanggal_sk',
+        'tmt',
+        'is_active',
     ];
 
     protected $casts = [
-        'akses_modul' => 'array',
-        'tmt_jabatan' => 'date',
+        'is_active' => 'boolean',
+        'tanggal_sk' => 'date',
+        'tmt' => 'date',
     ];
+
+    // ── Relasi ──────────────────────────────────────────────
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function guru()
+    {
+        return $this->belongsTo(Guru::class, 'guru_id');
     }
 }

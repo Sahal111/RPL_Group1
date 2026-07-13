@@ -12,19 +12,26 @@ class KalenderAkademik extends Model
         'tahun_ajaran_id',
         'judul',
         'deskripsi',
+        'jenis',
         'tanggal_mulai',
         'tanggal_selesai',
-        'jenis',
-        'warna',
+        'is_nasional',
+        'dibuat_oleh',
     ];
 
     protected $casts = [
-        'tanggal_mulai'   => 'date',
+        'tanggal_mulai' => 'date',
         'tanggal_selesai' => 'date',
+        'is_nasional' => 'boolean',
     ];
 
     public function tahunAjaran()
     {
         return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
+    }
+
+    public function pembuat()
+    {
+        return $this->belongsTo(User::class, 'dibuat_oleh');
     }
 }

@@ -12,6 +12,8 @@ class Absensi extends Model
         'siswa_id',
         'kelas_id',
         'jadwal_id',
+        'plot_id',
+        'tahun_ajaran_id',
         'semester_id',
         'tanggal',
         'status',
@@ -23,11 +25,13 @@ class Absensi extends Model
         'tanggal' => 'date',
     ];
 
-    // Status konstanta
-    const STATUS_HADIR  = 'hadir';
-    const STATUS_SAKIT  = 'sakit';
-    const STATUS_IZIN   = 'izin';
-    const STATUS_ALPHA  = 'alpha';
+    // Status enum values sesuai DB
+    const STATUS_HADIR = 'Hadir';
+    const STATUS_SAKIT = 'Sakit';
+    const STATUS_IZIN = 'Izin';
+    const STATUS_ALPA = 'Alpa';
+
+    // ── Relasi ──────────────────────────────────────────────
 
     public function siswa()
     {
@@ -42,6 +46,16 @@ class Absensi extends Model
     public function jadwal()
     {
         return $this->belongsTo(JadwalPelajaran::class, 'jadwal_id');
+    }
+
+    public function plotGuruMapel()
+    {
+        return $this->belongsTo(PlotGuruMapel::class, 'plot_id');
+    }
+
+    public function tahunAjaran()
+    {
+        return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
     }
 
     public function semester()

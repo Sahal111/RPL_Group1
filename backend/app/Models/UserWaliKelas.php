@@ -7,32 +7,49 @@ use Illuminate\Database\Eloquent\Model;
 class UserWaliKelas extends Model
 {
     protected $table = 'wali_kelas';
-    public $timestamps = false;
 
     protected $fillable = [
-        'user_id',
-        'nuptk',
-        'id_kelas',
+        'guru_id',
+        'kelas_id',
+        'tahun_ajaran_id',
+        'semester_id',
         'no_sk',
-        'tmt_jabatan',
+        'tanggal_sk',
+        'tmt',
+        'is_active',
     ];
 
     protected $casts = [
-        'tmt_jabatan' => 'date',
+        'is_active' => 'boolean',
+        'tanggal_sk' => 'date',
+        'tmt' => 'date',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    // ── Relasi ──────────────────────────────────────────────
 
     public function guru()
     {
-        return $this->belongsTo(Guru::class, 'nuptk', 'nuptk');
+        return $this->belongsTo(Guru::class, 'guru_id');
     }
 
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class, 'id_kelas');
+        return $this->belongsTo(Kelas::class, 'kelas_id');
+    }
+
+    public function tahunAjaran()
+    {
+        return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'semester_id');
+    }
+
+    // Helper: akses user via guru
+    public function user()
+    {
+        return $this->hasOneThrough(User::class, Guru::class, 'id', 'id', 'guru_id', 'user_id');
     }
 }

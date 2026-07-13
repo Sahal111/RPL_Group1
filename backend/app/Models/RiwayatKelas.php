@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class RiwayatKelas extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'riwayat_kelas';
 
     protected $fillable = [
@@ -22,9 +25,12 @@ class RiwayatKelas extends Model
     ];
 
     protected $casts = [
-        'tanggal_masuk'  => 'date',
+        'tanggal_masuk' => 'date',
         'tanggal_keluar' => 'date',
+        'no_absen' => 'integer',
     ];
+
+    // ── Relasi ──────────────────────────────────────────────
 
     public function siswa()
     {
@@ -41,10 +47,24 @@ class RiwayatKelas extends Model
         return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
     }
 
-    // Scope: siswa yang aktif di kelas (belum keluar)
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'semester_id');
+    }
+
+    // ── Scopes ──────────────────────────────────────────────
+
+    /**
+     * Siswa yang masih aktif di kelas (belum keluar)
+     */
     public function scopeAktif($query)
     {
         return $query->whereNull('tanggal_keluar')
-                     ->whereNotIn('jenis_perubahan', ['mutasi_keluar', 'lulus', 'nonaktif', 'meninggal']);
+            ->whereNotIn('jenis_perubahan', [
+                'mutasi_keluar',
+                'lulus',
+                'nonaktif',
+                'meninggal',
+            ]);
     }
 }

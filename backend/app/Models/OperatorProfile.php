@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class OperatorProfile extends Model
 {
     protected $table = 'operator_profiles';
-    public $timestamps = false;
 
     protected $fillable = [
         'user_id',
-        'nip',
+        'nip_operator',
         'jabatan',
-        'no_sk',
+        'akses_modul',
+    ];
+
+    protected $casts = [
+        'akses_modul' => 'array',
     ];
 
     public function user()

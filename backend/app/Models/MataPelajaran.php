@@ -6,22 +6,37 @@ use Illuminate\Database\Eloquent\Model;
 
 class MataPelajaran extends Model
 {
-    protected $table      = 'mapels';
+    protected $table = 'mapels';
     protected $primaryKey = 'id';
-    public $timestamps    = false;
+    public $timestamps = true;
 
     protected $fillable = [
-        'kode_mapel',
+        'kode',
         'nama_mapel',
         'kelompok',
         'tingkat',
-        'jam_per_minggu',
         'kurikulum',
+        'jam_per_minggu',
         'is_active',
+        'urutan_rapor',
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
+        'is_active' => 'boolean',
         'jam_per_minggu' => 'integer',
+        'tingkat' => 'integer',
+        'urutan_rapor' => 'integer',
     ];
+
+    // ── Relasi ──────────────────────────────────────────────
+
+    public function plotGuruMapels()
+    {
+        return $this->hasMany(PlotGuruMapel::class, 'mapel_id');
+    }
+
+    public function jadwals()
+    {
+        return $this->hasMany(JadwalPelajaran::class, 'mapel_id');
+    }
 }

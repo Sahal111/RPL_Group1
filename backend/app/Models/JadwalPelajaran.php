@@ -9,18 +9,28 @@ class JadwalPelajaran extends Model
     protected $table = 'jadwals';
 
     protected $fillable = [
-        'plot_guru_mapel_id',
+        'plot_id',      // FK ke plot_guru_mapels.id
         'kelas_id',
+        'guru_id',
+        'mapel_id',
         'semester_id',
         'hari',
+        'jam_ke',
         'jam_mulai',
         'jam_selesai',
-        'ruangan',
+        'is_active',
     ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'jam_ke' => 'integer',
+    ];
+
+    // ── Relasi ──────────────────────────────────────────────
 
     public function plotGuruMapel()
     {
-        return $this->belongsTo(PlotGuruMapel::class, 'plot_guru_mapel_id');
+        return $this->belongsTo(PlotGuruMapel::class, 'plot_id');
     }
 
     public function kelas()
@@ -28,35 +38,25 @@ class JadwalPelajaran extends Model
         return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
+    public function guru()
+    {
+        return $this->belongsTo(Guru::class, 'guru_id');
+    }
+
+    public function mataPelajaran()
+    {
+        return $this->belongsTo(MataPelajaran::class, 'mapel_id');
+    }
+
+    // Alias
+    public function mapel()
+    {
+        return $this->mataPelajaran();
+    }
+
     public function semester()
     {
         return $this->belongsTo(Semester::class, 'semester_id');
-    }
-
-    // Shortcut ke guru via plot
-    public function guru()
-    {
-        return $this->hasOneThrough(
-            Guru::class,
-            PlotGuruMapel::class,
-            'id',           // FK di plot_guru_mapels → id
-            'id',           // FK di gurus → id
-            'plot_guru_mapel_id', // FK lokal di jadwals
-            'guru_id'       // FK di plot_guru_mapels → guru_id
-        );
-    }
-
-    // Shortcut ke mapel via plot
-    public function mataPelajaran()
-    {
-        return $this->hasOneThrough(
-            MataPelajaran::class,
-            PlotGuruMapel::class,
-            'id',
-            'id',
-            'plot_guru_mapel_id',
-            'mapel_id'
-        );
     }
 
     public function absensis()
