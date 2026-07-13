@@ -9,21 +9,13 @@ use Symfony\Component\HttpFoundation\Response;
 class RoleMiddleware
 {
     /**
-     * Map role_id → slug
-     * Sesuaikan dengan tabel `roles` di database.
-     */
-    private const SLUG_MAP = [
-        1 => 'operator',
-        2 => 'guru',
-        3 => 'ortu',
-        4 => 'kepsek',
-        5 => 'bendahara',
-        6 => 'walikelas',
-        7 => 'admin_ppdb',
-    ];
-
-    /**
      * Handle an incoming request.
+     *
+     * Role sekarang disimpan di pivot `user_roles` (many-to-many),
+     * bukan kolom `role_id` di tabel `users` (kolom itu sudah dihapus
+     * dari skema baru). Cek akses langsung lewat slug di tabel `roles`,
+     * jadi tidak perlu mapping ID → slug lagi — dan otomatis ikut
+     * kalau ada role baru ditambahkan di DB tanpa perlu ubah kode ini.
      *
      * Pemakaian di routes:
      *   ->middleware('role:operator')
@@ -50,11 +42,11 @@ class RoleMiddleware
             ], 403);
         }
 
-        // Dapatkan slug role user dari map
-        $userSlug = self::SLUG_MAP[$user->role_id] ?? null;
+        // User bisa punya lebih dari satu role (misal: guru + wali_kelas).
+        // Izinkan akses kalau SALAH SATU role user cocok dengan role yang diizinkan route ini.
+        $userSlugs = $user->roles->pluck('slug');
 
-        // Cek apakah slug user ada di daftar role yang diizinkan
-        if ($userSlug && in_array($userSlug, $roles)) {
+        if ($userSlugs->intersect($roles)->isNotEmpty()) {
             return $next($request);
         }
 
