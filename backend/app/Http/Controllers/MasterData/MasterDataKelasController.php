@@ -5,7 +5,6 @@ namespace App\Http\Controllers\MasterData;
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\RiwayatKelas;
-use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,10 +18,9 @@ class MasterDataKelasController extends Controller
             ->orderBy('tingkat')->orderBy('nama_kelas')
             ->paginate(15);
 
-        // Tambah total siswa per kelas
         $kelas->getCollection()->transform(function ($k) {
-            $k->total_siswa = SiswaKelas::where('id_kelas', $k->id)
-                ->where('status_keluar', 'Aktif')
+            $k->total_siswa = RiwayatKelas::where('kelas_id', $k->id)
+                ->aktif()
                 ->count();
             return $k;
         });
@@ -32,32 +30,26 @@ class MasterDataKelasController extends Controller
 
     public function show($id)
     {
-        $kelas = Kelas::with(['wali'])->findOrFail($id);
+        $kelas = Kelas::with('wali')->findOrFail($id);
 
-        // Ambil tahun ajaran
-        $tahunAjaran = DB::table('tahun_ajarans')->find($kelas->tahun_ajaran_id);
-
-        // Ambil daftar siswa aktif di kelas ini
-        $siswaList = SiswaKelas::with('siswas')
+        $siswaAktif = RiwayatKelas::with('siswa')
             ->where('kelas_id', $id)
-            ->where('status_keluar', 'Aktif')
+            ->aktif()
             ->orderBy('no_absen')
             ->get();
 
-        // Ambil daftar siswa yang sudah keluar (Lulus, Mutasi Keluar, Dropout, Meninggal)
-        $siswaKeluarList = SiswaKelas::with('siswas')
+        $siswaKeluar = RiwayatKelas::with('siswa')
             ->where('kelas_id', $id)
-            ->where('status_keluar', '!=', 'Aktif')
+            ->whereNotNull('tanggal_keluar')
             ->orderByDesc('tanggal_keluar')
             ->get();
 
         return response()->json([
             'success' => true,
             'data' => array_merge($kelas->toArray(), [
-                'tahun_ajarans' => $tahunAjaran,
-                'total_siswa' => $siswaList->count(),
-                'siswas' => $siswaList,
-                'siswa_keluar' => $siswaKeluarList,
+                'total_siswa' => $siswaAktif->count(),
+                'siswas' => $siswaAktif,
+                'siswa_keluar' => $siswaKeluar,
             ]),
         ]);
     }
@@ -65,37 +57,22 @@ class MasterDataKelasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id' => 'required|string|max:20|unique:kelas,id',
-            'id_tahun_ajaran' => 'required|integer|exists:tahun_ajaran,id',
-            'nama_kelas' => 'required|string|max:30',
-            'tingkat' => 'required|in:1,2,3,4,5,6',
-            'semester' => 'required|in:1,2',
-            'nuptk_wali' => 'nullable|string|max:16|exists:gurus,nuptk',
-            'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka',
-            'kapasitas' => 'required|integer|min:1|max:50',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajarans,id',
+            'semester_id' => 'nullable|integer|exists:semesters,id',
+            'nama_kelas' => 'required|string|max:20',
+            'tingkat' => 'required|integer|in:1,2,3,4,5,6',
+            'kurikulum' => 'required|in:K13,Merdeka,Lainnya',
+            'wali_kelas_id' => 'nullable|integer|exists:gurus,id',
+            'kapasitas' => 'required|integer|min:1|max:60',
             'ruangan' => 'nullable|string|max:50',
         ]);
 
         $kelas = Kelas::create([
-            ...$request->only([
-                'id',
-                'id_tahun_ajaran',
-                'nama_kelas',
-                'tingkat',
-                'semester',
-                'nuptk_wali',
-                'kurikulum',
-                'kapasitas',
-                'ruangan',
-            ]),
+            ...$request->only(['tahun_ajaran_id', 'semester_id', 'nama_kelas', 'tingkat', 'kurikulum', 'wali_kelas_id', 'kapasitas', 'ruangan']),
             'is_active' => 1,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data kelas berhasil ditambahkan.',
-            'data' => $kelas,
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Kelas berhasil ditambahkan.', 'data' => $kelas], 201);
     }
 
     public function update(Request $request, $id)
@@ -103,53 +80,43 @@ class MasterDataKelasController extends Controller
         $kelas = Kelas::findOrFail($id);
 
         $request->validate([
-            'id_tahun_ajaran' => 'required|integer|exists:tahun_ajaran,id',
-            'nama_kelas' => 'required|string|max:30',
-            'tingkat' => 'required|in:1,2,3,4,5,6',
-            'semester' => 'required|in:1,2',
-            'nuptk_wali' => 'nullable|string|max:16|exists:gurus,nuptk',
-            'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka',
-            'kapasitas' => 'required|integer|min:1|max:50',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajarans,id',
+            'semester_id' => 'nullable|integer|exists:semesters,id',
+            'nama_kelas' => 'required|string|max:20',
+            'tingkat' => 'required|integer|in:1,2,3,4,5,6',
+            'kurikulum' => 'required|in:K13,Merdeka,Lainnya',
+            'wali_kelas_id' => 'nullable|integer|exists:gurus,id',
+            'kapasitas' => 'required|integer|min:1|max:60',
             'ruangan' => 'nullable|string|max:50',
             'is_active' => 'boolean',
         ]);
 
         $kelas->update($request->only([
-            'id_tahun_ajaran',
+            'tahun_ajaran_id',
+            'semester_id',
             'nama_kelas',
             'tingkat',
-            'semester',
-            'nuptk_wali',
             'kurikulum',
+            'wali_kelas_id',
             'kapasitas',
             'ruangan',
             'is_active',
         ]));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data kelas berhasil diperbarui.',
-            'data' => $kelas->fresh('wali'),
-        ]);
+        return response()->json(['success' => true, 'message' => 'Kelas berhasil diperbarui.', 'data' => $kelas->fresh('wali')]);
     }
 
     public function destroy($id)
     {
         $kelas = Kelas::findOrFail($id);
 
-        $adaSiswa = SiswaKelas::where('id_kelas', $id)
-            ->where('status_keluar', 'Aktif')
-            ->exists();
-
+        $adaSiswa = RiwayatKelas::where('kelas_id', $id)->aktif()->exists();
         if ($adaSiswa) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kelas masih memiliki siswa aktif. Pindahkan siswa terlebih dahulu.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Kelas masih memiliki siswa aktif.'], 422);
         }
 
         $kelas->delete();
-        return response()->json(['success' => true, 'message' => 'Data kelas berhasil dihapus.']);
+        return response()->json(['success' => true, 'message' => 'Kelas berhasil dihapus.']);
     }
 
     public function dropdown()
@@ -165,97 +132,74 @@ class MasterDataKelasController extends Controller
     {
         $data = DB::table('tahun_ajarans')
             ->orderByDesc('is_active')
-            ->orderByDesc('tanggal_mulai')
-            ->get(['id', 'nama', 'is_active']);
+            ->orderByDesc('id')
+            ->get(['id', 'tahun', 'is_active']);
 
         return response()->json(['success' => true, 'data' => $data]);
     }
 
-    // Tambah siswa ke kelas
     public function tambahSiswa(Request $request, $id)
     {
         $request->validate([
-            'nisn' => 'required|string|exists:siswas,nisn',
-            'tahun_ajarans' => 'required|string|max:20',
-            'semester' => 'required|in:1,2',
-            'status_masuk' => 'required|in:Baru,Naik Kelas,Tinggal Kelas,Mutasi Masuk',
+            'siswa_id' => 'required|integer|exists:siswas,id',
+            'jenis_perubahan' => 'required|in:masuk_baru,naik_kelas,mutasi_masuk',
         ]);
 
         Kelas::findOrFail($id);
 
-        $sudahAda = SiswaKelas::where('id_kelas', $id)
-            ->where('siswa_id', $request->nisn)
-            ->where('status_keluar', 'Aktif')
-            ->exists();
+        $sudahAda = RiwayatKelas::where('kelas_id', $id)
+            ->where('siswa_id', $request->siswa_id)
+            ->aktif()->exists();
 
         if ($sudahAda) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Siswa sudah terdaftar di kelas ini.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Siswa sudah terdaftar di kelas ini.'], 422);
         }
 
-        // No. absen otomatis: ambil nomor terbesar yang aktif di kelas ini, lalu +1
-        $noAbsenBaru = (SiswaKelas::where('id_kelas', $id)
-            ->where('status_keluar', 'Aktif')
-            ->max('no_absen') ?? 0) + 1;
+        $noAbsen = (RiwayatKelas::where('kelas_id', $id)->aktif()->max('no_absen') ?? 0) + 1;
 
-        SiswaKelas::create([
-            'nisn' => $request->nisn,
+        $kelas = Kelas::find($id);
+        RiwayatKelas::create([
+            'siswa_id' => $request->siswa_id,
             'kelas_id' => $id,
-            'no_absen' => $noAbsenBaru,
-            'semester' => $request->semester,
-            'tahun_ajarans' => $request->tahun_ajaran,
-            'status_masuk' => $request->status_masuk,
+            'nama_kelas_snapshot' => $kelas->nama_kelas,
+            'tahun_ajaran_id' => $kelas->tahun_ajaran_id,
+            'semester_id' => $kelas->semester_id,
+            'no_absen' => $noAbsen,
             'tanggal_masuk' => now()->toDateString(),
-            'status_keluar' => 'Aktif',
+            'jenis_perubahan' => $request->jenis_perubahan,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Siswa berhasil ditambahkan ke kelas.',
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Siswa berhasil ditambahkan ke kelas.'], 201);
     }
 
-    // Keluarkan siswa dari kelas
-    public function keluarkanSiswa(Request $request, $id, $siswaKelasId)
+    public function keluarkanSiswa(Request $request, $id, $riwayatId)
     {
         $request->validate([
-            'status_keluar' => 'required|in:Naik Kelas,Lulus,Mutasi Keluar,Dropout,Meninggal',
-            'alasan_keluar' => 'nullable|string',
+            'jenis_perubahan' => 'required|in:lulus,mutasi_keluar,nonaktif,meninggal',
+            'catatan' => 'nullable|string',
         ]);
 
-        $siswaKelas = SiswaKelas::where('id', $siswaKelasId)
-            ->where('kelas_id', $id)
-            ->firstOrFail();
+        $riwayat = RiwayatKelas::where('id', $riwayatId)->where('kelas_id', $id)->firstOrFail();
 
-        $siswaKelas->update([
-            'status_keluar' => $request->status_keluar,
+        $riwayat->update([
             'tanggal_keluar' => now()->toDateString(),
-            'alasan_keluar' => $request->alasan_keluar,
+            'jenis_perubahan' => $request->jenis_perubahan,
+            'catatan' => $request->catatan,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Siswa berhasil dikeluarkan dari kelas.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Siswa berhasil dikeluarkan dari kelas.']);
     }
 
-    public function batalkanKeluar($id, $siswaKelasId)
+    public function batalkanKeluar($id, $riwayatId)
     {
-        $siswaKelas = SiswaKelas::where('id', $siswaKelasId)
-            ->where('kelas_id', $id)
-            ->firstOrFail();
+        $riwayat = RiwayatKelas::where('id', $riwayatId)->where('kelas_id', $id)->firstOrFail();
 
-        $siswaKelas->update([
-            'status_keluar' => 'Aktif',
+        $riwayat->update([
             'tanggal_keluar' => null,
-            'alasan_keluar' => null,
+            'jenis_perubahan' => 'masuk_kembali',
+            'catatan' => null,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Status siswa berhasil dikembalikan ke aktif.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Status siswa dikembalikan ke aktif.']);
     }
 }

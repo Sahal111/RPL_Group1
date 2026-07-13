@@ -11,18 +11,14 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    // -------------------------------------------------------
-    // LOGIN
-    // -------------------------------------------------------
     public function login(Request $request)
     {
         $request->validate([
-            'login' => 'required|string', // bisa username atau email
+            'login' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        // Cari user by username atau email
-        $user = User::with('role')
+        $user = User::with('roles')
             ->where('username', $request->login)
             ->orWhere('email', $request->login)
             ->first();
@@ -40,16 +36,10 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Hapus token lama (single session)
         $user->tokens()->delete();
-
-        // Buat token baru
         $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Update last_login
         $user->update(['last_login_at' => now()]);
 
-        // Load profil sesuai role
         $profile = $this->getProfile($user);
 
         return response()->json([
@@ -62,7 +52,7 @@ class AuthController extends Controller
                     'username' => $user->username,
                     'email' => $user->email,
                     'nama' => $user->name,
-                    'role' => $user->role->slug,
+                    'role' => $user->getRoleSlug(),
                     'foto' => $user->foto,
                     'profile' => $profile,
                 ],
@@ -70,9 +60,6 @@ class AuthController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------
-    // LOGOUT
-    // -------------------------------------------------------
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -83,12 +70,9 @@ class AuthController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------
-    // ME — data user yang sedang login
-    // -------------------------------------------------------
     public function me(Request $request)
     {
-        $user = $request->user()->load('role');
+        $user = $request->user()->load('roles');
         $profile = $this->getProfile($user);
 
         return response()->json([
@@ -98,7 +82,7 @@ class AuthController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'nama' => $user->name,
-                'role' => $user->role->slug,
+                'role' => $user->getRoleSlug(),
                 'foto' => $user->foto,
                 'last_login' => $user->last_login_at,
                 'profile' => $profile,
@@ -106,9 +90,6 @@ class AuthController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------
-    // REGISTER ORTU
-    // -------------------------------------------------------
     public function registerOrtu(Request $request)
     {
         $request->validate([
@@ -122,7 +103,6 @@ class AuthController extends Controller
             'hubungan' => 'required|in:Ayah,Ibu,Wali',
         ]);
 
-        // Validasi kode unik sekolah
         $pengaturan = \App\Models\Pengaturan::where('key', 'kode_registrasi_ortu')->first();
         $kodeValid = $pengaturan ? $pengaturan->value : config('school.kode_registrasi');
         if ($request->kode_sekolah !== $kodeValid) {
@@ -132,7 +112,6 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Cari siswa berdasarkan NISN
         $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->first();
         if (!$siswa) {
             return response()->json([
@@ -142,25 +121,33 @@ class AuthController extends Controller
         }
 
         DB::transaction(function () use ($request, $siswa) {
+            // Buat user tanpa role_id (skema baru pakai user_roles)
             $user = User::create([
-                'role_id' => 3, // ortu
-                'name' => $request->nama_lengkap,
+                'name' => $request->nama,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'is_active' => 0, // perlu approve operator
+                'is_active' => 0,
             ]);
 
-            // Buat record orang_tua dan link ke user + siswa
+            // Assign role ortu via user_roles
+            $roleId = DB::table('roles')->where('slug', 'ortu')->value('id');
+            DB::table('user_roles')->insert([
+                'user_id' => $user->id,
+                'role_id' => $roleId,
+                'created_at' => now(),
+            ]);
+
+            // Buat record orang_tua
             $ortu = \App\Models\OrangTua::create([
                 'user_id' => $user->id,
-                'nama' => $request->nama_lengkap,
+                'nama' => $request->nama,
                 'hubungan' => $request->hubungan,
                 'no_hp' => $request->no_hp,
             ]);
 
-            // Link ortu ke siswa via orang_tua_siswa
-            \Illuminate\Support\Facades\DB::table('orang_tua_siswa')->insert([
+            // Link ortu ke siswa
+            DB::table('orang_tua_siswa')->insert([
                 'siswa_id' => $siswa->id,
                 'orang_tua_id' => $ortu->id,
                 'created_at' => now(),
@@ -170,22 +157,20 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Pendaftaran berhasil. Akun kamu sedang menunggu persetujuan operator sekolah.',
+            'message' => 'Pendaftaran berhasil. Akun menunggu persetujuan operator sekolah.',
         ], 201);
     }
 
-    // -------------------------------------------------------
-    // Helper: load profil sesuai role
-    // -------------------------------------------------------
     private function getProfile(User $user): mixed
     {
-        return match ($user->role_id) {
-            1 => $user->operatorProfile,
-            2 => $user->guru,
-            3 => $user->orangTua()->with('siswa')->get(),
-            4 => $user->guru, // kepsek juga guru
-            5 => $user->bendaharaProfile,
-            6 => $user->waliKelasProfile?->load('kelas'),
+        $slug = $user->getRoleSlug();
+        return match ($slug) {
+            'operator' => $user->operatorProfile,
+            'guru',
+            'kepsek',
+            'wali_kelas' => $user->guru,
+            'ortu' => $user->orangTua()->with('siswa')->get(),
+            'bendahara' => $user->bendaharaProfile,
             default => null,
         };
     }

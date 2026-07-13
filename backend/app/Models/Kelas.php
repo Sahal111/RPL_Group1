@@ -8,36 +8,30 @@ class Kelas extends Model
 {
     protected $table = 'kelas';
     protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
-    public $timestamps = false;
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
 
     protected $fillable = [
-        'id',
-        'id_tahun_ajaran',
+        'tahun_ajaran_id',
+        'semester_id',
         'nama_kelas',
         'tingkat',
-        'semester',
-        'nuptk_wali',
         'kurikulum',
+        'wali_kelas_id',
         'kapasitas',
         'ruangan',
         'is_active',
     ];
 
-    protected $casts = [
-        'is_active' => 'boolean',
-        'kapasitas' => 'integer',
-    ];
-
     public function tahunAjaran()
     {
-        return $this->belongsTo(TahunAjaran::class, 'id_tahun_ajaran', 'id');
+        return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
     }
 
     public function wali()
     {
-        return $this->belongsTo(Guru::class, 'nuptk_wali', 'nuptk');
+        return $this->belongsTo(Guru::class, 'wali_kelas_id');
     }
 
     public function riwayatKelas()

@@ -9,18 +9,14 @@ class TahunAjaran extends Model
     protected $table = 'tahun_ajarans';
 
     protected $fillable = [
-        'nama',
-        'tahun_mulai',
-        'tahun_selesai',
-        'is_active',
-    ];
-
+        'tahun', 
+        'is_active'
+        ];
+        
     protected $casts = [
-        'is_active'    => 'boolean',
-        'tahun_mulai'  => 'integer',
-        'tahun_selesai'=> 'integer',
-    ];
-
+        'is_active' => 'boolean'
+        ];
+        
     public function semesters()
     {
         return $this->hasMany(Semester::class, 'tahun_ajaran_id');

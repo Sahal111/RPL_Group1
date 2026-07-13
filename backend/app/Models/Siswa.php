@@ -7,17 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Siswa extends Model
 {
     protected $table = 'siswas';
-    protected $primaryKey = 'nisn';
-    public $incrementing = false;
-    protected $keyType = 'string';
-    public $timestamps = false;
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = true;
 
     protected $fillable = [
         'nisn',
         'kode_anak',
         'nik',
-        'no_induk',
-        'nama_lengkap',
+        'nis',
+        'nama',
         'jenis_kelamin',
         'tanggal_lahir',
         'tempat_lahir',
@@ -31,9 +30,9 @@ class Siswa extends Model
         'alamat_jalan',
         'rt',
         'rw',
-        'desa',
+        'desa_kelurahan',
         'kecamatan',
-        'kabupaten',
+        'kota_kabupaten',
         'provinsi',
         'kode_pos',
         'no_hp',

@@ -1,47 +1,53 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Guru extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'gurus';
-    protected $primaryKey = 'nuptk';
-    public $incrementing = false;
-    protected $keyType = 'string';
-    public $timestamps = true;
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
+        'user_id',
         'nuptk',
         'nip',
         'nik',
-        'nama_lengkap',
+        'nama',
         'jenis_kelamin',
         'tanggal_lahir',
         'tempat_lahir',
         'agama',
-        'status_perkawinan',
         'jenis_ptk',
         'status_kepegawaian',
-        'golongan',
-        'tmt_golongan',
+        'status_aktif',
         'no_hp',
         'email',
         'alamat_jalan',
         'rt',
         'rw',
-        'desa',
+        'desa_kelurahan',
         'kecamatan',
-        'kabupaten',
+        'kota_kabupaten',
         'provinsi',
         'kode_pos',
         'foto',
-        'is_active',
+        'tanggal_bergabung',
     ];
 
-    public function kelasWali()
+    protected $casts = ['status_aktif' => 'boolean'];
+
+    public function user()
     {
-        return $this->hasMany(Kelas::class, 'nuptk_wali', 'nuptk');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    public function kelas()
+    {
+        return $this->hasMany(Kelas::class, 'wali_kelas_id');
     }
 }

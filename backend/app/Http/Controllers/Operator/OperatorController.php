@@ -4,10 +4,6 @@ namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Guru;
-// use App\Models\UserGuru; // digantikan oleh Guru (user_id FK)
-// use App\Models\UserKepsek; // tidak ada tabel terpisah di skema baru
-// use App\Models\UserOrtu; // digantikan oleh OrangTua (user_id FK)
 use App\Models\UserBendahara;
 use App\Models\UserWaliKelas;
 use Illuminate\Http\Request;
@@ -16,153 +12,62 @@ use Illuminate\Support\Facades\Hash;
 
 class OperatorController extends Controller
 {
+    // Helper: assign role ke user via user_roles
+    private function assignRole(int $userId, string $slug): void
+    {
+        $roleId = DB::table('roles')->where('slug', $slug)->value('id');
+        DB::table('user_roles')->insertOrIgnore([
+            'user_id' => $userId,
+            'role_id' => $roleId,
+            'created_at' => now(),
+        ]);
+    }
+
     // -------------------------------------------------------
     // PENGATURAN KODE REGISTRASI ORTU
     // -------------------------------------------------------
     public function getKodeRegistrasi()
     {
-        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_registrasi')->first();
-        $kode = $pengaturan ? $pengaturan->value : config('school.kode_registrasi');
-
+        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_registrasi_ortu')->first();
         return response()->json([
             'success' => true,
-            'data' => [
-                'kode_registrasi' => $kode
-            ]
+            'data' => ['kode_registrasi' => $pengaturan?->value ?? ''],
         ]);
     }
 
     public function updateKodeRegistrasi(Request $request)
     {
-        $request->validate([
-            'kode_registrasi' => 'required|string|max:20'
-        ]);
+        $request->validate(['kode_registrasi' => 'required|string|max:20']);
 
-        $pengaturan = \App\Models\Pengaturan::firstOrCreate(
-            ['key' => 'kode_registrasi'],
+        \App\Models\Pengaturan::updateOrCreate(
+            ['key' => 'kode_registrasi_ortu'],
             ['value' => $request->kode_registrasi]
         );
-        $pengaturan->update(['value' => $request->kode_registrasi]);
 
         return response()->json([
             'success' => true,
             'message' => 'Kode registrasi berhasil diperbarui.',
-            'data' => [
-                'kode_registrasi' => $pengaturan->value
-            ]
         ]);
     }
 
     // -------------------------------------------------------
-    // LIST SEMUA USER (semua role)
+    // LIST SEMUA USER
     // -------------------------------------------------------
     public function index(Request $request)
     {
-        $query = User::with('role')
+        $query = User::with('roles')
             ->when($request->role, function ($q) use ($request) {
-                $slugMap = ['operator' => 1, 'gurus' => 2, 'ortu' => 3, 'kepsek' => 4, 'bendahara' => 5, 'walikelas' => 6];
-                $roleId = $slugMap[$request->role] ?? null;
-                if ($roleId)
-                    $q->where('role_id', $roleId);
+                $q->whereHas('roles', fn($r) => $r->where('slug', $request->role));
             })
             ->when($request->search, function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                $q->where('name', 'like', "%{$request->search}%")
                     ->orWhere('username', 'like', "%{$request->search}%")
                     ->orWhere('email', 'like', "%{$request->search}%");
             })
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
             ->paginate(15);
 
-        return response()->json([
-            'success' => true,
-            'data' => $query,
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // BUAT AKUN GURU
-    // -------------------------------------------------------
-    public function createGuru(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:100',
-            'no_hp' => 'nullable|string|max:20',
-            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
-        ]);
-
-        // Cek nuptk belum punya akun
-        $sudahAda = \App\Models\Guru::where('nuptk', $request->nuptk)->whereNotNull('user_id')->exists();
-        if ($sudahAda) {
-            return response()->json(['success' => false, 'message' => 'NUPTK ini sudah terdaftar akun guru.'], 422);
-        }
-
-        $user = DB::transaction(function () use ($request) {
-            $user = User::create([
-                'role_id' => 2,
-                'name' => $request->nama,
-                'username' => $request->username,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'is_active' => 1,
-            ]);
-
-            // Di skema baru: guru.user_id FK langsung ke users
-            \App\Models\Guru::where('nuptk', $request->nuptk)->update(['user_id' => $user->id]);
-
-            return $user->load('guru');
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun guru berhasil dibuat.',
-            'data' => $user,
-        ], 201);
-    }
-
-    // -------------------------------------------------------
-    // BUAT AKUN KEPSEK
-    // -------------------------------------------------------
-    public function createKepsek(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:100',
-            'no_hp' => 'nullable|string|max:20',
-            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
-            'no_sk' => 'nullable|string|max:50',
-            'tmt_jabatan' => 'nullable|date',
-        ]);
-
-        $sudahAda = \App\Models\Guru::where('nuptk', $request->nuptk)->whereNotNull('user_id')->exists();
-        if ($sudahAda) {
-            return response()->json(['success' => false, 'message' => 'NUPTK ini sudah terdaftar akun kepsek.'], 422);
-        }
-
-        $user = DB::transaction(function () use ($request) {
-            $user = User::create([
-                'role_id' => 4,
-                'name' => $request->nama,
-                'username' => $request->username,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'is_active' => 1,
-            ]);
-
-            \App\Models\Guru::where('nuptk', $request->nuptk)->update(['user_id' => $user->id]);
-
-            return $user->load('guru');
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun kepala sekolah berhasil dibuat.',
-            'data' => $user,
-        ], 201);
+        return response()->json(['success' => true, 'data' => $query]);
     }
 
     // -------------------------------------------------------
@@ -174,30 +79,91 @@ class OperatorController extends Controller
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:100',
-            'no_hp' => 'nullable|string|max:20',
+            'nama' => 'required|string|max:150',
         ]);
 
         $user = DB::transaction(function () use ($request) {
             $user = User::create([
-                'role_id' => 1,
                 'name' => $request->nama,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'is_active' => 1,
             ]);
-
+            $this->assignRole($user->id, 'operator');
             \App\Models\OperatorProfile::create(['user_id' => $user->id]);
-
-            return $user->load('operatorProfile');
+            return $user->load('roles', 'operatorProfile');
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun operator berhasil dibuat.',
-            'data' => $user,
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Akun operator berhasil dibuat.', 'data' => $user], 201);
+    }
+
+    // -------------------------------------------------------
+    // BUAT AKUN GURU
+    // -------------------------------------------------------
+    public function createGuru(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|email|max:100|unique:users,email',
+            'password' => 'required|string|min:8',
+            'nama' => 'required|string|max:150',
+            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
+        ]);
+
+        $sudahAda = \App\Models\Guru::where('nuptk', $request->nuptk)->whereNotNull('user_id')->exists();
+        if ($sudahAda) {
+            return response()->json(['success' => false, 'message' => 'NUPTK ini sudah terdaftar akun guru.'], 422);
+        }
+
+        $user = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name' => $request->nama,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'is_active' => 1,
+            ]);
+            $this->assignRole($user->id, 'guru');
+            \App\Models\Guru::where('nuptk', $request->nuptk)->update(['user_id' => $user->id]);
+            return $user->load('roles', 'guru');
+        });
+
+        return response()->json(['success' => true, 'message' => 'Akun guru berhasil dibuat.', 'data' => $user], 201);
+    }
+
+    // -------------------------------------------------------
+    // BUAT AKUN KEPSEK
+    // -------------------------------------------------------
+    public function createKepsek(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|email|max:100|unique:users,email',
+            'password' => 'required|string|min:8',
+            'nama' => 'required|string|max:150',
+            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
+        ]);
+
+        $sudahAda = \App\Models\Guru::where('nuptk', $request->nuptk)->whereNotNull('user_id')->exists();
+        if ($sudahAda) {
+            return response()->json(['success' => false, 'message' => 'NUPTK ini sudah terdaftar akun kepsek.'], 422);
+        }
+
+        $user = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name' => $request->nama,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'is_active' => 1,
+            ]);
+            $this->assignRole($user->id, 'kepsek');
+            \App\Models\Guru::where('nuptk', $request->nuptk)->update(['user_id' => $user->id]);
+            return $user->load('roles', 'guru');
+        });
+
+        return response()->json(['success' => true, 'message' => 'Akun kepala sekolah berhasil dibuat.', 'data' => $user], 201);
     }
 
     // -------------------------------------------------------
@@ -209,7 +175,7 @@ class OperatorController extends Controller
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:100',
+            'nama' => 'required|string|max:150',
             'no_hp' => 'nullable|string|max:20',
             'nisn' => 'required|string|max:10|exists:siswas,nisn',
             'hubungan' => 'required|in:Ayah,Ibu,Wali',
@@ -219,13 +185,13 @@ class OperatorController extends Controller
 
         $user = DB::transaction(function () use ($request, $siswa) {
             $user = User::create([
-                'role_id' => 3,
                 'name' => $request->nama,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'is_active' => 1,
             ]);
+            $this->assignRole($user->id, 'ortu');
 
             $ortu = \App\Models\OrangTua::create([
                 'user_id' => $user->id,
@@ -234,211 +200,19 @@ class OperatorController extends Controller
                 'no_hp' => $request->no_hp,
             ]);
 
-            \Illuminate\Support\Facades\DB::table('orang_tua_siswa')->insert([
+            DB::table('orang_tua_siswa')->insert([
                 'siswa_id' => $siswa->id,
                 'orang_tua_id' => $ortu->id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            return $user->load('orangTua.siswa');
+            return $user->load('roles', 'orangTua.siswa');
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun orang tua berhasil dibuat.',
-            'data' => $user,
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Akun orang tua berhasil dibuat.', 'data' => $user], 201);
     }
 
-    // -------------------------------------------------------
-    // TOGGLE AKTIF/NON-AKTIF USER
-    // -------------------------------------------------------
-    public function toggleActive(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-
-        // Jangan non-aktifkan diri sendiri
-        if ($user->id === auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak bisa menonaktifkan akun sendiri.',
-            ], 422);
-        }
-
-        $user->update(['is_active' => !$user->is_active]);
-
-        return response()->json([
-            'success' => true,
-            'message' => $user->is_active ? 'Akun berhasil diaktifkan.' : 'Akun berhasil dinonaktifkan.',
-            'data' => ['is_active' => $user->is_active],
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // APPROVE ORTU (yang register sendiri)
-    // -------------------------------------------------------
-    public function approveOrtu(Request $request, $id)
-    {
-        $user = User::where('id', $id)->where('role_id', 3)->firstOrFail();
-
-        if ($user->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun ortu ini sudah aktif.',
-            ], 422);
-        }
-
-        $user->update(['is_active' => 1]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun orang tua berhasil disetujui.',
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // LIST ORTU PENDING (belum diapprove)
-    // -------------------------------------------------------
-    public function pendingOrtu()
-    {
-        $pending = User::with(['ortuProfile.siswa', 'ortuProfiles.siswa'])
-            ->where('role_id', 3)
-            ->where('is_active', 0)
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $pending,
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // LIST SEMUA ORTU (untuk master data)
-    // -------------------------------------------------------
-    public function listOrtu(Request $request)
-    {
-        $query = User::with(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua'])
-            ->where('role_id', 3);
-
-        if ($request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
-                    ->orWhere('username', 'like', "%{$request->search}%")
-                    ->orWhere('no_hp', 'like', "%{$request->search}%")
-                    ->orWhereHas('ortuProfiles.siswa', function ($q) use ($request) {
-                        $q->where('nama_lengkap', 'like', "%{$request->search}%")
-                            ->orWhere('nisn', 'like', "%{$request->search}%");
-                    });
-            });
-        }
-
-        if ($request->status) {
-            $query->where('is_active', $request->status === 'aktif' ? 1 : 0);
-        }
-
-        $ortu = $query->orderBy('created_at', 'desc')->paginate(15);
-
-        return response()->json([
-            'success' => true,
-            'data' => $ortu,
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // DETAIL ORTU (untuk master data)
-    // -------------------------------------------------------
-    public function detailOrtu($id)
-    {
-        $user = User::with(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua'])
-            ->where('role_id', 3)
-            ->findOrFail($id);
-
-        return response()->json([
-            'success' => true,
-            'data' => $user,
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // UPDATE ORTU (untuk master data)
-    // -------------------------------------------------------
-    public function updateOrtu(Request $request, $id)
-    {
-        $user = User::where('role_id', 3)->findOrFail($id);
-
-        $request->validate([
-            'email' => 'nullable|email|max:100|unique:users,email,' . $user->id,
-            'no_hp' => 'nullable|string|max:20',
-            'hubungan' => 'nullable|in:Ayah,Ibu,Wali',
-        ]);
-
-        DB::transaction(function () use ($request, $user) {
-            if ($request->filled('email')) {
-                $user->email = $request->email;
-            }
-            if ($request->filled('no_hp')) {
-                $user->guru->no_hp = $request->no_hp;
-            }
-            $user->save();
-
-            if ($request->filled('hubungan')) {
-                $user->ortuProfiles()->update(['hubungan' => $request->hubungan]);
-            }
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data orang tua berhasil diperbarui.',
-            'data' => $user->load(['ortuProfile.siswa.orangTua', 'ortuProfiles.siswa.orangTua']),
-        ]);
-    }
-
-    // -------------------------------------------------------
-    // TAUTKAN ANAK TAMBAHAN KE AKUN ORTU
-    // -------------------------------------------------------
-    public function attachAnakOrtu(Request $request, $id)
-    {
-        $user = User::where('role_id', 3)->findOrFail($id);
-
-        $request->validate([
-            'nisn' => 'required|string|max:10|exists:siswas,nisn',
-            'hubungan' => 'required|in:Ayah,Ibu,Wali',
-        ]);
-
-        $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->firstOrFail();
-        $exists = \App\Models\OrangTua::where('user_id', $user->id)
-            ->whereHas('siswa', fn($q) => $q->where('id', $siswa->id))
-            ->exists();
-
-        if ($exists) {
-            return response()->json(['success' => false, 'message' => 'Anak ini sudah tertaut ke akun orang tua tersebut.'], 422);
-        }
-
-        DB::transaction(function () use ($user, $siswa, $request) {
-            $ortu = \App\Models\OrangTua::firstOrCreate(
-                ['user_id' => $user->id, 'hubungan' => $request->hubungan],
-                ['nama' => $user->name, 'no_hp' => null]
-            );
-            DB::table('orang_tua_siswa')->insertOrIgnore([
-                'siswa_id' => $siswa->id,
-                'orang_tua_id' => $ortu->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Anak berhasil ditautkan ke akun orang tua.',
-            'data' => $user->load('orangTua.siswa'),
-        ], 201);
-    }
-
-    // -------------------------------------------------------
-    // RESET PASSWORD USER
-    // -------------------------------------------------------
     // -------------------------------------------------------
     // BUAT AKUN BENDAHARA
     // -------------------------------------------------------
@@ -448,45 +222,36 @@ class OperatorController extends Controller
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:100',
+            'nama' => 'required|string|max:150',
             'no_hp' => 'nullable|string|max:20',
-            'nip' => 'nullable|string|max:18',
             'jabatan' => 'nullable|string|max:100',
-            'no_sk' => 'nullable|string|max:60',
+            'no_sk' => 'nullable|string|max:80',
             'tmt_jabatan' => 'nullable|date',
         ]);
 
         DB::transaction(function () use ($request) {
             $user = User::create([
-                'role_id' => 5,
+                'name' => $request->nama,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'nama' => $request->nama_lengkap,
-                'no_hp' => $request->no_hp,
                 'is_active' => 1,
-                'created_by' => auth()->id(),
             ]);
+            $this->assignRole($user->id, 'bendahara');
 
             UserBendahara::create([
                 'user_id' => $user->id,
-                'nip' => $request->nip,
                 'jabatan' => $request->jabatan ?? 'Bendahara Sekolah',
                 'no_sk' => $request->no_sk,
                 'tmt_jabatan' => $request->tmt_jabatan,
-                'akses_modul' => json_encode(['keuangan', 'tagihan', 'pembayaran']),
             ]);
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun bendahara berhasil dibuat.',
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Akun bendahara berhasil dibuat.'], 201);
     }
 
     // -------------------------------------------------------
     // BUAT AKUN WALI KELAS
-    // (Wali kelas harus sudah terdaftar sebagai guru dulu)
     // -------------------------------------------------------
     public function createWaliKelas(Request $request)
     {
@@ -494,69 +259,174 @@ class OperatorController extends Controller
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:100',
-            'no_hp' => 'nullable|string|max:20',
+            'nama' => 'required|string|max:150',
             'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
-            'kelas_id' => 'nullable|string|max:20|exists:kelas,id',
-            'no_sk' => 'nullable|string|max:60',
+            'kelas_id' => 'nullable|integer|exists:kelas,id',
+            'no_sk' => 'nullable|string|max:80',
             'tmt_jabatan' => 'nullable|date',
         ]);
 
-        // Cek NUPTK belum punya akun walikelas
-        $sudahAda = UserWaliKelas::where('nuptk', $request->nuptk)->exists();
-        if ($sudahAda) {
-            return response()->json([
-                'success' => false,
-                'message' => 'NUPTK ini sudah terdaftar sebagai wali kelas.',
-            ], 422);
-        }
-
         DB::transaction(function () use ($request) {
             $user = User::create([
-                'role_id' => 6,
+                'name' => $request->nama,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'nama' => $request->nama_lengkap,
-                'no_hp' => $request->no_hp,
                 'is_active' => 1,
-                'created_by' => auth()->id(),
             ]);
+            $this->assignRole($user->id, 'wali_kelas');
 
-            UserWaliKelas::create([
-                'user_id' => $user->id,
-                'nuptk' => $request->nuptk,
-                'kelas_id' => $request->kelas_id,
-                'no_sk' => $request->no_sk,
-                'tmt_jabatan' => $request->tmt_jabatan,
-            ]);
+            // Link guru via user_id
+            \App\Models\Guru::where('nuptk', $request->nuptk)->update(['user_id' => $user->id]);
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun wali kelas berhasil dibuat.',
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Akun wali kelas berhasil dibuat.'], 201);
     }
 
     // -------------------------------------------------------
-    // RESET PASSWORD USER
+    // TOGGLE AKTIF USER
+    // -------------------------------------------------------
+    public function toggleActive(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        if ($user->id === auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Tidak bisa menonaktifkan akun sendiri.'], 422);
+        }
+        $user->update(['is_active' => !$user->is_active]);
+        return response()->json(['success' => true, 'message' => $user->is_active ? 'Akun diaktifkan.' : 'Akun dinonaktifkan.', 'data' => ['is_active' => $user->is_active]]);
+    }
+
+    // -------------------------------------------------------
+    // APPROVE ORTU
+    // -------------------------------------------------------
+    public function approveOrtu(Request $request, $id)
+    {
+        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))
+            ->findOrFail($id);
+
+        if ($user->is_active) {
+            return response()->json(['success' => false, 'message' => 'Akun ortu ini sudah aktif.'], 422);
+        }
+        $user->update(['is_active' => 1]);
+        return response()->json(['success' => true, 'message' => 'Akun orang tua berhasil disetujui.']);
+    }
+
+    // -------------------------------------------------------
+    // LIST ORTU PENDING
+    // -------------------------------------------------------
+    public function pendingOrtu()
+    {
+        $pending = User::with('orangTua.siswa')
+            ->whereHas('roles', fn($q) => $q->where('slug', 'ortu'))
+            ->where('is_active', 0)
+            ->orderBy('created_at')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $pending]);
+    }
+
+    // -------------------------------------------------------
+    // LIST SEMUA ORTU
+    // -------------------------------------------------------
+    public function listOrtu(Request $request)
+    {
+        $query = User::with('orangTua.siswa')
+            ->whereHas('roles', fn($q) => $q->where('slug', 'ortu'))
+            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('username', 'like', "%{$request->search}%"))
+            ->when($request->status, fn($q) => $q->where('is_active', $request->status === 'aktif' ? 1 : 0))
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        return response()->json(['success' => true, 'data' => $query]);
+    }
+
+    // -------------------------------------------------------
+    // DETAIL ORTU
+    // -------------------------------------------------------
+    public function detailOrtu($id)
+    {
+        $user = User::with('orangTua.siswa')
+            ->whereHas('roles', fn($q) => $q->where('slug', 'ortu'))
+            ->findOrFail($id);
+
+        return response()->json(['success' => true, 'data' => $user]);
+    }
+
+    // -------------------------------------------------------
+    // UPDATE ORTU
+    // -------------------------------------------------------
+    public function updateOrtu(Request $request, $id)
+    {
+        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))->findOrFail($id);
+
+        $request->validate([
+            'email' => 'nullable|email|max:100|unique:users,email,' . $user->id,
+            'nama' => 'nullable|string|max:150',
+            'hubungan' => 'nullable|in:Ayah,Ibu,Wali,Kakek,Nenek,Paman,Bibi,Kakak,Lainnya',
+        ]);
+
+        DB::transaction(function () use ($request, $user) {
+            $user->update(array_filter([
+                'name' => $request->nama,
+                'email' => $request->email,
+            ]));
+            if ($request->filled('hubungan')) {
+                $user->orangTua()->update(['hubungan' => $request->hubungan]);
+            }
+        });
+
+        return response()->json(['success' => true, 'message' => 'Data orang tua berhasil diperbarui.', 'data' => $user->load('orangTua.siswa')]);
+    }
+
+    // -------------------------------------------------------
+    // TAUTKAN ANAK KE AKUN ORTU
+    // -------------------------------------------------------
+    public function attachAnakOrtu(Request $request, $id)
+    {
+        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))->findOrFail($id);
+
+        $request->validate([
+            'nisn' => 'required|string|max:10|exists:siswas,nisn',
+            'hubungan' => 'required|in:Ayah,Ibu,Wali,Kakek,Nenek,Paman,Bibi,Kakak,Lainnya',
+        ]);
+
+        $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->firstOrFail();
+
+        $exists = \App\Models\OrangTua::where('user_id', $user->id)
+            ->whereHas('siswa', fn($q) => $q->where('siswas.id', $siswa->id))
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['success' => false, 'message' => 'Anak ini sudah tertaut ke akun orang tua.'], 422);
+        }
+
+        DB::transaction(function () use ($user, $siswa, $request) {
+            $ortu = \App\Models\OrangTua::firstOrCreate(
+                ['user_id' => $user->id, 'hubungan' => $request->hubungan],
+                ['nama' => $user->name]
+            );
+            DB::table('orang_tua_siswa')->insertOrIgnore([
+                'siswa_id' => $siswa->id,
+                'orang_tua_id' => $ortu->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Anak berhasil ditautkan.', 'data' => $user->load('orangTua.siswa')], 201);
+    }
+
+    // -------------------------------------------------------
+    // RESET PASSWORD
     // -------------------------------------------------------
     public function resetPassword(Request $request, $id)
     {
-        $request->validate([
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
+        $request->validate(['password' => 'required|string|min:8|confirmed']);
         $user = User::findOrFail($id);
         $user->update(['password' => Hash::make($request->password)]);
-
-        // Hapus semua token aktif user tersebut
         $user->tokens()->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Password berhasil direset. User harus login ulang.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Password berhasil direset.']);
     }
 
     // -------------------------------------------------------
@@ -565,31 +435,17 @@ class OperatorController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-
         if ($user->id === auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak bisa menghapus akun sendiri.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Tidak bisa menghapus akun sendiri.'], 422);
         }
-
         DB::transaction(function () use ($user) {
-            // Hapus profil dulu
             $user->operatorProfile?->delete();
-            $user->guruProfile?->delete();
-            $user->ortuProfiles()->delete();
-            $user->kepsekProfile?->delete();
             $user->bendaharaProfile?->delete();
-            $user->waliKelasProfile?->delete();
-            // Hapus semua token
+            $user->orangTua()->delete();
+            $user->roles()->detach();
             $user->tokens()->delete();
-            // Hapus user
             $user->delete();
         });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Akun berhasil dihapus.',
-        ]);
+        return response()->json(['success' => true, 'message' => 'Akun berhasil dihapus.']);
     }
 }
