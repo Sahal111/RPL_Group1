@@ -19,8 +19,8 @@ use App\Http\Controllers\MasterData\JadwalPelajaranController;
 // PUBLIC — tidak perlu token
 // -------------------------------------------------------
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register-ortu', [AuthController::class, 'registerOrtu']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/register-ortu', [AuthController::class, 'registerOrtu'])->middleware('throttle:10,1');
 });
 
 // Galeri publik (tidak perlu login)
@@ -131,7 +131,6 @@ Route::middleware('auth:sanctum')->group(function () {
             // Route::get('/kelas/{id}', [MasterDataKelasController::class, 'show']);
             // Route::put('/kelas/{id}', [MasterDataKelasController::class, 'update']);
             // Route::delete('/kelas/{id}', [MasterDataKelasController::class, 'destroy']);
-            Route::get('/kelas/tahun-ajaran', [MasterDataKelasController::class, 'tahunAjaranDropdown']);
             Route::get('/kelas', [MasterDataKelasController::class, 'index']);
             Route::post('/kelas', [MasterDataKelasController::class, 'store']);
             Route::get('/kelas/dropdown', [MasterDataKelasController::class, 'dropdown']);

@@ -31,29 +31,29 @@ class AbsensiController extends Controller
             ->where('hari', $hari);
 
         if ($tahunAjaran) {
-            $query->where('tahun_ajarans', $tahunAjaran->nama)
-                ->where('semester', $kelas->semester);
+            $query->where('semester_id', $kelas->semester_id);
         }
 
-        $jadwal = $query->orderBy('jam_mulai')
-            ->get()
-            ->map(function ($j) use ($id_kelas, $tanggal) {
-                // Cek apakah absensi untuk jadwal ini sudah diisi
-                $sudahAbsen = Absensi::where('id_kelas', $id_kelas)
-                    ->where('id_jadwal', $j->id)
-                    ->where('tanggal', $tanggal)
-                    ->exists();
+        $rows = $query->orderBy('jam_mulai')->get();
+        // ponytail: 1 query instead of N exists() di loop
+        $sudahAbsenIds = Absensi::where('kelas_id', $id_kelas)
+            ->where('tanggal', $tanggal)
+            ->whereIn('jadwal_id', $rows->pluck('id'))
+            ->distinct()
+            ->pluck('jadwal_id')
+            ->flip();
 
-                return [
-                    'id_jadwal' => $j->id,
-                    'nama_mapel' => $j->mataPelajaran->nama_mapel ?? '-',
-                    'kode_mapel' => $j->mataPelajaran->kode_mapel ?? '-',
-                    'gurus' => $j->guru->nama_lengkap ?? '-',
-                    'jam_mulai' => $j->jam_mulai,
-                    'jam_selesai' => $j->jam_selesai,
-                    'sudah_absen' => $sudahAbsen,
-                ];
-            });
+        $jadwal = $rows->map(function ($j) use ($sudahAbsenIds) {
+            return [
+                'id_jadwal' => $j->id,
+                'nama_mapel' => $j->mataPelajaran->nama_mapel ?? '-',
+                'kode_mapel' => $j->mataPelajaran->kode_mapel ?? '-',
+                'gurus' => $j->guru->nama_lengkap ?? '-',
+                'jam_mulai' => $j->jam_mulai,
+                'jam_selesai' => $j->jam_selesai,
+                'sudah_absen' => $sudahAbsenIds->has($j->id),
+            ];
+        });
 
         return response()->json([
             'success' => true,
@@ -77,18 +77,18 @@ class AbsensiController extends Controller
 
         $kelas = Kelas::findOrFail($id_kelas);
 
-        $siswaList = SiswaKelas::with('siswas')
+        $siswaList = RiwayatKelas::with('siswa')
             ->where('kelas_id', $id_kelas)
-            ->where('status_keluar', 'Aktif')
+            ->whereNull('tanggal_keluar')
             ->orderBy('no_absen')
             ->get();
 
         // Absensi yang sudah diisi untuk jadwal + tanggal ini
-        $query = Absensi::where('id_kelas', $id_kelas)->where('tanggal', $tanggal);
+        $query = Absensi::where('kelas_id', $id_kelas)->where('tanggal', $tanggal);
         if ($id_jadwal) {
-            $query->where('id_jadwal', $id_jadwal);
+            $query->where('jadwal_id', $id_jadwal);
         } else {
-            $query->whereNull('id_jadwal'); // fallback: data lama tanpa jadwal
+            $query->whereNull('jadwal_id'); // fallback: data lama tanpa jadwal
         }
         $absensiHariIni = $query->get()->keyBy('siswa_id');
 
@@ -136,16 +136,35 @@ class AbsensiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id_kelas' => 'required|string|exists:kelas,id',
-            'id_jadwal' => 'nullable|integer|exists:jadwal_pelajaran,id',
+            'kelas_id' => 'required|integer|exists:kelas,id',
+            'jadwal_id' => 'nullable|integer|exists:jadwals,id',
             'tanggal' => 'required|date|before_or_equal:today',
-            'absensis' => 'required|array|min:1',
-            'absensi.*.nisn' => 'required|string|exists:siswas,nisn',
+            'absensi' => 'required|array|min:1',
+            'absensi.*.siswa_id' => 'required|integer|exists:siswas,id',
             'absensi.*.status' => 'required|in:Hadir,Sakit,Izin,Alpa',
             'absensi.*.keterangan' => 'nullable|string|max:255',
         ]);
 
         $user = $request->user();
+
+        // ponytail: guru hanya kelas/jadwal miliknya; operator bypass
+        if ($user->hasRole('guru') && !$user->hasRole('operator')) {
+            $nuptk = $user->guru?->nuptk;
+            $guruId = $user->guru?->id;
+            $ok = Kelas::where('id', $request->kelas_id)
+                ->where(function ($q) use ($nuptk, $guruId) {
+                    $q->where('nuptk_wali', $nuptk)->orWhere('guru_id', $guruId);
+                })
+                ->exists();
+            if (!$ok && $request->jadwal_id) {
+                $ok = JadwalPelajaran::where('id', $request->jadwal_id)
+                    ->where(fn($q) => $q->where('nuptk', $nuptk)->orWhere('guru_id', $guruId))
+                    ->exists();
+            }
+            if (!$ok) {
+                return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+            }
+        }
 
         DB::transaction(function () use ($request, $user) {
             foreach ($request->absensi as $item) {
@@ -153,7 +172,7 @@ class AbsensiController extends Controller
                     [
                         'siswa_id' => $item['siswa_id'],
                         'kelas_id' => $request->kelas_id,
-                        'id_jadwal' => $request->id_jadwal, // null = harian (legacy)
+                        'jadwal_id' => $request->jadwal_id, // null = harian (legacy)
                         'tanggal' => $request->tanggal,
                     ],
                     [
@@ -207,13 +226,13 @@ class AbsensiController extends Controller
 
         $kelas = Kelas::findOrFail($id_kelas);
 
-        $siswaList = SiswaKelas::with('siswas')
+        $siswaList = RiwayatKelas::with('siswa')
             ->where('kelas_id', $id_kelas)
-            ->where('status_keluar', 'Aktif')
+            ->whereNull('tanggal_keluar')
             ->orderBy('no_absen')
             ->get();
 
-        $absensi = Absensi::where('id_kelas', $id_kelas)
+        $absensi = Absensi::where('kelas_id', $id_kelas)
             ->whereBetween('tanggal', [$request->dari, $request->sampai])
             ->get()
             ->groupBy('siswa_id');
@@ -279,7 +298,7 @@ class AbsensiController extends Controller
             ];
         });
 
-        $hariEfektif = Absensi::where('id_kelas', $id_kelas)
+        $hariEfektif = Absensi::where('kelas_id', $id_kelas)
             ->whereBetween('tanggal', [$request->dari, $request->sampai])
             ->distinct('tanggal')
             ->count('tanggal');
@@ -310,8 +329,20 @@ class AbsensiController extends Controller
             'tahun' => 'nullable|integer',
         ]);
 
+        // ponytail: IDOR guard — ortu hanya anak sendiri
+        if ($user->hasRole('ortu') && !$user->hasRole('guru') && !$user->hasRole('operator')) {
+            $milik = \App\Models\OrangTua::where('user_id', $user->id)
+                ->whereHas('siswa', fn($q) => $q->where('nisn', $nisn))
+                ->exists();
+            if (!$milik) {
+                return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+            }
+        }
+
+        $siswa = \App\Models\Siswa::where('nisn', $nisn)->firstOrFail();
+
         $query = Absensi::with(['kelas', 'jadwal.mataPelajaran'])
-            ->where('siswa_id', $nisn);
+            ->where('siswa_id', $siswa->id);
 
         if ($request->bulan && $request->tahun) {
             $query->whereMonth('tanggal', $request->bulan)

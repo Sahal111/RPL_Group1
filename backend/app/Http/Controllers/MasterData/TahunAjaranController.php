@@ -3,51 +3,46 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Models\TahunAjaran;
+use App\Models\Kelas;
+use App\Models\RiwayatKelas;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class TahunAjaranController extends Controller
 {
     public function index()
     {
-        $data = DB::table('tahun_ajarans')
-            ->orderByDesc('tanggal_mulai')
-            ->get();
+        $data = TahunAjaran::orderByDesc('tahun')->get();
 
         return response()->json(['success' => true, 'data' => $data]);
     }
 
     public function show($id)
     {
-        $tahunAjaran = DB::table('tahun_ajarans')->find($id);
-
-        if (!$tahunAjaran) {
-            return response()->json(['success' => false, 'message' => 'Tahun ajaran tidak ditemukan.'], 404);
-        }
+        $tahunAjaran = TahunAjaran::findOrFail($id);
 
         // Ambil semua kelas pada tahun ajaran ini beserta wali kelas
-        $kelasList = DB::table('kelas')
-            ->leftJoin('gurus', 'kelas.nuptk_wali', '=', 'guru.nuptk')
-            ->where('kelas.id_tahun_ajaran', $id)
-            ->orderBy('kelas.tingkat')
-            ->orderBy('kelas.nama_kelas')
-            ->get([
-                'kelas.id',
-                'kelas.nama_kelas',
-                'kelas.tingkat',
-                'kelas.semester',
-                'kelas.kurikulum',
-                'kelas.kapasitas',
-                'kelas.ruangan',
-                'kelas.is_active',
-                'guru.nama_lengkap as nama_wali',
-            ])
+        $kelasList = Kelas::with(['wali:id,nuptk,nama'])
+            ->where('tahun_ajaran_id', $id)
+            ->orderBy('tingkat')
+            ->orderBy('nama_kelas')
+            ->get()
             ->map(function ($k) {
-                $k->total_siswa = DB::table('riwayat_kelas')
-                    ->where('kelas_id', $k->id)
-                    ->where('status_keluar', 'Aktif')
+                $totalSiswa = RiwayatKelas::where('kelas_id', $k->id)
+                    ->whereNull('tanggal_keluar')
                     ->count();
-                return $k;
+
+                return [
+                    'id' => $k->id,
+                    'nama_kelas' => $k->nama_kelas,
+                    'tingkat' => $k->tingkat,
+                    'kurikulum' => $k->kurikulum,
+                    'kapasitas' => $k->kapasitas,
+                    'ruangan' => $k->ruangan,
+                    'is_active' => $k->is_active,
+                    'nama_wali' => $k->wali?->nama ?? '-',
+                    'total_siswa' => $totalSiswa,
+                ];
             });
 
         return response()->json([
@@ -62,62 +57,63 @@ class TahunAjaranController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:20',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after:tanggal_mulai',
+            'tahun' => 'required|string|max:9|unique:tahun_ajarans,tahun',
         ]);
 
-        $id = DB::table('tahun_ajarans')->insertGetId([
-            'nama' => $request->nama,
-            'tanggal_mulai' => $request->tanggal_mulai,
-            'tanggal_selesai' => $request->tanggal_selesai,
-            'is_active' => 0,
+        $tahunAjaran = TahunAjaran::create([
+            'tahun' => $request->tahun,
+            'is_active' => false,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Tahun ajaran berhasil ditambahkan.',
-            'data' => DB::table('tahun_ajarans')->find($id),
+            'data' => $tahunAjaran,
         ], 201);
     }
 
     public function update(Request $request, $id)
     {
+        $tahunAjaran = TahunAjaran::findOrFail($id);
+
         $request->validate([
-            'nama' => 'required|string|max:20',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after:tanggal_mulai',
+            'tahun' => 'required|string|max:9|unique:tahun_ajarans,tahun,' . $id,
         ]);
 
-        DB::table('tahun_ajarans')->where('id', $id)->update([
-            'nama' => $request->nama,
-            'tanggal_mulai' => $request->tanggal_mulai,
-            'tanggal_selesai' => $request->tanggal_selesai,
+        $tahunAjaran->update([
+            'tahun' => $request->tahun,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Tahun ajaran berhasil diperbarui.',
+            'data' => $tahunAjaran,
         ]);
     }
 
     public function setAktif($id)
     {
         // Non-aktifkan semua dulu
-        DB::table('tahun_ajarans')->update(['is_active' => 0]);
+        TahunAjaran::query()->update(['is_active' => false]);
+        
         // Aktifkan yang dipilih
-        DB::table('tahun_ajarans')->where('id', $id)->update(['is_active' => 1]);
+        $tahunAjaran = TahunAjaran::findOrFail($id);
+        $tahunAjaran->update(['is_active' => true]);
 
         return response()->json([
             'success' => true,
             'message' => 'Tahun ajaran aktif berhasil diubah.',
+            'data' => $tahunAjaran,
         ]);
     }
 
     public function destroy($id)
     {
+        $tahunAjaran = TahunAjaran::findOrFail($id);
+
         // Cek apakah ada kelas yang pakai tahun ajaran ini
-        $adaKelas = DB::table('kelas')->where('tahun_ajaran_id', $id)->exists();
+        $adaKelas = Kelas::where('tahun_ajaran_id', $id)->exists();
+        
         if ($adaKelas) {
             return response()->json([
                 'success' => false,
@@ -125,8 +121,11 @@ class TahunAjaranController extends Controller
             ], 422);
         }
 
-        DB::table('tahun_ajarans')->where('id', $id)->delete();
+        $tahunAjaran->delete();
 
-        return response()->json(['success' => true, 'message' => 'Tahun ajaran berhasil dihapus.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Tahun ajaran berhasil dihapus.',
+        ]);
     }
 }

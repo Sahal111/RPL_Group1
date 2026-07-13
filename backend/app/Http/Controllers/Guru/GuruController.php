@@ -22,7 +22,7 @@ class GuruController extends Controller
     // -------------------------------------------------------
     public function dashboard(Request $request)
     {
-        $nuptk = $request->user()->guruProfile?->nuptk;
+        $nuptk = $request->user()->guru?->nuptk;
         if (!$nuptk)
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
@@ -95,7 +95,7 @@ class GuruController extends Controller
     // -------------------------------------------------------
     public function siswaSaya(Request $request)
     {
-        $nuptk = $request->user()->guruProfile?->nuptk;
+        $nuptk = $request->user()->guru?->nuptk;
         if (!$nuptk)
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
@@ -173,7 +173,7 @@ class GuruController extends Controller
     // -------------------------------------------------------
     public function detailSiswa(Request $request, $nisn)
     {
-        $nuptk = $request->user()->guruProfile?->nuptk;
+        $nuptk = $request->user()->guru?->nuptk;
         if (!$nuptk)
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
@@ -285,7 +285,7 @@ class GuruController extends Controller
     public function kelasSaya(Request $request)
     {
         $user = $request->user();
-        $nuptk = $user->guruProfile?->nuptk;
+        $nuptk = $user->guru?->nuptk;
 
         if (!$nuptk) {
             return response()->json([
@@ -330,7 +330,7 @@ class GuruController extends Controller
     public function detailKelas(Request $request, $id_kelas)
     {
         $user = $request->user();
-        $nuptk = $user->guruProfile?->nuptk;
+        $nuptk = $user->guru?->nuptk;
 
         $kelas = Kelas::where('id', $id_kelas)
             ->where('nuptk_wali', $nuptk)
@@ -391,7 +391,7 @@ class GuruController extends Controller
         ]);
 
         $user = $request->user();
-        $nuptk = $user->guruProfile?->nuptk;
+        $nuptk = $user->guru?->nuptk;
 
         // Pastikan kelas ini milik guru ybs
         Kelas::where('id', $id_kelas)
@@ -440,7 +440,7 @@ class GuruController extends Controller
     public function jadwalMengajar(Request $request)
     {
         $user = $request->user();
-        $nuptk = $user->guruProfile?->nuptk;
+        $nuptk = $user->guru?->nuptk;
 
         if (!$nuptk) {
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
@@ -486,7 +486,7 @@ class GuruController extends Controller
     {
         $user = $request->user();
 
-        $nuptk = $user->guruProfile?->nuptk;
+        $nuptk = $user->guru?->nuptk;
 
         // Ambil data master guru jika ada
         $masterGuru = null;

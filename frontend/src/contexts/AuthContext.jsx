@@ -12,7 +12,13 @@ export function AuthProvider({ children }) {
     const savedToken = localStorage.getItem("token");
 
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        // ponytail: localStorage corrupt → clear
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
     setLoading(false);
   }, []);

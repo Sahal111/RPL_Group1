@@ -19,8 +19,10 @@ class AuthController extends Controller
         ]);
 
         $user = User::with('roles')
-            ->where('username', $request->login)
-            ->orWhere('email', $request->login)
+            ->where(function ($q) use ($request) {
+                $q->where('username', $request->login)
+                    ->orWhere('email', $request->login);
+            })
             ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {

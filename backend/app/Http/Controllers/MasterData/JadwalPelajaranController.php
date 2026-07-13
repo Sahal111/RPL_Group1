@@ -47,7 +47,7 @@ class JadwalPelajaranController extends Controller
             return response()->json($bentrok, 422);
         }
 
-        $jadwal = JadwalPelajaran::create($request->all());
+        $jadwal = JadwalPelajaran::create($request->only(['kelas_id', 'id_mapel', 'nuptk', 'hari', 'jam_mulai', 'jam_selesai', 'semester', 'tahun_ajarans']));
 
         return response()->json([
             'success' => true,
@@ -75,7 +75,7 @@ class JadwalPelajaranController extends Controller
             return response()->json($bentrok, 422);
         }
 
-        $jadwal->update($request->all());
+        $jadwal->update($request->only(['kelas_id', 'id_mapel', 'nuptk', 'hari', 'jam_mulai', 'jam_selesai', 'semester', 'tahun_ajarans']));
 
         return response()->json([
             'success' => true,

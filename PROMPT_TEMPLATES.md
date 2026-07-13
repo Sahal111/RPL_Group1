@@ -147,6 +147,12 @@ Kumpulkan semua komentar ponytail: di kode (shortcut yang disengaja) jadi debt l
 Quick reference semua command di atas.
 
 
-Baca CLAUDE.md. tolong buatkan akun seeder untuk semua role yah .
-Buat rencana dulu, tunggu konfirmasi saya sebelum coding.
-Jangan ubah file di section COMPLETED.
+
+Baca CLAUDE.md. Ada bug di [ketika saya mencoba test login ke halamab operator]: [[Error] Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200
+[Error] XMLHttpRequest cannot load http://127.0.0.1:8000/api/auth/login due to access control checks.
+[Error] Failed to load resource: Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200 (login, line 0)].
+Jangan ubah file lain. Identifikasi dulu penyebabnya,
+jelaskan ke saya sebelum fix.
+[Error] Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200
+[Error] XMLHttpRequest cannot load http://127.0.0.1:8000/api/auth/login due to access control checks.
+[Error] Failed to load resource: Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200 (login, line 0)

@@ -241,15 +241,22 @@ class OrtuController extends Controller
     {
         $request->validate([
             'nisn' => 'required|string|size:10|exists:siswas,nisn',
+            'kode_anak' => 'required|string|size:10', // ponytail: cegah claim anak sembarangan
             'hubungan' => 'required|in:Ayah,Ibu,Wali',
         ]);
 
         $user = $request->user();
-        $siswa = Siswa::where('nisn', $request->nisn)->firstOrFail();
+        $siswa = Siswa::where('nisn', $request->nisn)
+            ->where('kode_anak', $request->kode_anak)
+            ->first();
+
+        if (!$siswa) {
+            return response()->json(['success' => false, 'message' => 'NISN atau kode anak tidak valid.'], 422);
+        }
 
         // Cek apakah sudah terhubung
         $sudahAda = OrangTua::where('user_id', $user->id)
-            ->whereHas('siswa', fn($q) => $q->where('siswa_id', $siswa->id))
+            ->whereHas('siswa', fn($q) => $q->where('siswas.id', $siswa->id))
             ->exists();
 
         if ($sudahAda) {
