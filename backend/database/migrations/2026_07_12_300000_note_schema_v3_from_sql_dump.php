@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 
 /**
- * CATATAN: Database sudah dibuat langsung dari minurulhuda3_v3.sql
+ * CATATAN: Database sudah dibuat langsung dari db_minurulhuda3.sql
  * Migration ini hanya penanda agar Laravel tidak mencoba re-create tabel.
  * Semua tabel sudah ada dengan nama baru (plural) sesuai standar Laravel Eloquent.
  *
@@ -29,7 +29,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Tidak ada yang perlu dilakukan — DB sudah dibuat dari SQL dump v3
+        // Tidak ada yang perlu dilakukan — DB sudah dibuat dari SQL dump 
     }
 
     public function down(): void
