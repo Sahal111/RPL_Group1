@@ -40,13 +40,13 @@ class Kelas extends Model
         return $this->belongsTo(Guru::class, 'nuptk_wali', 'nuptk');
     }
 
-    public function siswaKelas()
+    public function riwayatKelas()
     {
-        return $this->hasMany(SiswaKelas::class, 'id_kelas', 'id');
+        return $this->hasMany(RiwayatKelas::class, 'kelas_id', 'id');
     }
 
-    public function absensi()
+    public function absensis()
     {
-        return $this->hasMany(Absensi::class, 'id_kelas', 'id');
+        return $this->hasMany(Absensi::class, 'kelas_id', 'id');
     }
 }

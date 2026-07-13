@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Siswa extends Model
 {
-    protected $table = 'siswa';
+    protected $table = 'siswas';
     protected $primaryKey = 'nisn';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -67,25 +67,20 @@ class Siswa extends Model
 
     public function kelas()
     {
-        return $this->hasMany(SiswaKelas::class, 'nisn', 'nisn');
+        return $this->hasMany(RiwayatKelas::class, 'siswa_id', 'id');
     }
 
     public function kelasAktif()
     {
-        return $this->belongsToMany(Kelas::class, 'siswa_kelas', 'nisn', 'id_kelas', 'nisn', 'id')
+        return $this->belongsToMany(Kelas::class, 'riwayat_kelas', 'siswa_id', 'kelas_id', 'id', 'id')
             ->wherePivot('status_keluar', 'Aktif')
             ->where('kelas.is_active', 1)
-            ->withPivot('no_absen', 'tahun_ajaran', 'semester', 'status_masuk', 'tanggal_masuk', 'status_keluar');
-    }
-
-    public function userOrtu()
-    {
-        return $this->hasMany(UserOrtu::class, 'nisn', 'nisn');
+            ->withPivot('no_absen', 'tanggal_masuk', 'tanggal_keluar', 'jenis_perubahan');
     }
 
     public function orangTua()
     {
-        return $this->belongsToMany(OrangTua::class, 'siswa_orang_tua', 'nisn', 'id_ortu', 'nisn', 'id')
+        return $this->belongsToMany(OrangTua::class, 'orang_tua_siswa', 'siswa_id', 'orang_tua_id', 'id', 'id')
             ->withTimestamps();
     }
 }

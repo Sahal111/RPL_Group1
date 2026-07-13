@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MataPelajaran extends Model
 {
-    protected $table      = 'mata_pelajaran';
+    protected $table      = 'mapels';
     protected $primaryKey = 'id';
     public $timestamps    = false;
 

@@ -47,7 +47,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Update last_login
-        $user->update(['last_login' => now()]);
+        $user->update(['last_login_at' => now()]);
 
         // Load profil sesuai role
         $profile = $this->getProfile($user);
@@ -61,7 +61,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'username' => $user->username,
                     'email' => $user->email,
-                    'nama_lengkap' => $user->nama_lengkap,
+                    'nama' => $user->name,
                     'role' => $user->role->slug,
                     'foto' => $user->foto,
                     'profile' => $profile,
@@ -97,10 +97,10 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'email' => $user->email,
-                'nama_lengkap' => $user->nama_lengkap,
+                'nama' => $user->name,
                 'role' => $user->role->slug,
                 'foto' => $user->foto,
-                'last_login' => $user->last_login,
+                'last_login' => $user->last_login_at,
                 'profile' => $profile,
             ],
         ]);
@@ -115,15 +115,15 @@ class AuthController extends Controller
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'nama_lengkap' => 'required|string|max:100',
+            'nama' => 'required|string|max:100',
             'no_hp' => 'required|string|max:20',
-            'nisn' => 'required|string|size:10|exists:siswa,nisn',
+            'nisn' => 'required|string|size:10|exists:siswas,nisn',
             'kode_sekolah' => 'required|string',
             'hubungan' => 'required|in:Ayah,Ibu,Wali',
         ]);
 
         // Validasi kode unik sekolah
-        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_registrasi')->first();
+        $pengaturan = \App\Models\Pengaturan::where('key', 'kode_registrasi_ortu')->first();
         $kodeValid = $pengaturan ? $pengaturan->value : config('school.kode_registrasi');
         if ($request->kode_sekolah !== $kodeValid) {
             return response()->json([
@@ -132,30 +132,39 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Cek apakah NISN sudah punya akun ortu
-        $sudahAda = \App\Models\UserOrtu::where('nisn', $request->nisn)->exists();
-        if ($sudahAda) {
+        // Cari siswa berdasarkan NISN
+        $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->first();
+        if (!$siswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'NISN ini sudah terdaftar akun orang tua.',
+                'message' => 'NISN tidak ditemukan.',
             ], 422);
         }
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($request, $siswa) {
             $user = User::create([
                 'role_id' => 3, // ortu
+                'name' => $request->nama_lengkap,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'nama_lengkap' => $request->nama_lengkap,
-                'no_hp' => $request->no_hp,
                 'is_active' => 0, // perlu approve operator
             ]);
 
-            \App\Models\UserOrtu::create([
+            // Buat record orang_tua dan link ke user + siswa
+            $ortu = \App\Models\OrangTua::create([
                 'user_id' => $user->id,
-                'nisn' => $request->nisn,
+                'nama' => $request->nama_lengkap,
                 'hubungan' => $request->hubungan,
+                'no_hp' => $request->no_hp,
+            ]);
+
+            // Link ortu ke siswa via orang_tua_siswa
+            \Illuminate\Support\Facades\DB::table('orang_tua_siswa')->insert([
+                'siswa_id' => $siswa->id,
+                'orang_tua_id' => $ortu->id,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         });
 
@@ -172,11 +181,11 @@ class AuthController extends Controller
     {
         return match ($user->role_id) {
             1 => $user->operatorProfile,
-            2 => $user->guruProfile?->load('guru'),
-            3 => $user->ortuProfiles()->with('siswa')->get(),
-            4 => $user->kepsekProfile,
+            2 => $user->guru,
+            3 => $user->orangTua()->with('siswa')->get(),
+            4 => $user->guru, // kepsek juga guru
             5 => $user->bendaharaProfile,
-            6 => $user->waliKelasProfile?->load('guru', 'kelas'),
+            6 => $user->waliKelasProfile?->load('kelas'),
             default => null,
         };
     }

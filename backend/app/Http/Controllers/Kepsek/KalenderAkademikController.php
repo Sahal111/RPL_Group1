@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Kepsek;
 
 use App\Http\Controllers\Controller;
-use App\Models\KalenderAkademik;
+use App\Models\KalenderAkademik; // tabel: kalender_akademiks
 use Illuminate\Http\Request;
 
 class KalenderAkademikController extends Controller

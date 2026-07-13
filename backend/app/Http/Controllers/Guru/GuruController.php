@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
-use App\Models\SiswaKelas;
-use App\Models\Absensi;
+use App\Models\RiwayatKelas;
+use App\Models\Absensi; // tabel: absensis
 use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\User;
-use App\Models\JadwalPelajaran;
+use App\Models\JadwalPelajaran; // tabel: jadwals
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -66,7 +66,7 @@ class GuruController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'guru' => [
+                'gurus' => [
                     'nama' => $guru?->nama_lengkap ?? $request->user()->nama_lengkap,
                     'nuptk' => $nuptk,
                     'foto' => $request->user()->foto,
@@ -102,22 +102,22 @@ class GuruController extends Controller
         $idKelas = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->pluck('id')->toArray();
 
         $search = $request->search;
-        $idKelasFilter = $request->id_kelas;
+        $idKelasFilter = $request->kelas_id;
 
         $query = SiswaKelas::with([
-            'siswa',
+            'siswas',
             'kelas',
             'siswa.orangTua',
         ])
-            ->whereIn('id_kelas', $idKelas)
+            ->whereIn('kelas_id', $idKelas)
             ->where('status_keluar', 'Aktif');
 
         if ($idKelasFilter) {
-            $query->where('id_kelas', $idKelasFilter);
+            $query->where('kelas_id', $idKelasFilter);
         }
 
         if ($search) {
-            $query->whereHas('siswa', function ($q) use ($search) {
+            $query->whereHas('siswas', function ($q) use ($search) {
                 $q->where('nama_lengkap', 'like', "%{$search}%")
                     ->orWhere('nisn', 'like', "%{$search}%")
                     ->orWhere('no_induk', 'like', "%{$search}%");
@@ -148,12 +148,12 @@ class GuruController extends Controller
             }
 
             return [
-                'nisn' => $sk->nisn,
+                'nisn' => $sk->siswa_id,
                 'no_induk' => $sk->siswa->no_induk,
                 'no_absen' => $sk->no_absen,
-                'nama_lengkap' => $sk->siswa->nama_lengkap,
+                'nama' => $sk->siswa->nama,
                 'jenis_kelamin' => $sk->siswa->jenis_kelamin,
-                'id_kelas' => $sk->id_kelas,
+                'kelas_id' => $sk->kelas_id,
                 'nama_kelas' => $sk->kelas?->nama_kelas,
                 'foto' => $sk->siswa->foto,
                 'nama_ortu' => $namaOrtu,
@@ -180,7 +180,7 @@ class GuruController extends Controller
         // Pastikan siswa ini ada di kelas yang diwali oleh guru ini
         $idKelasWali = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->pluck('id')->toArray();
         $isSiswaWali = SiswaKelas::where('nisn', $nisn)
-            ->whereIn('id_kelas', $idKelasWali)
+            ->whereIn('kelas_id', $idKelasWali)
             ->where('status_keluar', 'Aktif')
             ->exists();
 
@@ -193,7 +193,7 @@ class GuruController extends Controller
         $siswa = Siswa::with([
             'userOrtu.user',
             'orangTua.siswa.userOrtu.user',
-        ])->where('nisn', $nisn)->first();
+        ])->where('siswa_id', $nisn)->first();
 
         $akunMap = [];
 
@@ -223,18 +223,17 @@ class GuruController extends Controller
             }
         }
 
-        // Untuk setiap akun ortu, cari anak lain yang terhubung ke akun tsb
-        $enrichedUserOrtu = collect($akunMap)->map(function ($item) use ($nisn) {
-            $anakLain = \App\Models\UserOrtu::where('user_id', $item['user_id'])
-                ->where('nisn', '!=', $nisn)
-                ->with('siswa:nisn,nama_lengkap,jenis_kelamin')
+        // Untuk setiap akun ortu, cari anak lain yang terhubung ke akun tsb (via orang_tua_siswa)
+        $enrichedUserOrtu = collect($akunMap)->map(function ($item) use ($siswa) {
+            $anakLain = \App\Models\OrangTua::where('user_id', $item['user_id'])
+                ->with(['siswa' => fn($q) => $q->where('id', '!=', $siswa->id)])
                 ->get()
-                ->map(fn($r) => [
-                    'nisn' => $r->nisn,
-                    'nama_lengkap' => $r->siswa?->nama_lengkap,
-                    'jenis_kelamin' => $r->siswa?->jenis_kelamin,
-                    'hubungan' => $r->hubungan,
-                ]);
+                ->flatMap(fn($o) => $o->siswa->map(fn($s) => [
+                    'nisn' => $s->nisn,
+                    'nama' => $s->nama,
+                    'jenis_kelamin' => $s->jenis_kelamin,
+                    'hubungan' => $o->hubungan,
+                ]));
             return array_merge($item, ['anak_lain' => $anakLain->values()]);
         })->values();
 
@@ -246,18 +245,18 @@ class GuruController extends Controller
                     continue;
                 $saudara->push([
                     'nisn' => $sibling->nisn,
-                    'nama_lengkap' => $sibling->nama_lengkap,
+                    'nama' => $sibling->nama_lengkap,
                     'jenis_kelamin' => $sibling->jenis_kelamin,
                 ]);
             }
         }
-        
+
         $biodataOrtu = $siswa->orangTua->first();
 
         return response()->json([
             'success' => true,
             'data' => array_merge($siswa->toArray(), [
-                'user_ortu' => $enrichedUserOrtu,
+                'user_roles' => $enrichedUserOrtu,
                 'saudara' => $saudara->unique('nisn')->values(),
                 'biodata_ortu' => $biodataOrtu ? [
                     'nama_ayah' => $biodataOrtu->nama_ayah,
@@ -337,8 +336,8 @@ class GuruController extends Controller
             ->where('nuptk_wali', $nuptk)
             ->firstOrFail();
 
-        $siswaList = SiswaKelas::with('siswa')
-            ->where('id_kelas', $id_kelas)
+        $siswaList = SiswaKelas::with('siswas')
+            ->where('kelas_id', $id_kelas)
             ->where('status_keluar', 'Aktif')
             ->orderBy('no_absen')
             ->get();
@@ -348,14 +347,14 @@ class GuruController extends Controller
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
             ->get()
-            ->groupBy('nisn');
+            ->groupBy('siswa_id');
 
         $siswa = $siswaList->map(function ($sk) use ($absenBulanIni) {
-            $data = $absenBulanIni->get($sk->nisn, collect());
+            $data = $absenBulanIni->get($sk->siswa_id, collect());
             return [
-                'nisn' => $sk->nisn,
+                'nisn' => $sk->siswa_id,
                 'no_absen' => $sk->no_absen,
-                'nama_lengkap' => $sk->siswa->nama_lengkap,
+                'nama' => $sk->siswa->nama,
                 'jenis_kelamin' => $sk->siswa->jenis_kelamin,
                 'bulan_ini' => [
                     'hadir' => $data->where('status', 'Hadir')->count(),
@@ -376,7 +375,7 @@ class GuruController extends Controller
                     'semester' => $kelas->semester,
                     'ruangan' => $kelas->ruangan,
                 ],
-                'siswa' => $siswa,
+                'siswas' => $siswa,
             ],
         ]);
     }
@@ -427,7 +426,7 @@ class GuruController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'id_kelas' => $id_kelas,
+                'kelas_id' => $id_kelas,
                 'bulan' => $request->bulan,
                 'tahun' => $request->tahun,
                 'riwayat' => $riwayat,
@@ -461,12 +460,12 @@ class GuruController extends Controller
                     'hari' => $j->hari,
                     'jam_mulai' => $j->jam_mulai,
                     'jam_selesai' => $j->jam_selesai,
-                    'mata_pelajaran' => $j->mataPelajaran?->nama_mapel,
+                    'mapels' => $j->mataPelajaran?->nama_mapel,
                     'kode_mapel' => $j->mataPelajaran?->kode_mapel,
                     'nama_kelas' => $j->kelas?->nama_kelas,
                     'tingkat' => $j->kelas?->tingkat,
                     'semester' => $j->semester,
-                    'tahun_ajaran' => $j->tahun_ajaran,
+                    'tahun_ajarans' => $j->tahun_ajaran,
                 ];
             })->values();
         });
@@ -502,8 +501,8 @@ class GuruController extends Controller
                     'id' => $user->id,
                     'username' => $user->username,
                     'email' => $user->email,
-                    'nama_lengkap' => $user->nama_lengkap,
-                    'no_hp' => $user->no_hp,
+                    'nama' => $user->name,
+                    'no_hp' => $user->guru->no_hp,
                     'foto' => $user->foto,
                 ],
                 'master' => $masterGuru
@@ -539,7 +538,7 @@ class GuruController extends Controller
         }
 
         if ($request->filled('no_hp')) {
-            $user->no_hp = $request->no_hp;
+            $user->guru->no_hp = $request->no_hp;
         }
 
         if ($request->hasFile('foto')) {

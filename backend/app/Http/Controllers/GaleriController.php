@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Galeri;
+use App\Models\Galeri; // tabel: galeris
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,7 +17,7 @@ class GaleriController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $galeri,
+            'data' => $galeri,
         ]);
     }
 
@@ -25,26 +25,26 @@ class GaleriController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'foto'      => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'judul'     => 'required|string|max:150',
+            'foto' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'judul' => 'required|string|max:150',
             'deskripsi' => 'nullable|string|max:500',
-            'kategori'  => 'required|in:kegiatan,prestasi,ekstrakurikuler,fasilitas,acara',
+            'kategori' => 'required|in:kegiatan,prestasi,ekstrakurikuler,fasilitas,acara',
         ]);
 
-        $path = $request->file('foto')->store('galeri', 'public');
+        $path = $request->file('foto')->store('galeris', 'public');
 
         $galeri = Galeri::create([
-            'judul'       => $request->judul,
-            'deskripsi'   => $request->deskripsi,
-            'kategori'    => $request->kategori,
-            'foto'        => $path,
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'kategori' => $request->kategori,
+            'foto' => $path,
             'uploaded_by' => auth()->id(),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Foto berhasil diupload ke galeri.',
-            'data'    => $galeri,
+            'data' => $galeri,
         ], 201);
     }
 

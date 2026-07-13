@@ -5,7 +5,7 @@ namespace App\Http\Controllers\MasterData;
 use App\Http\Controllers\Controller;
 use App\Models\OrangTua;
 use App\Models\Siswa;
-use App\Models\SiswaKelas;
+use App\Models\RiwayatKelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -33,7 +33,7 @@ class MasterDataSiswaController extends Controller
 
                         case 'no_kk':
                             // Pencarian berdasarkan No. KK anak
-                            $q->whereHas('siswa', function ($siswaQuery) use ($search) {
+                            $q->whereHas('siswas', function ($siswaQuery) use ($search) {
                                 $siswaQuery->where('no_kk', $search)
                                     ->orWhere('no_kk', 'like', "%{$search}%");
                             });
@@ -55,8 +55,8 @@ class MasterDataSiswaController extends Controller
 
                         case 'nisn':
                             // Pencarian berdasarkan NISN anak
-                            $q->whereHas('siswa', function ($siswaQuery) use ($search) {
-                                $siswaQuery->where('nisn', $search)
+                            $q->whereHas('siswas', function ($siswaQuery) use ($search) {
+                                $siswaQuery->where('siswa_id', $search)
                                     ->orWhere('nisn', 'like', "%{$search}%")
                                     ->orWhere('nama_lengkap', 'like', "%{$search}%");
                             });
@@ -74,7 +74,7 @@ class MasterDataSiswaController extends Controller
                                 ->orWhere('no_hp_ibu', 'like', "%{$search}%")
                                 ->orWhere('no_hp_wali', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
-                                ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
+                                ->orWhereHas('siswas', function ($siswaQuery) use ($search) {
                                 $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
                                     ->orWhere('nisn', 'like', "%{$search}%")
                                     ->orWhere('no_kk', 'like', "%{$search}%");
@@ -112,7 +112,7 @@ class MasterDataSiswaController extends Controller
 
     public function show($nisn)
     {
-        $siswa = Siswa::with(['kelas.kelas', 'orangTua'])->where('nisn', $nisn)->firstOrFail();
+        $siswa = Siswa::with(['kelas.kelas', 'orangTua'])->where('siswa_id', $nisn)->firstOrFail();
         return response()->json(['success' => true, 'data' => $siswa]);
     }
 
@@ -135,7 +135,7 @@ class MasterDataSiswaController extends Controller
             'nisn' => 'required|string|size:10|unique:siswa,nisn',
             'nik' => 'nullable|string|max:16',
             'no_induk' => 'nullable|string|max:20',
-            'nama_lengkap' => 'required|string|max:100',
+            'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string|max:60',
@@ -167,7 +167,7 @@ class MasterDataSiswaController extends Controller
             $siswa = Siswa::create($request->only($this->siswaFields()));
             $this->syncOrangTua(
                 $siswa,
-                $request->input('orang_tua', []),
+                $request->input('orang_tuas', []),
                 $request->nama_ibu_kandung,
                 $request->filled('orang_tua_id') ? (int) $request->input('orang_tua_id') : null,
                 $request->boolean('unlink_orang_tua'),
@@ -190,7 +190,7 @@ class MasterDataSiswaController extends Controller
         $request->validate([
             'nik' => 'nullable|string|max:16',
             'no_induk' => 'nullable|string|max:20',
-            'nama_lengkap' => 'required|string|max:100',
+            'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string|max:60',
@@ -222,7 +222,7 @@ class MasterDataSiswaController extends Controller
             $siswa->update($request->only($this->siswaFields(false)));
             $this->syncOrangTua(
                 $siswa,
-                $request->input('orang_tua', []),
+                $request->input('orang_tuas', []),
                 $request->nama_ibu_kandung,
                 $request->filled('orang_tua_id') ? (int) $request->input('orang_tua_id') : null,
                 $request->boolean('unlink_orang_tua'),
@@ -276,7 +276,7 @@ class MasterDataSiswaController extends Controller
         $yearRule = 'nullable|integer|min:1900|max:' . now()->year;
 
         return [
-            'orang_tua' => 'nullable|array',
+            'orang_tuas' => 'nullable|array',
             'orang_tua.nama_ayah' => 'nullable|string|max:100',
             'orang_tua.nik_ayah' => 'nullable|string|max:16',
             'orang_tua.tahun_lahir_ayah' => $yearRule,
@@ -418,7 +418,7 @@ class MasterDataSiswaController extends Controller
     {
         $siswa = Siswa::where('nisn', $nisn)->firstOrFail();
 
-        if ($siswa->userOrtu()->exists()) {
+        if ($siswa->orangTua()->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Siswa ini terhubung dengan akun orang tua. Hapus akun ortu terlebih dahulu.',
@@ -426,7 +426,8 @@ class MasterDataSiswaController extends Controller
         }
 
         DB::transaction(function () use ($siswa) {
-            SiswaKelas::where('nisn', $siswa->nisn)->delete();
+            RiwayatKelas::where('siswa_id', $siswa->id)->delete();
+            DB::table('orang_tua_siswa')->where('siswa_id', $siswa->id)->delete();
             $siswa->delete();
         });
 
@@ -437,18 +438,18 @@ class MasterDataSiswaController extends Controller
     public function assignKelas(Request $request, $nisn)
     {
         $request->validate([
-            'id_kelas' => 'required|string|exists:kelas,id',
+            'kelas_id' => 'required|string|exists:kelas,id',
             'no_absen' => 'required|integer',
-            'tahun_ajaran' => 'required|string',
+            'tahun_ajarans' => 'required|string',
             'semester' => 'required|in:1,2',
         ]);
 
-        Siswa::where('nisn', $nisn)->firstOrFail();
+        $siswa = Siswa::where('nisn', $nisn)->firstOrFail();
 
         // Cek apakah sudah ada di kelas yang sama
-        $sudahAda = SiswaKelas::where('nisn', $nisn)
-            ->where('id_kelas', $request->id_kelas)
-            ->where('status_keluar', 'Aktif')
+        $sudahAda = RiwayatKelas::where('siswa_id', $siswa->id)
+            ->where('kelas_id', $request->kelas_id)
+            ->whereNull('tanggal_keluar')
             ->exists();
 
         if ($sudahAda) {
@@ -458,15 +459,13 @@ class MasterDataSiswaController extends Controller
             ], 422);
         }
 
-        SiswaKelas::create([
-            'nisn' => $nisn,
-            'id_kelas' => $request->id_kelas,
-            'no_absen' => $request->no_absen,
-            'tahun_ajaran' => $request->tahun_ajaran,
-            'semester' => $request->semester,
-            'status_masuk' => 'Baru',
-            'tanggal_masuk' => now()->toDateString(),
-            'status_keluar' => 'Aktif',
+        RiwayatKelas::create([
+            'siswa_id'       => $siswa->id,
+            'kelas_id'       => $request->kelas_id,
+            'tahun_ajaran_id'=> $request->tahun_ajaran_id,
+            'no_absen'       => $request->no_absen,
+            'tanggal_masuk'  => now()->toDateString(),
+            'jenis_perubahan'=> 'masuk_baru',
         ]);
 
         return response()->json([

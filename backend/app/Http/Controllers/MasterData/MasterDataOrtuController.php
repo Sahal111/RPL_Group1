@@ -26,7 +26,7 @@ class MasterDataOrtuController extends Controller
                         ->orWhere('no_hp_ibu', 'like', "%{$search}%")
                         ->orWhere('no_hp_wali', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
+                        ->orWhereHas('siswas', function ($siswaQuery) use ($search) {
                             $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
                                 ->orWhere('nisn', 'like', "%{$search}%");
                         });

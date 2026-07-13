@@ -4,7 +4,7 @@ namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
-use App\Models\SiswaKelas;
+use App\Models\RiwayatKelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,22 +16,23 @@ class NaikKelasController extends Controller
     public function preview(Request $request)
     {
         $request->validate([
-            'id_kelas_asal' => 'required|string|exists:kelas,id',
+            'kelas_id_asal' => 'required|string|exists:kelas,id',
         ]);
 
-        $kelasAsal = Kelas::findOrFail($request->id_kelas_asal);
+        $kelasAsal = Kelas::findOrFail($request->kelas_id_asal);
 
-        $siswaList = SiswaKelas::with('siswa')
-            ->where('id_kelas', $request->id_kelas_asal)
-            ->where('status_keluar', 'Aktif')
+        $siswaList = RiwayatKelas::with('siswa')
+            ->where('kelas_id', $request->kelas_id_asal)
+            ->aktif()
             ->orderBy('no_absen')
             ->get()
-            ->map(fn($sk) => [
-                'id'           => $sk->id,
-                'nisn'         => $sk->nisn,
-                'no_absen'     => $sk->no_absen,
-                'nama_lengkap' => $sk->siswa?->nama_lengkap,
-                'jenis_kelamin'=> $sk->siswa?->jenis_kelamin,
+            ->map(fn($rk) => [
+                'id'            => $rk->id,
+                'siswa_id'      => $rk->siswa_id,
+                'nisn'          => $rk->siswa?->nisn,
+                'no_absen'      => $rk->no_absen,
+                'nama'          => $rk->siswa?->nama,
+                'jenis_kelamin' => $rk->siswa?->jenis_kelamin,
             ]);
 
         return response()->json([
@@ -48,18 +49,17 @@ class NaikKelasController extends Controller
     public function proses(Request $request)
     {
         $request->validate([
-            'id_kelas_asal'   => 'required|string|exists:kelas,id',
-            'id_kelas_tujuan' => 'required|string|exists:kelas,id|different:id_kelas_asal',
+            'kelas_id_asal'   => 'required|string|exists:kelas,id',
+            'kelas_id_tujuan' => 'required|string|exists:kelas,id|different:kelas_id_asal',
         ]);
 
-        $idAsal   = $request->id_kelas_asal;
-        $idTujuan = $request->id_kelas_tujuan;
-
+        $idAsal      = $request->kelas_id_asal;
+        $idTujuan    = $request->kelas_id_tujuan;
         $kelasTujuan = Kelas::findOrFail($idTujuan);
 
         // Ambil semua siswa aktif di kelas asal
-        $siswaAktif = SiswaKelas::where('id_kelas', $idAsal)
-            ->where('status_keluar', 'Aktif')
+        $siswaAktif = RiwayatKelas::where('kelas_id', $idAsal)
+            ->aktif()
             ->orderBy('no_absen')
             ->get();
 
@@ -80,11 +80,11 @@ class NaikKelasController extends Controller
         ) {
             $noAbsenUrut = 1;
 
-            foreach ($siswaAktif as $sk) {
+            foreach ($siswaAktif as $rk) {
                 // Cek apakah siswa sudah ada di kelas tujuan (aktif)
-                $sudahAda = SiswaKelas::where('id_kelas', $idTujuan)
-                    ->where('nisn', $sk->nisn)
-                    ->where('status_keluar', 'Aktif')
+                $sudahAda = RiwayatKelas::where('kelas_id', $idTujuan)
+                    ->where('siswa_id', $rk->siswa_id)
+                    ->aktif()
                     ->exists();
 
                 if ($sudahAda) {
@@ -92,27 +92,21 @@ class NaikKelasController extends Controller
                     continue;
                 }
 
-                // 1. Tandai record lama sebagai keluar dengan status 'Naik Kelas'
-                $sk->update([
-                    'status_keluar'  => 'Naik Kelas',
-                    'tanggal_keluar' => $tanggalProses,
-                    'alasan_keluar'  => 'Naik kelas massal ke ' . $kelasTujuan->nama_kelas,
+                // 1. Tutup record lama (tandai tanggal_keluar + jenis_perubahan)
+                $rk->update([
+                    'tanggal_keluar'  => $tanggalProses,
+                    'jenis_perubahan' => 'naik_kelas',
+                    'catatan'         => 'Naik kelas massal ke ' . $kelasTujuan->nama_kelas,
                 ]);
 
                 // 2. Buat record baru di kelas tujuan
-                // Ambil tahun ajaran & semester dari kelas tujuan
-                $taTujuan = DB::table('tahun_ajaran')
-                    ->find($kelasTujuan->id_tahun_ajaran);
-
-                SiswaKelas::create([
-                    'nisn'          => $sk->nisn,
-                    'id_kelas'      => $idTujuan,
-                    'no_absen'      => $noAbsenUrut,
-                    'semester'      => $kelasTujuan->semester,
-                    'tahun_ajaran'  => $taTujuan?->nama ?? $kelasTujuan->id_tahun_ajaran,
-                    'status_masuk'  => 'Naik Kelas',
-                    'tanggal_masuk' => $tanggalProses,
-                    'status_keluar' => 'Aktif',
+                RiwayatKelas::create([
+                    'siswa_id'        => $rk->siswa_id,
+                    'kelas_id'        => $idTujuan,
+                    'tahun_ajaran_id' => $kelasTujuan->tahun_ajaran_id,
+                    'no_absen'        => $noAbsenUrut,
+                    'tanggal_masuk'   => $tanggalProses,
+                    'jenis_perubahan' => 'naik_kelas',
                 ]);
 
                 $noAbsenUrut++;

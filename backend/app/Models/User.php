@@ -15,87 +15,71 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role_id',
+        'name',
         'username',
         'email',
         'password',
-        'nama_lengkap',
-        'no_hp',
         'foto',
         'is_active',
-        'created_by',
+        'last_login_at',
+        'last_login_ip',
     ];
 
-    protected $hidden = ['password'];
+    protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'         => 'boolean',
+        'email_verified_at' => 'datetime',
+        'last_login_at'     => 'datetime',
     ];
 
-    // Relasi ke roles
+    // Relasi ke roles (tetap single role_id untuk kompatibilitas middleware)
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');
     }
 
-    // Relasi ke profil
+    // Profil guru (tabel gurus)
+    public function guru()
+    {
+        return $this->hasOne(Guru::class, 'user_id');
+    }
+
+    // Profil ortu (tabel orang_tuas)
+    public function orangTua()
+    {
+        return $this->hasMany(OrangTua::class, 'user_id');
+    }
+
+    // Profil operator
     public function operatorProfile()
     {
-        return $this->hasOne(UserOperator::class, 'user_id');
+        return $this->hasOne(OperatorProfile::class, 'user_id');
     }
 
-    public function guruProfile()
-    {
-        return $this->hasOne(UserGuru::class, 'user_id');
-    }
-
-    public function ortuProfile()
-    {
-        return $this->hasOne(UserOrtu::class, 'user_id');
-    }
-
-    public function ortuProfiles()
-    {
-        return $this->hasMany(UserOrtu::class, 'user_id');
-    }
-
-    public function kepsekProfile()
-    {
-        return $this->hasOne(UserKepsek::class, 'user_id');
-    }
-
+    // Profil bendahara
     public function bendaharaProfile()
     {
         return $this->hasOne(UserBendahara::class, 'user_id');
     }
 
+    // Profil wali kelas
     public function waliKelasProfile()
     {
         return $this->hasOne(UserWaliKelas::class, 'user_id');
     }
 
-    // Helper: cek role
-    public function isOperator(): bool
+    // Helper: cek role (slug-based, sesuai RoleMiddleware)
+    public function getRoleSlug(): ?string
     {
-        return $this->role_id === 1;
+        return $this->role?->slug;
     }
-    public function isGuru(): bool
-    {
-        return $this->role_id === 2;
-    }
-    public function isOrtu(): bool
-    {
-        return $this->role_id === 3;
-    }
-    public function isKepsek(): bool
-    {
-        return $this->role_id === 4;
-    }
-    public function isBendahara(): bool
-    {
-        return $this->role_id === 5;
-    }
-    public function isWaliKelas(): bool
-    {
-        return $this->role_id === 6;
-    }
+
+    public function isOperator(): bool { return $this->role_id === 1; }
+    public function isGuru(): bool     { return $this->role_id === 2; }
+    public function isOrtu(): bool     { return $this->role_id === 3; }
+    public function isKepsek(): bool   { return $this->role_id === 4; }
+    public function isBendahara(): bool { return $this->role_id === 5; }
+    public function isWaliKelas(): bool { return $this->role_id === 6; }
+    public function isAdminPpdb(): bool { return $this->role_id === 7; }
 }

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Absensi;
 
 use App\Http\Controllers\Controller;
-use App\Models\Absensi;
-use App\Models\JadwalPelajaran;
-use App\Models\SiswaKelas;
+use App\Models\Absensi; // tabel: absensis
+use App\Models\JadwalPelajaran; // tabel: jadwals
+use App\Models\RiwayatKelas;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,17 +22,17 @@ class AbsensiController extends Controller
         $hari = \Carbon\Carbon::parse($tanggal)->locale('id')->isoFormat('dddd'); // Ambil hari dari tanggal yg dipilih
 
         $kelas = Kelas::findOrFail($id_kelas);
-        
-        // Ambil nama tahun ajaran dari DB berdasarkan id_tahun_ajaran di kelas
-        $tahunAjaran = DB::table('tahun_ajaran')->find($kelas->id_tahun_ajaran);
 
-        $query = JadwalPelajaran::with(['mataPelajaran', 'guru'])
-            ->where('id_kelas', $id_kelas)
+        // Ambil nama tahun ajaran dari DB berdasarkan id_tahun_ajaran di kelas
+        $tahunAjaran = DB::table('tahun_ajarans')->find($kelas->tahun_ajaran_id);
+
+        $query = JadwalPelajaran::with(['mataPelajaran', 'gurus'])
+            ->where('kelas_id', $id_kelas)
             ->where('hari', $hari);
 
         if ($tahunAjaran) {
-            $query->where('tahun_ajaran', $tahunAjaran->nama)
-                  ->where('semester', $kelas->semester);
+            $query->where('tahun_ajarans', $tahunAjaran->nama)
+                ->where('semester', $kelas->semester);
         }
 
         $jadwal = $query->orderBy('jam_mulai')
@@ -45,21 +45,21 @@ class AbsensiController extends Controller
                     ->exists();
 
                 return [
-                    'id_jadwal'    => $j->id,
-                    'nama_mapel'   => $j->mataPelajaran->nama_mapel ?? '-',
-                    'kode_mapel'   => $j->mataPelajaran->kode_mapel ?? '-',
-                    'guru'         => $j->guru->nama_lengkap ?? '-',
-                    'jam_mulai'    => $j->jam_mulai,
-                    'jam_selesai'  => $j->jam_selesai,
-                    'sudah_absen'  => $sudahAbsen,
+                    'id_jadwal' => $j->id,
+                    'nama_mapel' => $j->mataPelajaran->nama_mapel ?? '-',
+                    'kode_mapel' => $j->mataPelajaran->kode_mapel ?? '-',
+                    'gurus' => $j->guru->nama_lengkap ?? '-',
+                    'jam_mulai' => $j->jam_mulai,
+                    'jam_selesai' => $j->jam_selesai,
+                    'sudah_absen' => $sudahAbsen,
                 ];
             });
 
         return response()->json([
             'success' => true,
             'data' => [
-                'kelas'  => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
-                'hari'   => $hari,
+                'kelas' => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
+                'hari' => $hari,
                 'tanggal' => $tanggal,
                 'jadwal' => $jadwal,
             ],
@@ -72,13 +72,13 @@ class AbsensiController extends Controller
     // -------------------------------------------------------
     public function showKelas(Request $request, $id_kelas)
     {
-        $tanggal   = $request->tanggal ?? now()->toDateString();
+        $tanggal = $request->tanggal ?? now()->toDateString();
         $id_jadwal = $request->id_jadwal; // bisa null (fallback mode harian)
 
         $kelas = Kelas::findOrFail($id_kelas);
 
-        $siswaList = SiswaKelas::with('siswa')
-            ->where('id_kelas', $id_kelas)
+        $siswaList = SiswaKelas::with('siswas')
+            ->where('kelas_id', $id_kelas)
             ->where('status_keluar', 'Aktif')
             ->orderBy('no_absen')
             ->get();
@@ -90,18 +90,18 @@ class AbsensiController extends Controller
         } else {
             $query->whereNull('id_jadwal'); // fallback: data lama tanpa jadwal
         }
-        $absensiHariIni = $query->get()->keyBy('nisn');
+        $absensiHariIni = $query->get()->keyBy('siswa_id');
 
         $data = $siswaList->map(function ($sk) use ($absensiHariIni) {
-            $absensi = $absensiHariIni->get($sk->nisn);
+            $absensi = $absensiHariIni->get($sk->siswa_id);
             return [
-                'nisn'         => $sk->nisn,
-                'no_absen'     => $sk->no_absen,
-                'nama_lengkap' => $sk->siswa->nama_lengkap,
+                'nisn' => $sk->siswa_id,
+                'no_absen' => $sk->no_absen,
+                'nama' => $sk->siswa->nama,
                 'jenis_kelamin' => $sk->siswa->jenis_kelamin,
-                'absensi_id'   => $absensi?->id,
-                'status'       => $absensi?->status ?? null,
-                'keterangan'   => $absensi?->keterangan ?? null,
+                'absensi_id' => $absensi?->id,
+                'status' => $absensi?->status ?? null,
+                'keterangan' => $absensi?->keterangan ?? null,
             ];
         });
 
@@ -110,9 +110,9 @@ class AbsensiController extends Controller
         if ($id_jadwal) {
             $j = JadwalPelajaran::with('mataPelajaran')->find($id_jadwal);
             $jadwalInfo = $j ? [
-                'id'         => $j->id,
+                'id' => $j->id,
                 'nama_mapel' => $j->mataPelajaran->nama_mapel ?? '-',
-                'jam_mulai'  => $j->jam_mulai,
+                'jam_mulai' => $j->jam_mulai,
                 'jam_selesai' => $j->jam_selesai,
             ] : null;
         }
@@ -120,12 +120,12 @@ class AbsensiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'kelas'       => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
-                'tanggal'     => $tanggal,
-                'jadwal'      => $jadwalInfo,
+                'kelas' => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
+                'tanggal' => $tanggal,
+                'jadwal' => $jadwalInfo,
                 'sudah_diisi' => $absensiHariIni->count() > 0,
                 'total_siswa' => $siswaList->count(),
-                'siswa'       => $data,
+                'siswas' => $data,
             ],
         ]);
     }
@@ -136,12 +136,12 @@ class AbsensiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id_kelas'          => 'required|string|exists:kelas,id',
-            'id_jadwal'         => 'nullable|integer|exists:jadwal_pelajaran,id',
-            'tanggal'           => 'required|date|before_or_equal:today',
-            'absensi'           => 'required|array|min:1',
-            'absensi.*.nisn'    => 'required|string|exists:siswa,nisn',
-            'absensi.*.status'  => 'required|in:Hadir,Sakit,Izin,Alpa',
+            'id_kelas' => 'required|string|exists:kelas,id',
+            'id_jadwal' => 'nullable|integer|exists:jadwal_pelajaran,id',
+            'tanggal' => 'required|date|before_or_equal:today',
+            'absensis' => 'required|array|min:1',
+            'absensi.*.nisn' => 'required|string|exists:siswas,nisn',
+            'absensi.*.status' => 'required|in:Hadir,Sakit,Izin,Alpa',
             'absensi.*.keterangan' => 'nullable|string|max:255',
         ]);
 
@@ -151,14 +151,14 @@ class AbsensiController extends Controller
             foreach ($request->absensi as $item) {
                 Absensi::updateOrCreate(
                     [
-                        'nisn'      => $item['nisn'],
-                        'id_kelas'  => $request->id_kelas,
+                        'siswa_id' => $item['siswa_id'],
+                        'kelas_id' => $request->kelas_id,
                         'id_jadwal' => $request->id_jadwal, // null = harian (legacy)
-                        'tanggal'   => $request->tanggal,
+                        'tanggal' => $request->tanggal,
                     ],
                     [
-                        'status'       => $item['status'],
-                        'keterangan'   => $item['keterangan'] ?? null,
+                        'status' => $item['status'],
+                        'keterangan' => $item['keterangan'] ?? null,
                         'dicatat_oleh' => $user->id,
                     ]
                 );
@@ -177,21 +177,21 @@ class AbsensiController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'status'     => 'required|in:Hadir,Sakit,Izin,Alpa',
+            'status' => 'required|in:Hadir,Sakit,Izin,Alpa',
             'keterangan' => 'nullable|string|max:255',
         ]);
 
         $absensi = Absensi::findOrFail($id);
         $absensi->update([
-            'status'       => $request->status,
-            'keterangan'   => $request->keterangan,
+            'status' => $request->status,
+            'keterangan' => $request->keterangan,
             'dicatat_oleh' => $request->user()->id,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Absensi berhasil diupdate.',
-            'data'    => $absensi,
+            'data' => $absensi,
         ]);
     }
 
@@ -201,14 +201,14 @@ class AbsensiController extends Controller
     public function rekap(Request $request, $id_kelas)
     {
         $request->validate([
-            'dari'   => 'required|date',
+            'dari' => 'required|date',
             'sampai' => 'required|date|after_or_equal:dari',
         ]);
 
         $kelas = Kelas::findOrFail($id_kelas);
 
-        $siswaList = SiswaKelas::with('siswa')
-            ->where('id_kelas', $id_kelas)
+        $siswaList = SiswaKelas::with('siswas')
+            ->where('kelas_id', $id_kelas)
             ->where('status_keluar', 'Aktif')
             ->orderBy('no_absen')
             ->get();
@@ -216,17 +216,17 @@ class AbsensiController extends Controller
         $absensi = Absensi::where('id_kelas', $id_kelas)
             ->whereBetween('tanggal', [$request->dari, $request->sampai])
             ->get()
-            ->groupBy('nisn');
+            ->groupBy('siswa_id');
 
         $rekap = $siswaList->map(function ($sk) use ($absensi) {
-            $data = $absensi->get($sk->nisn, collect());
-            
+            $data = $absensi->get($sk->siswa_id, collect());
+
             // 1. Rekap Per Mapel
             $rekapMapel = [
                 'hadir' => $data->where('status', 'Hadir')->count(),
                 'sakit' => $data->where('status', 'Sakit')->count(),
-                'izin'  => $data->where('status', 'Izin')->count(),
-                'alpa'  => $data->where('status', 'Alpa')->count(),
+                'izin' => $data->where('status', 'Izin')->count(),
+                'alpa' => $data->where('status', 'Alpa')->count(),
                 'total_mapel' => $data->count(),
             ];
 
@@ -234,13 +234,13 @@ class AbsensiController extends Controller
             $harian = [
                 'hadir' => 0,
                 'sakit' => 0,
-                'izin'  => 0,
-                'alpa'  => 0,
+                'izin' => 0,
+                'alpa' => 0,
                 'bolos_jam_pelajaran' => 0,
                 'total_hari' => 0,
             ];
 
-            $perTanggal = $data->groupBy(function($item) {
+            $perTanggal = $data->groupBy(function ($item) {
                 return $item->tanggal->format('Y-m-d');
             });
 
@@ -259,7 +259,7 @@ class AbsensiController extends Controller
                 } else {
                     $jmlSakit = $records->where('status', 'Sakit')->count();
                     $jmlIzin = $records->where('status', 'Izin')->count();
-                    
+
                     if ($jmlAlpa >= $jmlSakit && $jmlAlpa >= $jmlIzin) {
                         $harian['alpa']++;
                     } elseif ($jmlSakit >= $jmlIzin) {
@@ -271,10 +271,10 @@ class AbsensiController extends Controller
             }
 
             return [
-                'nisn'         => $sk->nisn,
-                'no_absen'     => $sk->no_absen,
-                'nama_lengkap' => $sk->siswa->nama_lengkap,
-                'rekap_mapel'  => $rekapMapel,
+                'nisn' => $sk->siswa_id,
+                'no_absen' => $sk->no_absen,
+                'nama' => $sk->siswa->nama,
+                'rekap_mapel' => $rekapMapel,
                 'rekap_harian' => $harian,
             ];
         });
@@ -287,10 +287,10 @@ class AbsensiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'kelas'       => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
-                'periode'     => ['dari' => $request->dari, 'sampai' => $request->sampai],
+                'kelas' => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
+                'periode' => ['dari' => $request->dari, 'sampai' => $request->sampai],
                 'hari_efektif' => $hariEfektif,
-                'rekap'       => $rekap,
+                'rekap' => $rekap,
             ],
         ]);
     }
@@ -304,23 +304,23 @@ class AbsensiController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'dari'   => 'nullable|date',
+            'dari' => 'nullable|date',
             'sampai' => 'nullable|date|after_or_equal:dari',
-            'bulan'  => 'nullable|integer|between:1,12',
-            'tahun'  => 'nullable|integer',
+            'bulan' => 'nullable|integer|between:1,12',
+            'tahun' => 'nullable|integer',
         ]);
 
         $query = Absensi::with(['kelas', 'jadwal.mataPelajaran'])
-            ->where('nisn', $nisn);
+            ->where('siswa_id', $nisn);
 
         if ($request->bulan && $request->tahun) {
             $query->whereMonth('tanggal', $request->bulan)
-                  ->whereYear('tanggal', $request->tahun);
+                ->whereYear('tanggal', $request->tahun);
         } elseif ($request->dari && $request->sampai) {
             $query->whereBetween('tanggal', [$request->dari, $request->sampai]);
         } else {
             $query->whereMonth('tanggal', now()->month)
-                  ->whereYear('tanggal', now()->year);
+                ->whereYear('tanggal', now()->year);
         }
 
         $absensi = $query->orderBy('tanggal', 'desc')->orderBy('id_jadwal')->get();
@@ -328,8 +328,8 @@ class AbsensiController extends Controller
         $summary = [
             'hadir' => $absensi->where('status', 'Hadir')->count(),
             'sakit' => $absensi->where('status', 'Sakit')->count(),
-            'izin'  => $absensi->where('status', 'Izin')->count(),
-            'alpa'  => $absensi->where('status', 'Alpa')->count(),
+            'izin' => $absensi->where('status', 'Izin')->count(),
+            'alpa' => $absensi->where('status', 'Alpa')->count(),
         ];
 
         // Kelompokkan per tanggal
@@ -338,14 +338,14 @@ class AbsensiController extends Controller
         })->map(function ($rows, $tanggal) {
             return [
                 'tanggal' => $tanggal,
-                'mapel'   => $rows->map(function ($a) {
+                'mapel' => $rows->map(function ($a) {
                     return [
-                        'id'         => $a->id,
-                        'id_jadwal'  => $a->id_jadwal,
+                        'id' => $a->id,
+                        'id_jadwal' => $a->id_jadwal,
                         'nama_mapel' => $a->jadwal?->mataPelajaran?->nama_mapel ?? 'Umum',
-                        'jam_mulai'  => $a->jadwal?->jam_mulai,
+                        'jam_mulai' => $a->jadwal?->jam_mulai,
                         'jam_selesai' => $a->jadwal?->jam_selesai,
-                        'status'     => $a->status,
+                        'status' => $a->status,
                         'keterangan' => $a->keterangan,
                         'created_at' => $a->created_at,
                     ];
@@ -356,9 +356,9 @@ class AbsensiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'nisn'    => $nisn,
+                'nisn' => $nisn,
                 'summary' => $summary,
-                'detail'  => $grouped,
+                'detail' => $grouped,
             ],
         ]);
     }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
-use App\Models\SiswaKelas;
+use App\Models\RiwayatKelas;
 use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,18 +35,18 @@ class MasterDataKelasController extends Controller
         $kelas = Kelas::with(['wali'])->findOrFail($id);
 
         // Ambil tahun ajaran
-        $tahunAjaran = DB::table('tahun_ajaran')->find($kelas->id_tahun_ajaran);
+        $tahunAjaran = DB::table('tahun_ajarans')->find($kelas->tahun_ajaran_id);
 
         // Ambil daftar siswa aktif di kelas ini
-        $siswaList = SiswaKelas::with('siswa')
-            ->where('id_kelas', $id)
+        $siswaList = SiswaKelas::with('siswas')
+            ->where('kelas_id', $id)
             ->where('status_keluar', 'Aktif')
             ->orderBy('no_absen')
             ->get();
 
         // Ambil daftar siswa yang sudah keluar (Lulus, Mutasi Keluar, Dropout, Meninggal)
-        $siswaKeluarList = SiswaKelas::with('siswa')
-            ->where('id_kelas', $id)
+        $siswaKeluarList = SiswaKelas::with('siswas')
+            ->where('kelas_id', $id)
             ->where('status_keluar', '!=', 'Aktif')
             ->orderByDesc('tanggal_keluar')
             ->get();
@@ -54,9 +54,9 @@ class MasterDataKelasController extends Controller
         return response()->json([
             'success' => true,
             'data' => array_merge($kelas->toArray(), [
-                'tahun_ajaran' => $tahunAjaran,
+                'tahun_ajarans' => $tahunAjaran,
                 'total_siswa' => $siswaList->count(),
-                'siswa' => $siswaList,
+                'siswas' => $siswaList,
                 'siswa_keluar' => $siswaKeluarList,
             ]),
         ]);
@@ -70,7 +70,7 @@ class MasterDataKelasController extends Controller
             'nama_kelas' => 'required|string|max:30',
             'tingkat' => 'required|in:1,2,3,4,5,6',
             'semester' => 'required|in:1,2',
-            'nuptk_wali' => 'nullable|string|max:16|exists:guru,nuptk',
+            'nuptk_wali' => 'nullable|string|max:16|exists:gurus,nuptk',
             'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka',
             'kapasitas' => 'required|integer|min:1|max:50',
             'ruangan' => 'nullable|string|max:50',
@@ -107,7 +107,7 @@ class MasterDataKelasController extends Controller
             'nama_kelas' => 'required|string|max:30',
             'tingkat' => 'required|in:1,2,3,4,5,6',
             'semester' => 'required|in:1,2',
-            'nuptk_wali' => 'nullable|string|max:16|exists:guru,nuptk',
+            'nuptk_wali' => 'nullable|string|max:16|exists:gurus,nuptk',
             'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka',
             'kapasitas' => 'required|integer|min:1|max:50',
             'ruangan' => 'nullable|string|max:50',
@@ -163,7 +163,7 @@ class MasterDataKelasController extends Controller
 
     public function tahunAjaranDropdown()
     {
-        $data = DB::table('tahun_ajaran')
+        $data = DB::table('tahun_ajarans')
             ->orderByDesc('is_active')
             ->orderByDesc('tanggal_mulai')
             ->get(['id', 'nama', 'is_active']);
@@ -175,8 +175,8 @@ class MasterDataKelasController extends Controller
     public function tambahSiswa(Request $request, $id)
     {
         $request->validate([
-            'nisn' => 'required|string|exists:siswa,nisn',
-            'tahun_ajaran' => 'required|string|max:20',
+            'nisn' => 'required|string|exists:siswas,nisn',
+            'tahun_ajarans' => 'required|string|max:20',
             'semester' => 'required|in:1,2',
             'status_masuk' => 'required|in:Baru,Naik Kelas,Tinggal Kelas,Mutasi Masuk',
         ]);
@@ -184,7 +184,7 @@ class MasterDataKelasController extends Controller
         Kelas::findOrFail($id);
 
         $sudahAda = SiswaKelas::where('id_kelas', $id)
-            ->where('nisn', $request->nisn)
+            ->where('siswa_id', $request->nisn)
             ->where('status_keluar', 'Aktif')
             ->exists();
 
@@ -202,10 +202,10 @@ class MasterDataKelasController extends Controller
 
         SiswaKelas::create([
             'nisn' => $request->nisn,
-            'id_kelas' => $id,
+            'kelas_id' => $id,
             'no_absen' => $noAbsenBaru,
             'semester' => $request->semester,
-            'tahun_ajaran' => $request->tahun_ajaran,
+            'tahun_ajarans' => $request->tahun_ajaran,
             'status_masuk' => $request->status_masuk,
             'tanggal_masuk' => now()->toDateString(),
             'status_keluar' => 'Aktif',
@@ -226,7 +226,7 @@ class MasterDataKelasController extends Controller
         ]);
 
         $siswaKelas = SiswaKelas::where('id', $siswaKelasId)
-            ->where('id_kelas', $id)
+            ->where('kelas_id', $id)
             ->firstOrFail();
 
         $siswaKelas->update([
@@ -244,7 +244,7 @@ class MasterDataKelasController extends Controller
     public function batalkanKeluar($id, $siswaKelasId)
     {
         $siswaKelas = SiswaKelas::where('id', $siswaKelasId)
-            ->where('id_kelas', $id)
+            ->where('kelas_id', $id)
             ->firstOrFail();
 
         $siswaKelas->update([

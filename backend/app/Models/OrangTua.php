@@ -9,7 +9,7 @@ class OrangTua extends Model
 {
     use HasFactory;
 
-    protected $table = 'orang_tua';
+    protected $table = 'orang_tuas';
 
     protected $fillable = [
         'nama_ayah',
@@ -38,12 +38,9 @@ class OrangTua extends Model
 
     public function siswa()
     {
-        return $this->belongsToMany(Siswa::class, 'siswa_orang_tua', 'id_ortu', 'nisn', 'id', 'nisn')
+        return $this->belongsToMany(Siswa::class, 'orang_tua_siswa', 'orang_tua_id', 'siswa_id', 'id', 'id')
             ->withTimestamps();
     }
 
-    public function dokumen()
-    {
-        return $this->hasMany(OrangTuaDokumen::class, 'id_ortu');
-    }
+
 }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Guru extends Model
 {
-    protected $table = 'guru';
+    protected $table = 'gurus';
     protected $primaryKey = 'nuptk';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -39,11 +39,6 @@ class Guru extends Model
         'foto',
         'is_active',
     ];
-
-    public function userGuru()
-    {
-        return $this->hasOne(UserGuru::class, 'nuptk', 'nuptk');
-    }
 
     public function kelasWali()
     {

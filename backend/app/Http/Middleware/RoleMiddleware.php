@@ -19,6 +19,7 @@ class RoleMiddleware
         4 => 'kepsek',
         5 => 'bendahara',
         6 => 'walikelas',
+        7 => 'admin_ppdb',
     ];
 
     /**

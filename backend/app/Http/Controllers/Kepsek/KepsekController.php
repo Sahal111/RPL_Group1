@@ -4,20 +4,20 @@ namespace App\Http\Controllers\Kepsek;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
-use App\Models\Absensi;
+use App\Models\Absensi; // tabel: absensis
 use App\Models\Siswa;
 use App\Models\Guru;
-use App\Models\JadwalPelajaran;
+use App\Models\JadwalPelajaran; // tabel: jadwals
 use App\Models\User;
-use App\Models\SiswaKelas;
+use App\Models\RiwayatKelas;
 use App\Models\MataPelajaran;
 use App\Models\Pengumuman;
-use App\Models\TahunAjaran;
+use App\Models\TahunAjaran; // tabel: tahun_ajarans
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use App\Models\UserKepsek;
+// use App\Models\UserKepsek; // tidak ada tabel terpisah di skema baru
 
 
 class KepsekController extends Controller
@@ -115,7 +115,7 @@ class KepsekController extends Controller
         $alpaMingguIni = Absensi::where('status', 'Alpa')
             ->whereBetween('tanggal', [$mulai->toDateString(), $today])
             ->select('nisn', \DB::raw('COUNT(*) as total'))
-            ->groupBy('nisn')
+            ->groupBy('siswa_id')
             ->having('total', '>=', 3)
             ->with('siswa:nisn,nama_lengkap')
             ->get();
@@ -152,7 +152,7 @@ class KepsekController extends Controller
                 ],
                 'grafik_kehadiran' => $grafikKehadiran,
                 'pengumuman_terbaru' => $pengumumanTerbaru,
-                'kalender_akademik' => $kalenderAkademik,
+                'kalender_akademiks' => $kalenderAkademik,
                 'notifikasi' => $notifikasi,
             ],
         ]);
@@ -182,7 +182,7 @@ class KepsekController extends Controller
             $hariEfektif = $absensi->unique('tanggal')->count();
 
             return [
-                'id_kelas' => $kelas->id,
+                'kelas_id' => $kelas->id,
                 'nama_kelas' => $kelas->nama_kelas,
                 'tingkat' => $kelas->tingkat,
                 'total_siswa' => $totalSiswa,
@@ -222,18 +222,18 @@ class KepsekController extends Controller
 
         $limit = $request->limit ?? 10;
 
-        $data = Absensi::with('siswa')
+        $data = Absensi::with('siswas')
             ->where('status', 'Alpa')
             ->whereBetween('tanggal', [$request->dari, $request->sampai])
             ->select('nisn', \DB::raw('COUNT(*) as total_alpa'))
-            ->groupBy('nisn')
+            ->groupBy('siswa_id')
             ->orderByDesc('total_alpa')
             ->limit($limit)
             ->get()
             ->map(function ($item) {
                 return [
                     'nisn' => $item->nisn,
-                    'nama_lengkap' => $item->siswa?->nama_lengkap,
+                    'nama' => $item->siswa?->nama_lengkap,
                     'total_alpa' => $item->total_alpa,
                 ];
             });
@@ -295,7 +295,7 @@ class KepsekController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'guru' => $guru,
+                'gurus' => $guru,
                 'mata_pelajaran_diampu' => $mapelDiampu,
             ],
         ]);
@@ -312,9 +312,9 @@ class KepsekController extends Controller
                     ->orWhere('nisn', 'like', "%{$request->search}%")
                     ->orWhere('nik', 'like', "%{$request->search}%");
             })
-            ->when($request->id_kelas, function ($q) use ($request) {
+            ->when($request->kelas_id, function ($q) use ($request) {
                 $q->whereHas('kelasAktif', function ($subQ) use ($request) {
-                    $subQ->where('siswa_kelas.id_kelas', $request->id_kelas)
+                    $subQ->where('siswa_kelas.id_kelas', $request->kelas_id)
                         ->where('siswa_kelas.status_keluar', 'Aktif')
                         ->where('kelas.is_active', 1);
                 });
@@ -325,25 +325,27 @@ class KepsekController extends Controller
             ->when($request->jenis_kelamin, function ($q) use ($request) {
                 $q->where('jenis_kelamin', $request->jenis_kelamin);
             })
-            ->with(['kelasAktif' => function ($q) {
-                $q->where('kelas.is_active', 1)
-                  ->where('siswa_kelas.status_keluar', 'Aktif');
-            }])
+            ->with([
+                'kelasAktif' => function ($q) {
+                    $q->where('kelas.is_active', 1)
+                        ->where('siswa_kelas.status_keluar', 'Aktif');
+                }
+            ])
             ->orderBy('nama_lengkap')
             ->paginate($request->per_page ?? 15);
 
         // Transform data untuk menambahkan informasi kelas aktif
         $query->getCollection()->transform(function ($siswa) {
             $kelasAktif = $siswa->kelasAktif->first();
-            
+
             $siswa->kelas_aktif = $kelasAktif ? [
-                'id_kelas' => $kelasAktif->id,
+                'kelas_id' => $kelasAktif->id,
                 'nama_kelas' => $kelasAktif->nama_kelas,
                 'tingkat' => $kelasAktif->tingkat,
             ] : null;
-            
+
             unset($siswa->kelasAktif);
-            
+
             return $siswa;
         });
 
@@ -365,18 +367,18 @@ class KepsekController extends Controller
             'kelasAktif' => function ($q) {
                 $q->with(['tahunAjaran', 'wali']);
             }
-        ])->where('nisn', $nisn)->firstOrFail();
+        ])->where('siswa_id', $nisn)->firstOrFail();
 
         // Ambil kelas aktif dari relasi
         $kelasAktif = $siswa->kelasAktif->first();
-        
+
         $siswa->kelas_aktif = $kelasAktif ? [
-            'id_kelas' => $kelasAktif->id,
+            'kelas_id' => $kelasAktif->id,
             'nama_kelas' => $kelasAktif->nama_kelas,
             'tingkat' => $kelasAktif->tingkat,
             'semester' => $kelasAktif->semester,
             'no_absen' => $kelasAktif->pivot->no_absen,
-            'tahun_ajaran' => $kelasAktif->pivot->tahun_ajaran ?? $kelasAktif->tahunAjaran?->nama,
+            'tahun_ajarans' => $kelasAktif->pivot->tahun_ajaran ?? $kelasAktif->tahunAjaran?->nama,
             'wali_kelas' => $kelasAktif->wali ? [
                 'nuptk' => $kelasAktif->wali->nuptk,
                 'nama' => $kelasAktif->wali->nama_lengkap,
@@ -385,15 +387,15 @@ class KepsekController extends Controller
 
         // Riwayat kelas (termasuk yang sudah keluar)
         $riwayatKelas = SiswaKelas::with(['kelas.tahunAjaran'])
-            ->where('nisn', $nisn)
+            ->where('siswa_id', $nisn)
             ->orderBy('tanggal_masuk', 'desc')
             ->get()
             ->map(function ($sk) {
                 return [
-                    'id_kelas' => $sk->id_kelas,
+                    'kelas_id' => $sk->kelas_id,
                     'nama_kelas' => $sk->kelas?->nama_kelas,
                     'tingkat' => $sk->kelas?->tingkat,
-                    'tahun_ajaran' => $sk->tahun_ajaran ?? $sk->kelas?->tahunAjaran?->nama,
+                    'tahun_ajarans' => $sk->tahun_ajaran ?? $sk->kelas?->tahunAjaran?->nama,
                     'semester' => $sk->semester,
                     'no_absen' => $sk->no_absen,
                     'status_masuk' => $sk->status_masuk,
@@ -423,13 +425,13 @@ class KepsekController extends Controller
         // Data orang tua - kompilasi dari data ayah, ibu, dan wali
         $dataOrangTua = $siswa->orangTua->flatMap(function ($ortu) {
             $result = [];
-            
+
             // Data Ayah
             if ($ortu->nama_ayah) {
                 $result[] = [
-                    'id_ortu' => $ortu->id,
+                    'orang_tua_id' => $ortu->id,
                     'nik' => $ortu->nik_ayah,
-                    'nama_lengkap' => $ortu->nama_ayah,
+                    'nama' => $ortu->nama_ayah,
                     'hubungan' => 'Ayah',
                     'no_hp' => $ortu->no_hp_ayah,
                     'pekerjaan' => $ortu->pekerjaan_ayah,
@@ -437,13 +439,13 @@ class KepsekController extends Controller
                     'penghasilan' => $ortu->penghasilan_ayah,
                 ];
             }
-            
+
             // Data Ibu
             if ($ortu->nama_ibu) {
                 $result[] = [
-                    'id_ortu' => $ortu->id,
+                    'orang_tua_id' => $ortu->id,
                     'nik' => $ortu->nik_ibu,
-                    'nama_lengkap' => $ortu->nama_ibu,
+                    'nama' => $ortu->nama_ibu,
                     'hubungan' => 'Ibu',
                     'no_hp' => $ortu->no_hp_ibu,
                     'pekerjaan' => $ortu->pekerjaan_ibu,
@@ -451,13 +453,13 @@ class KepsekController extends Controller
                     'penghasilan' => $ortu->penghasilan_ibu,
                 ];
             }
-            
+
             // Data Wali
             if ($ortu->nama_wali) {
                 $result[] = [
-                    'id_ortu' => $ortu->id,
+                    'orang_tua_id' => $ortu->id,
                     'nik' => $ortu->nik_wali,
-                    'nama_lengkap' => $ortu->nama_wali,
+                    'nama' => $ortu->nama_wali,
                     'hubungan' => $ortu->hubungan_wali ?? 'Wali',
                     'no_hp' => $ortu->no_hp_wali,
                     'pekerjaan' => $ortu->pekerjaan_wali,
@@ -465,7 +467,7 @@ class KepsekController extends Controller
                     'penghasilan' => $ortu->penghasilan_wali,
                 ];
             }
-            
+
             return $result;
         });
 
@@ -475,8 +477,8 @@ class KepsekController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'siswa' => $siswa,
-                'orang_tua' => $dataOrangTua,
+                'siswas' => $siswa,
+                'orang_tuas' => $dataOrangTua,
                 'riwayat_kelas' => $riwayatKelas,
                 'statistik_absensi' => [
                     'total' => $absensiStats?->total ?? 0,
@@ -527,8 +529,8 @@ class KepsekController extends Controller
                     'id' => $user->id,
                     'username' => $user->username,
                     'email' => $user->email,
-                    'nama_lengkap' => $user->nama_lengkap,
-                    'no_hp' => $user->no_hp,
+                    'nama' => $user->name,
+                    'no_hp' => $user->guru->no_hp,
                     'foto' => $user->foto,
                 ],
                 'kepsek' => [
@@ -570,7 +572,7 @@ class KepsekController extends Controller
         if ($request->filled('email'))
             $user->email = $request->email;
         if ($request->filled('no_hp'))
-            $user->no_hp = $request->no_hp;
+            $user->guru->no_hp = $request->no_hp;
 
         if ($request->hasFile('foto')) {
             if ($user->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->foto)) {

@@ -10,7 +10,7 @@ class TahunAjaranController extends Controller
 {
     public function index()
     {
-        $data = DB::table('tahun_ajaran')
+        $data = DB::table('tahun_ajarans')
             ->orderByDesc('tanggal_mulai')
             ->get();
 
@@ -19,7 +19,7 @@ class TahunAjaranController extends Controller
 
     public function show($id)
     {
-        $tahunAjaran = DB::table('tahun_ajaran')->find($id);
+        $tahunAjaran = DB::table('tahun_ajarans')->find($id);
 
         if (!$tahunAjaran) {
             return response()->json(['success' => false, 'message' => 'Tahun ajaran tidak ditemukan.'], 404);
@@ -27,7 +27,7 @@ class TahunAjaranController extends Controller
 
         // Ambil semua kelas pada tahun ajaran ini beserta wali kelas
         $kelasList = DB::table('kelas')
-            ->leftJoin('guru', 'kelas.nuptk_wali', '=', 'guru.nuptk')
+            ->leftJoin('gurus', 'kelas.nuptk_wali', '=', 'guru.nuptk')
             ->where('kelas.id_tahun_ajaran', $id)
             ->orderBy('kelas.tingkat')
             ->orderBy('kelas.nama_kelas')
@@ -43,8 +43,8 @@ class TahunAjaranController extends Controller
                 'guru.nama_lengkap as nama_wali',
             ])
             ->map(function ($k) {
-                $k->total_siswa = DB::table('siswa_kelas')
-                    ->where('id_kelas', $k->id)
+                $k->total_siswa = DB::table('riwayat_kelas')
+                    ->where('kelas_id', $k->id)
                     ->where('status_keluar', 'Aktif')
                     ->count();
                 return $k;
@@ -67,7 +67,7 @@ class TahunAjaranController extends Controller
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
         ]);
 
-        $id = DB::table('tahun_ajaran')->insertGetId([
+        $id = DB::table('tahun_ajarans')->insertGetId([
             'nama' => $request->nama,
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_selesai' => $request->tanggal_selesai,
@@ -77,7 +77,7 @@ class TahunAjaranController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tahun ajaran berhasil ditambahkan.',
-            'data' => DB::table('tahun_ajaran')->find($id),
+            'data' => DB::table('tahun_ajarans')->find($id),
         ], 201);
     }
 
@@ -89,7 +89,7 @@ class TahunAjaranController extends Controller
             'tanggal_selesai' => 'required|date|after:tanggal_mulai',
         ]);
 
-        DB::table('tahun_ajaran')->where('id', $id)->update([
+        DB::table('tahun_ajarans')->where('id', $id)->update([
             'nama' => $request->nama,
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_selesai' => $request->tanggal_selesai,
@@ -104,9 +104,9 @@ class TahunAjaranController extends Controller
     public function setAktif($id)
     {
         // Non-aktifkan semua dulu
-        DB::table('tahun_ajaran')->update(['is_active' => 0]);
+        DB::table('tahun_ajarans')->update(['is_active' => 0]);
         // Aktifkan yang dipilih
-        DB::table('tahun_ajaran')->where('id', $id)->update(['is_active' => 1]);
+        DB::table('tahun_ajarans')->where('id', $id)->update(['is_active' => 1]);
 
         return response()->json([
             'success' => true,
@@ -117,7 +117,7 @@ class TahunAjaranController extends Controller
     public function destroy($id)
     {
         // Cek apakah ada kelas yang pakai tahun ajaran ini
-        $adaKelas = DB::table('kelas')->where('id_tahun_ajaran', $id)->exists();
+        $adaKelas = DB::table('kelas')->where('tahun_ajaran_id', $id)->exists();
         if ($adaKelas) {
             return response()->json([
                 'success' => false,
@@ -125,7 +125,7 @@ class TahunAjaranController extends Controller
             ], 422);
         }
 
-        DB::table('tahun_ajaran')->where('id', $id)->delete();
+        DB::table('tahun_ajarans')->where('id', $id)->delete();
 
         return response()->json(['success' => true, 'message' => 'Tahun ajaran berhasil dihapus.']);
     }

@@ -50,7 +50,7 @@ class MasterDataGuruController extends Controller
             'nuptk' => 'required|string|max:16|unique:guru,nuptk',
             'nip' => 'nullable|string|max:18|unique:guru,nip',
             'nik' => 'nullable|string|max:16',
-            'nama_lengkap' => 'required|string|max:100',
+            'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string|max:60',
@@ -112,7 +112,7 @@ class MasterDataGuruController extends Controller
         $request->validate([
             'nip' => "nullable|string|max:18|unique:guru,nip,{$nuptk},nuptk",
             'nik' => 'nullable|string|max:16',
-            'nama_lengkap' => 'required|string|max:100',
+            'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string|max:60',

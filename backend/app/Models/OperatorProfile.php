@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class UserBendahara extends Model
+class OperatorProfile extends Model
 {
-    protected $table = 'bendaharas';
+    protected $table = 'operator_profiles';
     public $timestamps = false;
 
     protected $fillable = [
@@ -14,13 +14,6 @@ class UserBendahara extends Model
         'nip',
         'jabatan',
         'no_sk',
-        'tmt_jabatan',
-        'akses_modul',
-    ];
-
-    protected $casts = [
-        'akses_modul' => 'array',
-        'tmt_jabatan' => 'date',
     ];
 
     public function user()
