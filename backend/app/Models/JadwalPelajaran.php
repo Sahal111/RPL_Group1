@@ -43,6 +43,11 @@ class JadwalPelajaran extends Model
         return $this->belongsTo(Guru::class, 'guru_id');
     }
 
+    // Alias — controller memanggil with('gurus'), ini agar tidak error
+    public function gurus()
+    {
+        return $this->guru();
+    }
     public function mataPelajaran()
     {
         return $this->belongsTo(MataPelajaran::class, 'mapel_id');
