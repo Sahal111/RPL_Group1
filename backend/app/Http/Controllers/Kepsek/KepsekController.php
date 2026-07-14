@@ -280,11 +280,12 @@ class KepsekController extends Controller
         $mapelDiampu = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
             ->where('nuptk', $nuptk)
             ->get()
-            ->groupBy('id_mapel')
+            ->groupBy('mapel_id')
+
             ->map(function ($items) {
                 $first = $items->first();
                 return [
-                    'id_mapel' => $first->id_mapel,
+                    'mapel_id' => $first->mapel_id,
                     'nama_mapel' => $first->mataPelajaran?->nama_mapel,
                     'kode_mapel' => $first->mataPelajaran?->kode_mapel,
                     'kelas_diampu' => $items->pluck('kelas.nama_kelas')->filter()->unique()->values(),

@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\RiwayatKelas;
-use App\Models\Absensi; // tabel: absensis
+use App\Models\SiswaKelas;
+use App\Models\Absensi;
 use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\User;
-use App\Models\JadwalPelajaran; // tabel: jadwals
+use App\Models\JadwalPelajaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -26,10 +27,10 @@ class GuruController extends Controller
         if (!$nuptk)
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
-        $guru = Guru::where('nuptk', $nuptk)->first();
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         // Kelas yang diwali
-        $kelasWali = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->get();
+        $kelasWali = Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->get();
         $idKelasWali = $kelasWali->pluck('id')->toArray();
 
         // Total siswa aktif di kelas wali
@@ -59,7 +60,7 @@ class GuruController extends Controller
         });
 
         // Statistik bulan ini
-        $absenBulanIni = Absensi::whereIn('id_kelas', $idKelasWali)
+        $absenBulanIni = Absensi::whereIn('kelas_id', $idKelasWali)
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)->get();
 
@@ -99,32 +100,33 @@ class GuruController extends Controller
         if (!$nuptk)
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
-        $idKelas = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->pluck('id')->toArray();
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $idKelas = Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->pluck('id')->toArray();
 
         $search = $request->search;
         $idKelasFilter = $request->kelas_id;
 
         $query = SiswaKelas::with([
-            'siswas',
+            'siswa',
             'kelas',
             'siswa.orangTua',
         ])
             ->whereIn('kelas_id', $idKelas)
-            ->where('status_keluar', 'Aktif');
+            ->aktif();
 
         if ($idKelasFilter) {
             $query->where('kelas_id', $idKelasFilter);
         }
 
         if ($search) {
-            $query->whereHas('siswas', function ($q) use ($search) {
-                $q->where('nama_lengkap', 'like', "%{$search}%")
+            $query->whereHas('siswa', function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
                     ->orWhere('nisn', 'like', "%{$search}%")
-                    ->orWhere('no_induk', 'like', "%{$search}%");
+                    ->orWhere('nis', 'like', "%{$search}%");
             });
         }
 
-        $data = $query->orderBy('id_kelas')->orderBy('no_absen')->get()->map(function ($sk) {
+        $data = $query->orderBy('kelas_id')->orderBy('no_absen')->get()->map(function ($sk) {
             $ortu = $sk->siswa->orangTua->first();
 
             $namaOrtu = null;
@@ -149,7 +151,7 @@ class GuruController extends Controller
 
             return [
                 'nisn' => $sk->siswa_id,
-                'no_induk' => $sk->siswa->no_induk,
+                'no_induk' => $sk->siswa->nis,
                 'no_absen' => $sk->no_absen,
                 'nama' => $sk->siswa->nama,
                 'jenis_kelamin' => $sk->siswa->jenis_kelamin,
@@ -177,23 +179,22 @@ class GuruController extends Controller
         if (!$nuptk)
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
 
-        // Pastikan siswa ini ada di kelas yang diwali oleh guru ini
-        $idKelasWali = Kelas::where('nuptk_wali', $nuptk)->where('is_active', 1)->pluck('id')->toArray();
-        $isSiswaWali = SiswaKelas::where('nisn', $nisn)
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $idKelasWali = Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->pluck('id')->toArray();
+
+        $isSiswaWali = SiswaKelas::whereHas('siswa', fn($q) => $q->where('nisn', $nisn))
             ->whereIn('kelas_id', $idKelasWali)
-            ->where('status_keluar', 'Aktif')
+            ->aktif()
             ->exists();
 
         if (!$isSiswaWali) {
             return response()->json(['success' => false, 'message' => 'Siswa tidak ditemukan atau bukan bagian dari kelas perwalian Anda.'], 404);
         }
 
-        // Load siswa + akun ortu langsung + data keluarga (orang_tua) beserta
-// saudara kandung dan akun ortu mereka (untuk kasus 1 ortu punya 2 anak)
         $siswa = Siswa::with([
             'userOrtu.user',
             'orangTua.siswa.userOrtu.user',
-        ])->where('siswa_id', $nisn)->first();
+        ])->where('nisn', $nisn)->first();
 
         $akunMap = [];
 
@@ -223,7 +224,6 @@ class GuruController extends Controller
             }
         }
 
-        // Untuk setiap akun ortu, cari anak lain yang terhubung ke akun tsb (via orang_tua_siswa)
         $enrichedUserOrtu = collect($akunMap)->map(function ($item) use ($siswa) {
             $anakLain = \App\Models\OrangTua::where('user_id', $item['user_id'])
                 ->with(['siswa' => fn($q) => $q->where('id', '!=', $siswa->id)])
@@ -237,7 +237,6 @@ class GuruController extends Controller
             return array_merge($item, ['anak_lain' => $anakLain->values()]);
         })->values();
 
-        // Kumpulkan saudara kandung dari data keluarga (orang_tua → siswa_orang_tua)
         $saudara = collect();
         foreach ($siswa->orangTua as $family) {
             foreach ($family->siswa as $sibling) {
@@ -245,7 +244,7 @@ class GuruController extends Controller
                     continue;
                 $saudara->push([
                     'nisn' => $sibling->nisn,
-                    'nama' => $sibling->nama_lengkap,
+                    'nama' => $sibling->nama,
                     'jenis_kelamin' => $sibling->jenis_kelamin,
                 ]);
             }
@@ -294,16 +293,14 @@ class GuruController extends Controller
             ], 404);
         }
 
-        $kelas = Kelas::where('nuptk_wali', $nuptk)
-            ->where('is_active', 1)
-            ->get()
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $kelas = Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->get()
             ->map(function ($k) {
-                $totalSiswa = SiswaKelas::where('id_kelas', $k->id)
-                    ->where('status_keluar', 'Aktif')
+                $totalSiswa = SiswaKelas::where('kelas_id', $k->id)
+                    ->aktif()
                     ->count();
 
-                // Cek apakah absensi hari ini sudah diisi
-                $sudahAbsen = Absensi::where('id_kelas', $k->id)
+                $sudahAbsen = Absensi::where('kelas_id', $k->id)
                     ->where('tanggal', now()->toDateString())
                     ->exists();
 
@@ -311,7 +308,7 @@ class GuruController extends Controller
                     'id' => $k->id,
                     'nama_kelas' => $k->nama_kelas,
                     'tingkat' => $k->tingkat,
-                    'semester' => $k->semester,
+                    'semester_id' => $k->semester_id,
                     'ruangan' => $k->ruangan,
                     'total_siswa' => $totalSiswa,
                     'sudah_absen_hari_ini' => $sudahAbsen,
@@ -332,18 +329,19 @@ class GuruController extends Controller
         $user = $request->user();
         $nuptk = $user->guru?->nuptk;
 
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
         $kelas = Kelas::where('id', $id_kelas)
-            ->where('nuptk_wali', $nuptk)
+            ->where('wali_kelas_id', $guru->id)
             ->firstOrFail();
 
-        $siswaList = SiswaKelas::with('siswas')
+        $siswaList = SiswaKelas::with('siswa')
             ->where('kelas_id', $id_kelas)
-            ->where('status_keluar', 'Aktif')
+            ->aktif()
             ->orderBy('no_absen')
             ->get();
 
-        // Statistik absensi bulan ini per siswa
-        $absenBulanIni = Absensi::where('id_kelas', $id_kelas)
+        $absenBulanIni = Absensi::where('kelas_id', $id_kelas)
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
             ->get()
@@ -372,7 +370,7 @@ class GuruController extends Controller
                     'id' => $kelas->id,
                     'nama_kelas' => $kelas->nama_kelas,
                     'tingkat' => $kelas->tingkat,
-                    'semester' => $kelas->semester,
+                    'semester_id' => $kelas->semester_id,
                     'ruangan' => $kelas->ruangan,
                 ],
                 'siswas' => $siswa,
@@ -393,13 +391,13 @@ class GuruController extends Controller
         $user = $request->user();
         $nuptk = $user->guru?->nuptk;
 
-        // Pastikan kelas ini milik guru ybs
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
         Kelas::where('id', $id_kelas)
-            ->where('nuptk_wali', $nuptk)
+            ->where('wali_kelas_id', $guru->id)
             ->firstOrFail();
 
-        // Ambil semua tanggal yang ada absensinya di bulan tsb
-        $tanggalList = Absensi::where('id_kelas', $id_kelas)
+        $tanggalList = Absensi::where('kelas_id', $id_kelas)
             ->whereMonth('tanggal', $request->bulan)
             ->whereYear('tanggal', $request->tahun)
             ->distinct('tanggal')
@@ -407,9 +405,8 @@ class GuruController extends Controller
             ->sort()
             ->values();
 
-        // Summary per tanggal
         $riwayat = $tanggalList->map(function ($tanggal) use ($id_kelas) {
-            $absensi = Absensi::where('id_kelas', $id_kelas)
+            $absensi = Absensi::where('kelas_id', $id_kelas)
                 ->where('tanggal', $tanggal)
                 ->get();
 
@@ -446,13 +443,14 @@ class GuruController extends Controller
             return response()->json(['success' => false, 'message' => 'Profil guru tidak ditemukan.'], 404);
         }
 
-        $jadwal = JadwalPelajaran::with(['kelas', 'mataPelajaran'])
-            ->where('nuptk', $nuptk)
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $jadwal = JadwalPelajaran::with(['kelas', 'mataPelajaran', 'semester'])
+            ->where('guru_id', $guru->id)
             ->orderByRaw("FIELD(hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu')")
             ->orderBy('jam_mulai')
             ->get();
 
-        // Group by hari
         $grouped = $jadwal->groupBy('hari')->map(function ($items) {
             return $items->map(function ($j) {
                 return [
@@ -461,11 +459,11 @@ class GuruController extends Controller
                     'jam_mulai' => $j->jam_mulai,
                     'jam_selesai' => $j->jam_selesai,
                     'mapels' => $j->mataPelajaran?->nama_mapel,
-                    'kode_mapel' => $j->mataPelajaran?->kode_mapel,
+                    'kode_mapel' => $j->mataPelajaran?->kode,
                     'nama_kelas' => $j->kelas?->nama_kelas,
                     'tingkat' => $j->kelas?->tingkat,
-                    'semester' => $j->semester,
-                    'tahun_ajarans' => $j->tahun_ajaran,
+                    'semester_id' => $j->semester_id,
+                    'tahun_ajaran_id' => $j->semester?->tahun_ajaran_id,
                 ];
             })->values();
         });
@@ -485,10 +483,8 @@ class GuruController extends Controller
     public function profil(Request $request)
     {
         $user = $request->user();
-
         $nuptk = $user->guru?->nuptk;
 
-        // Ambil data master guru jika ada
         $masterGuru = null;
         if ($nuptk) {
             $masterGuru = Guru::where('nuptk', $nuptk)->first();
@@ -502,14 +498,17 @@ class GuruController extends Controller
                     'username' => $user->username,
                     'email' => $user->email,
                     'nama' => $user->name,
-                    'no_hp' => $user->guru->no_hp,
+                    'no_hp' => $user->guru?->no_hp,
                     'foto' => $user->foto,
                 ],
-                'master' => $masterGuru
+                'master' => $masterGuru,
             ],
         ]);
     }
 
+    // -------------------------------------------------------
+    // UPDATE PROFIL GURU
+    // -------------------------------------------------------
     public function updateProfil(Request $request)
     {
         $user = User::find($request->user()->id);
@@ -522,7 +521,6 @@ class GuruController extends Controller
             'password_baru' => 'nullable|string|min:6|confirmed',
         ]);
 
-        // Cek ganti password
         if ($request->filled('password_baru')) {
             if (!$request->filled('password_lama')) {
                 return response()->json(['success' => false, 'message' => 'Password lama wajib diisi.'], 400);
@@ -537,8 +535,9 @@ class GuruController extends Controller
             $user->email = $request->email;
         }
 
-        if ($request->filled('no_hp')) {
+        if ($request->filled('no_hp') && $user->guru) {
             $user->guru->no_hp = $request->no_hp;
+            $user->guru->save();
         }
 
         if ($request->hasFile('foto')) {
@@ -554,7 +553,7 @@ class GuruController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profil berhasil diperbarui.',
-            'data' => $user
+            'data' => $user,
         ]);
     }
 }

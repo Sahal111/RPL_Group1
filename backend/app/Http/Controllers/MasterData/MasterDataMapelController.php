@@ -11,12 +11,14 @@ class MasterDataMapelController extends Controller
     public function index(Request $request)
     {
         $query = MataPelajaran::query()
-            ->when($request->search, fn($q) =>
+            ->when(
+                $request->search,
+                fn($q) =>
                 $q->where('nama_mapel', 'like', "%{$request->search}%")
-                  ->orWhere('kode_mapel', 'like', "%{$request->search}%")
+                    ->orWhere('kode_mapel', 'like', "%{$request->search}%")
             )
             ->when($request->kelompok, fn($q) => $q->where('kelompok', $request->kelompok))
-            ->when($request->tingkat,  fn($q) => $q->where('tingkat', $request->tingkat))
+            ->when($request->tingkat, fn($q) => $q->where('tingkat', $request->tingkat))
             ->orderBy('kelompok')
             ->orderBy('nama_mapel')
             ->paginate(20);
@@ -27,18 +29,22 @@ class MasterDataMapelController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode_mapel'    => 'required|string|max:20|unique:mata_pelajaran,kode_mapel',
-            'nama_mapel'    => 'required|string|max:100',
-            'kelompok'      => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
-            'tingkat'       => 'required|in:Semua,1,2,3,4,5,6',
-            'jam_per_minggu'=> 'required|integer|min:1|max:40',
-            'kurikulum'     => 'required|in:Kurikulum 2013,Kurikulum Merdeka,Keduanya',
+            'kode_mapel' => 'required|string|max:20|unique:mapels,kode',
+            'nama_mapel' => 'required|string|max:100',
+            'kelompok' => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
+            'tingkat' => 'required|in:Semua,1,2,3,4,5,6',
+            'jam_per_minggu' => 'required|integer|min:1|max:40',
+            'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka,Keduanya',
         ]);
 
         $mapel = MataPelajaran::create([
             ...$request->only([
-                'kode_mapel', 'nama_mapel', 'kelompok',
-                'tingkat', 'jam_per_minggu', 'kurikulum',
+                'kode_mapel',
+                'nama_mapel',
+                'kelompok',
+                'tingkat',
+                'jam_per_minggu',
+                'kurikulum',
             ]),
             'is_active' => true,
         ]);
@@ -46,7 +52,7 @@ class MasterDataMapelController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Mata pelajaran berhasil ditambahkan.',
-            'data'    => $mapel,
+            'data' => $mapel,
         ], 201);
     }
 
@@ -61,24 +67,29 @@ class MasterDataMapelController extends Controller
         $mapel = MataPelajaran::findOrFail($id);
 
         $request->validate([
-            'kode_mapel'    => "required|string|max:20|unique:mata_pelajaran,kode_mapel,{$id}",
-            'nama_mapel'    => 'required|string|max:100',
-            'kelompok'      => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
-            'tingkat'       => 'required|in:Semua,1,2,3,4,5,6',
-            'jam_per_minggu'=> 'required|integer|min:1|max:40',
-            'kurikulum'     => 'required|in:Kurikulum 2013,Kurikulum Merdeka,Keduanya',
-            'is_active'     => 'boolean',
+            'kode_mapel' => "required|string|max:20|unique:mapels,kode,{$id}",
+            'nama_mapel' => 'required|string|max:100',
+            'kelompok' => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
+            'tingkat' => 'required|in:Semua,1,2,3,4,5,6',
+            'jam_per_minggu' => 'required|integer|min:1|max:40',
+            'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka,Keduanya',
+            'is_active' => 'boolean',
         ]);
 
         $mapel->update($request->only([
-            'kode_mapel', 'nama_mapel', 'kelompok',
-            'tingkat', 'jam_per_minggu', 'kurikulum', 'is_active',
+            'kode_mapel',
+            'nama_mapel',
+            'kelompok',
+            'tingkat',
+            'jam_per_minggu',
+            'kurikulum',
+            'is_active',
         ]));
 
         return response()->json([
             'success' => true,
             'message' => 'Mata pelajaran berhasil diperbarui.',
-            'data'    => $mapel->fresh(),
+            'data' => $mapel->fresh(),
         ]);
     }
 
@@ -90,7 +101,7 @@ class MasterDataMapelController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Status mata pelajaran berhasil diubah.',
-            'data'    => $mapel->fresh(),
+            'data' => $mapel->fresh(),
         ]);
     }
 
