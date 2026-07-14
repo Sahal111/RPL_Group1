@@ -13,27 +13,21 @@ class MasterDataOrtuController extends Controller
         $search = $request->query('search');
 
         $query = OrangTua::query()
-            ->with(['siswa:nisn,nama_lengkap', 'siswa.userOrtu:id,nisn'])
+            ->with(['siswa:id,nisn,nama'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('nama_ayah', 'like', "%{$search}%")
-                        ->orWhere('nama_ibu', 'like', "%{$search}%")
-                        ->orWhere('nama_wali', 'like', "%{$search}%")
-                        ->orWhere('nik_ayah', 'like', "%{$search}%")
-                        ->orWhere('nik_ibu', 'like', "%{$search}%")
-                        ->orWhere('nik_wali', 'like', "%{$search}%")
-                        ->orWhere('no_hp_ayah', 'like', "%{$search}%")
-                        ->orWhere('no_hp_ibu', 'like', "%{$search}%")
-                        ->orWhere('no_hp_wali', 'like', "%{$search}%")
+                    // Skema baru: satu baris per individu (kolom: nama, nik, no_hp)
+                    $q->where('nama', 'like', "%{$search}%")
+                        ->orWhere('nik', 'like', "%{$search}%")
+                        ->orWhere('no_hp', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereHas('siswas', function ($siswaQuery) use ($search) {
-                            $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
-                                ->orWhere('nisn', 'like', "%{$search}%");
-                        });
+                        ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
+                        $siswaQuery->where('nama', 'like', "%{$search}%")
+                            ->orWhere('nisn', 'like', "%{$search}%");
+                    });
                 });
             })
-            ->orderBy('nama_ayah')
-            ->orderBy('nama_ibu');
+            ->orderBy('nama');
 
         $data = $request->boolean('paginate')
             ? $query->paginate(15)
@@ -45,7 +39,8 @@ class MasterDataOrtuController extends Controller
     public function show($id)
     {
         $orangTua = OrangTua::with([
-            'siswa.userOrtu.user:id,nama_lengkap,username,email,no_hp,foto,is_active',
+            'siswa:id,nisn,nama',
+            'user:id,name,username,email,foto,is_active',
         ])->findOrFail($id);
 
         return response()->json(['success' => true, 'data' => $orangTua]);
@@ -54,30 +49,21 @@ class MasterDataOrtuController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nama_ayah' => 'nullable|string|max:100',
-            'nik_ayah' => 'nullable|string|max:16',
-            'tanggal_lahir_ayah' => 'nullable|date',
-            'pendidikan_ayah' => 'nullable|string|max:50',
-            'pekerjaan_ayah' => 'nullable|string|max:100',
-            'penghasilan_ayah' => 'nullable|string|max:50',
-            'no_hp_ayah' => 'nullable|string|max:20',
-
-            'nama_ibu' => 'nullable|string|max:100',
-            'nik_ibu' => 'nullable|string|max:16',
-            'tanggal_lahir_ibu' => 'nullable|date',
-            'pendidikan_ibu' => 'nullable|string|max:50',
-            'pekerjaan_ibu' => 'nullable|string|max:100',
-            'penghasilan_ibu' => 'nullable|string|max:50',
-            'no_hp_ibu' => 'nullable|string|max:20',
-
-            'nama_wali' => 'nullable|string|max:100',
-            'nik_wali' => 'nullable|string|max:16',
-            'hubungan_wali' => 'nullable|string|max:50',
-            'pekerjaan_wali' => 'nullable|string|max:100',
-            'penghasilan_wali' => 'nullable|string|max:50',
-            'no_hp_wali' => 'nullable|string|max:20',
-
-            'email' => 'nullable|email|max:100',
+            // Skema baru: satu baris per individu orang tua/wali
+            'nama' => 'required|string|max:150',
+            'nik' => 'nullable|string|max:16',
+            'hubungan' => 'required|in:Ayah,Ibu,Wali,Kakek,Nenek,Paman,Bibi,Kakak,Lainnya',
+            'status' => 'required|in:Kandung,Tiri,Angkat,Wali',
+            'status_hidup' => 'nullable|in:Masih Hidup,Meninggal,Tidak Diketahui',
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tahun_lahir' => 'nullable|integer|min:1900|max:' . now()->year,
+            'jenis_kelamin' => 'nullable|in:L,P',
+            'agama' => 'nullable|string|max:30',
+            'pendidikan' => 'nullable|string|max:50',
+            'pekerjaan' => 'nullable|string|max:100',
+            'penghasilan' => 'nullable|string|max:100',
+            'no_hp' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:150',
             'alamat' => 'nullable|string',
         ]);
 
@@ -95,30 +81,20 @@ class MasterDataOrtuController extends Controller
         $orangTua = OrangTua::findOrFail($id);
 
         $data = $request->validate([
-            'nama_ayah' => 'nullable|string|max:100',
-            'nik_ayah' => 'nullable|string|max:16',
-            'tanggal_lahir_ayah' => 'nullable|date',
-            'pendidikan_ayah' => 'nullable|string|max:50',
-            'pekerjaan_ayah' => 'nullable|string|max:100',
-            'penghasilan_ayah' => 'nullable|string|max:50',
-            'no_hp_ayah' => 'nullable|string|max:20',
-
-            'nama_ibu' => 'nullable|string|max:100',
-            'nik_ibu' => 'nullable|string|max:16',
-            'tanggal_lahir_ibu' => 'nullable|date',
-            'pendidikan_ibu' => 'nullable|string|max:50',
-            'pekerjaan_ibu' => 'nullable|string|max:100',
-            'penghasilan_ibu' => 'nullable|string|max:50',
-            'no_hp_ibu' => 'nullable|string|max:20',
-
-            'nama_wali' => 'nullable|string|max:100',
-            'nik_wali' => 'nullable|string|max:16',
-            'hubungan_wali' => 'nullable|string|max:50',
-            'pekerjaan_wali' => 'nullable|string|max:100',
-            'penghasilan_wali' => 'nullable|string|max:50',
-            'no_hp_wali' => 'nullable|string|max:20',
-
-            'email' => 'nullable|email|max:100',
+            'nama' => 'sometimes|required|string|max:150',
+            'nik' => 'nullable|string|max:16',
+            'hubungan' => 'sometimes|required|in:Ayah,Ibu,Wali,Kakek,Nenek,Paman,Bibi,Kakak,Lainnya',
+            'status' => 'sometimes|required|in:Kandung,Tiri,Angkat,Wali',
+            'status_hidup' => 'nullable|in:Masih Hidup,Meninggal,Tidak Diketahui',
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tahun_lahir' => 'nullable|integer|min:1900|max:' . now()->year,
+            'jenis_kelamin' => 'nullable|in:L,P',
+            'agama' => 'nullable|string|max:30',
+            'pendidikan' => 'nullable|string|max:50',
+            'pekerjaan' => 'nullable|string|max:100',
+            'penghasilan' => 'nullable|string|max:100',
+            'no_hp' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:150',
             'alamat' => 'nullable|string',
         ]);
 

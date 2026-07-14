@@ -88,11 +88,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/guru/{nuptk}/foto', [MasterDataGuruController::class, 'uploadFoto']);
             // Lookup akun yang terhubung ke NUPTK
             Route::get('/guru/{nuptk}/akun', function (\Illuminate\Http\Request $req, $nuptk) {
-                $userGuru = \App\Models\UserGuru::where('nuptk', $nuptk)->with('user')->first();
-                if (!$userGuru || !$userGuru->user) {
+                $guru = \App\Models\Guru::where('nuptk', $nuptk)->with('user')->first();
+                if (!$guru || !$guru->user) {
                     return response()->json(['success' => true, 'data' => null]);
                 }
-                $u = $userGuru->user;
+                $u = $guru->user;
                 return response()->json([
                     'success' => true,
                     'data' => [

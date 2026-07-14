@@ -13,7 +13,7 @@ class MasterDataGuruController extends Controller
     {
         $query = Guru::query()
             ->when($request->search, function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                $q->where('nama', 'like', "%{$request->search}%")
                     ->orWhere('nuptk', 'like', "%{$request->search}%")
                     ->orWhere('nip', 'like', "%{$request->search}%");
             })
@@ -23,7 +23,7 @@ class MasterDataGuruController extends Controller
             ->when($request->status, function ($q) use ($request) {
                 $q->where('status_kepegawaian', $request->status);
             })
-            ->orderBy('nama_lengkap')
+            ->orderBy('nama')
             ->paginate(15);
 
         return response()->json([
@@ -35,7 +35,7 @@ class MasterDataGuruController extends Controller
     // DETAIL satu guru
     public function show($nuptk)
     {
-        $guru = Guru::with('userGuru.user')->where('nuptk', $nuptk)->firstOrFail();
+       $guru = Guru::with('user')->where('nuptk', $nuptk)->firstOrFail();
 
         return response()->json([
             'success' => true,
@@ -47,8 +47,8 @@ class MasterDataGuruController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nuptk' => 'required|string|max:16|unique:guru,nuptk',
-            'nip' => 'nullable|string|max:18|unique:guru,nip',
+            'nuptk' => 'required|string|max:16|unique:gurus,nuptk',
+            'nip' => 'nullable|string|max:18|unique:gurus,nip',
             'nik' => 'nullable|string|max:16',
             'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
@@ -65,9 +65,9 @@ class MasterDataGuruController extends Controller
             'alamat_jalan' => 'nullable|string',
             'rt' => 'nullable|string|max:5',
             'rw' => 'nullable|string|max:5',
-            'desa' => 'nullable|string|max:60',
+            'desa_kelurahan' => 'nullable|string|max:60',
             'kecamatan' => 'nullable|string|max:60',
-            'kabupaten' => 'nullable|string|max:60',
+            'kota_kabupaten' => 'nullable|string|max:60',
             'provinsi' => 'nullable|string|max:60',
             'kode_pos' => 'nullable|string|max:10',
         ]);
@@ -76,7 +76,7 @@ class MasterDataGuruController extends Controller
             'nuptk',
             'nip',
             'nik',
-            'nama_lengkap',
+            'nama',
             'jenis_kelamin',
             'tanggal_lahir',
             'tempat_lahir',
@@ -91,9 +91,9 @@ class MasterDataGuruController extends Controller
             'alamat_jalan',
             'rt',
             'rw',
-            'desa',
+            'desa_kelurahan',
             'kecamatan',
-            'kabupaten',
+            'kota_kabupaten',
             'provinsi',
             'kode_pos',
         ]));
@@ -110,7 +110,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
-            'nip' => "nullable|string|max:18|unique:guru,nip,{$nuptk},nuptk",
+            'nip' => "nullable|string|max:18|unique:gurus,nip,{$nuptk},nuptk",
             'nik' => 'nullable|string|max:16',
             'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
@@ -127,9 +127,9 @@ class MasterDataGuruController extends Controller
             'alamat_jalan' => 'nullable|string',
             'rt' => 'nullable|string|max:5',
             'rw' => 'nullable|string|max:5',
-            'desa' => 'nullable|string|max:60',
+            'desa_kelurahan' => 'nullable|string|max:60',
             'kecamatan' => 'nullable|string|max:60',
-            'kabupaten' => 'nullable|string|max:60',
+            'kota_kabupaten' => 'nullable|string|max:60',
             'provinsi' => 'nullable|string|max:60',
             'kode_pos' => 'nullable|string|max:10',
             'is_active' => 'boolean',
@@ -138,7 +138,7 @@ class MasterDataGuruController extends Controller
         $guru->update($request->only([
             'nip',
             'nik',
-            'nama_lengkap',
+            'nama',
             'jenis_kelamin',
             'tanggal_lahir',
             'tempat_lahir',
@@ -153,9 +153,9 @@ class MasterDataGuruController extends Controller
             'alamat_jalan',
             'rt',
             'rw',
-            'desa',
+            'desa_kelurahan',
             'kecamatan',
-            'kabupaten',
+            'kota_kabupaten',
             'provinsi',
             'kode_pos',
             'is_active',
@@ -174,7 +174,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         // Cek kalau guru punya akun user, tolak hapus
-        if ($guru->userGuru()->exists()) {
+        if ($guru->user()->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Guru ini memiliki akun login. Hapus akun loginnya terlebih dahulu.',

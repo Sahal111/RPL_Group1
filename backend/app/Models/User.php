@@ -52,6 +52,18 @@ class User extends Authenticatable
         return $this->roles->contains('slug', $slug);
     }
 
+    // ── Accessor ─────────────────────────────────────────────
+
+    /**
+     * Alias 'nama_lengkap' → kolom 'name' di tabel users.
+     * Banyak controller lama memakai $user->nama_lengkap; accessor ini
+     * mencegah error tanpa harus ganti semua controller sekaligus.
+     */
+    public function getNamaLengkapAttribute(): string
+    {
+        return $this->name ?? '';
+    }
+
     // ── Relasi profil ────────────────────────────────────────
 
     public function guru()

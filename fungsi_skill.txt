@@ -1,0 +1,108 @@
+===================================================================================================================================================
+1. Metodologi & Pengujian Aplikasi Web (Web Assessment)
+===================================================================================================================================================
+> webapp-testing: Pengujian keamanan aplikasi web secara menyeluruh untuk menemukan celah keamanan (pemetaan aset, analisis input, dll).
+> bb-methodology: Alur kerja atau metodologi standar yang digunakan dalam kegiatan Bug Bounty.
+> bb-local-toolkit: Kumpulan skrip atau alat (tools) lokal yang dikonfigurasi untuk membantu proses Bug Bounty.
+> bug-bounty: Strategi umum dan pendekatan dalam mencari kerentanan keamanan yang bernilai kompensasi.
+> bugcrowd-reporting: Standar penulisan dan pelaporan temuan bug khusus untuk platform Bugcrowd.
+> triage-validation: Proses validasi dan reproduksi temuan bug untuk memastikan temuan tersebut valid (bukan false positive).
+
+===================================================================================================================================================
+2. Modul Berburu Celah Keamanan Spesifik (Vulnerability Hunting)
+===================================================================================================================================================
+> hunt-api-misconfig: Mencari salah konfigurasi pada API (Application Programming Interface).
+> hunt-aspnet: Mencari celah keamanan spesifik pada aplikasi yang dibangun dengan framework .NET / ASP.NET.
+> hunt-ato (Account Takeover): Mencari celah yang memungkinkan pengambilalihan akun pengguna lain.
+> hunt-auth-bypass: Mencari cara untuk melewati mekanisme autentikasi (login).
+> hunt-brute-force: Menguji ketahanan sistem terhadap serangan tebakan massal (kredensial, token, dll).
+> hunt-business-logic: Mencari kelemahan pada logika bisnis aplikasi (misal: manipulasi harga belanja).
+> hunt-cache-poison: Menguji kerentanan Web Cache Poisoning untuk memanipulasi data yang disimpan server cache.
+> hunt-cicd: Mencari celah keamanan pada jalur pipa otomatisasi Continuous Integration / Continuous Deployment.
+> hunt-cloud-misconfig: Mencari kesalahan konfigurasi pada layanan cloud (AWS, Azure, GCP).
+> hunt-cors: Menguji kelemahan konfigurasi Cross-Origin Resource Sharing yang bisa membocorkan data sensitif.
+> hunt-csrf: Mencari celah Cross-Site Request Forgery yang memaksa pengguna mengeksekusi aksi yang tidak diinginkan.
+> hunt-deserialization: Mencari celah Insecure Deserialization yang sering berujung pada eksekusi kode jarak jauh.
+> hunt-dom: Mencari kerentanan berbasis DOM pada sisi klien (client-side), seperti DOM XSS.
+> hunt-file-upload: Menguji kerentanan pada fungsi unggah berkas (misal: mengunggah backdoor).
+> hunt-graphql: Mencari celah keamanan khusus pada implementasi API GraphQL.
+> hunt-grpc: Menguji keamanan protokol komunikasi gRPC.
+> hunt-host-header: Mencari celah manipulasi HTTP Host Header (misal: untuk password reset poisoning).
+> hunt-http-smuggling: Mencari celah HTTP Request Smuggling akibat perbedaan interpretasi request antara proxy dan backend.
+> hunt-idor: Mencari celah Insecure Direct Object Reference (mengakses data user lain lewat modifikasi ID).
+> hunt-k8s: Menguji keamanan infrastruktur klaster Kubernetes.
+> hunt-laravel: Mencari celah keamanan atau salah konfigurasi spesifik pada framework Laravel.
+> hunt-ldap: Menguji kerentanan injeksi atau salah konfigurasi pada protokol direktori LDAP.
+> hunt-lfi: Mencari celah Local File Inclusion untuk membaca berkas internal server.
+> hunt-llm-ai: Menguji keamanan pada implementasi model bahasa besar (LLM) dan kecerdasan buatan.
+> hunt-mfa-bypass: Mencari cara untuk melewati autentikasi dua faktor (2FA / MFA).
+> hunt-nextjs: Mencari celah spesifik atau salah konfigurasi pada framework Next.js.
+> hunt-nodejs: Menguji keamanan aplikasi berbasis lingkungan runtime Node.js.
+> hunt-nosqli: Mencari celah injeksi pada database non-relasional (NoSQL), seperti MongoDB.
+> hunt-ntlm-info: Mengumpulkan informasi sensitif melalui kebocoran otentikasi protokol NTLM.
+> hunt-oauth: Menguji keamanan dan implementasi protokol otorisasi OAuth.
+> hunt-open-redirect: Mencari celah pengalihan URL otomatis ke situs eksternal yang berbahaya.
+> hunt-race-condition: Menguji kondisi balapan (race condition) di mana dua proses bersaing menggunakan resource yang sama.
+> hunt-rce: Mencari celah Remote Code Execution yang memungkinkan penyerang menjalankan perintah di server.
+> hunt-saml: Menguji keamanan dan kerentanan pada implementasi otentikasi berbasis SAML.
+> hunt-session: Mencari kelemahan dalam manajemen sesi pengguna (session management).
+> hunt-sharepoint: Menguji kerentanan pada platform kolaborasi Microsoft SharePoint.
+> hunt-source-leak: Mencari kebocoran kode sumber (source code) melalui direktori publik atau salah konfigurasi.
+> hunt-springboot: Menguji celah keamanan spesifik pada framework Java Spring Boot (seperti actuator endpoints terbuka).
+hunt-sqli: Mencari celah SQL Injection untuk memanipulasi atau mengambil data dari database relasional.
+hunt-ssrf: Mencari celah Server-Side Request Forgery untuk memaksa server mengakses internal network.
+hunt-ssti: Mencari celah Server-Side Template Injection untuk memanipulasi mesin pembuat templat web.
+hunt-subdomain: Melakukan pemetaan dan pencarian subdomain untuk memperluas ruang lingkup pengujian.
+hunt-tls-network: Menguji enkripsi jaringan, masa berlaku sertifikat, dan kekuatan konfigurasi TLS/SSL.
+hunt-websocket: Menguji keamanan saluran komunikasi real-time berbasis WebSocket.
+hunt-xss: Mencari celah Cross-Site Scripting yang memungkinkan penyisipan skrip berbahaya ke browser korban.
+hunt-xxe: Mencari celah XML External Entity untuk membaca file lokal server atau memicu SSRF.
+
+===================================================================================================================================================
+3. Operasi Red Teaming & Serangan Infrastruktur
+===================================================================================================================================================
+
+apk-redteam-pipeline: Alur kerja pengujian penetrasi dan simulasi serangan pada aplikasi Android (APK).
+cloud-iam-deep: Analisis mendalam terhadap hak akses (Identity and Access Management) di cloud untuk mencari eskalasi hak akses.
+enterprise-vpn-attack: Teknik pengujian dan simulasi serangan terhadap infrastruktur VPN perusahaan.
+m365-entra-attack: Simulasi serangan terhadap ekosistem Microsoft 365 dan Microsoft Entra ID (dahulu Azure AD).
+okta-attack: Teknik pengujian keamanan pada platform manajemen identitas Okta.
+redteam-mindset: Panduan pola pikir, taktik, dan filosofi yang digunakan oleh tim ofensif (Red Team).
+vmware-vcenter-attack: Simulasi serangan terhadap infrastruktur virtualisasi VMware vCenter.
+
+===================================================================================================================================================
+4. Intelijen & Pengumpulan Informasi (OSINT)
+===================================================================================================================================================
+offensive-osint: Pengumpulan informasi dari sumber terbuka (Open Source Intelligence) yang berfokus pada target ofensif.
+osint-methodology: Metodologi dan tahapan standar dalam melakukan investigasi data publik.
+supply-chain-attack-recon: Pengumpulan informasi untuk memetakan risiko pada rantai pasok pihak ketiga (vendor/library).
+web2-recon: Tahap awal pengumpulan informasi pada teknologi web tradisional (Web2).
+
+===================================================================================================================================================
+5. Audit Kode & Keamanan Khusus (Code Review & Web3)
+===================================================================================================================================================
+code-review: Proses analisis kode sumber secara manual atau otomatis untuk mencari celah keamanan (Static Analysis).
+meme-coin-audit: Audit keamanan khusus untuk kontrak pintar (smart contract) token kripto berjenis meme coin.
+web3-audit: Audit keamanan pada arsitektur Web3, smart contract, dan aplikasi terdesentralisasi (DApps).
+
+===================================================================================================================================================
+6. Pertahanan & Respon Insiden (Defensive & IR)
+===================================================================================================================================================
+evidence-hygiene: Praktik pengelolaan dan pembersihan barang bukti digital agar tetap valid dan tidak merusak sistem target.
+mid-engagement-ir-detection: Kemampuan mendeteksi apakah aktivitas pengujian kita telah memicu tim respon insiden (Incident Response) lawan.
+
+===================================================================================================================================================
+7. Pengembangan, Desain & Utilitas Sistem
+===================================================================================================================================================
+context7-mcp: Integrasi atau pemanfaatan Model Context Protocol (MCP) untuk memperluas konteks AI.
+find-skills: Utilitas untuk mencari atau mengindeks kemampuan yang tersedia di dalam sistem agen ini.
+frontend-design: Panduan dan standar pembuatan antarmuka pengguna (UI/UX) bagian depan web.
+hunt-dispatch: Modul pengatur atau koordinator utama untuk membagikan tugas pengujian ke modul-modul lain.
+hunt-misc: Modul serbaguna untuk pengujian celah keamanan lain yang tidak masuk kategori utama.
+laravel-specialist: Kemampuan pengembangan aplikasi tingkat lanjut menggunakan framework Laravel.
+refactor-method-complexity-reduce: Teknik untuk merapikan kode (refactoring) guna menurunkan tingkat kompleksitas fungsi pemrograman.
+redteam-report-template & report-writing: Pembuatan dokumen formal dan penulisan laporan akhir hasil pengujian keamanan.
+security-arsenal: Dokumentasi atau pustaka referensi mengenai perkakas keamanan yang digunakan.
+shadcn: Integrasi dan pembuatan komponen UI menggunakan pustaka komponen populer Shadcn/ui.
+systematic-debugging: Pendekatan terstruktur dalam melacak, mendiagnosis, dan memperbaiki kesalahan (bug) pada program.
+vercel-react-best-practices: Panduan praktik terbaik dalam mengembangkan dan menerapkan aplikasi React di platform Vercel.

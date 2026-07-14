@@ -26,7 +26,7 @@ class AbsensiController extends Controller
         // Ambil nama tahun ajaran dari DB berdasarkan id_tahun_ajaran di kelas
         $tahunAjaran = DB::table('tahun_ajarans')->find($kelas->tahun_ajaran_id);
 
-        $query = JadwalPelajaran::with(['mataPelajaran', 'gurus'])
+        $query = JadwalPelajaran::with(['mataPelajaran', 'guru'])
             ->where('kelas_id', $id_kelas)
             ->where('hari', $hari);
 
@@ -47,8 +47,8 @@ class AbsensiController extends Controller
             return [
                 'id_jadwal' => $j->id,
                 'nama_mapel' => $j->mataPelajaran->nama_mapel ?? '-',
-                'kode_mapel' => $j->mataPelajaran->kode_mapel ?? '-',
-                'gurus' => $j->guru->nama_lengkap ?? '-',
+                'kode_mapel' => $j->mataPelajaran->kode_mapel ?? $j->mataPelajaran->kode ?? '-',
+                'gurus' => $j->guru?->nama_lengkap ?? '-',
                 'jam_mulai' => $j->jam_mulai,
                 'jam_selesai' => $j->jam_selesai,
                 'sudah_absen' => $sudahAbsenIds->has($j->id),
@@ -354,7 +354,7 @@ class AbsensiController extends Controller
                 ->whereYear('tanggal', now()->year);
         }
 
-        $absensi = $query->orderBy('tanggal', 'desc')->orderBy('id_jadwal')->get();
+        $absensi = $query->orderBy('tanggal', 'desc')->orderBy('jadwal_id')->get();
 
         $summary = [
             'hadir' => $absensi->where('status', 'Hadir')->count(),
@@ -372,7 +372,7 @@ class AbsensiController extends Controller
                 'mapel' => $rows->map(function ($a) {
                     return [
                         'id' => $a->id,
-                        'id_jadwal' => $a->id_jadwal,
+                        'id_jadwal' => $a->jadwal_id,
                         'nama_mapel' => $a->jadwal?->mataPelajaran?->nama_mapel ?? 'Umum',
                         'jam_mulai' => $a->jadwal?->jam_mulai,
                         'jam_selesai' => $a->jadwal?->jam_selesai,

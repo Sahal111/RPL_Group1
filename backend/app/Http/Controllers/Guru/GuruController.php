@@ -33,18 +33,18 @@ class GuruController extends Controller
         $idKelasWali = $kelasWali->pluck('id')->toArray();
 
         // Total siswa aktif di kelas wali
-        $totalSiswa = SiswaKelas::whereIn('id_kelas', $idKelasWali)
-            ->where('status_keluar', 'Aktif')->count();
+        $totalSiswa = RiwayatKelas::whereIn('kelas_id', $idKelasWali)
+            ->whereNull('tanggal_keluar')->count();
 
         // Absensi hari ini semua kelas wali
         $today = now()->toDateString();
-        $absensiHariIni = Absensi::whereIn('id_kelas', $idKelasWali)
+        $absensiHariIni = Absensi::whereIn('kelas_id', $idKelasWali)
             ->where('tanggal', $today)->get();
 
         // Absensi per kelas hari ini
         $kelasRingkasan = $kelasWali->map(function ($k) use ($today) {
-            $totalSiswaKelas = SiswaKelas::where('id_kelas', $k->id)->where('status_keluar', 'Aktif')->count();
-            $absen = Absensi::where('id_kelas', $k->id)->where('tanggal', $today)->get();
+            $totalSiswaKelas = RiwayatKelas::where('kelas_id', $k->id)->whereNull('tanggal_keluar')->count();
+            $absen = Absensi::where('kelas_id', $k->id)->where('tanggal', $today)->get();
             return [
                 'id' => $k->id,
                 'nama_kelas' => $k->nama_kelas,

@@ -17,73 +17,52 @@ class MasterDataSiswaController extends Controller
         $searchBy = $request->query('search_by', 'all'); // all, nik, no_kk, nama, no_hp, nisn
 
         $query = OrangTua::query()
-            ->with('siswa:nisn,nama_lengkap,no_kk')
+            ->with('siswa:id,nisn,nama,no_kk')
             ->when($search, function ($query) use ($search, $searchBy) {
                 $query->where(function ($q) use ($search, $searchBy) {
                     switch ($searchBy) {
                         case 'nik':
-                            // Pencarian khusus NIK (exact match lebih prioritas)
-                            $q->where('nik_ayah', $search)
-                                ->orWhere('nik_ibu', $search)
-                                ->orWhere('nik_wali', $search)
-                                ->orWhere('nik_ayah', 'like', "%{$search}%")
-                                ->orWhere('nik_ibu', 'like', "%{$search}%")
-                                ->orWhere('nik_wali', 'like', "%{$search}%");
+                            $q->where('nik', $search)->orWhere('nik', 'like', "%{$search}%");
                             break;
 
                         case 'no_kk':
-                            // Pencarian berdasarkan No. KK anak
-                            $q->whereHas('siswas', function ($siswaQuery) use ($search) {
+                            // Cari berdasarkan no_kk anak yang tertaut
+                            $q->whereHas('siswa', function ($siswaQuery) use ($search) {
                                 $siswaQuery->where('no_kk', $search)
                                     ->orWhere('no_kk', 'like', "%{$search}%");
                             });
                             break;
 
                         case 'nama':
-                            // Pencarian khusus nama
-                            $q->where('nama_ayah', 'like', "%{$search}%")
-                                ->orWhere('nama_ibu', 'like', "%{$search}%")
-                                ->orWhere('nama_wali', 'like', "%{$search}%");
+                            $q->where('nama', 'like', "%{$search}%");
                             break;
 
                         case 'no_hp':
-                            // Pencarian khusus nomor HP
-                            $q->where('no_hp_ayah', 'like', "%{$search}%")
-                                ->orWhere('no_hp_ibu', 'like', "%{$search}%")
-                                ->orWhere('no_hp_wali', 'like', "%{$search}%");
+                            $q->where('no_hp', 'like', "%{$search}%");
                             break;
 
                         case 'nisn':
-                            // Pencarian berdasarkan NISN anak
-                            $q->whereHas('siswas', function ($siswaQuery) use ($search) {
-                                $siswaQuery->where('siswa_id', $search)
+                            $q->whereHas('siswa', function ($siswaQuery) use ($search) {
+                                $siswaQuery->where('nisn', $search)
                                     ->orWhere('nisn', 'like', "%{$search}%")
-                                    ->orWhere('nama_lengkap', 'like', "%{$search}%");
+                                    ->orWhere('nama', 'like', "%{$search}%");
                             });
                             break;
 
                         default:
-                            // Pencarian global (all)
-                            $q->where('nama_ayah', 'like', "%{$search}%")
-                                ->orWhere('nama_ibu', 'like', "%{$search}%")
-                                ->orWhere('nama_wali', 'like', "%{$search}%")
-                                ->orWhere('nik_ayah', 'like', "%{$search}%")
-                                ->orWhere('nik_ibu', 'like', "%{$search}%")
-                                ->orWhere('nik_wali', 'like', "%{$search}%")
-                                ->orWhere('no_hp_ayah', 'like', "%{$search}%")
-                                ->orWhere('no_hp_ibu', 'like', "%{$search}%")
-                                ->orWhere('no_hp_wali', 'like', "%{$search}%")
+                            $q->where('nama', 'like', "%{$search}%")
+                                ->orWhere('nik', 'like', "%{$search}%")
+                                ->orWhere('no_hp', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
-                                ->orWhereHas('siswas', function ($siswaQuery) use ($search) {
-                                $siswaQuery->where('nama_lengkap', 'like', "%{$search}%")
-                                    ->orWhere('nisn', 'like', "%{$search}%")
-                                    ->orWhere('no_kk', 'like', "%{$search}%");
-                            });
+                                ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
+                                    $siswaQuery->where('nama', 'like', "%{$search}%")
+                                        ->orWhere('nisn', 'like', "%{$search}%")
+                                        ->orWhere('no_kk', 'like', "%{$search}%");
+                                });
                     }
                 });
             })
-            ->orderBy('nama_ayah')
-            ->orderBy('nama_ibu');
+            ->orderBy('nama');
 
         $data = $request->boolean('paginate')
             ? $query->paginate(15)
@@ -97,14 +76,12 @@ class MasterDataSiswaController extends Controller
         $query = Siswa::query()
             ->with('orangTua')
             ->when($request->search, function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                $q->where('nama', 'like', "%{$request->search}%")
                     ->orWhere('nisn', 'like', "%{$request->search}%")
-                    ->orWhere('no_induk', 'like', "%{$request->search}%");
+                    ->orWhere('nis', 'like', "%{$request->search}%");
             })
-            ->when($request->status, function ($q) use ($request) {
-                $q->where('status_pd', $request->status);
-            })
-            ->orderBy('nama_lengkap')
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->orderBy('nama')
             ->paginate(15);
 
         return response()->json(['success' => true, 'data' => $query]);
@@ -112,7 +89,7 @@ class MasterDataSiswaController extends Controller
 
     public function show($nisn)
     {
-        $siswa = Siswa::with(['kelas.kelas', 'orangTua'])->where('siswa_id', $nisn)->firstOrFail();
+        $siswa = Siswa::with(['kelasAktif', 'orangTua'])->where('nisn', $nisn)->firstOrFail();
         return response()->json(['success' => true, 'data' => $siswa]);
     }
 
@@ -132,9 +109,9 @@ class MasterDataSiswaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nisn' => 'required|string|size:10|unique:siswa,nisn',
+            'nisn' => 'required|string|size:10|unique:siswas,nisn',
             'nik' => 'nullable|string|max:16',
-            'no_induk' => 'nullable|string|max:20',
+            'nis' => 'nullable|string|max:20',
             'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
@@ -155,10 +132,10 @@ class MasterDataSiswaController extends Controller
             'provinsi' => 'nullable|string|max:60',
             'kode_pos' => 'nullable|string|max:10',
             'no_hp' => 'nullable|string|max:20',
-            'status_pd' => 'required|in:Aktif,Mutasi Keluar,Lulus,Dropout,Meninggal',
+            'status' => 'required|in:aktif,nonaktif,mutasi_keluar,lulus,meninggal',
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
-            'orang_tua_id' => 'nullable|integer|exists:orang_tua,id',
+            'orang_tua_id' => 'nullable|integer|exists:orang_tuas,id',
             'unlink_orang_tua' => 'nullable|boolean',
             ...$this->orangTuaValidationRules(),
         ]);
@@ -189,7 +166,7 @@ class MasterDataSiswaController extends Controller
 
         $request->validate([
             'nik' => 'nullable|string|max:16',
-            'no_induk' => 'nullable|string|max:20',
+            'nis' => 'nullable|string|max:20',
             'nama' => 'required|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
@@ -210,10 +187,10 @@ class MasterDataSiswaController extends Controller
             'provinsi' => 'nullable|string|max:60',
             'kode_pos' => 'nullable|string|max:10',
             'no_hp' => 'nullable|string|max:20',
-            'status_pd' => 'required|in:Aktif,Mutasi Keluar,Lulus,Dropout,Meninggal',
+            'status' => 'required|in:aktif,nonaktif,mutasi_keluar,lulus,meninggal',
             'asal_sekolah' => 'nullable|string|max:100',
             'tanggal_masuk' => 'required|date',
-            'orang_tua_id' => 'nullable|integer|exists:orang_tua,id',
+            'orang_tua_id' => 'nullable|integer|exists:orang_tuas,id',
             'unlink_orang_tua' => 'nullable|boolean',
             ...$this->orangTuaValidationRules(),
         ]);
@@ -240,8 +217,8 @@ class MasterDataSiswaController extends Controller
     {
         $fields = [
             'nik',
-            'no_induk',
-            'nama_lengkap',
+            'nis',
+            'nama',
             'jenis_kelamin',
             'tanggal_lahir',
             'tempat_lahir',
@@ -261,7 +238,7 @@ class MasterDataSiswaController extends Controller
             'provinsi',
             'kode_pos',
             'no_hp',
-            'status_pd',
+            'status',
             'asal_sekolah',
             'tanggal_masuk',
         ];
@@ -310,63 +287,134 @@ class MasterDataSiswaController extends Controller
             return;
         }
 
-        $incoming = [
-            'nama_ayah' => $input['nama_ayah'] ?? null,
-            'nik_ayah' => $input['nik_ayah'] ?? null,
-            'tanggal_lahir_ayah' => $this->yearToDate($input['tahun_lahir_ayah'] ?? null),
-            'pendidikan_ayah' => $input['pendidikan_ayah'] ?? null,
-            'pekerjaan_ayah' => $input['pekerjaan_ayah'] ?? null,
-            'penghasilan_ayah' => $input['penghasilan_ayah'] ?? null,
-            'nama_ibu' => filled($input['nama_ibu'] ?? null) ? $input['nama_ibu'] : $namaIbuKandung,
-            'nik_ibu' => $input['nik_ibu'] ?? null,
-            'tanggal_lahir_ibu' => $this->yearToDate($input['tahun_lahir_ibu'] ?? null),
-            'pendidikan_ibu' => $input['pendidikan_ibu'] ?? null,
-            'pekerjaan_ibu' => $input['pekerjaan_ibu'] ?? null,
-            'penghasilan_ibu' => $input['penghasilan_ibu'] ?? null,
-            'nama_wali' => $input['nama_wali'] ?? null,
-            'nik_wali' => $input['nik_wali'] ?? null,
-            'hubungan_wali' => $input['hubungan_wali'] ?? null,
-            'pekerjaan_wali' => $input['pekerjaan_wali'] ?? null,
-            'penghasilan_wali' => $input['penghasilan_wali'] ?? null,
-            'no_hp_ayah' => $input['no_hp_ayah'] ?? null,
-            'no_hp_ibu' => $input['no_hp_ibu'] ?? null,
-            'no_hp_wali' => $input['no_hp_wali'] ?? null,
-            'email' => $input['email'] ?? null,
-            'alamat' => $input['alamat'] ?? null,
-        ];
+        // $incoming = [
+        //     'nama_ayah' => $input['nama_ayah'] ?? null,
+        //     'nik_ayah' => $input['nik_ayah'] ?? null,
+        //     'tanggal_lahir_ayah' => $this->yearToDate($input['tahun_lahir_ayah'] ?? null),
+        //     'pendidikan_ayah' => $input['pendidikan_ayah'] ?? null,
+        //     'pekerjaan_ayah' => $input['pekerjaan_ayah'] ?? null,
+        //     'penghasilan_ayah' => $input['penghasilan_ayah'] ?? null,
+        //     'nama_ibu' => filled($input['nama_ibu'] ?? null) ? $input['nama_ibu'] : $namaIbuKandung,
+        //     'nik_ibu' => $input['nik_ibu'] ?? null,
+        //     'tanggal_lahir_ibu' => $this->yearToDate($input['tahun_lahir_ibu'] ?? null),
+        //     'pendidikan_ibu' => $input['pendidikan_ibu'] ?? null,
+        //     'pekerjaan_ibu' => $input['pekerjaan_ibu'] ?? null,
+        //     'penghasilan_ibu' => $input['penghasilan_ibu'] ?? null,
+        //     'nama_wali' => $input['nama_wali'] ?? null,
+        //     'nik_wali' => $input['nik_wali'] ?? null,
+        //     'hubungan_wali' => $input['hubungan_wali'] ?? null,
+        //     'pekerjaan_wali' => $input['pekerjaan_wali'] ?? null,
+        //     'penghasilan_wali' => $input['penghasilan_wali'] ?? null,
+        //     'no_hp_ayah' => $input['no_hp_ayah'] ?? null,
+        //     'no_hp_ibu' => $input['no_hp_ibu'] ?? null,
+        //     'no_hp_wali' => $input['no_hp_wali'] ?? null,
+        //     'email' => $input['email'] ?? null,
+        //     'alamat' => $input['alamat'] ?? null,
+        // ];
 
         // Hanya field yang BENAR-BENAR diisi di submission ini yang boleh menimpa.
         // Field kosong TIDAK BOLEH menghapus data yang sudah tersimpan, karena
         // satu orang_tua bisa dipakai bareng oleh beberapa siswa (kakak-adik).
-        $filledIncoming = array_filter($incoming, fn($value) => filled($value));
 
-        if (empty($filledIncoming) && !$orangTuaId) {
-            return;
+        // $filledIncoming = array_filter($incoming, fn($value) => filled($value));
+
+        // if (empty($filledIncoming) && !$orangTuaId) {
+        //     return;
+        // }
+
+        // if (empty($filledIncoming) && $orangTuaId) {
+        //     // Cuma menautkan ke ortu yang sudah ada, tanpa ubah data apa pun.
+        //     $siswa->orangTua()->sync([$orangTuaId]);
+
+        //     return;
+        // }
+
+        // $orangTua = $orangTuaId
+        //     ? OrangTua::findOrFail($orangTuaId)
+        //     : ($siswa->orangTua()->first() ?? $this->findMatchingOrangTua($incoming));
+
+        // if (!$orangTua) {
+        //     $orangTua = OrangTua::create($incoming);
+        // } else {
+        //     // Merge: field yang diisi menimpa, field yang kosong tetap pakai nilai lama
+        //     // -> data anak ke-2, ke-3, dst tetap sinkron & selengkap anak pertama.
+        //     $orangTua->update(array_merge(
+        //         $orangTua->only(array_keys($incoming)),
+        //         $filledIncoming,
+        //     ));
+        // }
+        $syncIds = [];
+
+        if (!empty($input['nama_ayah']) || !empty($input['nik_ayah'])) {
+
+            $ayah = OrangTua::firstOrNew([
+                'nik' => $input['nik_ayah']
+            ]);
+
+            $ayah->fill([
+                'nama' => $input['nama_ayah'] ?? $ayah->nama,
+                'hubungan' => 'Ayah',
+                'status' => 'Kandung',
+                'no_hp' => $input['no_hp_ayah'] ?? $ayah->no_hp,
+                'pendidikan' => $input['pendidikan_ayah'] ?? $ayah->pendidikan,
+                'pekerjaan' => $input['pekerjaan_ayah'] ?? $ayah->pekerjaan,
+                'penghasilan' => $input['penghasilan_ayah'] ?? $ayah->penghasilan,
+                'tahun_lahir' => $input['tahun_lahir_ayah'] ?? $ayah->tahun_lahir,
+                'email' => $input['email'] ?? $ayah->email,
+                'alamat' => $input['alamat'] ?? $ayah->alamat,
+            ]);
+
+            $ayah->save();
+
+            $syncIds[] = $ayah->id;
         }
+        if (!empty($input['nama_ibu']) || !empty($input['nik_ibu'])) {
 
-        if (empty($filledIncoming) && $orangTuaId) {
-            // Cuma menautkan ke ortu yang sudah ada, tanpa ubah data apa pun.
-            $siswa->orangTua()->sync([$orangTuaId]);
+            $ibu = OrangTua::firstOrNew([
+                'nik' => $input['nik_ibu']
+            ]);
 
-            return;
+            $ibu->fill([
+                'nama' => filled($input['nama_ibu'])
+                    ? $input['nama_ibu']
+                    : $namaIbuKandung,
+                'hubungan' => 'Ibu',
+                'status' => 'Kandung',
+                'no_hp' => $input['no_hp_ibu'] ?? $ibu->no_hp,
+                'pendidikan' => $input['pendidikan_ibu'] ?? $ibu->pendidikan,
+                'pekerjaan' => $input['pekerjaan_ibu'] ?? $ibu->pekerjaan,
+                'penghasilan' => $input['penghasilan_ibu'] ?? $ibu->penghasilan,
+                'tahun_lahir' => $input['tahun_lahir_ibu'] ?? $ibu->tahun_lahir,
+                'email' => $input['email'] ?? $ibu->email,
+                'alamat' => $input['alamat'] ?? $ibu->alamat,
+            ]);
+
+            $ibu->save();
+
+            $syncIds[] = $ibu->id;
         }
+        if (!empty($input['nama_wali']) || !empty($input['nik_wali'])) {
 
-        $orangTua = $orangTuaId
-            ? OrangTua::findOrFail($orangTuaId)
-            : ($siswa->orangTua()->first() ?? $this->findMatchingOrangTua($incoming));
+            $wali = OrangTua::firstOrNew([
+                'nik' => $input['nik_wali']
+            ]);
 
-        if (!$orangTua) {
-            $orangTua = OrangTua::create($incoming);
-        } else {
-            // Merge: field yang diisi menimpa, field yang kosong tetap pakai nilai lama
-            // -> data anak ke-2, ke-3, dst tetap sinkron & selengkap anak pertama.
-            $orangTua->update(array_merge(
-                $orangTua->only(array_keys($incoming)),
-                $filledIncoming,
-            ));
+            $wali->fill([
+                'nama' => $input['nama_wali'] ?? $wali->nama,
+                'hubungan' => 'Wali',
+                'status' => $input['hubungan_wali'] ?? 'Wali',
+                'no_hp' => $input['no_hp_wali'] ?? $wali->no_hp,
+                'pekerjaan' => $input['pekerjaan_wali'] ?? $wali->pekerjaan,
+                'penghasilan' => $input['penghasilan_wali'] ?? $wali->penghasilan,
+                'email' => $input['email'] ?? $wali->email,
+                'alamat' => $input['alamat'] ?? $wali->alamat,
+            ]);
+
+            $wali->save();
+
+            $syncIds[] = $wali->id;
         }
-
-        $siswa->orangTua()->sync([$orangTua->id]);
+        $siswa->orangTua()->sync($syncIds);
     }
 
     private function findMatchingOrangTua(array $data): ?OrangTua
@@ -440,7 +488,7 @@ class MasterDataSiswaController extends Controller
         $request->validate([
             'kelas_id' => 'required|string|exists:kelas,id',
             'no_absen' => 'required|integer',
-            'tahun_ajarans' => 'required|string',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajarans,id',
             'semester' => 'required|in:1,2',
         ]);
 
@@ -460,12 +508,12 @@ class MasterDataSiswaController extends Controller
         }
 
         RiwayatKelas::create([
-            'siswa_id'       => $siswa->id,
-            'kelas_id'       => $request->kelas_id,
-            'tahun_ajaran_id'=> $request->tahun_ajaran_id,
-            'no_absen'       => $request->no_absen,
-            'tanggal_masuk'  => now()->toDateString(),
-            'jenis_perubahan'=> 'masuk_baru',
+            'siswa_id' => $siswa->id,
+            'kelas_id' => $request->kelas_id,
+            'tahun_ajaran_id' => $request->tahun_ajaran_id,
+            'no_absen' => $request->no_absen,
+            'tanggal_masuk' => now()->toDateString(),
+            'jenis_perubahan' => 'masuk_baru',
         ]);
 
         return response()->json([
