@@ -23,6 +23,10 @@ import {
   Briefcase,
   Image,
   Megaphone,
+  UserPlus,
+  Upload,
+  CalendarCheck,
+  ClipboardList,
 } from "lucide-react";
 
 const BASE_URL =
@@ -39,27 +43,27 @@ const menuConfig = [
   },
   {
     type: "dropdown",
-    label: "Master Data",
+    label: "Data Master",
     icon: Database,
     items: [
       {
         path: "/operator/master/siswa",
-        label: "Data Siswa",
+        label: "Siswa",
         icon: GraduationCap,
       },
       {
         path: "/operator/master/guru",
-        label: "Data Guru",
-        icon: UserRound,
+        label: "Guru",
+        icon: Users,
       },
       {
         path: "/operator/master/ortu",
-        label: "Data Orang Tua",
+        label: "Orang Tua",
         icon: UsersRound,
       },
       {
         path: "/operator/master/kelas",
-        label: "Data Kelas",
+        label: "Kelas",
         icon: School,
       },
       {
@@ -81,14 +85,51 @@ const menuConfig = [
   },
   {
     type: "dropdown",
-    label: "Manajemen",
-    icon: Briefcase,
+    label: "Akademik",
+    icon: ClipboardList,
+    items: [
+      {
+        path: "/operator/master/jadwal-pelajaran",
+        label: "Jadwal Pelajaran",
+        icon: CalendarCheck,
+      },
+      {
+        path: "/operator/kurikulum",
+        label: "Kurikulum",
+        icon: BookOpen,
+      },
+      {
+        path: "/operator/wali-kelas",
+        label: "Wali Kelas",
+        icon: UserRound,
+      },
+      {
+        path: "/operator/rombel",
+        label: "Rombel",
+        icon: Users,
+      },
+      {
+        path: "/operator/kalender-akademik",
+        label: "Kalender Akademik",
+        icon: CalendarRange,
+      },
+    ],
+  },
+  {
+    type: "dropdown",
+    label: "Pengguna",
+    icon: Users,
     items: [
       {
         path: "/operator",
         label: "Manajemen Akun",
-        icon: Users,
+        icon: UserRound,
         end: true,
+      },
+      {
+        path: "/operator/roles",
+        label: "Role & Permission",
+        icon: Settings,
       },
       {
         path: "/operator/ortu-pending",
@@ -96,27 +137,72 @@ const menuConfig = [
         icon: CheckSquare,
       },
       {
-        path: "/operator/keuangan",
-        label: "Keuangan",
-        icon: DollarSign,
+        path: "/operator/login-activity",
+        label: "Login Activity",
+        icon: History,
       },
     ],
   },
   {
-    type: "link",
-    path: "/operator/galeri",
-    label: "Galeri",
-    icon: Image,
-    filled: false,
-    end: false,
+    type: "dropdown",
+    label: "Operasional",
+    icon: Briefcase,
+    items: [
+      {
+        path: "/operator/presensi",
+        label: "Presensi",
+        icon: CalendarCheck,
+      },
+      {
+        path: "/operator/penilaian",
+        label: "Penilaian",
+        icon: ClipboardList,
+      },
+      {
+        path: "/operator/ppdb",
+        label: "PPDB",
+        icon: GraduationCap,
+      },
+    ],
   },
   {
-    type: "link",
-    path: "/operator/pengumuman",
-    label: "Pengumuman",
+    type: "dropdown",
+    label: "Administrasi",
     icon: Megaphone,
-    filled: false,
-    end: false,
+    items: [
+      {
+        path: "/operator/keuangan",
+        label: "Keuangan",
+        icon: DollarSign,
+      },
+      {
+        path: "/operator/pengumuman",
+        label: "Pengumuman",
+        icon: Megaphone,
+      },
+      {
+        path: "/operator/galeri",
+        label: "Galeri",
+        icon: Image,
+      },
+    ],
+  },
+  {
+    type: "dropdown",
+    label: "Laporan",
+    icon: ClipboardList,
+    items: [
+      {
+        path: "/operator/laporan",
+        label: "Laporan",
+        icon: ClipboardList,
+      },
+      {
+        path: "/operator/import-export",
+        label: "Import & Export",
+        icon: Upload,
+      },
+    ],
   },
   {
     type: "dropdown",
@@ -124,8 +210,13 @@ const menuConfig = [
     icon: Settings,
     items: [
       {
+        path: "/operator/backup",
+        label: "Backup",
+        icon: Upload,
+      },
+      {
         path: "/operator/logs",
-        label: "Logs",
+        label: "Audit Log",
         icon: History,
       },
       {
@@ -156,134 +247,147 @@ export default function OperatorSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[280px] border-r border-gray-300/40 bg-gray-50/80 hidden md:flex flex-col z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+    <aside className="fixed left-0 top-0 h-screen w-[290px] border-r border-[#becabc]/50 bg-[#f6fbf2] hidden md:flex flex-col z-50 shadow-sm p-4 pb-6">
       {/* Logo Header */}
-      <div className="h-20 flex items-center px-6 shrink-0">
-        <span className="font-headline text-[20px] font-bold text-green-700 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-green-700 text-white flex items-center justify-center">
-            <School className="w-6 h-6" strokeWidth={2.5} />
-          </div>
-          SIAKAD MI NH3
-        </span>
+      <div className="flex items-center gap-4 px-2 py-4 mb-6 opacity-0 animate-[slideInRight_0.5s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+        <div className="w-10 h-10 rounded-xl bg-[#15803d] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+          MH
+        </div>
+        <div>
+          <h1 className="text-[18px] font-bold text-[#111827] tracking-tight">
+            Al-Hikmah SMS
+          </h1>
+          <p className="text-[11px] font-medium text-[#6B7280] uppercase tracking-wider mt-0.5">
+            Admin Portal
+          </p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mb-8 px-2 opacity-0 animate-[slideInRight_0.5s_cubic-bezier(0.16,1,0.3,1)_0.1s_forwards]">
+        <p className="text-[12px] font-medium text-[#6B7280] uppercase tracking-wider mb-3 flex items-center gap-2">
+          <span>⚡</span> Quick Actions
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button className="flex flex-col items-center justify-center p-2 rounded-lg bg-[#f0f5ec] hover:bg-[#00652c]/10 hover:text-[#00652c] transition-all duration-200 border border-[#becabc]/30">
+            <UserPlus className="w-[18px] h-[18px] mb-1" />
+            <span className="text-[10px] font-medium">Siswa</span>
+          </button>
+          <button className="flex flex-col items-center justify-center p-2 rounded-lg bg-[#f0f5ec] hover:bg-[#00652c]/10 hover:text-[#00652c] transition-all duration-200 border border-[#becabc]/30">
+            <Users className="w-[18px] h-[18px] mb-1" />
+            <span className="text-[10px] font-medium">Guru</span>
+          </button>
+          <button className="flex flex-col items-center justify-center p-2 rounded-lg bg-[#f0f5ec] hover:bg-[#00652c]/10 hover:text-[#00652c] transition-all duration-200 border border-[#becabc]/30">
+            <Upload className="w-[18px] h-[18px] mb-1" />
+            <span className="text-[10px] font-medium">Import</span>
+          </button>
+          <button className="flex flex-col items-center justify-center p-2 rounded-lg bg-[#f0f5ec] hover:bg-[#00652c]/10 hover:text-[#00652c] transition-all duration-200 border border-[#becabc]/30">
+            <Megaphone className="w-[18px] h-[18px] mb-1" />
+            <span className="text-[10px] font-medium">Info</span>
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-        {menuConfig.map((menu, idx) => {
-          if (menu.type === "link") {
-            return (
-              <NavLink
-                key={idx}
-                to={menu.path}
-                end={menu.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-full transition-all duration-200 ${
-                    isActive
-                      ? "text-white font-semibold bg-green-700 shadow-sm"
-                      : "text-gray-600 hover:bg-gray-200/60 hover:text-gray-900"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <menu.icon
-                      className="w-5 h-5"
-                      strokeWidth={isActive || menu.filled ? 2.5 : 2}
-                      fill={isActive && menu.filled ? "currentColor" : "none"}
-                    />
-                    <span className="text-[13px] leading-[18px] tracking-[0.01em] font-medium">
-                      {menu.label}
-                    </span>
-                  </>
-                )}
-              </NavLink>
-            );
-          }
+      <nav className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-8">
+          {menuConfig.map((menu, idx) => {
+            if (menu.type === "link") {
+              return (
+                <div key={idx} className="space-y-1">
+                  <NavLink
+                    to={menu.path}
+                    end={menu.end}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 ${
+                        isActive
+                          ? "bg-[#00652c]/10 text-[#00652c] font-medium rounded-lg relative"
+                          : "text-[#6B7280] hover:text-[#00652c]"
+                      } transition-all duration-200 group`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#00652c] rounded-r-full"></div>
+                        )}
+                        <menu.icon className="w-5 h-5" strokeWidth={2} />
+                        <span className="text-sm">{menu.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                </div>
+              );
+            }
 
-          if (menu.type === "dropdown") {
-            const isOpen = openDropdowns[menu.label];
-            return (
-              <div key={idx}>
-                <button
-                  onClick={() => toggleDropdown(menu.label)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-gray-600 hover:bg-gray-200/60 hover:text-gray-900 transition-all duration-200"
-                >
-                  <menu.icon className="w-5 h-5" strokeWidth={2} />
-                  <span className="flex-1 text-left text-[13px] leading-[18px] tracking-[0.01em] font-medium">
+            if (menu.type === "dropdown") {
+              const isOpen = openDropdowns[menu.label];
+              return (
+                <div key={idx} className="space-y-2">
+                  <p className="px-3 text-[12px] font-medium text-[#6B7280] uppercase tracking-wider">
                     {menu.label}
-                  </span>
-                  {isOpen ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </button>
-                {isOpen && (
-                  <div className="mt-1 ml-2 space-y-1">
+                  </p>
+                  <div className="space-y-1 ml-3 border-l border-[#becabc]/30 pl-3">
                     {menu.items.map((item) => (
                       <NavLink
                         key={item.path}
                         to={item.path}
                         end={item.end}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-full transition-all duration-200 ${
+                          `flex items-center gap-3 px-3 py-2 ${
                             isActive
-                              ? "text-white font-semibold bg-green-700 shadow-sm"
-                              : "text-gray-600 hover:bg-gray-200/60 hover:text-gray-900"
-                          }`
+                              ? "text-[#00652c]"
+                              : "text-[#6B7280] hover:text-[#00652c]"
+                          } transition-colors text-sm`
                         }
                       >
-                        {({ isActive }) => (
-                          <>
-                            <item.icon
-                              className="w-4 h-4"
-                              strokeWidth={isActive ? 2.5 : 2}
-                            />
-                            <span className="text-[12px] leading-[16px] tracking-[0.01em] font-medium">
-                              {item.label}
-                            </span>
-                          </>
-                        )}
+                        <item.icon className="w-5 h-5" strokeWidth={2} />
+                        {item.label}
                       </NavLink>
                     ))}
                   </div>
-                )}
-              </div>
-            );
-          }
+                </div>
+              );
+            }
 
-          return null;
-        })}
+            return null;
+          })}
+        </div>
       </nav>
 
       {/* User Profile Section */}
-      <div className="p-4 border-t border-gray-300/40 shrink-0">
-        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-200/60 transition-colors cursor-pointer group">
-          <div className="w-10 h-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-sm border border-gray-300 overflow-hidden shrink-0">
-            {user?.foto ? (
-              <img
-                alt={user?.nama_lengkap || "Admin"}
-                className="w-full h-full object-cover"
-                src={`${BASE_URL}/storage/${user.foto}`}
-              />
-            ) : (
-              <span>{user?.nama_lengkap?.charAt(0)?.toUpperCase() || "A"}</span>
-            )}
+      <div className="mt-auto pt-6 border-t border-[#becabc]/30 opacity-0 animate-[slideInRight_0.5s_cubic-bezier(0.16,1,0.3,1)_0.5s_forwards]">
+        <div className="bg-[#f0f5ec] rounded-xl p-3 flex items-center gap-3 relative group cursor-pointer hover:bg-[#e4eae1] transition-colors duration-200">
+          <div className="relative">
+            <img
+              src={
+                user?.foto
+                  ? `${BASE_URL}/storage/${user.foto}`
+                  : "https://lh3.googleusercontent.com/aida-public/AB6AXuBhIpxfHfKrgRWMnrhW7_WEsvNxScEmeuc39OzjA2hlMvTMgtjzT2VC7PH1Pl2KZ1ZUeeKagGX1pyo2VzHh9atrUzRt4LDiNnyTkwiuWNJDdkuyho8egKbfKEdprdEDKEsrTUs02V6Wi1ZVDw4m8CH0wMSbDUIDgyHrMXqKcrgrXfxJFaLvIORBXcv1AKtVgVOeGwr5-9XXcNZmYE24wRwG77cWb47QesC-sYeaWPQGf2eW-G9e3vaRuREbzksgIWJoBcHQiuFY47aL"
+              }
+              className="w-10 h-10 rounded-lg object-cover border border-[#becabc]/30"
+              alt="Admin"
+            />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#16A34A] rounded-full border-2 border-[#f0f5ec]"></div>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] leading-[18px] tracking-[0.01em] text-gray-900 font-semibold truncate">
+            <p className="text-sm font-semibold text-[#111827] truncate">
               {user?.nama_lengkap || "Admin Operator"}
-            </div>
-            <div className="text-xs text-gray-500 truncate">
-              {user?.email || "admin@minh3.sch.id"}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold bg-[#00652c]/10 text-[#00652c] px-1.5 py-0.5 rounded uppercase">
+                Admin
+              </span>
+              <span className="text-[10px] text-[#6B7280] truncate">
+                MI Nurul Huda 3
+              </span>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500 rounded-full hover:bg-red-50"
-          >
-            <LogOut className="w-[18px] h-[18px]" />
-          </button>
+          <Settings className="w-4 h-4 text-[#6B7280]" />
+        </div>
+        <div className="mt-4 px-3 flex items-center justify-between text-[10px] text-[#6B7280]">
+          <span>© 2023 Al-Hikmah</span>
+          <span className="font-medium">v2.4.1</span>
         </div>
       </div>
     </aside>

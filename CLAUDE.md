@@ -32,9 +32,9 @@
 | `guru` | Guru | Dashboard, input absensi, rekap, jadwal, profil |
 | `ortu` | Orang Tua / Wali | Pantau absensi anak, pengumuman, profil |
 | `kepsek` | Kepala Sekolah | Monitoring, data guru & siswa (read-only), kalender, pengumuman |
-| `walikelas` | Wali Kelas | *(belum didefinisikan — perlu diskusi scope)* |
-| `bendahara` | Bendahara | *(belum didefinisikan — perlu diskusi scope)* |
-| `adminppdb` | Admin PPDB | *(belum didefinisikan — perlu diskusi scope)* |
+| `wali_kelas` | Wali Kelas | Placeholder dashboard aktif — scope fitur belum final |
+| `bendahara` | Bendahara | Placeholder dashboard aktif — scope fitur belum final |
+| `admin_ppdb` | Admin PPDB | Placeholder dashboard aktif — scope fitur belum final |
 
 > Role disimpan di tabel `roles` (kolom: `id`, `slug`, `nama`, `deskripsi`, `is_active`).
 > Relasi user ↔ role lewat pivot `user_roles`. Role check pakai slug langsung — tidak ada mapping ID hardcode di middleware.
@@ -97,6 +97,31 @@
 - [x] Kontak; `ContactPage.jsx`
 - [x] Login; `LoginPage.jsx`
 - [x] Daftar Ortu; `RegisterOrtuPage.jsx`
+
+### Wali Kelas — Placeholder
+- [x] Layout & Dashboard Placeholder; `WaliKelasLayout.jsx`, `DashboardWaliKelas.jsx`
+
+### Bendahara — Placeholder
+- [x] Layout & Dashboard Placeholder; `BendaharaLayout.jsx`, `DashboardBendahara.jsx`
+
+### Admin PPDB — Placeholder
+- [x] Layout & Dashboard Placeholder; `AdminPpdbLayout.jsx`, `DashboardAdminPpdb.jsx`
+
+### Auth & Login System
+- [x] Perbaikan notifikasi error login — ambil detail dari `errors` object Laravel, bukan hanya `message` global; `LoginPage.jsx`
+- [x] Perbaikan prioritas role pada `getRoleSlug()` untuk user multi-role (prioritaskan role yang punya dashboard); `User.php`
+- [x] Penambahan redirect ke semua role baru (`wali_kelas`, `bendahara`, `admin_ppdb`) pada `redirectMap`; `LoginPage.jsx`
+- [x] Pendaftaran rute baru untuk semua role di `App.jsx`
+
+### Testing
+- [x] `TestingUserSeeder.php` — Seed akun uji coba semua role:
+  - `operator` / `operator123`
+  - `kepsek` / `kepsek123`
+  - `guru` / `guru123`
+  - `walikelas` / `walikelas123`
+  - `bendahara` / `bendahara123`
+  - `ortu` / `ortu123`
+  - `adminppdb` / `adminppdb123`
 
 ### Komponen & File Stabil — jangan diubah kecuali ada bug eksplisit:
 - `frontend/src/contexts/AuthContext.jsx`
