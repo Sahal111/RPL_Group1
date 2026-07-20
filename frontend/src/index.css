@@ -17,39 +17,3 @@
     @apply px-4 py-2.5 rounded-xl font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-all flex items-center justify-center gap-2;
   }
 }
-
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #f0f5ec;
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #becabc;
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #00652c;
-}
-
-/* Reduce motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Background gradient animation */
-.bg-gradient-animate {
-  background: linear-gradient(-45deg, #f6fbf2, #eaefe6, #f0f5ec, #f6fbf2);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-}
