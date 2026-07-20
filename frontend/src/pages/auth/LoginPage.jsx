@@ -35,10 +35,19 @@ export default function LoginPage() {
         guru: "/guru",
         kepsek: "/kepsek",
         ortu: "/ortu",
+        wali_kelas: "/walikelas",
+        bendahara: "/bendahara",
+        admin_ppdb: "/adminppdb",
       };
       navigate(redirectMap[user.role] ?? "/login", { replace: true });
     } catch (err) {
-      const msg = err.response?.data?.message ?? "Login gagal. Coba lagi.";
+      const data = err.response?.data;
+      let msg = data?.message ?? "Login gagal. Coba lagi.";
+      if (data?.errors) {
+        const firstErrorKey = Object.keys(data.errors)[0];
+        const firstErrorMsg = data.errors[firstErrorKey]?.[0];
+        if (firstErrorMsg) msg = firstErrorMsg;
+      }
       toast.error(msg);
     } finally {
       setLoading(false);

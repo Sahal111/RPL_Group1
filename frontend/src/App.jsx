@@ -14,6 +14,7 @@ import ContactPage from "./pages/public/ContactPage";
 
 // Operator
 import OperatorLayout from "./pages/operator/OperatorLayout";
+import DashboardOperator from "./pages/operator/DashboardOperator";
 import ManajemenAkun from "./pages/operator/ManajemenAkun";
 import MasterGuru from "./pages/operator/master/MasterGuru";
 import MasterSiswa from "./pages/operator/master/MasterSiswa";
@@ -66,6 +67,18 @@ import ProfilOrtu from "./pages/ortu/ProfilOrtu";
 import DataAnak from "./pages/ortu/DataAnak";
 import TambahAnak from "./pages/ortu/TambahAnak";
 
+// Wali Kelas
+import WaliKelasLayout from "./pages/walikelas/WaliKelasLayout";
+import DashboardWaliKelas from "./pages/walikelas/DashboardWaliKelas";
+
+// Bendahara
+import BendaharaLayout from "./pages/bendahara/BendaharaLayout";
+import DashboardBendahara from "./pages/bendahara/DashboardBendahara";
+
+// Admin PPDB
+import AdminPpdbLayout from "./pages/adminppdb/AdminPpdbLayout";
+import DashboardAdminPpdb from "./pages/adminppdb/DashboardAdminPpdb";
+
 export default function App() {
   return (
     <Routes>
@@ -88,6 +101,7 @@ export default function App() {
         }
       >
         <Route index element={<ManajemenAkun />} />
+        <Route path="dashboard" element={<DashboardOperator />} />
         <Route path="master/guru" element={<MasterGuru />} />
         <Route path="master/siswa" element={<MasterSiswa />} />
         <Route path="master/kelas" element={<MasterKelas />} />
@@ -165,6 +179,42 @@ export default function App() {
         <Route path="data-anak" element={<DataAnak />} />
         <Route path="tambah-anak" element={<TambahAnak />} />
         <Route path="profil" element={<ProfilOrtu />} />
+      </Route>
+
+      {/* Wali Kelas */}
+      <Route
+        path="/walikelas"
+        element={
+          <ProtectedRoute roles={["wali_kelas"]}>
+            <WaliKelasLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardWaliKelas />} />
+      </Route>
+
+      {/* Bendahara */}
+      <Route
+        path="/bendahara"
+        element={
+          <ProtectedRoute roles={["bendahara"]}>
+            <BendaharaLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardBendahara />} />
+      </Route>
+
+      {/* Admin PPDB */}
+      <Route
+        path="/adminppdb"
+        element={
+          <ProtectedRoute roles={["admin_ppdb"]}>
+            <AdminPpdbLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardAdminPpdb />} />
       </Route>
     </Routes>
   );

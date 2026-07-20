@@ -26,21 +26,19 @@
 
 ## 👥 Role yang Ada di Sistem
 
-| role_id | Slug | Nama | Keterangan |
-|---------|------|------|------------|
-| 1 | `operator` | Operator / Admin | Manajemen akun, master data, pengumuman, galeri |
-| 2 | `guru` | Guru | Dashboard, input absensi, rekap, jadwal, profil |
-| 3 | `ortu` | Orang Tua / Wali | Pantau absensi anak, pengumuman, profil |
-| 4 | `kepsek` | Kepala Sekolah | Monitoring, data guru & siswa (read-only), kalender, pengumuman |
-| 5 | `walikelas` | Wali Kelas | *(belum didefinisikan — perlu diskusi scope)* |
-| 6 | `bendahara` | Bendahara | *(belum didefinisikan — perlu diskusi scope)* |
-| 7 | `adminppdb` | Admin PPDB | *(belum didefinisikan — perlu diskusi scope)* |
+| Slug | Nama | Keterangan |
+|------|------|------------|
+| `operator` | Operator / Admin | Manajemen akun, master data, pengumuman, galeri |
+| `guru` | Guru | Dashboard, input absensi, rekap, jadwal, profil |
+| `ortu` | Orang Tua / Wali | Pantau absensi anak, pengumuman, profil |
+| `kepsek` | Kepala Sekolah | Monitoring, data guru & siswa (read-only), kalender, pengumuman |
+| `walikelas` | Wali Kelas | *(belum didefinisikan — perlu diskusi scope)* |
+| `bendahara` | Bendahara | *(belum didefinisikan — perlu diskusi scope)* |
+| `adminppdb` | Admin PPDB | *(belum didefinisikan — perlu diskusi scope)* |
 
-> ⚠️ **Role 5, 6, 7 belum ada di database.** Sebelum mulai develop, wajib:
-> 1. Tambah migration baru untuk INSERT ke tabel `roles` (id 5, 6, 7)
-> 2. Update `slugMap` di `RoleMiddleware.php` (saat ini hanya map id 1–4)
-> 3. Tambah relasi profil di `User.php` jika butuh tabel profil tersendiri
-> 4. Tambah helper `isWaliKelas()`, `isBendahara()`, `isAdminPpdb()` di `User.php`
+> Role disimpan di tabel `roles` (kolom: `id`, `slug`, `nama`, `deskripsi`, `is_active`).
+> Relasi user ↔ role lewat pivot `user_roles`. Role check pakai slug langsung — tidak ada mapping ID hardcode di middleware.
+> Role baru cukup INSERT ke tabel `roles` tanpa perlu ubah `RoleMiddleware.php`.
 
 ---
 
@@ -49,11 +47,10 @@
 > Update section ini setiap kali user bilang "done" / "selesai" / "fix".
 > **AI wajib baca section ini dulu sebelum nulis satu baris pun.**
 > File di sini = SUDAH SELESAI = JANGAN DIMODIFIKASI kecuali user minta eksplisit fix bug.
-> **Kalau user belum bilang done = JANGAN dipindahkan ke sini, masih IN PROGRESS.**
 
 ### Operator
 - [x] Autentikasi — login, logout, guard token via Sanctum; `AuthContext.jsx`, `axios.js`, `ProtectedRoute.jsx`
-- [x] Manajemen Akun — CRUD user (operator, guru, kepsek, ortu), toggle aktif, reset password, hapus; `ManajemenAkun.jsx`
+- [x] Manajemen Akun — CRUD user, toggle aktif, reset password, hapus; `ManajemenAkun.jsx`
 - [x] Approval Ortu — list pending, approve/reject; `ApprovalOrtu.jsx`
 - [x] Master Data Guru — CRUD guru, upload foto, lihat detail & akun terhubung; `MasterGuru.jsx`, `DetailGuru.jsx`
 - [x] Master Data Siswa — CRUD siswa, upload foto, assign kelas, regenerate kode anak; `MasterSiswa.jsx`, `DetailSiswa.jsx`
@@ -63,68 +60,55 @@
 - [x] Master Data Jadwal Pelajaran — CRUD jadwal; `MasterJadwal.jsx`
 - [x] Tahun Ajaran — CRUD, set aktif, detail; `TahunAjaran.jsx`, `DetailTahunAjaran.jsx`
 - [x] Naik Kelas — preview & proses naik kelas massal; `NaikKelas.jsx`
-- [x] Pengumuman — CRUD, termasuk `publish_at` dan `target` (semua/guru/ortu); `PengumumanOperator.jsx`
-- [x] Galeri Foto — upload & hapus foto galeri; `GaleriOperator.jsx`
+- [x] Pengumuman — CRUD; `PengumumanOperator.jsx`
+- [x] Galeri Foto — upload & hapus; `GaleriOperator.jsx`
 
 ### Guru
-- [x] Dashboard Guru — statistik kelas & absensi; `DashboardGuru.jsx`
-- [x] Input Absensi — absensi per jadwal per kelas; `InputAbsensi.jsx`
-- [x] Rekap Absensi — rekap per kelas + export; `RekapAbsensiGuru.jsx`
-- [x] Data Siswa — daftar siswa di kelas guru; `DataSiswaGuru.jsx`, `DetailSiswaGuru.jsx`
-- [x] Riwayat Absensi Siswa — histori absensi per siswa; `RiwayatAbsensiSiswaGuru.jsx`
-- [x] Jadwal Mengajar — lihat jadwal guru; `JadwalMengajarGuru.jsx`
-- [x] Pengumuman Guru — lihat pengumuman; `PengumumanGuru.jsx`
-- [x] Profil Guru — lihat & edit profil; `ProfilGuru.jsx`
+- [x] Dashboard Guru; `DashboardGuru.jsx`
+- [x] Input Absensi; `InputAbsensi.jsx`
+- [x] Rekap Absensi; `RekapAbsensiGuru.jsx`
+- [x] Data Siswa; `DataSiswaGuru.jsx`, `DetailSiswaGuru.jsx`
+- [x] Riwayat Absensi Siswa; `RiwayatAbsensiSiswaGuru.jsx`
+- [x] Jadwal Mengajar; `JadwalMengajarGuru.jsx`
+- [x] Pengumuman Guru; `PengumumanGuru.jsx`
+- [x] Profil Guru; `ProfilGuru.jsx`
 
 ### Kepsek
-- [x] Dashboard Kepsek — statistik sekolah, rekap absensi, siswa alpa terbanyak; `DashboardKepsek.jsx`
-- [x] Monitoring Absensi — rekap seluruh kelas; `MonitoringAbsensi.jsx`
-- [x] Data Guru — daftar & detail guru (read-only); `DataGuruKepsek.jsx`, `DetailGuruKepsek.jsx`
-- [x] Data Siswa — daftar & detail siswa (read-only); `DataSiswaKepsek.jsx`, `DetailSiswaKepsek.jsx`
-- [x] Pengumuman Kepsek — CRUD pengumuman; `PengumumanKepsek.jsx`
-- [x] Kalender Akademik — CRUD kalender; `KalenderAkademik.jsx`
-- [x] Profil Kepsek — lihat & edit profil; `ProfilKepsek.jsx`
+- [x] Dashboard Kepsek; `DashboardKepsek.jsx`
+- [x] Monitoring Absensi; `MonitoringAbsensi.jsx`
+- [x] Data Guru (read-only); `DataGuruKepsek.jsx`, `DetailGuruKepsek.jsx`
+- [x] Data Siswa (read-only); `DataSiswaKepsek.jsx`, `DetailSiswaKepsek.jsx`
+- [x] Pengumuman Kepsek; `PengumumanKepsek.jsx`
+- [x] Kalender Akademik; `KalenderAkademik.jsx`
+- [x] Profil Kepsek; `ProfilKepsek.jsx`
 
 ### Ortu
-- [x] Absensi Anak — lihat absensi anak hari ini; `AbsensiAnak.jsx`
-- [x] Riwayat Absensi Anak — histori absensi per bulan; `RiwayatAbsensiAnak.jsx`
-- [x] Data Anak — daftar anak yang terdaftar; `DataAnak.jsx`
-- [x] Tambah Anak — daftarkan anak dengan kode; `TambahAnak.jsx`
-- [x] Pengumuman Ortu — lihat pengumuman; `PengumumanOrtu.jsx`
-- [x] Profil Ortu — lihat & edit profil; `ProfilOrtu.jsx`
+- [x] Absensi Anak; `AbsensiAnak.jsx`
+- [x] Riwayat Absensi Anak; `RiwayatAbsensiAnak.jsx`
+- [x] Data Anak; `DataAnak.jsx`
+- [x] Tambah Anak; `TambahAnak.jsx`
+- [x] Pengumuman Ortu; `PengumumanOrtu.jsx`
+- [x] Profil Ortu; `ProfilOrtu.jsx`
 
 ### Public
-- [x] Landing Page — halaman utama; `LandingPage.jsx`
-- [x] Galeri Publik — lihat galeri foto; `GalleryPage.jsx`
-- [x] Tentang — halaman about; `AboutPage.jsx`
-- [x] Kontak — halaman kontak; `ContactPage.jsx`
-- [x] Login — form login multi-role; `LoginPage.jsx`
-- [x] Daftar Ortu — form registrasi orang tua; `RegisterOrtuPage.jsx`
+- [x] Landing Page; `LandingPage.jsx`
+- [x] Galeri Publik; `GalleryPage.jsx`
+- [x] Tentang; `AboutPage.jsx`
+- [x] Kontak; `ContactPage.jsx`
+- [x] Login; `LoginPage.jsx`
+- [x] Daftar Ortu; `RegisterOrtuPage.jsx`
 
-### Wali Kelas
-- [ ] *(belum ada)*
-
-### Bendahara
-- [ ] *(belum ada)*
-
-### Admin PPDB
-- [ ] *(belum ada)*
-
-### Komponen & File yang SUDAH STABIL — jangan diubah kecuali ada bug:
-- `frontend/src/contexts/AuthContext.jsx` — auth context & hooks, jangan direfactor
-- `frontend/src/lib/axios.js` — axios instance + interceptors (auto token, auto redirect 401)
-- `frontend/src/routes/ProtectedRoute.jsx` — route guard berdasarkan role
-- `frontend/src/components/layout/Sidebar.jsx` — sidebar shared semua role
-- `frontend/src/main.jsx` — entry point React
-- `frontend/src/App.jsx` — routing utama, jangan ubah tanpa konfirmasi
+### Komponen & File Stabil — jangan diubah kecuali ada bug eksplisit:
+- `frontend/src/contexts/AuthContext.jsx`
+- `frontend/src/lib/axios.js`
+- `frontend/src/routes/ProtectedRoute.jsx`
+- `frontend/src/components/layout/Sidebar.jsx`
+- `frontend/src/main.jsx`
+- `frontend/src/App.jsx`
 
 ---
 
 ## 🚧 IN PROGRESS — Sedang Dikerjakan
-
-> Update section ini setiap kali mulai mengerjakan fitur baru.
-> Hanya boleh ada 1 fitur aktif di sini per sesi.
-> **Jangan pindahkan ke COMPLETED sampai user secara eksplisit bilang "done" / "selesai" / "fix".**
 
 - [ ] *(kosong)*
 
@@ -132,12 +116,12 @@
 
 ## ❌ NEVER MODIFY — Tanpa Izin Eksplisit
 
-- `frontend/dist/` — hasil build otomatis, selalu di-generate ulang via `npm run build`
-- `backend/vendor/` — Laravel vendor (dikelola composer)
+- `frontend/dist/` — hasil build otomatis
+- `backend/vendor/` — dikelola composer
 - `frontend/node_modules/` — dikelola npm
-- `.env` / `.env.example` — konfigurasi environment sensitif
-- `package-lock.json` / `composer.lock` — jangan diedit manual
-- `backend/database/db_sekolah_mi_2026-07-04.sql` — backup database, jangan diubah
+- `.env` / `.env.example`
+- `package-lock.json` / `composer.lock`
+- `db_minurulhuda3.sql` — source of truth database, jangan diubah
 
 ---
 
@@ -145,138 +129,112 @@
 
 ```
 RPL_Group1/
-├── frontend/                   # React App (Vite)
-│   ├── src/
-│   │   ├── contexts/           # React context (Auth)
-│   │   │   └── AuthContext.jsx # auth state + login/logout/updateUser
-│   │   ├── lib/
-│   │   │   └── axios.js        # Base axios instance + interceptors
-│   │   ├── routes/
-│   │   │   └── ProtectedRoute.jsx
-│   │   ├── components/
-│   │   │   └── layout/
-│   │   │       └── Sidebar.jsx # Shared sidebar (props: menus[])
-│   │   ├── pages/
-│   │   │   ├── auth/           # Login, RegisterOrtu
-│   │   │   ├── public/         # Landing, Gallery, About, Contact
-│   │   │   ├── operator/       # Semua halaman operator
-│   │   │   │   └── master/     # CRUD master data
-│   │   │   ├── guru/           # Semua halaman guru
-│   │   │   ├── kepsek/         # Semua halaman kepsek
-│   │   │   └── ortu/           # Semua halaman ortu
-│   │   ├── hooks/
-│   │   │   └── useSelectedAnak.js
-│   │   └── App.jsx             # Root routing
-│   └── dist/                   # Build output (auto-generated)
+├── frontend/
+│   └── src/
+│       ├── contexts/AuthContext.jsx
+│       ├── lib/axios.js
+│       ├── routes/ProtectedRoute.jsx
+│       ├── components/layout/Sidebar.jsx
+│       ├── hooks/useSelectedAnak.js
+│       ├── pages/
+│       │   ├── auth/
+│       │   ├── public/
+│       │   ├── operator/master/
+│       │   ├── guru/
+│       │   ├── kepsek/
+│       │   └── ortu/
+│       └── App.jsx
 │
-├── backend/                    # Laravel App
-│   ├── app/
-│   │   ├── Http/
-│   │   │   ├── Controllers/    # Diorganisasi per domain
-│   │   │   │   ├── Auth/
-│   │   │   │   ├── Operator/
-│   │   │   │   ├── MasterData/
-│   │   │   │   ├── Guru/
-│   │   │   │   ├── Kepsek/
-│   │   │   │   ├── Ortu/
-│   │   │   │   └── Absensi/
-│   │   │   ├── Middleware/     # CheckRole, RoleMiddleware
-│   │   │   └── Resources/      # GuruResource, SiswaResource
-│   │   └── Models/             # Eloquent models
-│   ├── routes/
-│   │   ├── api.php             # Semua API routes (prefix /api)
-│   │   └── web.php
-│   └── database/
-│       ├── migrations/         # File migrasi
-│       ├── seeders/            # DatabaseSeeder, OperatorSeeder, dll
-│       └── db_sekolah_mi_2026-07-04.sql  # Backup DB lengkap
-│
-└── CLAUDE.md                   # File ini
+└── backend/
+    ├── app/
+    │   ├── Http/Controllers/   # Auth/, Operator/, MasterData/, Guru/, Kepsek/, Ortu/, Absensi/
+    │   ├── Http/Middleware/    # RoleMiddleware.php
+    │   └── Models/
+    ├── routes/api.php
+    └── database/
+        ├── migrations/
+        └── db_minurulhuda3.sql
 ```
 
 ---
 
-## 🗄️ Skema Database (Tabel Utama)
+## 🗄️ Skema Database — Tabel Aktual
 
-| Tabel | Primary Key | Keterangan |
-|-------|------------|------------|
-| `users` | `id` | Akun login semua role |
-| `roles` | `id` | Daftar role |
-| `user_operator` | `id` | Link user → data operator |
-| `user_guru` | `id` | Link user → `guru.nuptk` |
-| `user_kepsek` | `id` | Link user → data kepsek |
-| `user_ortu` | `id` | Link user → `orang_tua.id` |
-| `guru` | `nuptk` (string) | Data guru |
-| `siswa` | `nisn` (string) | Data siswa |
-| `orang_tua` | `id` | Data orang tua |
-| `siswa_orang_tua` | pivot | Relasi siswa ↔ ortu |
-| `kelas` | `id` | Data kelas, FK `nuptk_wali` → guru |
-| `siswa_kelas` | `id` | Relasi siswa ↔ kelas (dengan status_keluar) |
-| `tahun_ajaran` | `id` | Tahun ajaran |
-| `mata_pelajaran` | `id` | Mata pelajaran |
-| `jadwal_pelajaran` | `id` | Jadwal per kelas + mapel + guru |
-| `absensi` | `id` | FK: `nisn`, `id_kelas`, `id_jadwal` |
-| `pengumuman` | `id` | Pengumuman, ada `target` & `publish_at` |
-| `galeri` | `id` | Galeri foto sekolah |
-| `kalender_akademik` | `id` | Kalender event kepsek |
-| `pengaturan` | `id` | Setting sistem (kode registrasi ortu, dll) |
-| `activity_log` | `id` | Log aktivitas user |
-| `user_walikelas` | `id` | *(belum ada — perlu dibuat jika walikelas punya profil tersendiri)* |
-| `user_bendahara` | `id` | *(belum ada — perlu dibuat jika bendahara punya profil tersendiri)* |
-| `user_adminppdb` | `id` | *(belum ada — perlu dibuat jika adminppdb punya profil tersendiri)* |
+> ⚠️ Nama tabel, kolom, dan PK di bawah ini adalah GROUND TRUTH dari `db_minurulhuda3.sql`.
+> Jangan asumsikan nama lain. Cek file SQL dulu sebelum nulis query apapun.
+
+### Tabel Utama
+
+| Tabel | Primary Key | Catatan |
+|-------|-------------|---------|
+| `users` | `id` (bigint) | Akun login semua role |
+| `roles` | `id` (tinyint) | Kolom: `slug`, `nama`, `is_active` |
+| `user_roles` | pivot | Kolom: `user_id`, `role_id` |
+| `gurus` | `id` (bigint) | `nuptk` adalah kolom unik, **bukan** PK |
+| `siswas` | `id` (bigint) | `nisn` adalah kolom unik, **bukan** PK |
+| `orang_tuas` | `id` (bigint) | Data orang tua / wali |
+| `orang_tua_siswa` | pivot | Kolom: `orang_tua_id`, `siswa_id` |
+| `kelas` | `id` (bigint) | FK wali: `wali_kelas_id` → `gurus.id` |
+| `riwayat_kelas` | `id` (bigint) | Pengganti `siswa_kelas`. Kolom: `siswa_id`, `kelas_id`, `tanggal_keluar`, `jenis_perubahan` |
+| `tahun_ajarans` | `id` (bigint) | Nama tabel plural dengan suffix `s` |
+| `semesters` | `id` (bigint) | FK ke `tahun_ajarans.id` |
+| `mapels` | `id` (bigint) | Kolom kode: `kode` (bukan `kode_mapel`) |
+| `jadwals` | `id` (bigint) | Kolom: `plot_id`, `kelas_id`, `guru_id`, `mapel_id`, `semester_id`, `hari`, `jam_ke`, `jam_mulai`, `jam_selesai` |
+| `plot_guru_mapels` | `id` (bigint) | Penugasan guru mengajar mapel di kelas |
+| `absensis` | `id` (bigint) | FK: `siswa_id`, `kelas_id`, `jadwal_id` (bukan `id_kelas`/`id_jadwal`) |
+| `pengumumans` | `id` (bigint) | Pengumuman |
+| `galeris` | `id` (bigint) | Galeri foto |
+| `kalender_akademiks` | `id` (bigint) | Kalender event |
+| `pengaturans` | `id` (bigint) | Setting sistem (key-value) |
+| `operator_profiles` | `id` (bigint) | Profil operator |
+| `wali_kelas` | `id` (bigint) | Detail penugasan wali kelas |
+| `bendaharas` | `id` (bigint) | Profil bendahara |
+| `activity_logs` | `id` (bigint) | Log aktivitas |
+| `personal_access_tokens` | `id` | Sanctum tokens |
+
+### ⚠️ Perbedaan Kritis vs Dokumentasi Lama
+
+| Yang SALAH (dokumentasi lama) | Yang BENAR (aktual DB) |
+|-------------------------------|------------------------|
+| PK `siswas` = `nisn` | PK `siswas` = `id`, `nisn` hanya unique |
+| PK `gurus` = `nuptk` | PK `gurus` = `id`, `nuptk` hanya unique |
+| Tabel `siswa_kelas` | Tabel `riwayat_kelas` |
+| Kolom `status_keluar` di siswa_kelas | Pakai `scopeAktif()` — cek `tanggal_keluar` IS NULL |
+| FK `id_kelas` di absensis | FK `kelas_id` di `absensis` |
+| FK `id_jadwal` di absensis | FK `jadwal_id` di `absensis` |
+| FK `nuptk_wali` di kelas | FK `wali_kelas_id` di `kelas` |
+| Kolom `kode_mapel` di mapels | Kolom `kode` di `mapels` |
+| Tabel `jadwal_pelajaran` | Tabel `jadwals` |
+| Tabel `mata_pelajaran` | Tabel `mapels` |
+| Tabel `absensi` | Tabel `absensis` |
+| Tabel `tahun_ajaran` | Tabel `tahun_ajarans` |
+| Tabel `pengumuman` | Tabel `pengumumans` |
+| Kolom `semester` di jadwals | Kolom `semester_id` (FK ke `semesters`) |
+| Kolom `tahun_ajaran` di jadwals | Tidak ada — resolve via `semester.tahun_ajaran_id` |
+| Kolom `id_mapel`, `nuptk` di jadwals | Kolom `mapel_id`, `guru_id` di `jadwals` |
 
 ---
 
 ## 🔧 Konvensi Kode
 
 ### Frontend
-- Setiap role punya **Layout sendiri** (`OperatorLayout.jsx`, `GuruLayout.jsx`, dst.) yang membungkus `Sidebar` + `<Outlet />`
-- `Sidebar` menerima prop `menus` (array `{path, label, icon}`)
-- Auth state diambil via `useAuth()` dari `AuthContext`
-- `api` dari `lib/axios.js` dipakai di semua API call — sudah auto-attach Bearer token
-- `BASE_URL` untuk storage/foto: `import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001"`
-- Styling hanya dengan **TailwindCSS**, tidak ada inline style atau CSS tambahan
-- Tidak ada folder `api/` terpisah — API call langsung di dalam komponen atau custom hook
+- Setiap role punya **Layout sendiri** (`OperatorLayout.jsx`, `GuruLayout.jsx`, dst.)
+- Auth state via `useAuth()` dari `AuthContext`
+- `api` dari `lib/axios.js` — sudah auto-attach Bearer token
+- `BASE_URL` foto: `import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001"`
+- Styling hanya TailwindCSS
+- API call langsung di komponen, tidak ada folder `api/` terpisah
 
 ### Backend (Laravel)
-- API endpoint di `backend/routes/api.php`, semua di bawah prefix `/api`
-- Protected routes di bawah `middleware('auth:sanctum')`
-- Role guard pakai `middleware('role:operator')` dll. via `RoleMiddleware`
-- Controller dikelompokkan per domain di subfolder `app/Http/Controllers/`
-- Model `Siswa` primary key = `nisn` (string), `Guru` primary key = `nuptk` (string)
-- Foreign key ikuti konvensi: `siswa_id`, `nuptk_wali`, `id_kelas`, dst.
-
-#### ⚠️ Checklist Wajib Sebelum Develop Role Baru (walikelas / bendahara / adminppdb)
-Setiap role baru butuh langkah-langkah berikut sebelum bisa dipakai:
-
-1. **Migration INSERT roles** — buat file migrasi baru, jangan edit SQL dump:
-   ```php
-   // database/migrations/xxxx_add_roles_walikelas_bendahara_adminppdb.php
-   DB::table('roles')->insert([
-       ['id' => 5, 'nama_role' => 'Wali Kelas', 'slug' => 'walikelas', ...],
-       ['id' => 6, 'nama_role' => 'Bendahara',  'slug' => 'bendahara',  ...],
-       ['id' => 7, 'nama_role' => 'Admin PPDB', 'slug' => 'adminppdb',  ...],
-   ]);
-   ```
-
-2. **Update `RoleMiddleware.php`** — tambah mapping di `$slugMap`:
-   ```php
-   $slugMap = [
-       1 => 'operator', 2 => 'guru', 3 => 'ortu', 4 => 'kepsek',
-       5 => 'walikelas', 6 => 'bendahara', 7 => 'adminppdb', // ← tambah ini
-   ];
-   ```
-
-3. **Update `User.php`** — tambah helper method:
-   ```php
-   public function isWaliKelas(): bool { return $this->role_id === 5; }
-   public function isBendahara(): bool { return $this->role_id === 6; }
-   public function isAdminPpdb(): bool { return $this->role_id === 7; }
-   ```
-
-4. **Tambah route group baru** di `api.php` untuk setiap role (mirip blok `role:guru`)
-
-5. **Frontend** — buat Layout, halaman, dan update `App.jsx` + `ProtectedRoute.jsx`
+- Semua route di `backend/routes/api.php` prefix `/api`
+- Protected routes: `middleware('auth:sanctum')`
+- Role guard: `middleware('role:operator')` via `RoleMiddleware` — cek lewat slug di `user_roles`, tidak ada mapping ID hardcode
+- Model `Siswa` → `$table = 'siswas'`, PK = `id`, `nisn` unique
+- Model `Guru` → `$table = 'gurus'`, PK = `id`, `nuptk` unique
+- Model `RiwayatKelas` → `$table = 'riwayat_kelas'`, punya `scopeAktif()` untuk filter siswa aktif
+- Model `SiswaKelas` → alias backward-compatible untuk `RiwayatKelas`, gunakan `RiwayatKelas` untuk kode baru
+- Model `JadwalPelajaran` → `$table = 'jadwals'`
+- Model `MataPelajaran` → `$table = 'mapels'`
 
 ---
 
@@ -284,22 +242,17 @@ Setiap role baru butuh langkah-langkah berikut sebelum bisa dipakai:
 
 ```bash
 # Frontend
-cd frontend
-npm install
-npm run dev          # development (port default 5173)
-npm run build        # production build
+cd frontend && npm install && npm run dev   # port 5173
 
-# Backend (Laravel)
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan serve    # default port 8000 atau 8001
+# Backend
+cd backend && composer install
+cp .env.example .env && php artisan key:generate
+php artisan migrate && php artisan serve    # port 8000/8001
 
-# Jalankan keduanya sekaligus (dari root)
-npm run dev          # pakai concurrently
+# Keduanya sekaligus (dari root)
+npm run dev
 ```
+
 
 ---
 
@@ -343,3 +296,5 @@ npm run dev          # pakai concurrently
 25. **Jaga Integritas Relasi:** Saat membuat tabel baru atau fitur hapus, pertimbangkan Foreign Key constraint dan Soft Deletes.
 26. **Aman Saat Seeding & Import:** Gunakan `updateOrCreate()` atau `firstOrCreate()`, hindari `create()` biasa yang bisa trigger duplicate error.
 27. **Konsistensi Penamaan:** snake_case plural untuk tabel (`tahun_ajaran`, `siswa_kelas`), snake_case untuk foreign key (`siswa_id`, `nuptk_wali`).
+
+

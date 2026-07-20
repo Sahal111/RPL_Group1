@@ -148,11 +148,6 @@ Quick reference semua command di atas.
 
 
 
-Baca CLAUDE.md. Ada bug di [ketika saya mencoba test login ke halamab operator]: [[Error] Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200
-[Error] XMLHttpRequest cannot load http://127.0.0.1:8000/api/auth/login due to access control checks.
-[Error] Failed to load resource: Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200 (login, line 0)].
+Baca CLAUDE.md. untuk di halaman login, apakah ketika sudah login sudah sesuai mengarah ke masing2 role, contoh, kaya guru login ketika berhasil ke halaman khusus guru, dan dan ketika gagal apakah ada notifikasi, dan juga semua role seperti itu, dan apakah untuk login sudah aman sesuai sop programing?
 Jangan ubah file lain. Identifikasi dulu penyebabnya,
 jelaskan ke saya sebelum fix.
-[Error] Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200
-[Error] XMLHttpRequest cannot load http://127.0.0.1:8000/api/auth/login due to access control checks.
-[Error] Failed to load resource: Origin http://localhost:5173 is not allowed by Access-Control-Allow-Origin. Status code: 200 (login, line 0)

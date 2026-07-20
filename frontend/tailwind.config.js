@@ -5,12 +5,21 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
+          50: "#e8f5e9",
+          100: "#c8e6c9",
+          200: "#a5d6a7",
+          300: "#81c784",
+          400: "#66bb6a",
+          500: "#4caf50",
+          600: "#43a047",
+          700: "#388e3c",
+          800: "#2e7d32",
+          900: "#1b5e20",
         },
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        headline: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
       },
     },
   },

@@ -44,6 +44,12 @@ class User extends Authenticatable
 
     public function getRoleSlug(): ?string
     {
+        $slugs = $this->roles->pluck('slug')->toArray();
+        foreach (['operator', 'kepsek', 'guru', 'ortu'] as $role) {
+            if (in_array($role, $slugs)) {
+                return $role;
+            }
+        }
         return $this->roles->first()?->slug;
     }
 
