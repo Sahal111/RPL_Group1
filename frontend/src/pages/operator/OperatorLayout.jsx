@@ -21,14 +21,13 @@ export default function OperatorLayout() {
   }, [sidebarOpen]);
 
   return (
-    <div className="flex min-h-screen bg-gradient-animate text-on-surface overflow-x-hidden">
+    <div className="flex h-screen bg-gradient-animate text-on-surface overflow-hidden">
       {/* ── Desktop Sidebar — fixed, hanya tampil md+ ── */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen z-40 shadow-sm overflow-hidden">
         <SidebarContent />
       </aside>
 
       {/* ── Mobile Drawer ── */}
-      {/* Overlay backdrop */}
       <div
         aria-hidden="true"
         className={`fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300 ${
@@ -36,7 +35,6 @@ export default function OperatorLayout() {
         }`}
         onClick={() => setSidebarOpen(false)}
       />
-      {/* Drawer panel */}
       <aside
         className={`fixed left-0 top-0 h-screen z-50 md:hidden shadow-xl
           overflow-hidden transition-transform duration-300 ease-in-out
@@ -45,14 +43,18 @@ export default function OperatorLayout() {
         <SidebarContent onClose={() => setSidebarOpen(false)} />
       </aside>
 
-      {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-h-screen md:ml-[290px] min-w-0">
+      {/* ── Main Content Area ── */}
+      <div className="flex flex-col flex-1 md:ml-[290px] min-w-0 h-screen">
+        {/* TopBar di luar scroll container → tidak ikut scroll */}
         <OperatorTopBar onMenuClick={() => setSidebarOpen((v) => !v)} />
 
-        <div className="flex-1 p-3 sm:p-4 md:p-6 w-full max-w-[1600px] mx-auto">
-          <Outlet />
-        </div>
-      </main>
+        {/* Scrollable content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-3 sm:p-4 md:p-6 w-full max-w-[1600px] mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
