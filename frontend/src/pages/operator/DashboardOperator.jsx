@@ -60,12 +60,19 @@ function StatCard({
 }) {
   return (
     <div
-      className={`bg-[#ffffff] border border-[#E5E7EB] rounded-[18px] p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group cursor-pointer opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_forwards] ${
-        highlight ? "bg-[#00652c] text-white col-span-2 sm:col-span-1" : ""
+      className={`border rounded-[18px] p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group cursor-pointer opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_forwards] ${
+        highlight
+          ? "col-span-2 sm:col-span-1 border-[#005323] text-white"
+          : "bg-white border-[#E5E7EB]"
       } ${colSpan > 1 ? `col-span-${colSpan}` : ""}`}
-      style={{ animationDelay: `${Math.random() * 0.5}s` }}
+      style={{
+        backgroundColor: highlight ? "#00652c" : undefined,
+        animationDelay: `${Math.random() * 0.5}s`,
+      }}
     >
-      <div className="absolute top-0 right-0 w-24 h-24 bg-[#00652c]/5 rounded-full -mr-8 -mt-8 transition-transform duration-500 group-hover:scale-150"></div>
+      <div
+        className={`absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 transition-transform duration-500 group-hover:scale-150 ${highlight ? "bg-white/10" : "bg-[#00652c]/5"}`}
+      ></div>
 
       <div className="flex items-center justify-between mb-3 relative z-10">
         <div className="flex items-center gap-2">
@@ -178,23 +185,25 @@ export default function DashboardOperator() {
   });
 
   return (
-    <div className="flex-1 p-6 max-w-[1600px] mx-auto w-full space-y-6 pb-24 md:pb-6">
+    <div className="w-full space-y-4 md:space-y-6 pb-10">
       {/* ── Welcome Section ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_forwards]">
         <div>
-          <h2 className="text-[32px] leading-[1.2] font-bold text-[#111827] tracking-tight">
+          <h2 className="text-[22px] sm:text-[28px] lg:text-[32px] leading-[1.2] font-bold text-[#111827] tracking-tight">
             Selamat Datang, Admin Operator
           </h2>
-          <p className="text-[#6B7280] mt-1 text-[16px]">{today}</p>
+          <p className="text-[#6B7280] mt-1 text-[14px] sm:text-[16px]">
+            {today}
+          </p>
         </div>
-        <div className="flex items-center gap-2 bg-[#16A34A]/10 text-[#16A34A] px-3 py-1.5 rounded-full border border-[#16A34A]/20 w-fit">
+        <div className="flex items-center gap-2 bg-[#16A34A]/10 text-[#16A34A] px-3 py-1.5 rounded-full border border-[#16A34A]/20 w-fit shrink-0">
           <span className="w-2 h-2 bg-[#16A34A] rounded-full animate-pulse"></span>
           <span className="text-xs font-semibold">System status: Healthy</span>
         </div>
       </div>
 
       {/* ── Statistics Grid ── */}
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {loadingStats ? (
           Array(6)
             .fill(0)
@@ -255,7 +264,7 @@ export default function DashboardOperator() {
       </section>
 
       {/* ── Bento Grid Layout for Main Content ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* ── Quick Actions Grid ── */}
         <div className="lg:col-span-1 bg-[#ffffff] border border-[#E5E7EB] rounded-[18px] p-6 shadow-sm opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_0.2s_forwards]">
           <div className="flex items-center justify-between mb-6">
@@ -311,7 +320,7 @@ export default function DashboardOperator() {
 
         {/* ── Financial Overview ── */}
         <div className="lg:col-span-2 bg-[#ffffff] border border-[#E5E7EB] rounded-[18px] p-6 shadow-sm flex flex-col opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <h3 className="text-[18px] leading-[1.4] font-semibold text-[#111827]">
                 Financial Overview
@@ -320,16 +329,16 @@ export default function DashboardOperator() {
                 Pemasukan vs Pengeluaran 6 bulan terakhir
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-sm bg-[#00652c]"></span>
                 <span className="text-xs text-[#6B7280]">Pemasukan</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-sm bg-[#F59E0B]"></span>
                 <span className="text-xs text-[#6B7280]">Pengeluaran</span>
               </div>
-              <select className="bg-[#eaefe6] border border-[#becabc] rounded-lg text-sm px-3 py-1.5 focus:ring-[#00652c] focus:border-[#00652c] transition-all duration-300 hover:bg-[#e4eae1] cursor-pointer outline-none ml-2">
+              <select className="bg-[#eaefe6] border border-[#becabc] rounded-lg text-xs sm:text-sm px-2 sm:px-3 py-1.5 focus:ring-[#00652c] focus:border-[#00652c] transition-all duration-300 hover:bg-[#e4eae1] cursor-pointer outline-none">
                 <option>6 Bulan Terakhir</option>
                 <option>Tahun Ini</option>
               </select>
@@ -381,7 +390,7 @@ export default function DashboardOperator() {
       </div>
 
       {/* ── Second Row: 3 Column Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Pending Approvals */}
         <div className="lg:col-span-1 bg-[#ffffff] border border-[#E5E7EB] rounded-[18px] p-6 shadow-sm opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_0.4s_forwards] flex flex-col h-full">
           <div className="flex items-center justify-between mb-4">
@@ -577,7 +586,7 @@ export default function DashboardOperator() {
       </div>
 
       {/* ── Third Row: 2 Column Charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Monthly Attendance Trend Card */}
         <div className="bg-[#ffffff] border border-[#E5E7EB] rounded-[18px] p-6 shadow-sm opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_0.5s_forwards] flex flex-col">
           <div className="flex items-center justify-between mb-6">
