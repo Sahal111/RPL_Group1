@@ -194,7 +194,7 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
       nama_ibu_kandung: normalized.nama_ibu || prev.nama_ibu_kandung,
       orang_tua: normalized,
     }));
-    
+
     setParentSearch(parentDisplayName(ortu));
     toast.success("Data orang tua lama dipakai untuk siswa ini.");
   };
@@ -1142,127 +1142,132 @@ export default function MasterSiswa() {
       </div>
 
       <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Nama Siswa
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                NISN
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                L/P
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Agama
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Status
-              </th>
-              <th className="text-right px-6 py-3 text-gray-500 font-medium">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {isLoading ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
-                  Memuat data...
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Nama Siswa
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  NISN
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  L/P
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Agama
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Status
+                </th>
+                <th className="text-right px-6 py-3 text-gray-500 font-medium">
+                  Aksi
+                </th>
               </tr>
-            ) : siswaList.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
-                  Belum ada data siswa.
-                </td>
-              </tr>
-            ) : (
-              siswaList.map((s) => (
-                <tr key={s.nisn} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${s.jenis_kelamin === "L" ? "bg-blue-100" : "bg-pink-100"}`}
-                      >
-                        {s.foto ? (
-                          <img
-                            src={`http://127.0.0.1:8001/storage/${s.foto}`}
-                            alt={s.nama_lengkap}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span
-                            className={`font-semibold text-xs ${s.jenis_kelamin === "L" ? "text-blue-700" : "text-pink-700"}`}
-                          >
-                            {s.nama_lengkap?.charAt(0)?.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {s.nama_lengkap}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {s.tempat_lahir}, {s.tanggal_lahir?.split("T")[0]}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-mono text-xs text-gray-600">
-                    {s.nisn}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.jenis_kelamin === "L" ? "bg-blue-50 text-blue-700" : "bg-pink-50 text-pink-700"}`}
-                    >
-                      {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{s.agama}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${s.status_pd === "Aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
-                    >
-                      {s.status_pd}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() =>
-                          navigate(`/operator/master/siswa/${s.nisn}`)
-                        }
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Detail"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEdit(s)}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Hapus data siswa ${s.nama_lengkap}?`))
-                            hapus.mutate(s.nisn);
-                        }}
-                        className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-gray-400">
+                    Memuat data...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : siswaList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-gray-400">
+                    Belum ada data siswa.
+                  </td>
+                </tr>
+              ) : (
+                siswaList.map((s) => (
+                  <tr
+                    key={s.nisn}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${s.jenis_kelamin === "L" ? "bg-blue-100" : "bg-pink-100"}`}
+                        >
+                          {s.foto ? (
+                            <img
+                              src={`http://127.0.0.1:8001/storage/${s.foto}`}
+                              alt={s.nama_lengkap}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span
+                              className={`font-semibold text-xs ${s.jenis_kelamin === "L" ? "text-blue-700" : "text-pink-700"}`}
+                            >
+                              {s.nama_lengkap?.charAt(0)?.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">
+                            {s.nama_lengkap}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {s.tempat_lahir}, {s.tanggal_lahir?.split("T")[0]}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-600">
+                      {s.nisn}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.jenis_kelamin === "L" ? "bg-blue-50 text-blue-700" : "bg-pink-50 text-pink-700"}`}
+                      >
+                        {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{s.agama}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${s.status_pd === "Aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                      >
+                        {s.status_pd}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() =>
+                            navigate(`/operator/master/siswa/${s.nisn}`)
+                          }
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                          title="Detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEdit(s)}
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Hapus data siswa ${s.nama_lengkap}?`))
+                              hapus.mutate(s.nisn);
+                          }}
+                          className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
         {data?.total > 0 && (
           <div className="px-6 py-3 border-t border-gray-100 text-xs text-gray-400">
             Menampilkan {siswaList.length} dari {data.total} siswa

@@ -324,113 +324,117 @@ export default function MasterKelas() {
       </div>
 
       <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Nama Kelas
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Tingkat
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Semester
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Wali Kelas
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Ruangan
-              </th>
-              <th className="text-left px-6 py-3 text-gray-500 font-medium">
-                Status
-              </th>
-              <th className="text-right px-6 py-3 text-gray-500 font-medium">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {isLoading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  Memuat data...
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Nama Kelas
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Tingkat
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Semester
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Wali Kelas
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Ruangan
+                </th>
+                <th className="text-left px-6 py-3 text-gray-500 font-medium">
+                  Status
+                </th>
+                <th className="text-right px-6 py-3 text-gray-500 font-medium">
+                  Aksi
+                </th>
               </tr>
-            ) : kelasList.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  Belum ada data kelas.
-                </td>
-              </tr>
-            ) : (
-              kelasList.map((k) => (
-                <tr key={k.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-800">{k.nama_kelas}</p>
-                    <p className="text-xs text-gray-400 font-mono">{k.id}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">
-                      Kelas {k.tingkat}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    Semester {k.semester}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {k.wali?.nama_lengkap ?? (
-                      <span className="text-gray-300 italic">
-                        Belum ditentukan
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {k.ruangan ?? "-"}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${k.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
-                    >
-                      {k.is_active ? "Aktif" : "Non-aktif"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() =>
-                          navigate(`/operator/master/kelas/${k.id}`)
-                        }
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Detail"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditData(k);
-                          setModalOpen(true);
-                        }}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Hapus kelas ${k.nama_kelas}?`))
-                            hapus.mutate(k.id);
-                        }}
-                        className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-gray-400">
+                    Memuat data...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : kelasList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-gray-400">
+                    Belum ada data kelas.
+                  </td>
+                </tr>
+              ) : (
+                kelasList.map((k) => (
+                  <tr key={k.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-gray-800">
+                        {k.nama_kelas}
+                      </p>
+                      <p className="text-xs text-gray-400 font-mono">{k.id}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">
+                        Kelas {k.tingkat}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      Semester {k.semester}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {k.wali?.nama_lengkap ?? (
+                        <span className="text-gray-300 italic">
+                          Belum ditentukan
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {k.ruangan ?? "-"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${k.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                      >
+                        {k.is_active ? "Aktif" : "Non-aktif"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() =>
+                            navigate(`/operator/master/kelas/${k.id}`)
+                          }
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                          title="Detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditData(k);
+                            setModalOpen(true);
+                          }}
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Hapus kelas ${k.nama_kelas}?`))
+                              hapus.mutate(k.id);
+                          }}
+                          className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
         {data?.total > 0 && (
           <div className="px-6 py-3 border-t border-gray-100 text-xs text-gray-400">
             Menampilkan {kelasList.length} dari {data.total} kelas
