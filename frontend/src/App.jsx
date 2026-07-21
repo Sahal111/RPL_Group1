@@ -22,6 +22,7 @@ import TambahEditSiswa from "./pages/operator/master/masterDataSiswa/TambahEditS
 import MasterKelas from "./pages/operator/master/masterDataKelas/MasterKelas";
 import MasterOrtu from "./pages/operator/master/masterDataOrtu/MasterOrtu";
 import TahunAjaran from "./pages/operator/master/masterDataTahunAjaran/TahunAjaran";
+import MutasiSiswa from "./pages/operator/master/masterDataSiswa/MutasiSiswa";
 import ApprovalOrtu from "./pages/operator/ApprovalOrtu";
 import DetailGuru from "./pages/operator/master/masterDataGuru/DetailGuru";
 import DetailSiswa from "./pages/operator/master/masterDataSiswa/DetailSiswa";
@@ -107,6 +108,7 @@ export default function App() {
         <Route path="master/siswa" element={<MasterSiswa />} />
         <Route path="master/siswa/tambah" element={<TambahEditSiswa />} />
         <Route path="master/siswa/edit/:nisn" element={<TambahEditSiswa />} />
+        <Route path="master/siswa/mutasi" element={<MutasiSiswa />} />
         <Route path="master/kelas" element={<MasterKelas />} />
         <Route path="master/ortu" element={<MasterOrtu />} />
         <Route path="master/tahun-ajaran" element={<TahunAjaran />} />

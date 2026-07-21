@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
@@ -117,10 +117,38 @@ export default function DetailSiswa() {
 
   return (
     <div>
+      {/* ── Breadcrumb ── */}
+      <nav
+        className="flex items-center gap-1.5 text-sm mb-3"
+        aria-label="Breadcrumb"
+      >
+        <button
+          onClick={() => navigate("/operator/master/siswa")}
+          className="text-text-secondary hover:text-text-primary transition-colors font-medium"
+        >
+          Data Master
+        </button>
+        <span className="material-symbols-outlined text-[16px] text-text-secondary">
+          chevron_right
+        </span>
+        <button
+          onClick={() => navigate("/operator/master/siswa")}
+          className="text-text-secondary hover:text-text-primary transition-colors font-medium"
+        >
+          Siswa
+        </button>
+        <span className="material-symbols-outlined text-[16px] text-text-secondary">
+          chevron_right
+        </span>
+        <span className="text-text-primary font-semibold">
+          {siswa.nama_lengkap ?? "Detail Siswa"}
+        </span>
+      </nav>
+
       {/* ── Page Header & Actions ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 className="font-headline text-[28px] sm:text-[32px] font-bold text-text-primary leading-tight">
+          <h2 className="font-headline text-[20px] font-semibold text-text-primary leading-tight">
             Detail Siswa
           </h2>
         </div>
@@ -209,7 +237,7 @@ export default function DetailSiswa() {
               {/* Name row */}
               <div className="col-span-1 md:col-span-2 flex flex-wrap justify-between items-start gap-2">
                 <div>
-                  <h3 className="font-headline text-[24px] font-bold text-text-primary mb-1">
+                  <h3 className="font-headline text-[17px] font-semibold text-text-primary mb-1">
                     {siswa.nama_lengkap}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 text-text-secondary text-sm">
@@ -306,26 +334,11 @@ export default function DetailSiswa() {
             style={{ minHeight: "600px" }}
           >
             {/* Tab Nav */}
-            <div
-              className="border-b border-border-light bg-surface-bright overflow-x-auto flex-none"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              <nav className="flex px-2" aria-label="Tabs">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                      activeTab === tab.id
-                        ? "border-primary text-primary"
-                        : "border-transparent text-text-secondary hover:text-text-primary hover:border-border-light"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
+            <ScrollableTabs
+              tabs={TABS}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
 
             {/* Tab Content */}
             <div className="p-6 overflow-y-auto flex-1">
@@ -358,7 +371,7 @@ export default function DetailSiswa() {
         {/* ══ RIGHT PANEL ══ */}
         <div className="w-full lg:w-72 flex-shrink-0">
           <div className="bg-surface-container-lowest rounded-[16px] border border-border-light shadow-sm p-5 lg:sticky lg:top-[96px]">
-            <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-4">
+            <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
               Quick Actions
             </h4>
             <div className="space-y-3">
@@ -474,7 +487,7 @@ export default function DetailSiswa() {
 function TabBiodata({ siswa, isL }) {
   return (
     <div>
-      <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+      <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
         Identitas Siswa
       </h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -543,7 +556,7 @@ function TabOrangTua({ dataOrangTua, yearOnly }) {
     <div className="space-y-8">
       {/* Kontak */}
       <div>
-        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
           Kontak & Alamat
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -559,7 +572,7 @@ function TabOrangTua({ dataOrangTua, yearOnly }) {
 
       {/* Ayah */}
       <div>
-        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
           Ayah Kandung
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -590,7 +603,7 @@ function TabOrangTua({ dataOrangTua, yearOnly }) {
 
       {/* Ibu */}
       <div>
-        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
           Ibu Kandung
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -621,7 +634,7 @@ function TabOrangTua({ dataOrangTua, yearOnly }) {
 
       {/* Wali */}
       <div>
-        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
           Wali
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -655,7 +668,7 @@ function TabOrangTua({ dataOrangTua, yearOnly }) {
 function TabAlamat({ siswa }) {
   return (
     <div>
-      <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+      <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
         Alamat Siswa
       </h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -688,7 +701,7 @@ function TabAlamat({ siswa }) {
 function TabAkademik({ siswa, kelasAktif }) {
   return (
     <div>
-      <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+      <h4 className="font-headline text-[13px] font-semibold text-text-primary mb-4">
         Data Akademik
       </h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -738,6 +751,130 @@ function TabComingSoon({ label }) {
 }
 
 /* ══════════════════════════════════════════
+   SCROLLABLE TAB NAV WITH FADE GRADIENTS
+══════════════════════════════════════════ */
+function ScrollableTabs({ tabs, activeTab, onTabChange }) {
+  const scrollRef = useRef(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowLeft(el.scrollLeft > 4);
+    setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    const ro = new ResizeObserver(checkScroll);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      ro.disconnect();
+    };
+  }, []);
+
+  // scroll active tab into view whenever it changes
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const active = el.querySelector("[data-active='true']");
+    if (active) {
+      active.scrollIntoView({
+        inline: "nearest",
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [activeTab]);
+
+  const scroll = (dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 140, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative border-b border-border-light bg-surface-bright flex-none">
+      {/* Left fade + chevron */}
+      {showLeft && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-12 z-10 flex items-center pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to right, var(--color-surface-bright) 60%, transparent)",
+          }}
+        >
+          <button
+            className="ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-low border border-border-light shadow-sm text-text-secondary hover:text-text-primary transition-colors pointer-events-auto"
+            onClick={() => scroll(-1)}
+            tabIndex={-1}
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              chevron_left
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Right fade + chevron */}
+      {showRight && (
+        <div
+          className="absolute right-0 top-0 bottom-0 w-12 z-10 flex items-center justify-end pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to left, var(--color-surface-bright) 60%, transparent)",
+          }}
+        >
+          <button
+            className="mr-1 w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-low border border-border-light shadow-sm text-text-secondary hover:text-text-primary transition-colors pointer-events-auto"
+            onClick={() => scroll(1)}
+            tabIndex={-1}
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              chevron_right
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Scrollable nav */}
+      <div
+        ref={scrollRef}
+        className="flex px-2 overflow-x-auto"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        aria-label="Tabs"
+        role="tablist"
+      >
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              data-active={isActive}
+              aria-selected={isActive}
+              onClick={() => onTabChange(tab.id)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors flex-shrink-0 ${
+                isActive
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-secondary hover:text-text-primary hover:border-border-light"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
    SHARED COMPONENTS
 ══════════════════════════════════════════ */
 
@@ -779,7 +916,7 @@ function StatCard({ icon, label, value, valueClass = "text-text-primary" }) {
         <span className="text-sm font-medium">{label}</span>
       </div>
       <div
-        className={`text-[24px] font-bold font-headline leading-tight ${valueClass}`}
+        className={`text-[18px] font-semibold font-headline leading-tight ${valueClass}`}
       >
         {value}
       </div>

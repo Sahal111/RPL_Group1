@@ -1,18 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
-import { Camera, X, Search } from "lucide-react";
 
-const agamaOptions = [
-  "Islam",
-  "Kristen Protestan",
-  "KristenKatolik",
-  "Hindu",
-  "Buddha",
-  "Khonghucu",
-];
+/* ─────────────────────────────────────────
+   STATUS CONFIG
+───────────────────────────────────────── */
 const statusPdOpts = [
   { value: "aktif", label: "Aktif" },
   { value: "nonaktif", label: "Non-Aktif" },
@@ -20,122 +14,12 @@ const statusPdOpts = [
   { value: "lulus", label: "Lulus" },
   { value: "meninggal", label: "Meninggal" },
 ];
-const keluargaOpts = ["Anak Kandung", "AnakTiri", "Anak Angkat"];
-const pendidikanOpts = [
-  "Tidak Sekolah",
-  "SD",
-  "SMP",
-  "SMA",
-  "D1",
-  "D2",
-  "D3",
-  "S1",
-  "S2",
-  "S3",
-];
-const penghasilanOpts = [
-  "Tidak Berpenghasilan",
-  "< 500rb",
-  "500rb - 1jt",
-  "1jt - 2jt",
-  "2jt - 3jt",
-  "3jt - 5jt",
-  "> 5jt",
-];
-
-const emptyOrangTua = {
-  nama_ayah: "",
-  nik_ayah: "",
-  tahun_lahir_ayah: "",
-  pendidikan_ayah: "",
-  pekerjaan_ayah: "",
-  penghasilan_ayah: "",
-  nama_ibu: "",
-  nik_ibu: "",
-  tahun_lahir_ibu: "",
-  pendidikan_ibu: "",
-  pekerjaan_ibu: "",
-  penghasilan_ibu: "",
-  nama_wali: "",
-  nik_wali: "",
-  hubungan_wali: "",
-  pekerjaan_wali: "",
-  penghasilan_wali: "",
-  no_hp_ayah: "",
-  no_hp_ibu: "",
-  no_hp_wali: "",
-  email: "",
-  alamat: "",
-};
-
-const defaultForm = {
-  nisn: "",
-  nik: "",
-  no_induk: "",
-  nama_lengkap: "",
-  jenis_kelamin: "L",
-  tanggal_lahir: "",
-  tempat_lahir: "",
-  agama: "Islam",
-  status_dalam_keluarga: "Anak Kandung",
-  anak_ke: "",
-  no_kk: "",
-  no_akta_lahir: "",
-  nama_ibu_kandung: "",
-  kewarganegaraan: "WNI",
-  alamat_jalan: "",
-  rt: "",
-  rw: "",
-  desa: "",
-  kecamatan: "",
-  kabupaten: "",
-  provinsi: "",
-  kode_pos: "",
-  no_hp: "",
-  status_pd: "Aktif",
-  asal_sekolah: "",
-  tanggal_masuk: "",
-  orang_tua_id: "",
-  orang_tua: emptyOrangTua,
-};
-
-const yearFromDate = (v) => (v ? String(v).slice(0, 4) : "");
-const getPrimaryOrangTua = (o) => (Array.isArray(o) ? (o[0] ?? {}) : (o ?? {}));
-const parentDisplayName = (o) =>
-  o?.nama_ayah ||
-  o?.nama_ibu ||
-  o?.nama_wali ||
-  o?.email ||
-  `Orang tua #${o?.id}`;
-
-const normalizeOrangTua = (ortu) => {
-  const d = getPrimaryOrangTua(ortu);
-  return {
-    ...emptyOrangTua,
-    ...d,
-    tahun_lahir_ayah: d.tahun_lahir_ayah ?? yearFromDate(d.tanggal_lahir_ayah),
-    tahun_lahir_ibu: d.tahun_lahir_ibu ?? yearFromDate(d.tanggal_lahir_ibu),
-  };
-};
-
-const normalizeForm = (data) => ({
-  ...defaultForm,
-  ...(data ?? {}),
-  orang_tua_id: getPrimaryOrangTua(data?.orang_tua)?.id ?? "",
-  orang_tua: {
-    ...normalizeOrangTua(data?.orang_tua),
-    nama_ibu:
-      getPrimaryOrangTua(data?.orang_tua)?.nama_ibu ??
-      data?.nama_ibu_kandung ??
-      "",
-  },
-});
 
 const statusConfig = {
   aktif: {
     bg: "bg-success/5",
     text: "text-success",
-    border: "border-success/20",
+    border: "border-success/10",
     label: "Aktif",
   },
   nonaktif: {
@@ -171,865 +55,15 @@ const getStatusStyle = (s) =>
     label: s ?? "—",
   };
 
-const inputCls =
-  "w-full px-3.5 py-2.5 rounded-xl border border-border-light bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-primary transition-all";
-
-function FamilySection({ title, children }) {
-  return (
-    <div className="border-t border-border-light pt-4">
-      <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-3">
-        {title}
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{children}</div>
-    </div>
-  );
-}
-
-function Field({ label, children, className = "" }) {
-  return (
-    <div className={className}>
-      <label className="block text-[12px] font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function ModalSiswa({ open, onClose, editData, queryClient }) {
-  const isEdit = !!editData;
-  const [form, setForm] = useState(defaultForm);
-  const [preview, setPreview] = useState(null);
-  const [parentSearch, setParentSearch] = useState("");
-  const [searchBy, setSearchBy] = useState("all");
-  const [nisnError, setNisnError] = useState("");
-  const fileRef = useRef();
-
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  const setOrangTua = (k, v) =>
-    setForm((f) => ({
-      ...f,
-      unlink_orang_tua: false,
-      orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), [k]: v },
-    }));
-  const setNamaIbu = (value) =>
-    setForm((f) => ({
-      ...f,
-      unlink_orang_tua: false,
-      nama_ibu_kandung: value,
-      orang_tua: { ...emptyOrangTua, ...(f.orang_tua ?? {}), nama_ibu: value },
-    }));
-
-  useEffect(() => {
-    if (open) {
-      setForm(normalizeForm(editData));
-      setPreview(
-        editData?.foto
-          ? `http://127.0.0.1:8001/storage/${editData.foto}`
-          : null,
-      );
-      setParentSearch("");
-      setSearchBy("all");
-      setNisnError("");
-    }
-  }, [open, editData]);
-
-  const { data: parentOptions = [], isFetching: isFetchingParents } = useQuery({
-    queryKey: ["orang-tua-options", parentSearch, searchBy, open],
-    queryFn: () =>
-      api
-        .get("/operator/master-data/siswa/orang-tua-options", {
-          params: { search: parentSearch, search_by: searchBy },
-        })
-        .then((res) => res.data.data ?? []),
-    enabled: open && parentSearch.trim().length >= 2,
-  });
-
-  const selectExistingParent = (ortu) => {
-    const normalized = normalizeOrangTua(ortu);
-    setForm((prev) => ({
-      ...prev,
-      orang_tua_id: ortu.id,
-      unlink_orang_tua: false,
-      nama_ibu_kandung: normalized.nama_ibu || prev.nama_ibu_kandung,
-      orang_tua: normalized,
-    }));
-    setParentSearch(parentDisplayName(ortu));
-    toast.success("Data orang tua lama dipakai untuk siswa ini.");
-  };
-
-  const clearSelectedParent = () => {
-    setForm((prev) => ({
-      ...prev,
-      orang_tua_id: "",
-      orang_tua: emptyOrangTua,
-      unlink_orang_tua: true,
-    }));
-    setParentSearch("");
-    setSearchBy("all");
-  };
-
-  const mutation = useMutation({
-    mutationFn: async (data) => {
-      const { _foto, ...payload } = data;
-      const res = isEdit
-        ? await api.put(`/operator/master-data/siswa/${editData.nisn}`, payload)
-        : await api.post("/operator/master-data/siswa", payload);
-      if (_foto) {
-        const fd = new FormData();
-        fd.append("foto", _foto);
-        await api.post(
-          `/operator/master-data/siswa/${res.data.data.nisn}/foto`,
-          fd,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          },
-        );
-      }
-      return res;
-    },
-    onSuccess: () => {
-      toast.success(
-        `Data siswa berhasil ${isEdit ? "diperbarui" : "ditambahkan"}.`,
-      );
-      queryClient.invalidateQueries(["master-siswa"]);
-      onClose();
-    },
-    onError: (err) => {
-      const errors = err.response?.data?.errors;
-      if (errors) {
-        Object.entries(errors).forEach(([field, messages]) => {
-          if (field === "nisn") setNisnError(messages[0]);
-          messages.forEach((msg) => toast.error(msg));
-        });
-      } else {
-        toast.error(err.response?.data?.message ?? "Gagal menyimpan.");
-      }
-    },
-  });
-
-  if (!open) return null;
-
-  const isL = form.jenis_kelamin === "L";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-auto backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-4 border border-border-light overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light bg-surface-container-lowest">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-[20px]">
-                {isEdit ? "edit" : "person_add"}
-              </span>
-            </div>
-            <div>
-              <h3 className="font-bold text-text-primary text-base">
-                {isEdit ? "Edit Data Siswa" : "Tambah Siswa Baru"}
-              </h3>
-              <p className="text-[11px] text-text-secondary">
-                {isEdit
-                  ? `Memperbarui: ${editData?.nama_lengkap}`
-                  : "Isi formulir data siswa dengan lengkap"}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-text-secondary hover:text-danger hover:bg-danger/10 transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="px-6 py-5 space-y-5 max-h-[72vh] overflow-y-auto">
-          {/* Foto */}
-          <div className="flex items-center gap-4 pb-4 border-b border-border-light">
-            <div className="relative">
-              <div
-                className={`w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center shadow-soft ${isL ? "bg-info/10" : "bg-tertiary/10"}`}
-              >
-                {preview ? (
-                  <img
-                    src={preview}
-                    alt="preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span
-                    className={`font-bold text-2xl ${isL ? "text-info" : "text-tertiary"}`}
-                  >
-                    {form.nama_lengkap?.charAt(0)?.toUpperCase() || "?"}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-soft hover:bg-primary/90 transition-all"
-              >
-                <Camera className="w-3.5 h-3.5 text-white" />
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) {
-                    setPreview(URL.createObjectURL(f));
-                    setForm((x) => ({ ...x, _foto: f }));
-                  }
-                }}
-              />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-text-primary">Foto Siswa</p>
-              <p className="text-xs text-text-secondary mt-0.5">
-                JPG atau PNG, maksimal 2MB
-              </p>
-            </div>
-          </div>
-
-          {/* Data Pribadi */}
-          <div>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-3">
-              Data Pribadi
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Nama Lengkap *" className="sm:col-span-2">
-                <input
-                  value={form.nama_lengkap}
-                  onChange={(e) => set("nama_lengkap", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nama lengkap siswa"
-                />
-              </Field>
-              <Field label={`NISN *${nisnError ? " — " + nisnError : ""}`}>
-                <input
-                  value={form.nisn}
-                  onChange={(e) => {
-                    set("nisn", e.target.value);
-                    setNisnError("");
-                  }}
-                  className={`${inputCls} ${nisnError ? "border-danger" : ""}`}
-                  placeholder="10 digit NISN"
-                  disabled={isEdit}
-                />
-              </Field>
-              <Field label="NIK">
-                <input
-                  value={form.nik}
-                  onChange={(e) => set("nik", e.target.value)}
-                  className={inputCls}
-                  placeholder="16 digit NIK"
-                />
-              </Field>
-              <Field label="No. Induk">
-                <input
-                  value={form.no_induk}
-                  onChange={(e) => set("no_induk", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nomor induk sekolah"
-                />
-              </Field>
-              <Field label="Jenis Kelamin *">
-                <select
-                  value={form.jenis_kelamin}
-                  onChange={(e) => set("jenis_kelamin", e.target.value)}
-                  className={inputCls}
-                >
-                  <option value="L">Laki-laki</option>
-                  <option value="P">Perempuan</option>
-                </select>
-              </Field>
-              <Field label="Tempat Lahir *">
-                <input
-                  value={form.tempat_lahir}
-                  onChange={(e) => set("tempat_lahir", e.target.value)}
-                  className={inputCls}
-                  placeholder="Kota tempat lahir"
-                />
-              </Field>
-              <Field label="Tanggal Lahir *">
-                <input
-                  type="date"
-                  value={form.tanggal_lahir}
-                  onChange={(e) => set("tanggal_lahir", e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Agama *">
-                <select
-                  value={form.agama}
-                  onChange={(e) => set("agama", e.target.value)}
-                  className={inputCls}
-                >
-                  {agamaOptions.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Kewarganegaraan">
-                <select
-                  value={form.kewarganegaraan}
-                  onChange={(e) => set("kewarganegaraan", e.target.value)}
-                  className={inputCls}
-                >
-                  <option value="WNI">WNI</option>
-                  <option value="WNA">WNA</option>
-                </select>
-              </Field>
-            </div>
-          </div>
-
-          {/* Cari Orang Tua */}
-          <div>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-3">
-              Data Keluarga
-            </p>
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3 mb-3">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-bold text-text-primary">
-                    Pakai Data Orang Tua yang Sudah Ada
-                  </p>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Cari berdasarkan nama, NIK, nomor HP, atau email.
-                  </p>
-                </div>
-                {form.orang_tua_id && (
-                  <button
-                    type="button"
-                    onClick={clearSelectedParent}
-                    className="text-xs font-bold text-danger hover:text-danger/80 whitespace-nowrap"
-                  >
-                    Bersihkan
-                  </button>
-                )}
-              </div>
-              <select
-                value={searchBy}
-                onChange={(e) => {
-                  setSearchBy(e.target.value);
-                  setParentSearch("");
-                }}
-                className={inputCls}
-              >
-                <option value="all">
-                  Semua (Nama, NIK, HP, Email, NISN Anak, No. KK)
-                </option>
-                <option value="nik">NIK Ayah/Ibu/Wali</option>
-                <option value="no_kk">No. KK Anak</option>
-                <option value="nama">Nama Ayah/Ibu/Wali</option>
-                <option value="no_hp">Nomor HP/WA</option>
-                <option value="nisn">NISN atau Nama Anak</option>
-              </select>
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                <input
-                  value={parentSearch}
-                  onChange={(e) => setParentSearch(e.target.value)}
-                  className={`${inputCls} pl-10`}
-                  placeholder="Ketik minimal 2 huruf untuk mencari..."
-                />
-                {parentSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setParentSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              {form.orang_tua_id && (
-                <div className="rounded-xl bg-white border border-primary/20 p-3 text-sm text-primary font-medium flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">
-                    check_circle
-                  </span>
-                  Terpilih: <b>{parentDisplayName(form.orang_tua)}</b>
-                </div>
-              )}
-              {parentSearch.trim().length >= 2 && !form.orang_tua_id && (
-                <div className="rounded-xl bg-white border border-border-light divide-y divide-border-light overflow-hidden shadow-soft">
-                  {isFetchingParents ? (
-                    <p className="p-3 text-sm text-text-secondary">
-                      Mencari data orang tua...
-                    </p>
-                  ) : parentOptions.length > 0 ? (
-                    parentOptions.map((ortu) => (
-                      <button
-                        key={ortu.id}
-                        type="button"
-                        onClick={() => selectExistingParent(ortu)}
-                        className="w-full text-left p-3 hover:bg-surface-container-low transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-text-primary">
-                              {parentDisplayName(ortu)}
-                            </p>
-                            <p className="text-xs text-text-secondary mt-1">
-                              Ayah: {ortu.nama_ayah || "-"} · Ibu:{" "}
-                              {ortu.nama_ibu || "-"}
-                            </p>
-                            {ortu.siswa?.length > 0 && (
-                              <p className="text-xs text-primary font-medium mt-0.5">
-                                Anak:{" "}
-                                {ortu.siswa
-                                  .map((s) => s.nama_lengkap)
-                                  .join(", ")}
-                              </p>
-                            )}
-                          </div>
-                          <span className="text-xs text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
-                            {ortu.siswa?.length ?? 0} anak
-                          </span>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="p-3 text-sm text-text-secondary">
-                      Tidak ditemukan. Isi data keluarga baru di bawah.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Status dalam Keluarga *">
-                <select
-                  value={form.status_dalam_keluarga}
-                  onChange={(e) => set("status_dalam_keluarga", e.target.value)}
-                  className={inputCls}
-                >
-                  {keluargaOpts.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Anak ke-">
-                <input
-                  type="number"
-                  value={form.anak_ke}
-                  onChange={(e) => set("anak_ke", e.target.value)}
-                  className={inputCls}
-                  placeholder="1"
-                  min="1"
-                />
-              </Field>
-              <Field label="No. KK">
-                <input
-                  value={form.no_kk}
-                  onChange={(e) => set("no_kk", e.target.value)}
-                  className={inputCls}
-                  placeholder="16 digit No. KK"
-                />
-              </Field>
-              <Field label="No. Akta Lahir">
-                <input
-                  value={form.no_akta_lahir}
-                  onChange={(e) => set("no_akta_lahir", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nomor akta lahir"
-                />
-              </Field>
-            </div>
-          </div>
-
-          <FamilySection title="Data Ayah Kandung">
-            <Field label="Nama Lengkap" className="sm:col-span-2">
-              <input
-                value={form.orang_tua?.nama_ayah ?? ""}
-                onChange={(e) => setOrangTua("nama_ayah", e.target.value)}
-                className={inputCls}
-                placeholder="Sesuai KK atau akta kelahiran"
-              />
-            </Field>
-            <Field label="NIK">
-              <input
-                value={form.orang_tua?.nik_ayah ?? ""}
-                onChange={(e) => setOrangTua("nik_ayah", e.target.value)}
-                className={inputCls}
-                placeholder="16 digit NIK"
-              />
-            </Field>
-            <Field label="Tahun Lahir">
-              <input
-                type="number"
-                value={form.orang_tua?.tahun_lahir_ayah ?? ""}
-                onChange={(e) =>
-                  setOrangTua("tahun_lahir_ayah", e.target.value)
-                }
-                className={inputCls}
-                min="1900"
-                max={new Date().getFullYear()}
-                placeholder="1980"
-              />
-            </Field>
-            <Field label="Pendidikan Terakhir">
-              <select
-                value={form.orang_tua?.pendidikan_ayah ?? ""}
-                onChange={(e) => setOrangTua("pendidikan_ayah", e.target.value)}
-                className={inputCls}
-              >
-                <option value="">-- Pilih --</option>
-                {pendidikanOpts.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Pekerjaan Utama">
-              <input
-                value={form.orang_tua?.pekerjaan_ayah ?? ""}
-                onChange={(e) => setOrangTua("pekerjaan_ayah", e.target.value)}
-                className={inputCls}
-                placeholder="PNS, Karyawan, Wiraswasta"
-              />
-            </Field>
-            <Field label="Penghasilan Bulanan">
-              <select
-                value={form.orang_tua?.penghasilan_ayah ?? ""}
-                onChange={(e) =>
-                  setOrangTua("penghasilan_ayah", e.target.value)
-                }
-                className={inputCls}
-              >
-                <option value="">-- Pilih --</option>
-                {penghasilanOpts.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Nomor HP/WA">
-              <input
-                value={form.orang_tua?.no_hp_ayah ?? ""}
-                onChange={(e) => setOrangTua("no_hp_ayah", e.target.value)}
-                className={inputCls}
-                placeholder="Nomor aktif"
-              />
-            </Field>
-          </FamilySection>
-
-          <FamilySection title="Data Ibu Kandung">
-            <Field label="Nama Lengkap" className="sm:col-span-2">
-              <input
-                value={form.orang_tua?.nama_ibu ?? ""}
-                onChange={(e) => setNamaIbu(e.target.value)}
-                className={inputCls}
-                placeholder="Sesuai KK atau akta kelahiran"
-              />
-            </Field>
-            <Field label="NIK">
-              <input
-                value={form.orang_tua?.nik_ibu ?? ""}
-                onChange={(e) => setOrangTua("nik_ibu", e.target.value)}
-                className={inputCls}
-                placeholder="16 digit NIK"
-              />
-            </Field>
-            <Field label="Tahun Lahir">
-              <input
-                type="number"
-                value={form.orang_tua?.tahun_lahir_ibu ?? ""}
-                onChange={(e) => setOrangTua("tahun_lahir_ibu", e.target.value)}
-                className={inputCls}
-                min="1900"
-                max={new Date().getFullYear()}
-                placeholder="1980"
-              />
-            </Field>
-            <Field label="Pendidikan Terakhir">
-              <select
-                value={form.orang_tua?.pendidikan_ibu ?? ""}
-                onChange={(e) => setOrangTua("pendidikan_ibu", e.target.value)}
-                className={inputCls}
-              >
-                <option value="">-- Pilih --</option>
-                {pendidikanOpts.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Pekerjaan Utama">
-              <input
-                value={form.orang_tua?.pekerjaan_ibu ?? ""}
-                onChange={(e) => setOrangTua("pekerjaan_ibu", e.target.value)}
-                className={inputCls}
-                placeholder="PNS, Karyawan, IRT"
-              />
-            </Field>
-            <Field label="Penghasilan Bulanan">
-              <select
-                value={form.orang_tua?.penghasilan_ibu ?? ""}
-                onChange={(e) => setOrangTua("penghasilan_ibu", e.target.value)}
-                className={inputCls}
-              >
-                <option value="">-- Pilih --</option>
-                {penghasilanOpts.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Nomor HP/WA">
-              <input
-                value={form.orang_tua?.no_hp_ibu ?? ""}
-                onChange={(e) => setOrangTua("no_hp_ibu", e.target.value)}
-                className={inputCls}
-                placeholder="Nomor aktif"
-              />
-            </Field>
-          </FamilySection>
-
-          <FamilySection title="Data Wali (Opsional)">
-            <Field label="Nama Lengkap" className="sm:col-span-2">
-              <input
-                value={form.orang_tua?.nama_wali ?? ""}
-                onChange={(e) => setOrangTua("nama_wali", e.target.value)}
-                className={inputCls}
-                placeholder="Diisi jika siswa tinggal/ditanggung wali"
-              />
-            </Field>
-            <Field label="NIK">
-              <input
-                value={form.orang_tua?.nik_wali ?? ""}
-                onChange={(e) => setOrangTua("nik_wali", e.target.value)}
-                className={inputCls}
-                placeholder="16 digit NIK"
-              />
-            </Field>
-            <Field label="Hubungan dengan Siswa">
-              <input
-                value={form.orang_tua?.hubungan_wali ?? ""}
-                onChange={(e) => setOrangTua("hubungan_wali", e.target.value)}
-                className={inputCls}
-                placeholder="Kakek, Nenek, Paman"
-              />
-            </Field>
-            <Field label="Pekerjaan Utama">
-              <input
-                value={form.orang_tua?.pekerjaan_wali ?? ""}
-                onChange={(e) => setOrangTua("pekerjaan_wali", e.target.value)}
-                className={inputCls}
-                placeholder="Pekerjaan wali"
-              />
-            </Field>
-            <Field label="Penghasilan Bulanan">
-              <select
-                value={form.orang_tua?.penghasilan_wali ?? ""}
-                onChange={(e) =>
-                  setOrangTua("penghasilan_wali", e.target.value)
-                }
-                className={inputCls}
-              >
-                <option value="">-- Pilih --</option>
-                {penghasilanOpts.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Nomor HP/WA">
-              <input
-                value={form.orang_tua?.no_hp_wali ?? ""}
-                onChange={(e) => setOrangTua("no_hp_wali", e.target.value)}
-                className={inputCls}
-                placeholder="Nomor aktif"
-              />
-            </Field>
-          </FamilySection>
-
-          <FamilySection title="Kontak & Domisili Orang Tua/Wali">
-            <Field label="Email">
-              <input
-                type="email"
-                value={form.orang_tua?.email ?? ""}
-                onChange={(e) => setOrangTua("email", e.target.value)}
-                className={inputCls}
-                placeholder="email@example.com"
-              />
-            </Field>
-            <Field label="Alamat Domisili" className="sm:col-span-2">
-              <textarea
-                value={form.orang_tua?.alamat ?? ""}
-                onChange={(e) => setOrangTua("alamat", e.target.value)}
-                className={`${inputCls} resize-none`}
-                rows={2}
-                placeholder="Alamat tinggal saat ini"
-              />
-            </Field>
-          </FamilySection>
-
-          {/* Alamat Siswa */}
-          <div>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-3">
-              Alamat Siswa
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Alamat Jalan *" className="sm:col-span-2">
-                <textarea
-                  value={form.alamat_jalan}
-                  onChange={(e) => set("alamat_jalan", e.target.value)}
-                  className={`${inputCls} resize-none`}
-                  rows={2}
-                  placeholder="Nama jalan, nomor rumah"
-                />
-              </Field>
-              <Field label="RT">
-                <input
-                  value={form.rt}
-                  onChange={(e) => set("rt", e.target.value)}
-                  className={inputCls}
-                  placeholder="001"
-                />
-              </Field>
-              <Field label="RW">
-                <input
-                  value={form.rw}
-                  onChange={(e) => set("rw", e.target.value)}
-                  className={inputCls}
-                  placeholder="001"
-                />
-              </Field>
-              <Field label="Desa/Kelurahan">
-                <input
-                  value={form.desa}
-                  onChange={(e) => set("desa", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nama desa"
-                />
-              </Field>
-              <Field label="Kecamatan">
-                <input
-                  value={form.kecamatan}
-                  onChange={(e) => set("kecamatan", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nama kecamatan"
-                />
-              </Field>
-              <Field label="Kabupaten/Kota">
-                <input
-                  value={form.kabupaten}
-                  onChange={(e) => set("kabupaten", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nama kabupaten"
-                />
-              </Field>
-              <Field label="Provinsi">
-                <input
-                  value={form.provinsi}
-                  onChange={(e) => set("provinsi", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nama provinsi"
-                />
-              </Field>
-              <Field label="Kode Pos">
-                <input
-                  value={form.kode_pos}
-                  onChange={(e) => set("kode_pos", e.target.value)}
-                  className={inputCls}
-                  placeholder="12345"
-                />
-              </Field>
-            </div>
-          </div>
-
-          {/* Data Sekolah */}
-          <div>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-3">
-              Data Sekolah
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Status *">
-                <select
-                  value={form.status_pd}
-                  onChange={(e) => set("status_pd", e.target.value)}
-                  className={inputCls}
-                >
-                  {statusPdOpts.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Tanggal Masuk *">
-                <input
-                  type="date"
-                  value={form.tanggal_masuk}
-                  onChange={(e) => set("tanggal_masuk", e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Asal Sekolah" className="sm:col-span-2">
-                <input
-                  value={form.asal_sekolah}
-                  onChange={(e) => set("asal_sekolah", e.target.value)}
-                  className={inputCls}
-                  placeholder="Nama sekolah asal (TK/SD sebelumnya)"
-                />
-              </Field>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-border-light bg-surface-container-lowest">
-          <button
-            onClick={onClose}
-            className="flex-1 px-5 py-2.5 bg-white border border-border-light rounded-xl font-bold text-sm text-text-primary hover:bg-surface-container-low transition-all"
-          >
-            Batal
-          </button>
-          <button
-            onClick={() => mutation.mutate(form)}
-            disabled={mutation.isPending}
-            className="flex-1 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-soft disabled:opacity-60 active:scale-[0.98]"
-          >
-            {mutation.isPending ? (
-              <>
-                <span className="material-symbols-outlined text-[18px]">
-                  progress_activity
-                </span>{" "}
-                Menyimpan...
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[18px]">
-                  {isEdit ? "save" : "person_add"}
-                </span>{" "}
-                {isEdit ? "Perbarui Data" : "Simpan Siswa"}
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/* ─────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────── */
 export default function MasterSiswa() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editData, setEditData] = useState(null);
+  const [selected, setSelected] = useState(new Set());
 
   const { data, isLoading } = useQuery({
     queryKey: ["master-siswa", search, status],
@@ -1050,20 +84,26 @@ export default function MasterSiswa() {
       toast.error(err.response?.data?.message ?? "Gagal menghapus."),
   });
 
-  const openEdit = (s) => {
-    setEditData({
-      ...s,
-      tanggal_lahir: s.tanggal_lahir?.split("T")[0] ?? "",
-      tanggal_masuk: s.tanggal_masuk?.split("T")[0] ?? "",
-    });
-    setModalOpen(true);
-  };
-
   const siswaList = data?.data ?? [];
   const total = data?.total ?? 0;
-  const totalAktif = siswaList.filter((s) => s.status === "aktif").length;
   const totalL = siswaList.filter((s) => s.jenis_kelamin === "L").length;
   const totalP = siswaList.filter((s) => s.jenis_kelamin === "P").length;
+  const totalBaru = siswaList.filter((s) => {
+    const yr = s.tanggal_masuk ? new Date(s.tanggal_masuk).getFullYear() : null;
+    return yr === new Date().getFullYear();
+  }).length;
+
+  /* checkbox logic */
+  const allChecked = siswaList.length > 0 && selected.size === siswaList.length;
+  const toggleAll = () =>
+    setSelected(allChecked ? new Set() : new Set(siswaList.map((s) => s.nisn)));
+  const toggleOne = (nisn) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(nisn) ? n.delete(nisn) : n.add(nisn);
+      return n;
+    });
+  const clearSel = () => setSelected(new Set());
 
   return (
     <div className="space-y-6">
@@ -1121,44 +161,32 @@ export default function MasterSiswa() {
           </div>
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined">groups</span>
+              <span className="material-symbols-outlined icon-fill">
+                groups
+              </span>
             </div>
             <span className="text-[10px] font-bold px-2 py-1 bg-success/10 text-success rounded-full flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px]">
                 trending_up
-              </span>
-              Aktif
+              </span>{" "}
+              2.5%
             </span>
           </div>
           <p className="text-text-secondary text-sm font-medium">
             Total Siswa (Aktif)
           </p>
           <h3 className="text-3xl font-extrabold text-text-primary mt-1">
-            {isLoading ? "—" : total || siswaList.length}
+            {isLoading
+              ? "—"
+              : (total || siswaList.length).toLocaleString("id-ID")}
           </h3>
         </div>
 
-        {/* Siswa Aktif */}
-        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
-              <span className="material-symbols-outlined">how_to_reg</span>
-            </div>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mt-1">
-              {isLoading ? "—" : `${totalAktif} aktif`}
-            </p>
-          </div>
-          <p className="text-text-secondary text-sm font-medium">Siswa Aktif</p>
-          <h3 className="text-3xl font-extrabold text-text-primary mt-1">
-            {isLoading ? "—" : totalAktif}
-          </h3>
-        </div>
-
-        {/* Siswa Putra */}
+        {/* Laki-laki */}
         <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center text-info">
-              <span className="material-symbols-outlined">boy</span>
+              <span className="material-symbols-outlined icon-fill">boy</span>
             </div>
             <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mt-1">
               {isLoading || !siswaList.length
@@ -1166,22 +194,19 @@ export default function MasterSiswa() {
                 : `${Math.round((totalL / siswaList.length) * 100)}% of total`}
             </p>
           </div>
-          <p className="text-text-secondary text-sm font-medium">Siswa Putra</p>
+          <p className="text-text-secondary text-sm font-medium">
+            Siswa Laki-laki
+          </p>
           <h3 className="text-3xl font-extrabold text-text-primary mt-1">
             {isLoading ? "—" : totalL}
           </h3>
         </div>
 
-        {/* Siswa Putri */}
-        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-            <span className="material-symbols-outlined text-8xl -rotate-12 translate-x-4 translate-y-4">
-              girl
-            </span>
-          </div>
+        {/* Perempuan */}
+        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
-              <span className="material-symbols-outlined">girl</span>
+              <span className="material-symbols-outlined icon-fill">girl</span>
             </div>
             <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mt-1">
               {isLoading || !siswaList.length
@@ -1189,15 +214,86 @@ export default function MasterSiswa() {
                 : `${Math.round((totalP / siswaList.length) * 100)}% of total`}
             </p>
           </div>
-          <p className="text-text-secondary text-sm font-medium">Siswa Putri</p>
+          <p className="text-text-secondary text-sm font-medium">
+            Siswa Perempuan
+          </p>
           <h3 className="text-3xl font-extrabold text-text-primary mt-1">
             {isLoading ? "—" : totalP}
+          </h3>
+        </div>
+
+        {/* Siswa Baru */}
+        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all relative overflow-hidden">
+          <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+            <span className="material-symbols-outlined text-8xl -rotate-12 translate-x-4 translate-y-4">
+              person_add
+            </span>
+          </div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
+              <span className="material-symbols-outlined icon-fill">
+                person_add
+              </span>
+            </div>
+            <p className="text-[10px] font-bold text-warning uppercase tracking-wider mt-1">
+              {new Date().getFullYear()}
+            </p>
+          </div>
+          <p className="text-text-secondary text-sm font-medium">Siswa Baru</p>
+          <h3 className="text-3xl font-extrabold text-text-primary mt-1">
+            {isLoading ? "—" : totalBaru}
           </h3>
         </div>
       </div>
 
       {/* ── Table Section ── */}
       <div className="bg-white rounded-[18px] border border-border-light shadow-soft overflow-hidden relative">
+        {/* Selection Toolbar */}
+        {selected.size > 0 && (
+          <div className="absolute top-0 inset-x-0 h-[64px] bg-primary text-white z-20 flex items-center justify-between px-6">
+            <div className="flex items-center gap-6">
+              <span className="text-sm font-bold">
+                {selected.size} siswa dipilih
+              </span>
+              <div className="h-6 w-px bg-white/20" />
+              <button
+                onClick={() => navigate("/operator/master/siswa/mutasi")}
+                className="flex items-center gap-2 text-sm font-bold hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  swap_horiz
+                </span>{" "}
+                Mutasi
+              </button>
+              <button className="flex items-center gap-2 text-sm font-bold hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-[18px]">
+                  print
+                </span>{" "}
+                Print Kartu
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (confirm(`Hapus ${selected.size} siswa yang dipilih?`)) {
+                    selected.forEach((nisn) => hapus.mutate(nisn));
+                    clearSel();
+                  }
+                }}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold transition-colors"
+              >
+                Hapus Terpilih
+              </button>
+              <button
+                onClick={clearSel}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table Header Controls */}
         <div className="px-6 py-5 border-b border-border-light flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
@@ -1207,45 +303,32 @@ export default function MasterSiswa() {
               </span>
               <input
                 type="text"
-                placeholder="Cari nama, NISN, atau kelas..."
+                placeholder="Search by name, NISN, or class..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  clearSel();
+                }}
                 className="w-full pl-11 pr-4 py-2.5 bg-background-light border border-border-light rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
               />
             </div>
-            <div className="relative">
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-border-light rounded-xl text-sm font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all cursor-pointer"
-              >
-                <option value="">Semua Status</option>
-                {statusPdOpts.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">
-                expand_more
+            <button className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-text-primary hover:bg-surface-container-low transition-all flex items-center gap-2 text-sm font-bold whitespace-nowrap">
+              <span className="material-symbols-outlined text-[18px]">
+                filter_list
               </span>
-            </div>
+              Filters
+              <span className="bg-primary text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full ml-1">
+                2
+              </span>
+            </button>
           </div>
           <div className="flex items-center gap-3">
-            {(search || status) && (
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setStatus("");
-                }}
-                className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-danger hover:bg-error-container transition-all flex items-center gap-2 text-sm font-bold"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  filter_alt_off
-                </span>
-                Reset
-              </button>
-            )}
+            <button className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-text-secondary hover:text-danger hover:bg-error-container transition-all flex items-center gap-2 text-sm font-bold whitespace-nowrap">
+              <span className="material-symbols-outlined text-[18px]">
+                delete_sweep
+              </span>
+              Tempat Sampah
+            </button>
             <button className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-text-primary hover:bg-surface-container-low transition-all flex items-center gap-2 text-sm font-bold">
               <span className="material-symbols-outlined text-[18px]">
                 download
@@ -1260,9 +343,17 @@ export default function MasterSiswa() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-background-light/50 border-b border-border-light">
+                <th className="px-6 py-4 w-12">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    onChange={toggleAll}
+                    className="rounded border-border-light text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
                   <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
-                    Siswa
+                    Siswa{" "}
                     <span className="material-symbols-outlined text-[14px]">
                       unfold_more
                     </span>
@@ -1272,7 +363,12 @@ export default function MasterSiswa() {
                   NISN / NIS
                 </th>
                 <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
-                  Kelas
+                  <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+                    Kelas{" "}
+                    <span className="material-symbols-outlined text-[14px]">
+                      arrow_downward
+                    </span>
+                  </div>
                 </th>
                 <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
                   Gender
@@ -1281,14 +377,14 @@ export default function MasterSiswa() {
                   Status
                 </th>
                 <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest text-right">
-                  Aksi
+                  Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-light">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-20">
+                  <td colSpan={7} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
                       <span className="material-symbols-outlined text-[48px] text-primary animate-spin">
                         progress_activity
@@ -1301,7 +397,7 @@ export default function MasterSiswa() {
                 </tr>
               ) : siswaList.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-20">
+                  <td colSpan={7} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center">
                         <span className="material-symbols-outlined text-[32px] text-text-secondary">
@@ -1323,18 +419,32 @@ export default function MasterSiswa() {
                 </tr>
               ) : (
                 siswaList.map((s) => {
-                  const st = getStatusStyle(s.status);
+                  const st = getStatusStyle(
+                    s.status_pd?.toLowerCase() ?? s.status,
+                  );
                   const isL = s.jenis_kelamin === "L";
-                  const isAktif = s.status === "aktif";
+                  const isAktif =
+                    (s.status_pd ?? s.status)?.toLowerCase() === "aktif";
                   const kelasSiswa =
                     s.kelas_aktif?.nama_kelas ??
                     s.riwayat_kelas?.[0]?.kelas?.nama_kelas ??
                     null;
+                  const isSel = selected.has(s.nisn);
+
                   return (
                     <tr
                       key={s.nisn}
-                      className="hover:bg-surface-container-low/50 transition-colors group"
+                      className={`hover:bg-surface-container-low/50 transition-colors group ${isSel ? "bg-primary/5" : ""}`}
                     >
+                      {/* Checkbox */}
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={isSel}
+                          onChange={() => toggleOne(s.nisn)}
+                          className="rounded border-border-light text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       {/* Siswa */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
@@ -1362,23 +472,20 @@ export default function MasterSiswa() {
                               {s.nama_lengkap}
                             </p>
                             <p className="text-[11px] text-text-secondary">
-                              {s.tempat_lahir}, {s.tanggal_lahir?.split("T")[0]}
+                              {s.tempat_lahir
+                                ? `${s.tempat_lahir}, ${s.tanggal_lahir?.split("T")[0] ?? ""}`
+                                : (s.tanggal_lahir?.split("T")[0] ?? "—")}
                             </p>
                           </div>
                         </div>
                       </td>
-
                       {/* NISN / NIS */}
                       <td className="px-6 py-4 font-mono text-[13px] text-text-secondary">
                         {s.nisn}
                         {s.no_induk && (
-                          <span className="text-[11px] text-text-secondary">
-                            {" "}
-                            / {s.no_induk}
-                          </span>
+                          <span className="text-[11px]"> / {s.no_induk}</span>
                         )}
                       </td>
-
                       {/* Kelas */}
                       <td className="px-6 py-4">
                         {kelasSiswa ? (
@@ -1389,51 +496,28 @@ export default function MasterSiswa() {
                           <span className="text-text-secondary text-xs">—</span>
                         )}
                       </td>
-
                       {/* Gender */}
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border ${isL ? "bg-info/10 text-info border-info/20" : "bg-tertiary/10 text-tertiary border-tertiary/20"}`}
-                        >
-                          <span className="material-symbols-outlined text-[13px]">
-                            {isL ? "boy" : "girl"}
-                          </span>
-                          {isL ? "L" : "P"}
-                        </span>
+                      <td className="px-6 py-4 text-text-secondary text-sm">
+                        {isL ? "Laki-laki" : "Perempuan"}
                       </td>
-
                       {/* Status */}
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${st.bg} ${st.text} ${st.border}`}
                         >
-                          {st.label ?? s.status}
+                          {st.label}
                         </span>
                       </td>
-
-                      {/* Aksi */}
+                      {/* Actions */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() =>
-                              navigate(`/operator/master/siswa/${s.nisn}`)
-                            }
-                            className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-                            title="Detail Siswa"
+                            onClick={() => navigate("/operator/master/siswa/mutasi")}
+                            className="p-2 text-text-secondary hover:text-warning hover:bg-warning/10 rounded-xl transition-all"
+                            title="Mutasi Siswa"
                           >
                             <span className="material-symbols-outlined text-[20px]">
-                              visibility
-                            </span>
-                          </button>
-                          <button
-                            onClick={() =>
-                              navigate(`/operator/master/siswa/edit/${s.nisn}`)
-                            }
-                            className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-                            title="Edit Siswa"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">
-                              edit
+                              swap_horiz
                             </span>
                           </button>
                           <button
@@ -1444,10 +528,37 @@ export default function MasterSiswa() {
                                 hapus.mutate(s.nisn);
                             }}
                             className="p-2 text-text-secondary hover:text-danger hover:bg-danger/10 rounded-xl transition-all"
-                            title="Hapus Siswa"
+                            title="Hapus"
                           >
                             <span className="material-symbols-outlined text-[20px]">
                               delete
+                            </span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              navigate(`/operator/master/siswa/${s.nisn}`)
+                            }
+                            className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                            title="Detail"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">
+                              visibility
+                            </span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              navigate(`/operator/master/siswa/edit/${s.nisn}`)
+                            }
+                            className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                            title="Edit"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">
+                              edit
+                            </span>
+                          </button>
+                          <button className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all">
+                            <span className="material-symbols-outlined text-[20px]">
+                              more_vert
                             </span>
                           </button>
                         </div>
@@ -1460,27 +571,24 @@ export default function MasterSiswa() {
           </table>
         </div>
 
-        {/* Pagination / Footer */}
+        {/* Pagination */}
         {!isLoading && (total > 0 || siswaList.length > 0) && (
           <div className="px-6 py-5 border-t border-border-light bg-background-light/30 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-text-secondary font-medium">
-              Menampilkan{" "}
+              Showing <span className="font-bold text-text-primary">1</span> to{" "}
               <span className="font-bold text-text-primary">
                 {siswaList.length}
-              </span>
-              {total > 0 && total !== siswaList.length && (
-                <>
-                  {" "}
-                  dari{" "}
-                  <span className="font-bold text-text-primary">{total}</span>
-                </>
-              )}{" "}
-              siswa
+              </span>{" "}
+              of{" "}
+              <span className="font-bold text-text-primary">
+                {(total || siswaList.length).toLocaleString("id-ID")}
+              </span>{" "}
+              entries
             </p>
             <div className="flex items-center gap-1.5">
               <button
-                className="px-3.5 py-2 border border-border-light rounded-xl text-text-secondary hover:bg-white hover:text-primary hover:border-primary transition-all disabled:opacity-50 text-sm font-bold"
                 disabled
+                className="px-3.5 py-2 border border-border-light rounded-xl text-text-secondary hover:bg-white hover:text-primary hover:border-primary transition-all disabled:opacity-50 text-sm font-bold"
               >
                 Previous
               </button>
@@ -1488,10 +596,20 @@ export default function MasterSiswa() {
                 <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-white text-sm font-bold shadow-soft">
                   1
                 </button>
+                <button className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white text-text-secondary hover:text-primary transition-all text-sm font-bold">
+                  2
+                </button>
+                <button className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white text-text-secondary hover:text-primary transition-all text-sm font-bold">
+                  3
+                </button>
+                <span className="px-2 text-text-secondary font-bold">...</span>
+                <button className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white text-text-secondary hover:text-primary transition-all text-sm font-bold">
+                  {Math.ceil((total || siswaList.length) / 10)}
+                </button>
               </div>
               <button
-                className="px-3.5 py-2 border border-border-light rounded-xl text-text-secondary hover:bg-white hover:text-primary hover:border-primary transition-all text-sm font-bold"
                 disabled
+                className="px-3.5 py-2 border border-border-light rounded-xl text-text-secondary hover:bg-white hover:text-primary hover:border-primary transition-all text-sm font-bold"
               >
                 Next
               </button>
@@ -1499,16 +617,6 @@ export default function MasterSiswa() {
           </div>
         )}
       </div>
-
-      <ModalSiswa
-        open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditData(null);
-        }}
-        editData={editData}
-        queryClient={queryClient}
-      />
     </div>
   );
 }
