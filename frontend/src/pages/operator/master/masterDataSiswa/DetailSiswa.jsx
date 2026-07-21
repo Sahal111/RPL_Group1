@@ -1,9 +1,12 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
-import { ArrowLeft, Camera, KeyRound, RefreshCw, Copy } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
+
+const BASE_URL =
+  import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
 const getPrimaryOrangTua = (ortu) => {
   if (Array.isArray(ortu)) return ortu[0] ?? null;
@@ -12,11 +15,27 @@ const getPrimaryOrangTua = (ortu) => {
 
 const yearOnly = (date) => (date ? String(date).slice(0, 4) : "-");
 
+const TABS = [
+  { id: "biodata", label: "Biodata" },
+  { id: "orang_tua", label: "Orang Tua" },
+  { id: "alamat", label: "Alamat" },
+  { id: "akademik", label: "Akademik" },
+  { id: "kehadiran", label: "Kehadiran" },
+  { id: "nilai", label: "Nilai" },
+  { id: "pembayaran", label: "Pembayaran" },
+  { id: "prestasi", label: "Prestasi" },
+  { id: "pelanggaran", label: "Pelanggaran" },
+  { id: "dokumen", label: "Dokumen" },
+  { id: "riwayat", label: "Riwayat" },
+  { id: "log", label: "Log Aktivitas" },
+];
+
 export default function DetailSiswa() {
   const { nisn } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileRef = useRef();
+  const [activeTab, setActiveTab] = useState("biodata");
 
   const { data: siswa, isLoading } = useQuery({
     queryKey: ["siswa-detail", nisn],
@@ -59,333 +78,389 @@ export default function DetailSiswa() {
 
   if (isLoading)
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      <div className="flex items-center justify-center py-32">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm text-text-secondary font-medium">
+            Memuat data siswa...
+          </p>
+        </div>
       </div>
     );
 
   if (!siswa)
     return (
-      <div className="text-center py-20 text-gray-400">
-        Data siswa tidak ditemukan.
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <span className="material-symbols-outlined text-[64px] text-text-secondary">
+          person_off
+        </span>
+        <p className="text-text-secondary font-medium">
+          Data siswa tidak ditemukan.
+        </p>
+        <button
+          onClick={() => navigate("/operator/master/siswa")}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[12px] text-sm font-semibold hover:opacity-90 transition-opacity"
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            arrow_back
+          </span>
+          Kembali ke Daftar Siswa
+        </button>
       </div>
     );
 
-  const fotoUrl = siswa.foto
-    ? `http://127.0.0.1:8001/storage/${siswa.foto}`
-    : null;
+  const fotoUrl = siswa.foto ? `${BASE_URL}/storage/${siswa.foto}` : null;
   const isL = siswa.jenis_kelamin === "L";
   const dataOrangTua = getPrimaryOrangTua(siswa.orang_tua);
+  const isAktif = siswa.status_pd === "Aktif";
+  const kelasAktif = siswa.kelas_aktif ?? siswa.kelas ?? null;
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => navigate("/operator/master/siswa")}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+      {/* ── Page Header & Actions ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Detail Siswa</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Informasi lengkap data siswa
-          </p>
+          <h2 className="font-headline text-[28px] sm:text-[32px] font-bold text-text-primary leading-tight">
+            Detail Siswa
+          </h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-border-light text-text-primary text-sm font-medium rounded-[12px] hover:bg-surface-container-low transition-colors shadow-sm">
+            <span className="material-symbols-outlined text-[18px]">
+              history
+            </span>
+            Riwayat Perubahan
+          </button>
+          <button className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-border-light text-text-primary text-sm font-medium rounded-[12px] hover:bg-surface-container-low transition-colors shadow-sm">
+            <span className="material-symbols-outlined text-[18px]">
+              download
+            </span>
+            Download
+            <span className="material-symbols-outlined text-[18px]">
+              expand_more
+            </span>
+          </button>
+          <button className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-border-light text-text-primary text-sm font-medium rounded-[12px] hover:bg-surface-container-low transition-colors shadow-sm">
+            <span className="material-symbols-outlined text-[18px]">print</span>
+            Cetak Biodata
+          </button>
+          <button
+            onClick={() =>
+              navigate(`/operator/master/siswa/edit/${siswa.nisn}`)
+            }
+            className="inline-flex items-center gap-2 px-4 py-2 bg-info text-white text-sm font-semibold rounded-[12px] hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+            Edit Data
+          </button>
         </div>
       </div>
 
-      <div className="card">
-        {/* Header profil */}
-        <div className="flex items-start gap-5 mb-6">
-          <div className="relative flex-shrink-0">
-            <div
-              className={`w-20 h-20 rounded-2xl overflow-hidden ${isL ? "bg-blue-100" : "bg-pink-100"}`}
-            >
-              {fotoUrl ? (
-                <img
-                  src={fotoUrl}
-                  alt={siswa.nama_lengkap}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span
-                    className={`font-bold text-3xl ${isL ? "text-blue-700" : "text-pink-700"}`}
+      {/* ── Two-column layout: Main | Right Panel ── */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* ══ LEFT / MAIN COLUMN ══ */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Summary Card */}
+          <div className="bg-surface-container-lowest rounded-[16px] border border-border-light shadow-sm p-6 flex flex-col md:flex-row gap-6">
+            {/* Portrait photo */}
+            <div className="relative flex-shrink-0 self-start">
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="group block w-32 h-40 rounded-xl overflow-hidden border border-border-light shadow-sm bg-surface-container-low"
+                title="Ganti Foto"
+              >
+                {fotoUrl ? (
+                  <img
+                    src={fotoUrl}
+                    alt={siswa.nama_lengkap}
+                    className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center ${isL ? "bg-blue-100" : "bg-pink-100"}`}
                   >
-                    {siswa.nama_lengkap?.charAt(0)?.toUpperCase()}
+                    <span
+                      className={`font-bold text-5xl ${isL ? "text-blue-700" : "text-pink-700"}`}
+                    >
+                      {siswa.nama_lengkap?.charAt(0)?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="material-symbols-outlined text-white text-[24px]">
+                    photo_camera
                   </span>
                 </div>
-              )}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadFoto.mutate(file);
+                }}
+              />
             </div>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-600 rounded-full flex items-center justify-center shadow-md hover:bg-primary-700 transition-colors"
-            >
-              <Camera className="w-3.5 h-3.5 text-white" />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) uploadFoto.mutate(file);
-              }}
-            />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              {siswa.nama_lengkap}
-            </h2>
-            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-              <span
-                className={`text-xs font-medium px-2.5 py-1 rounded-full ${isL ? "bg-blue-50 text-blue-700" : "bg-pink-50 text-pink-700"}`}
-              >
-                {isL ? "Laki-laki" : "Perempuan"}
-              </span>
-              <span
-                className={`text-xs font-medium px-2.5 py-1 rounded-full ${siswa.status_pd === "Aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
-              >
-                {siswa.status_pd}
-              </span>
-            </div>
-          </div>
-        </div>
 
-        {/* Kode Anak — buat ortu tautkan siswa ini sbg anak ke-2 dst */}
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">
-                Kode Tambah Anak
-              </h3>
-              <div className="mt-1 flex items-center gap-2">
-                <code className="text-lg font-bold text-amber-700 bg-white px-2 py-0.5 rounded border border-amber-200">
-                  {siswa.kode_anak ?? "-"}
-                </code>
-                <button
-                  onClick={salinKode}
-                  className="text-gray-400 hover:text-amber-600 transition-colors"
-                  title="Salin Kode"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => regenerateKode.mutate()}
-                  disabled={regenerateKode.isPending}
-                  className="text-gray-400 hover:text-amber-600 transition-colors"
-                  title="Buat Ulang Kode"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${regenerateKode.isPending ? "animate-spin" : ""}`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 max-w-xs text-right">
-            Berikan kode ini ke orang tua/wali siswa ini kalau mereka mau
-            menautkan anak ke-2 dst lewat menu "Tambah Anak". Kode ini cuma
-            berlaku untuk siswa ini saja.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-8">
-          {/* Kolom Kiri */}
-          <div className="space-y-6">
-            <Section title="Data Pribadi">
-              <div className="grid grid-cols-2 gap-4">
-                <InfoItem label="NISN" value={siswa.nisn} mono />
-                <InfoItem label="NIK" value={siswa.nik ?? "-"} mono />
-                <InfoItem label="No. Induk" value={siswa.no_induk ?? "-"} />
-                <InfoItem label="Tempat Lahir" value={siswa.tempat_lahir} />
-                <InfoItem label="Tanggal Lahir" value={siswa.tanggal_lahir} />
-                <InfoItem label="Agama" value={siswa.agama} />
-                <InfoItem
-                  label="Kewarganegaraan"
-                  value={siswa.kewarganegaraan}
-                />
-                <InfoItem label="No. HP Ortu" value={siswa.no_hp ?? "-"} />
-              </div>
-            </Section>
-
-            <Section title="Data Keluarga">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <InfoItem
-                    label="Nama Ibu Kandung"
-                    value={siswa.nama_ibu_kandung}
-                  />
-                </div>
-                <InfoItem
-                  label="Status dalam Keluarga"
-                  value={siswa.status_dalam_keluarga}
-                />
-                <InfoItem label="Anak ke-" value={siswa.anak_ke ?? "-"} />
-                <InfoItem label="No. KK" value={siswa.no_kk ?? "-"} mono />
-                <InfoItem
-                  label="No. Akta Lahir"
-                  value={siswa.no_akta_lahir ?? "-"}
-                />
-              </div>
-            </Section>
-
-            <Section title="Data Orang Tua/Wali Tertaut">
-              {dataOrangTua ? (
-                <div className="space-y-5">
-                  <FamilyBlock title="Ayah Kandung">
-                    <InfoItem
-                      label="Nama Lengkap"
-                      value={dataOrangTua.nama_ayah ?? "-"}
-                    />
-                    <InfoItem
-                      label="NIK"
-                      value={dataOrangTua.nik_ayah ?? "-"}
-                      mono
-                    />
-                    <InfoItem
-                      label="Tahun Lahir"
-                      value={yearOnly(dataOrangTua.tanggal_lahir_ayah)}
-                    />
-                    <InfoItem
-                      label="Pendidikan"
-                      value={dataOrangTua.pendidikan_ayah ?? "-"}
-                    />
-                    <InfoItem
-                      label="Pekerjaan"
-                      value={dataOrangTua.pekerjaan_ayah ?? "-"}
-                    />
-                    <InfoItem
-                      label="Penghasilan"
-                      value={dataOrangTua.penghasilan_ayah ?? "-"}
-                    />
-                    <InfoItem
-                      label="No. HP"
-                      value={dataOrangTua.no_hp_ayah ?? "-"}
-                    />
-                  </FamilyBlock>
-
-                  <FamilyBlock title="Ibu Kandung">
-                    <InfoItem
-                      label="Nama Lengkap"
-                      value={dataOrangTua.nama_ibu ?? "-"}
-                    />
-                    <InfoItem
-                      label="NIK"
-                      value={dataOrangTua.nik_ibu ?? "-"}
-                      mono
-                    />
-                    <InfoItem
-                      label="Tahun Lahir"
-                      value={yearOnly(dataOrangTua.tanggal_lahir_ibu)}
-                    />
-                    <InfoItem
-                      label="Pendidikan"
-                      value={dataOrangTua.pendidikan_ibu ?? "-"}
-                    />
-                    <InfoItem
-                      label="Pekerjaan"
-                      value={dataOrangTua.pekerjaan_ibu ?? "-"}
-                    />
-                    <InfoItem
-                      label="Penghasilan"
-                      value={dataOrangTua.penghasilan_ibu ?? "-"}
-                    />
-                    <InfoItem
-                      label="No. HP"
-                      value={dataOrangTua.no_hp_ibu ?? "-"}
-                    />
-                  </FamilyBlock>
-
-                  <FamilyBlock title="Wali">
-                    <InfoItem
-                      label="Nama Lengkap"
-                      value={dataOrangTua.nama_wali ?? "-"}
-                    />
-                    <InfoItem
-                      label="NIK"
-                      value={dataOrangTua.nik_wali ?? "-"}
-                      mono
-                    />
-                    <InfoItem
-                      label="Hubungan"
-                      value={dataOrangTua.hubungan_wali ?? "-"}
-                    />
-                    <InfoItem
-                      label="Pekerjaan"
-                      value={dataOrangTua.pekerjaan_wali ?? "-"}
-                    />
-                    <InfoItem
-                      label="Penghasilan"
-                      value={dataOrangTua.penghasilan_wali ?? "-"}
-                    />
-                    <InfoItem
-                      label="No. HP"
-                      value={dataOrangTua.no_hp_wali ?? "-"}
-                    />
-                  </FamilyBlock>
-
-                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <InfoItem
-                        label="Email"
-                        value={dataOrangTua.email ?? "-"}
-                      />
-                      <div className="col-span-2">
-                        <InfoItem
-                          label="Alamat Domisili"
-                          value={dataOrangTua.alamat ?? "-"}
-                        />
-                      </div>
-                    </div>
+            {/* Info grid */}
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Name row */}
+              <div className="col-span-1 md:col-span-2 flex flex-wrap justify-between items-start gap-2">
+                <div>
+                  <h3 className="font-headline text-[24px] font-bold text-text-primary mb-1">
+                    {siswa.nama_lengkap}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 text-text-secondary text-sm">
+                    <span>NISN: {siswa.nisn}</span>
+                    {siswa.no_induk && (
+                      <>
+                        <span>•</span>
+                        <span>NIS: {siswa.no_induk}</span>
+                      </>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-                  Belum ada data orang tua/wali yang tertaut ke siswa ini.
-                </div>
-              )}
-            </Section>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                    isAktif
+                      ? "bg-success/10 text-success border-success/20"
+                      : "bg-surface-container text-text-secondary border-border-light"
+                  }`}
+                >
+                  {siswa.status_pd ?? "Aktif"}
+                </span>
+              </div>
+
+              {/* Info items */}
+              <div className="space-y-3 text-[15px] mt-2">
+                <SummaryItem
+                  icon="person"
+                  label="Jenis Kelamin"
+                  value={isL ? "Laki-laki" : "Perempuan"}
+                />
+                <SummaryItem
+                  icon="cake"
+                  label="Tempat, Tgl Lahir"
+                  value={
+                    siswa.tempat_lahir && siswa.tanggal_lahir
+                      ? `${siswa.tempat_lahir}, ${siswa.tanggal_lahir}`
+                      : (siswa.tempat_lahir ?? siswa.tanggal_lahir ?? "-")
+                  }
+                />
+                <SummaryItem
+                  icon="mosque"
+                  label="Agama"
+                  value={siswa.agama ?? "-"}
+                />
+              </div>
+              <div className="space-y-3 text-[15px] mt-2">
+                <SummaryItem
+                  icon="school"
+                  label="Kelas / Rombel"
+                  value={
+                    kelasAktif
+                      ? `${kelasAktif.tingkat ?? ""} / ${kelasAktif.nama_kelas ?? "-"}`.replace(
+                          /^\/\s*/,
+                          "",
+                        )
+                      : "-"
+                  }
+                />
+                <SummaryItem
+                  icon="calendar_today"
+                  label="Tahun Ajaran"
+                  value={
+                    siswa.tanggal_masuk
+                      ? `${String(siswa.tanggal_masuk).slice(0, 4)}/${parseInt(String(siswa.tanggal_masuk).slice(0, 4)) + 1}`
+                      : "-"
+                  }
+                />
+                <SummaryItem
+                  icon="login"
+                  label="Tanggal Masuk"
+                  value={siswa.tanggal_masuk ?? "-"}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Kolom Kanan */}
-          <div className="space-y-6">
-            <Section title="Data Sekolah">
-              <div className="grid grid-cols-2 gap-4">
-                <InfoItem label="Status PD" value={siswa.status_pd} />
-                <InfoItem label="Tanggal Masuk" value={siswa.tanggal_masuk} />
-                <div className="col-span-2">
-                  <InfoItem
-                    label="Asal Sekolah"
-                    value={siswa.asal_sekolah ?? "-"}
-                  />
-                </div>
-              </div>
-            </Section>
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <StatCard icon="event_available" label="Kehadiran" value="98%" />
+            <StatCard icon="analytics" label="Rata-rata" value="—" />
+            <StatCard icon="warning" label="Pelanggaran" value="0" />
+            <StatCard icon="emoji_events" label="Prestasi" value="—" />
+            <StatCard
+              icon="account_balance_wallet"
+              label="Tagihan"
+              valueClass="text-success"
+              value="Rp 0"
+            />
+          </div>
 
-            <Section title="Alamat">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <InfoItem label="Jalan" value={siswa.alamat_jalan} />
+          {/* Tabs + Content Card */}
+          <div
+            className="bg-surface-container-lowest rounded-[16px] border border-border-light shadow-sm overflow-hidden flex flex-col"
+            style={{ minHeight: "600px" }}
+          >
+            {/* Tab Nav */}
+            <div
+              className="border-b border-border-light bg-surface-bright overflow-x-auto flex-none"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              <nav className="flex px-2" aria-label="Tabs">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                      activeTab === tab.id
+                        ? "border-primary text-primary"
+                        : "border-transparent text-text-secondary hover:text-text-primary hover:border-border-light"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6 overflow-y-auto flex-1">
+              {activeTab === "biodata" && (
+                <TabBiodata siswa={siswa} isL={isL} />
+              )}
+              {activeTab === "orang_tua" && (
+                <TabOrangTua dataOrangTua={dataOrangTua} yearOnly={yearOnly} />
+              )}
+              {activeTab === "alamat" && <TabAlamat siswa={siswa} />}
+              {activeTab === "akademik" && (
+                <TabAkademik siswa={siswa} kelasAktif={kelasAktif} />
+              )}
+              {(activeTab === "kehadiran" ||
+                activeTab === "nilai" ||
+                activeTab === "pembayaran" ||
+                activeTab === "prestasi" ||
+                activeTab === "pelanggaran" ||
+                activeTab === "dokumen" ||
+                activeTab === "riwayat" ||
+                activeTab === "log") && (
+                <TabComingSoon
+                  label={TABS.find((t) => t.id === activeTab)?.label}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ══ RIGHT PANEL ══ */}
+        <div className="w-full lg:w-72 flex-shrink-0">
+          <div className="bg-surface-container-lowest rounded-[16px] border border-border-light shadow-sm p-5 lg:sticky lg:top-[96px]">
+            <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-4">
+              Quick Actions
+            </h4>
+            <div className="space-y-3">
+              {/* WhatsApp */}
+              <button className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:border-[#25D366] hover:bg-[#25D366]/5 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#25D366]/10 flex items-center justify-center text-[#25D366]">
+                    <span className="material-symbols-outlined text-[18px]">
+                      chat
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-text-primary group-hover:text-[#25D366] transition-colors">
+                    Send WhatsApp
+                  </span>
                 </div>
-                <InfoItem
-                  label="RT / RW"
-                  value={`${siswa.rt ?? "-"} / ${siswa.rw ?? "-"}`}
-                />
-                <InfoItem label="Desa/Kelurahan" value={siswa.desa ?? "-"} />
-                <InfoItem label="Kecamatan" value={siswa.kecamatan ?? "-"} />
-                <InfoItem
-                  label="Kabupaten/Kota"
-                  value={siswa.kabupaten ?? "-"}
-                />
-                <InfoItem label="Provinsi" value={siswa.provinsi ?? "-"} />
-                <InfoItem label="Kode Pos" value={siswa.kode_pos ?? "-"} />
-              </div>
-            </Section>
+                <span className="material-symbols-outlined text-text-secondary text-[18px]">
+                  chevron_right
+                </span>
+              </button>
+
+              {/* Print ID */}
+              <button className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:border-info hover:bg-info/5 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-info/10 flex items-center justify-center text-info">
+                    <span className="material-symbols-outlined text-[18px]">
+                      badge
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-text-primary group-hover:text-info transition-colors">
+                    Print ID Card
+                  </span>
+                </div>
+                <span className="material-symbols-outlined text-text-secondary text-[18px]">
+                  chevron_right
+                </span>
+              </button>
+
+              {/* Kode Anak / Generate QR */}
+              <button
+                onClick={() => {
+                  if (siswa?.kode_anak) {
+                    navigator.clipboard.writeText(siswa.kode_anak);
+                    toast.success("Kode anak disalin.");
+                  }
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:border-text-primary hover:bg-surface-container-low transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-text-primary">
+                    <span className="material-symbols-outlined text-[18px]">
+                      qr_code
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium text-text-primary block">
+                      Kode Anak
+                    </span>
+                    {siswa.kode_anak && (
+                      <span className="text-xs font-mono text-text-secondary">
+                        {siswa.kode_anak}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Copy className="w-4 h-4 text-text-secondary" />
+              </button>
+
+              {/* Regenerate Kode */}
+              <button
+                onClick={() => regenerateKode.mutate()}
+                disabled={regenerateKode.isPending}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:border-text-primary hover:bg-surface-container-low transition-colors group disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-text-primary">
+                    <RefreshCw
+                      className={`w-4 h-4 ${regenerateKode.isPending ? "animate-spin" : ""}`}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-text-primary">
+                    Regenerate Kode
+                  </span>
+                </div>
+                <span className="material-symbols-outlined text-text-secondary text-[18px]">
+                  chevron_right
+                </span>
+              </button>
+
+              {/* Nonaktifkan — danger */}
+              <button className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:border-danger hover:bg-danger/5 transition-colors group mt-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center text-danger">
+                    <span className="material-symbols-outlined text-[18px]">
+                      block
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-danger">
+                    Nonaktifkan Siswa
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -393,35 +468,321 @@ export default function DetailSiswa() {
   );
 }
 
-function Section({ title, children }) {
+/* ══════════════════════════════════════════
+   TAB: BIODATA
+══════════════════════════════════════════ */
+function TabBiodata({ siswa, isL }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-        {title}
-      </p>
-      {children}
+      <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        Identitas Siswa
+      </h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <BiodataField label="Nama Lengkap" value={siswa.nama_lengkap} />
+        <BiodataField
+          label="Nama Panggilan"
+          value={siswa.nama_panggilan ?? "-"}
+        />
+        <BiodataField label="NIS" value={siswa.no_induk ?? "-"} />
+        <BiodataField label="NISN" value={siswa.nisn} />
+        <BiodataField label="NIK" value={siswa.nik ?? "-"} />
+        <BiodataField label="No. Kartu Keluarga" value={siswa.no_kk ?? "-"} />
+        <BiodataField
+          label="Tempat, Tanggal Lahir"
+          value={
+            siswa.tempat_lahir && siswa.tanggal_lahir
+              ? `${siswa.tempat_lahir}, ${siswa.tanggal_lahir}`
+              : (siswa.tempat_lahir ?? siswa.tanggal_lahir ?? "-")
+          }
+        />
+        <BiodataField
+          label="Jenis Kelamin"
+          value={isL ? "Laki-laki" : "Perempuan"}
+        />
+        <BiodataField label="Agama" value={siswa.agama ?? "-"} />
+        <BiodataField
+          label="Kewarganegaraan"
+          value={siswa.kewarganegaraan ?? "-"}
+        />
+        <BiodataField
+          label="Anak Ke / Dari"
+          value={siswa.anak_ke ? `${siswa.anak_ke} Bersaudara` : "-"}
+        />
+        <BiodataField
+          label="Status Anak"
+          value={siswa.status_dalam_keluarga ?? "-"}
+        />
+        <BiodataField label="No. Handphone" value={siswa.no_hp ?? "-"} />
+        <BiodataField
+          label="No. Akta Lahir"
+          value={siswa.no_akta_lahir ?? "-"}
+        />
+      </div>
     </div>
   );
 }
 
-function FamilyBlock({ title, children }) {
+/* ══════════════════════════════════════════
+   TAB: ORANG TUA
+══════════════════════════════════════════ */
+function TabOrangTua({ dataOrangTua, yearOnly }) {
+  if (!dataOrangTua) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <span className="material-symbols-outlined text-[48px] text-text-secondary">
+          family_restroom
+        </span>
+        <p className="text-text-secondary font-medium text-sm">
+          Belum ada data orang tua/wali yang tertaut ke siswa ini.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-      <p className="text-sm font-semibold text-gray-700 mb-3">{title}</p>
-      <div className="grid grid-cols-2 gap-4">{children}</div>
+    <div className="space-y-8">
+      {/* Kontak */}
+      <div>
+        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+          Kontak & Alamat
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          <BiodataField label="Email" value={dataOrangTua.email ?? "-"} />
+          <BiodataField label="No. HP" value={dataOrangTua.no_hp ?? "-"} />
+          <BiodataField
+            label="Alamat Domisili"
+            value={dataOrangTua.alamat ?? "-"}
+            fullWidth
+          />
+        </div>
+      </div>
+
+      {/* Ayah */}
+      <div>
+        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+          Ayah Kandung
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          <BiodataField
+            label="Nama Lengkap"
+            value={dataOrangTua.nama_ayah ?? "-"}
+          />
+          <BiodataField label="NIK" value={dataOrangTua.nik_ayah ?? "-"} />
+          <BiodataField
+            label="Tahun Lahir"
+            value={yearOnly(dataOrangTua.tanggal_lahir_ayah)}
+          />
+          <BiodataField
+            label="Pendidikan"
+            value={dataOrangTua.pendidikan_ayah ?? "-"}
+          />
+          <BiodataField
+            label="Pekerjaan"
+            value={dataOrangTua.pekerjaan_ayah ?? "-"}
+          />
+          <BiodataField
+            label="Penghasilan"
+            value={dataOrangTua.penghasilan_ayah ?? "-"}
+          />
+          <BiodataField label="No. HP" value={dataOrangTua.no_hp_ayah ?? "-"} />
+        </div>
+      </div>
+
+      {/* Ibu */}
+      <div>
+        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+          Ibu Kandung
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          <BiodataField
+            label="Nama Lengkap"
+            value={dataOrangTua.nama_ibu ?? "-"}
+          />
+          <BiodataField label="NIK" value={dataOrangTua.nik_ibu ?? "-"} />
+          <BiodataField
+            label="Tahun Lahir"
+            value={yearOnly(dataOrangTua.tanggal_lahir_ibu)}
+          />
+          <BiodataField
+            label="Pendidikan"
+            value={dataOrangTua.pendidikan_ibu ?? "-"}
+          />
+          <BiodataField
+            label="Pekerjaan"
+            value={dataOrangTua.pekerjaan_ibu ?? "-"}
+          />
+          <BiodataField
+            label="Penghasilan"
+            value={dataOrangTua.penghasilan_ibu ?? "-"}
+          />
+          <BiodataField label="No. HP" value={dataOrangTua.no_hp_ibu ?? "-"} />
+        </div>
+      </div>
+
+      {/* Wali */}
+      <div>
+        <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+          Wali
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          <BiodataField
+            label="Nama Lengkap"
+            value={dataOrangTua.nama_wali ?? "-"}
+          />
+          <BiodataField label="NIK" value={dataOrangTua.nik_wali ?? "-"} />
+          <BiodataField
+            label="Hubungan"
+            value={dataOrangTua.hubungan_wali ?? "-"}
+          />
+          <BiodataField
+            label="Pekerjaan"
+            value={dataOrangTua.pekerjaan_wali ?? "-"}
+          />
+          <BiodataField
+            label="Penghasilan"
+            value={dataOrangTua.penghasilan_wali ?? "-"}
+          />
+          <BiodataField label="No. HP" value={dataOrangTua.no_hp_wali ?? "-"} />
+        </div>
+      </div>
     </div>
   );
 }
 
-function InfoItem({ label, value, mono = false }) {
+/* ══════════════════════════════════════════
+   TAB: ALAMAT
+══════════════════════════════════════════ */
+function TabAlamat({ siswa }) {
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p
-        className={`text-sm text-gray-700 ${mono ? "font-mono" : "font-medium"}`}
+      <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        Alamat Siswa
+      </h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <BiodataField
+          label="Jalan"
+          value={siswa.alamat_jalan ?? "-"}
+          fullWidth
+        />
+        <BiodataField
+          label="RT / RW"
+          value={
+            siswa.rt || siswa.rw
+              ? `${siswa.rt ?? "-"} / ${siswa.rw ?? "-"}`
+              : "-"
+          }
+        />
+        <BiodataField label="Desa / Kelurahan" value={siswa.desa ?? "-"} />
+        <BiodataField label="Kecamatan" value={siswa.kecamatan ?? "-"} />
+        <BiodataField label="Kabupaten / Kota" value={siswa.kabupaten ?? "-"} />
+        <BiodataField label="Provinsi" value={siswa.provinsi ?? "-"} />
+        <BiodataField label="Kode Pos" value={siswa.kode_pos ?? "-"} />
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   TAB: AKADEMIK
+══════════════════════════════════════════ */
+function TabAkademik({ siswa, kelasAktif }) {
+  return (
+    <div>
+      <h4 className="font-headline text-[18px] font-semibold text-text-primary mb-6">
+        Data Akademik
+      </h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <BiodataField label="Status PD" value={siswa.status_pd ?? "-"} />
+        <BiodataField
+          label="Tanggal Masuk"
+          value={siswa.tanggal_masuk ?? "-"}
+        />
+        <BiodataField
+          label="Kelas / Rombel"
+          value={
+            kelasAktif
+              ? `${kelasAktif.tingkat ?? ""} / ${kelasAktif.nama_kelas ?? "-"}`.replace(
+                  /^\/\s*/,
+                  "",
+                )
+              : "-"
+          }
+        />
+        <BiodataField
+          label="Wali Kelas"
+          value={kelasAktif?.wali_kelas ?? "-"}
+        />
+        <BiodataField
+          label="Asal Sekolah"
+          value={siswa.asal_sekolah ?? "-"}
+          fullWidth
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   TAB: COMING SOON (placeholder)
+══════════════════════════════════════════ */
+function TabComingSoon({ label }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <span className="material-symbols-outlined text-[48px] text-text-secondary">
+        construction
+      </span>
+      <p className="font-semibold text-text-primary">{label}</p>
+      <p className="text-sm text-text-secondary">Fitur ini belum tersedia.</p>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   SHARED COMPONENTS
+══════════════════════════════════════════ */
+
+/** Field bergaya dashed-border seperti template */
+function BiodataField({ label, value, fullWidth = false }) {
+  return (
+    <div className={`space-y-1 ${fullWidth ? "col-span-full" : ""}`}>
+      <label className="block text-xs font-medium text-text-secondary uppercase tracking-wider">
+        {label}
+      </label>
+      <div className="text-[15px] text-text-primary font-medium py-1 border-b border-dashed border-border-light pb-2">
+        {value || "-"}
+      </div>
+    </div>
+  );
+}
+
+/** Item di Summary Card */
+function SummaryItem({ icon, label, value }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="material-symbols-outlined text-text-secondary text-[18px] mt-0.5 flex-shrink-0">
+        {icon}
+      </span>
+      <div>
+        <span className="text-text-secondary text-sm block">{label}</span>
+        <span className="font-medium text-text-primary">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Stat card kecil di Quick Stats Grid */
+function StatCard({ icon, label, value, valueClass = "text-text-primary" }) {
+  return (
+    <div className="bg-surface-container-lowest rounded-[16px] border border-border-light shadow-sm p-4 flex flex-col justify-center">
+      <div className="flex items-center gap-2 mb-2 text-text-secondary">
+        <span className="material-symbols-outlined text-[18px]">{icon}</span>
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <div
+        className={`text-[24px] font-bold font-headline leading-tight ${valueClass}`}
       >
         {value}
-      </p>
+      </div>
     </div>
   );
 }

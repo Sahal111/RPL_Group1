@@ -86,14 +86,14 @@
   --radius-2xl: 1.125rem;
 
   /* Fonts */
-  --font-body-md: "Plus Jakarta Sans", sans-serif;
+  --font-body-md: "Inter", sans-serif;
   --font-headline-md: "Plus Jakarta Sans", sans-serif;
   --font-section-title: "Plus Jakarta Sans", sans-serif;
   --font-headline-lg: "Plus Jakarta Sans", sans-serif;
   --font-headline-lg-mobile: "Plus Jakarta Sans", sans-serif;
-  --font-body-lg: "Plus Jakarta Sans", sans-serif;
-  --font-label-md: "Plus Jakarta Sans", sans-serif;
-  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-body-lg: "Inter", sans-serif;
+  --font-label-md: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
 
   /* Font Sizes */
   --text-headline-lg: 32px;
@@ -155,7 +155,16 @@
 }
 
 /* Google Fonts for template */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
+
+/* Base typography — matches template: Inter for body, Plus Jakarta Sans for headings */
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, .font-headline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
 
 /* Material Symbols */
 .material-symbols-outlined {
