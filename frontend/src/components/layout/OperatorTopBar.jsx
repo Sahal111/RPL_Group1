@@ -1,124 +1,86 @@
-import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import {
-  Menu,
-  Bell,
-  Calendar,
-  Settings as SettingsIcon,
-  Search,
-  ChevronRight,
-} from "lucide-react";
+
+const BASE_URL =
+  import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
 export default function OperatorTopBar({ onMenuClick }) {
   const { user } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 w-full flex justify-between items-center h-20 px-6 md:px-8 bg-white/90 backdrop-blur-md border-b border-gray-300/30">
-      {/* Left Section */}
-      <div className="flex items-center gap-4 flex-1">
+    <header className="sticky top-0 z-50 h-[72px] w-full bg-surface/75 backdrop-blur-lg border-b border-outline-variant/30 flex items-center justify-between px-6 transition-all duration-300 ease-out">
+      {/* Left */}
+      <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="md:hidden text-gray-600 p-2 -ml-2 rounded-full hover:bg-gray-100"
+          className="md:hidden text-on-surface p-2 rounded-lg hover:bg-surface-container-low transition-colors duration-300"
         >
-          <Menu className="w-5 h-5" />
+          <span className="material-symbols-outlined">menu</span>
         </button>
 
-        {/* Breadcrumb & Search */}
-        <div className="hidden md:flex flex-1 items-center gap-6 max-w-2xl">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="hover:text-green-700 cursor-pointer transition-colors">
-              Dashboard
-            </span>
-            <ChevronRight className="w-4 h-4" />
-            <span className="font-medium text-gray-900">Overview</span>
-          </div>
-          <div className="flex-1 relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-green-700 transition-colors">
-              <Search className="w-5 h-5" />
-            </div>
-            <input
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300/50 rounded-full leading-5 bg-gray-100/50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-green-700/20 focus:border-green-700 transition-all sm:text-sm"
-              placeholder="Search students, staff, or documents... (Press '/')"
-              type="text"
-            />
+        <div className="relative hidden sm:flex items-center">
+          <span className="material-symbols-outlined absolute left-3 text-text-secondary text-sm">
+            search
+          </span>
+          <input
+            className="pl-10 pr-12 py-2 bg-surface-container/50 border border-border-light/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/30 focus:bg-surface text-sm w-64 transition-all duration-300 focus:w-80 outline-none hover:bg-surface-container/80 text-text-primary placeholder:text-text-secondary"
+            placeholder="Search across portal..."
+            type="text"
+          />
+          <div className="absolute right-3 flex items-center gap-1">
+            <kbd className="hidden lg:inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-medium text-text-secondary bg-surface rounded border border-border-light shadow-sm">
+              ⌘K
+            </kbd>
           </div>
         </div>
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center gap-2 mr-2">
-          <span className="w-2 h-2 rounded-full bg-green-700 animate-pulse"></span>
-          <span className="text-xs font-medium text-gray-500">System Online</span>
+      {/* Right */}
+      <div className="flex items-center gap-5">
+        <div className="hidden lg:flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-full border border-primary/10">
+          <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+          <span className="text-xs font-semibold text-primary">
+            Academic Year: 2023-24
+          </span>
         </div>
 
-        <div className="h-6 w-px bg-gray-300/30 mx-1 hidden md:block"></div>
-
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="text-gray-600 hover:text-green-700 hover:bg-green-700/10 rounded-full p-2 transition-all cursor-pointer relative"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border border-white"></span>
+        <div className="flex items-center gap-1">
+          <button className="p-2 text-text-secondary hover:bg-surface-container hover:text-text-primary rounded-lg transition-all duration-300 relative">
+            <span className="material-symbols-outlined text-[20px]">
+              notifications
+            </span>
+            <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full ring-2 ring-surface"></span>
           </button>
-
-          {/* Notification Dropdown */}
-          {showNotifications && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowNotifications(false)}
-              ></div>
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
-                <div className="p-4 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-800">Notifikasi</h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  <div className="p-4 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
-                    <p className="text-sm text-gray-800 font-medium">
-                      Approval baru dari Orang Tua
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">5 menit yang lalu</p>
-                  </div>
-                  <div className="p-4 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
-                    <p className="text-sm text-gray-800 font-medium">
-                      Data siswa baru ditambahkan
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">1 jam yang lalu</p>
-                  </div>
-                  <div className="p-4 hover:bg-gray-50 cursor-pointer">
-                    <p className="text-sm text-gray-800 font-medium">
-                      Backup database berhasil
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">2 jam yang lalu</p>
-                  </div>
-                </div>
-                <div className="p-3 border-t border-gray-100 text-center">
-                  <button className="text-sm text-green-700 font-semibold hover:underline">
-                    Lihat Semua
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+          <button className="p-2 text-text-secondary hover:bg-surface-container hover:text-text-primary rounded-lg transition-all duration-300">
+            <span className="material-symbols-outlined text-[20px]">
+              chat_bubble_outline
+            </span>
+          </button>
         </div>
 
-        {/* Calendar */}
-        <button className="text-gray-600 hover:text-green-700 hover:bg-green-700/10 rounded-full p-2 transition-all cursor-pointer hidden sm:block">
-          <Calendar className="w-5 h-5" />
-        </button>
+        <div className="h-6 w-px bg-outline-variant/40 mx-1"></div>
 
-        {/* Settings */}
-        <button className="text-gray-600 hover:text-green-700 hover:bg-green-700/10 rounded-full p-2 transition-all cursor-pointer hidden sm:block">
-          <SettingsIcon className="w-5 h-5" />
-        </button>
-
-        <div className="hidden md:block ml-2">
-          <span className="text-[11px] leading-[16px] tracking-[0.03em] font-semibold text-gray-900 bg-gray-200 px-3 py-1.5 rounded-full border border-gray-300/20">
-            TA 2023/2024 Ganjil
+        <div className="flex items-center gap-3 cursor-pointer hover:bg-surface-container/50 p-1.5 pr-3 rounded-xl transition-colors duration-300 group border border-transparent hover:border-border-light/50">
+          <div className="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center font-bold text-sm border border-outline-variant/50 shadow-sm overflow-hidden shrink-0">
+            {user?.foto ? (
+              <img
+                alt={user?.nama_lengkap || "Admin"}
+                className="w-full h-full object-cover"
+                src={`${BASE_URL}/storage/${user.foto}`}
+              />
+            ) : (
+              <span>{user?.nama_lengkap?.charAt(0)?.toUpperCase() || "A"}</span>
+            )}
+          </div>
+          <div className="hidden sm:flex flex-col items-start">
+            <p className="text-sm font-semibold text-text-primary leading-tight">
+              {user?.nama_lengkap || "Admin Operator"}
+            </p>
+            <p className="text-[11px] text-text-secondary font-medium">
+              MI Nurul Huda 3
+            </p>
+          </div>
+          <span className="material-symbols-outlined text-text-secondary text-sm hidden sm:block group-hover:text-text-primary transition-colors">
+            expand_more
           </span>
         </div>
       </div>

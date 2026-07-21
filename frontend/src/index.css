@@ -2,8 +2,149 @@
 @import "tailwindcss/theme";
 
 @theme {
+  /* Legacy colors (keep for existing pages) */
   --color-primary-600: #2563eb;
   --color-primary-700: #1d4ed8;
+
+  /* === Template Design Tokens === */
+  /* Colors */
+  --color-surface-tint: #006d30;
+  --color-surface-container: #eaefe6;
+  --color-outline-variant: #becabc;
+  --color-warning: #F59E0B;
+  --color-surface-container-high: #e4eae1;
+  --color-background: #f6fbf2;
+  --color-surface: #f6fbf2;
+  --color-surface-dim: #d6dcd3;
+  --color-surface-variant: #dfe4db;
+  --color-secondary-fixed-dim: #afceba;
+  --color-error-container: #ffdad6;
+  --color-danger: #DC2626;
+  --color-tertiary-container: #b64c62;
+  --color-surface-bright: #f6fbf2;
+  --color-on-tertiary-fixed: #400013;
+  --color-on-error: #ffffff;
+  --color-info: #2563EB;
+  --color-on-primary-container: #d3ffd5;
+  --color-text-secondary: #6B7280;
+  --color-surface-container-low: #f0f5ec;
+  --color-on-primary-fixed: #00210a;
+  --color-outline: #6f7a6e;
+  --color-surface-container-lowest: #ffffff;
+  --color-tertiary-fixed: #ffd9dd;
+  --color-inverse-primary: #79db8d;
+  --color-tertiary-fixed-dim: #ffb2bd;
+  --color-surface-container-highest: #dfe4db;
+  --color-primary: #00652c;
+  --color-error: #ba1a1a;
+  --color-secondary-fixed: #caead6;
+  --color-on-primary: #ffffff;
+  --color-text-primary: #111827;
+  --color-tertiary: #97344a;
+  --color-on-primary-fixed-variant: #005323;
+  --color-on-surface: #181d17;
+  --color-border-dark: #334155;
+  --color-accent-gold: #D4AF37;
+  --color-primary-fixed-dim: #79db8d;
+  --color-on-secondary-container: #4e6b5a;
+  --color-on-error-container: #93000a;
+  --color-secondary-container: #caead6;
+  --color-on-tertiary: #ffffff;
+  --color-on-surface-variant: #3f493f;
+  --color-border-light: #E5E7EB;
+  --color-primary-fixed: #95f8a7;
+  --color-success: #16A34A;
+  --color-inverse-surface: #2c322c;
+  --color-inverse-on-surface: #edf2e9;
+  --color-on-background: #181d17;
+  --color-primary-container: #15803d;
+  --color-secondary: #486554;
+
+  /* Spacing */
+  --spacing-space-md: 16px;
+  --spacing-header-height: 72px;
+  --spacing-gutter: 24px;
+  --spacing-space-xs: 4px;
+  --spacing-container-max: 1600px;
+  --spacing-sidebar-width: 280px;
+  --spacing-space-sm: 8px;
+  --spacing-space-lg: 24px;
+  --spacing-space-xl: 32px;
+
+  /* Border Radius */
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1.125rem;
+
+  /* Fonts */
+  --font-body-md: "Inter", sans-serif;
+  --font-headline-md: "Plus Jakarta Sans", sans-serif;
+  --font-section-title: "Plus Jakarta Sans", sans-serif;
+  --font-headline-lg: "Plus Jakarta Sans", sans-serif;
+  --font-label-md: "Inter", sans-serif;
+
+  /* Animations */
+  --animate-gradient-shift: gradientShift 15s ease infinite;
+  --animate-fade-up: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-in-right: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-shimmer: shimmer 2s infinite linear;
+  --animate-pulse-subtle: pulseSubtle 2s infinite;
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideInRight {
+    0% { opacity: 0; transform: translateX(-20px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes pulseSubtle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.02); }
+  }
+}
+
+/* Google Fonts for template */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Animation delay utilities */
+.animate-delay-100 { animation-delay: 100ms; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-300 { animation-delay: 300ms; }
+.animate-delay-400 { animation-delay: 400ms; }
+.animate-delay-500 { animation-delay: 500ms; }
+
+/* Gradient animate background */
+.bg-gradient-animate {
+  background: linear-gradient(-45deg, #f6fbf2, #eaefe6, #f0f5ec, #f6fbf2);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
 }
 
 @layer components {

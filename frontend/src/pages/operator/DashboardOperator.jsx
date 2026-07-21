@@ -56,15 +56,13 @@ function StatCard({
   progress,
   subValue,
   highlight = false,
-  col span = 1,
+  colSpan = 1,
 }) {
   return (
     <div
       className={`bg-[#ffffff] border border-[#E5E7EB] rounded-[18px] p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group cursor-pointer opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0.16,1,0.3,1)_forwards] ${
-        highlight
-          ? "bg-[#00652c] text-white col-span-2 sm:col-span-1"
-          : ""
-      } ${colspan > 1 ? `col-span-${colspan}` : ""}`}
+        highlight ? "bg-[#00652c] text-white col-span-2 sm:col-span-1" : ""
+      } ${colSpan > 1 ? `col-span-${colSpan}` : ""}`}
       style={{ animationDelay: `${Math.random() * 0.5}s` }}
     >
       <div className="absolute top-0 right-0 w-24 h-24 bg-[#00652c]/5 rounded-full -mr-8 -mt-8 transition-transform duration-500 group-hover:scale-150"></div>
@@ -272,10 +270,26 @@ export default function DashboardOperator() {
             {[
               { icon: Upload, label: "Import", to: "/operator/master/siswa" },
               { icon: Download, label: "Export", to: "/operator/master/siswa" },
-              { icon: UserPlus, label: "Tambah Siswa", to: "/operator/master/siswa" },
-              { icon: Users, label: "Tambah Guru", to: "/operator/master/guru" },
-              { icon: Building2, label: "Tambah Kelas", to: "/operator/master/kelas" },
-              { icon: Calendar, label: "Kalender", to: "/operator/kalender-akademik" },
+              {
+                icon: UserPlus,
+                label: "Tambah Siswa",
+                to: "/operator/master/siswa",
+              },
+              {
+                icon: Users,
+                label: "Tambah Guru",
+                to: "/operator/master/guru",
+              },
+              {
+                icon: Building2,
+                label: "Tambah Kelas",
+                to: "/operator/master/kelas",
+              },
+              {
+                icon: Calendar,
+                label: "Kalender",
+                to: "/operator/kalender-akademik",
+              },
               { icon: Save, label: "Backup", to: "/operator/backup" },
               { icon: RotateCcw, label: "Restore", to: "/operator/backup" },
             ].map((action, idx) => (
@@ -443,7 +457,9 @@ export default function DashboardOperator() {
             {/* Event 1 */}
             <div className="relative">
               <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-[#D4AF37] ring-4 ring-[#ffffff]"></div>
-              <p className="text-xs text-[#6B7280] mb-1">Besok, 08:00 - 10:00</p>
+              <p className="text-xs text-[#6B7280] mb-1">
+                Besok, 08:00 - 10:00
+              </p>
               <h4 className="text-sm font-medium text-[#111827]">
                 Rapat Komite Sekolah
               </h4>

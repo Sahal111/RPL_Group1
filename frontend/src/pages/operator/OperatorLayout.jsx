@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import OperatorSidebar from "../../components/layout/OperatorSidebar";
 import OperatorTopBar from "../../components/layout/OperatorTopBar";
-import OperatorFooter from "../../components/layout/OperatorFooter";
 
 export default function OperatorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#f4faff]">
+    <div className="flex min-h-screen bg-gradient-animate text-on-surface">
       {/* Desktop Sidebar */}
       <OperatorSidebar />
 
@@ -21,24 +20,20 @@ export default function OperatorLayout() {
       )}
 
       {/* Mobile Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 h-screen w-[280px] border-r border-gray-300/40 bg-gray-50/80 z-50 transform transition-transform duration-300 md:hidden ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <OperatorSidebar />
-      </aside>
+      {sidebarOpen && (
+        <div className="fixed left-0 top-0 h-screen w-[290px] z-50 md:hidden">
+          <OperatorSidebar />
+        </div>
+      )}
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full md:ml-[280px] flex flex-col min-h-screen">
+      <main className="flex-1 flex flex-col min-h-screen md:ml-[290px]">
         <OperatorTopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
         {/* Canvas */}
-        <div className="p-4 md:p-8 flex-1 max-w-[1440px] mx-auto w-full flex flex-col gap-8">
+        <div className="flex-1 p-6 max-w-[1600px] mx-auto w-full">
           <Outlet />
         </div>
-
-        <OperatorFooter />
       </main>
     </div>
   );
