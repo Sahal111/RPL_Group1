@@ -14,11 +14,11 @@ const agamaOptions = [
   "Khonghucu",
 ];
 const statusPdOpts = [
-  "Aktif",
-  "Mutasi Keluar",
-  "Lulus",
-  "Dropout",
-  "Meninggal",
+  { value: "aktif", label: "Aktif" },
+  { value: "nonaktif", label: "Non-Aktif" },
+  { value: "mutasi_keluar", label: "Mutasi Keluar" },
+  { value: "lulus", label: "Lulus" },
+  { value: "meninggal", label: "Meninggal" },
 ];
 const keluargaOpts = ["Anak Kandung", "AnakTiri", "Anak Angkat"];
 const pendidikanOpts = [
@@ -132,26 +132,35 @@ const normalizeForm = (data) => ({
 });
 
 const statusConfig = {
-  Aktif: {
+  aktif: {
     bg: "bg-success/5",
     text: "text-success",
     border: "border-success/20",
+    label: "Aktif",
   },
-  "Mutasi Keluar": {
-    bg: "bg-warning/10",
-    text: "text-warning",
-    border: "border-warning/20",
-  },
-  Lulus: { bg: "bg-info/10", text: "text-info", border: "border-info/20" },
-  Dropout: {
-    bg: "bg-danger/10",
-    text: "text-danger",
-    border: "border-danger/20",
-  },
-  Meninggal: {
+  nonaktif: {
     bg: "bg-gray-100",
     text: "text-gray-500",
     border: "border-gray-200",
+    label: "Non-Aktif",
+  },
+  mutasi_keluar: {
+    bg: "bg-warning/10",
+    text: "text-warning",
+    border: "border-warning/20",
+    label: "Mutasi Keluar",
+  },
+  lulus: {
+    bg: "bg-info/10",
+    text: "text-info",
+    border: "border-info/20",
+    label: "Lulus",
+  },
+  meninggal: {
+    bg: "bg-gray-100",
+    text: "text-gray-500",
+    border: "border-gray-200",
+    label: "Meninggal",
   },
 };
 const getStatusStyle = (s) =>
@@ -159,6 +168,7 @@ const getStatusStyle = (s) =>
     bg: "bg-gray-100",
     text: "text-gray-500",
     border: "border-gray-200",
+    label: s ?? "—",
   };
 
 const inputCls =
@@ -952,8 +962,8 @@ function ModalSiswa({ open, onClose, editData, queryClient }) {
                   className={inputCls}
                 >
                   {statusPdOpts.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
+                    <option key={s.value} value={s.value}>
+                      {s.label}
                     </option>
                   ))}
                 </select>
@@ -1051,14 +1061,14 @@ export default function MasterSiswa() {
 
   const siswaList = data?.data ?? [];
   const total = data?.total ?? 0;
-  const totalAktif = siswaList.filter((s) => s.status_pd === "Aktif").length;
+  const totalAktif = siswaList.filter((s) => s.status === "aktif").length;
   const totalL = siswaList.filter((s) => s.jenis_kelamin === "L").length;
   const totalP = siswaList.filter((s) => s.jenis_kelamin === "P").length;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      {/* ── Breadcrumb & Actions ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-4">
         <div>
           <div className="flex items-center gap-1.5 text-text-secondary text-[13px] mb-2">
             <span className="hover:text-primary cursor-pointer transition-colors">
@@ -1069,156 +1079,208 @@ export default function MasterSiswa() {
             </span>
             <span className="text-text-primary font-bold">Siswa</span>
           </div>
-          <h1
-            className="text-2xl font-extrabold text-text-primary tracking-tight"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-          >
+          <h1 className="font-headline-lg text-headline-lg text-text-primary tracking-tight">
             Data Siswa
           </h1>
-          <p className="text-sm text-text-secondary mt-0.5">
-            Kelola seluruh data siswa MI Nurul Huda 3
-          </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2.5 bg-white border border-border-light rounded-xl font-bold text-sm text-text-primary hover:bg-surface-container-low transition-all flex items-center gap-2 shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">
+          <button className="px-5 py-2.5 bg-white border border-border-light rounded-xl font-bold text-sm text-text-primary hover:bg-surface-container-low transition-all flex items-center gap-2 shadow-sm">
+            <span className="material-symbols-outlined text-[20px]">
               upload_file
             </span>
             Import Excel
           </button>
           <button
             onClick={() => navigate("/operator/master/siswa/tambah")}
-            className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-soft hover:shadow-lg active:scale-[0.98]"
+            className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-soft hover:shadow-lg active:scale-[0.98]"
           >
-            <span className="material-symbols-outlined text-[18px]">
-              person_add
-            </span>
+            <span className="material-symbols-outlined text-[20px]">add</span>
             Tambah Siswa
           </button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-border-light shadow-soft hover:shadow-md transition-all">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[22px]">
-                groups
-              </span>
-            </div>
+      {/* ── Stats Grid ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Siswa */}
+        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all relative group overflow-hidden">
+          <div className="absolute right-0 bottom-0 opacity-10 translate-y-2 translate-x-2 pointer-events-none">
+            <svg
+              className="text-primary"
+              width="100"
+              height="40"
+              viewBox="0 0 100 40"
+            >
+              <path
+                d="M0,40 Q25,10 50,30 T100,5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+              />
+            </svg>
           </div>
-          <p className="text-text-secondary text-xs font-medium">Total Siswa</p>
-          <h3 className="text-2xl font-extrabold text-text-primary mt-0.5">
-            {isLoading ? "—" : total || siswaList.length}
-          </h3>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-border-light shadow-soft hover:shadow-md transition-all">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
-              <span className="material-symbols-outlined text-[22px]">
-                how_to_reg
-              </span>
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">groups</span>
             </div>
-            <span className="text-[10px] font-bold px-2 py-1 bg-success/10 text-success rounded-full">
+            <span className="text-[10px] font-bold px-2 py-1 bg-success/10 text-success rounded-full flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">
+                trending_up
+              </span>
               Aktif
             </span>
           </div>
-          <p className="text-text-secondary text-xs font-medium">Siswa Aktif</p>
-          <h3 className="text-2xl font-extrabold text-text-primary mt-0.5">
+          <p className="text-text-secondary text-sm font-medium">
+            Total Siswa (Aktif)
+          </p>
+          <h3 className="text-3xl font-extrabold text-text-primary mt-1">
+            {isLoading ? "—" : total || siswaList.length}
+          </h3>
+        </div>
+
+        {/* Siswa Aktif */}
+        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
+              <span className="material-symbols-outlined">how_to_reg</span>
+            </div>
+            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mt-1">
+              {isLoading ? "—" : `${totalAktif} aktif`}
+            </p>
+          </div>
+          <p className="text-text-secondary text-sm font-medium">Siswa Aktif</p>
+          <h3 className="text-3xl font-extrabold text-text-primary mt-1">
             {isLoading ? "—" : totalAktif}
           </h3>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-border-light shadow-soft hover:shadow-md transition-all">
-          <div className="flex justify-between items-start mb-3">
+
+        {/* Siswa Putra */}
+        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all">
+          <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center text-info">
-              <span className="material-symbols-outlined text-[22px]">boy</span>
+              <span className="material-symbols-outlined">boy</span>
             </div>
+            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mt-1">
+              {isLoading || !siswaList.length
+                ? "—"
+                : `${Math.round((totalL / siswaList.length) * 100)}% of total`}
+            </p>
           </div>
-          <p className="text-text-secondary text-xs font-medium">Siswa Putra</p>
-          <h3 className="text-2xl font-extrabold text-text-primary mt-0.5">
+          <p className="text-text-secondary text-sm font-medium">Siswa Putra</p>
+          <h3 className="text-3xl font-extrabold text-text-primary mt-1">
             {isLoading ? "—" : totalL}
           </h3>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-border-light shadow-soft hover:shadow-md transition-all">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
-              <span className="material-symbols-outlined text-[22px]">
-                girl
-              </span>
-            </div>
+
+        {/* Siswa Putri */}
+        <div className="bg-white rounded-xl p-6 border border-border-light shadow-soft hover:shadow-md transition-all relative overflow-hidden">
+          <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+            <span className="material-symbols-outlined text-8xl -rotate-12 translate-x-4 translate-y-4">
+              girl
+            </span>
           </div>
-          <p className="text-text-secondary text-xs font-medium">Siswa Putri</p>
-          <h3 className="text-2xl font-extrabold text-text-primary mt-0.5">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
+              <span className="material-symbols-outlined">girl</span>
+            </div>
+            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mt-1">
+              {isLoading || !siswaList.length
+                ? "—"
+                : `${Math.round((totalP / siswaList.length) * 100)}% of total`}
+            </p>
+          </div>
+          <p className="text-text-secondary text-sm font-medium">Siswa Putri</p>
+          <h3 className="text-3xl font-extrabold text-text-primary mt-1">
             {isLoading ? "—" : totalP}
           </h3>
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="bg-white rounded-[18px] border border-border-light shadow-soft overflow-hidden">
-        {/* Controls */}
-        <div className="px-6 py-4 border-b border-border-light flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="relative max-w-sm w-full group">
+      {/* ── Table Section ── */}
+      <div className="bg-white rounded-[18px] border border-border-light shadow-soft overflow-hidden relative">
+        {/* Table Header Controls */}
+        <div className="px-6 py-5 border-b border-border-light flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative max-w-md w-full group">
               <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-[20px] group-focus-within:text-primary transition-colors">
                 search
               </span>
               <input
                 type="text"
-                placeholder="Cari nama atau NISN..."
+                placeholder="Cari nama, NISN, atau kelas..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-surface-container-lowest border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-background-light border border-border-light rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
               />
             </div>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
-            >
-              <option value="">Semua Status</option>
-              {statusPdOpts.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-border-light rounded-xl text-sm font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all cursor-pointer"
+              >
+                <option value="">Semua Status</option>
+                {statusPdOpts.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">
+                expand_more
+              </span>
+            </div>
           </div>
-          <button className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-text-primary hover:bg-surface-container-low transition-all flex items-center gap-2 text-sm font-bold">
-            <span className="material-symbols-outlined text-[18px]">
-              download
-            </span>
-            Export
-          </button>
+          <div className="flex items-center gap-3">
+            {(search || status) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setStatus("");
+                }}
+                className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-danger hover:bg-error-container transition-all flex items-center gap-2 text-sm font-bold"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  filter_alt_off
+                </span>
+                Reset
+              </button>
+            )}
+            <button className="px-4 py-2.5 bg-white border border-border-light rounded-xl text-text-primary hover:bg-surface-container-low transition-all flex items-center gap-2 text-sm font-bold">
+              <span className="material-symbols-outlined text-[18px]">
+                download
+              </span>
+              Export
+            </button>
+          </div>
         </div>
 
-        {/* Table */}
+        {/* Data Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-container-lowest/60 border-b border-border-light">
-                <th className="px-6 py-4 text-[11px] font-bold text-text-secondary uppercase tracking-widest">
+              <tr className="bg-background-light/50 border-b border-border-light">
+                <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
                   <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
-                    Siswa{" "}
+                    Siswa
                     <span className="material-symbols-outlined text-[14px]">
                       unfold_more
                     </span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-secondary uppercase tracking-widest">
-                  NISN
+                <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
+                  NISN / NIS
                 </th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-secondary uppercase tracking-widest">
+                <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
+                  Kelas
+                </th>
+                <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
                   Gender
                 </th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-secondary uppercase tracking-widest">
-                  Agama
-                </th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-secondary uppercase tracking-widest">
+                <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest">
                   Status
                 </th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-secondary uppercase tracking-widest text-right">
+                <th className="px-6 py-4 text-[12px] font-bold text-text-secondary uppercase tracking-widest text-right">
                   Aksi
                 </th>
               </tr>
@@ -1226,9 +1288,9 @@ export default function MasterSiswa() {
             <tbody className="divide-y divide-border-light">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16">
+                  <td colSpan={6} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
-                      <span className="material-symbols-outlined text-[40px] text-text-secondary">
+                      <span className="material-symbols-outlined text-[48px] text-primary animate-spin">
                         progress_activity
                       </span>
                       <p className="text-sm text-text-secondary font-medium">
@@ -1239,7 +1301,7 @@ export default function MasterSiswa() {
                 </tr>
               ) : siswaList.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16">
+                  <td colSpan={6} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center">
                         <span className="material-symbols-outlined text-[32px] text-text-secondary">
@@ -1261,17 +1323,23 @@ export default function MasterSiswa() {
                 </tr>
               ) : (
                 siswaList.map((s) => {
-                  const st = getStatusStyle(s.status_pd);
+                  const st = getStatusStyle(s.status);
                   const isL = s.jenis_kelamin === "L";
+                  const isAktif = s.status === "aktif";
+                  const kelasSiswa =
+                    s.kelas_aktif?.nama_kelas ??
+                    s.riwayat_kelas?.[0]?.kelas?.nama_kelas ??
+                    null;
                   return (
                     <tr
                       key={s.nisn}
-                      className="hover:bg-surface-container-lowest/70 transition-colors group"
+                      className="hover:bg-surface-container-low/50 transition-colors group"
                     >
+                      {/* Siswa */}
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <div
-                            className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border ${isL ? "bg-info/10 border-info/20" : "bg-tertiary/10 border-tertiary/20"} ${s.status_pd !== "Aktif" ? "grayscale opacity-60" : ""}`}
+                            className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shrink-0 border ${isL ? "bg-info/10 border-info/20" : "bg-tertiary/10 border-tertiary/20"} ${!isAktif ? "grayscale opacity-60" : ""}`}
                           >
                             {s.foto ? (
                               <img
@@ -1289,7 +1357,7 @@ export default function MasterSiswa() {
                           </div>
                           <div>
                             <p
-                              className={`font-bold text-sm group-hover:text-primary transition-colors ${s.status_pd !== "Aktif" ? "text-text-secondary" : "text-text-primary"}`}
+                              className={`font-bold text-sm group-hover:text-primary transition-colors ${!isAktif ? "text-text-secondary" : "text-text-primary"}`}
                             >
                               {s.nama_lengkap}
                             </p>
@@ -1299,9 +1367,30 @@ export default function MasterSiswa() {
                           </div>
                         </div>
                       </td>
+
+                      {/* NISN / NIS */}
                       <td className="px-6 py-4 font-mono text-[13px] text-text-secondary">
                         {s.nisn}
+                        {s.no_induk && (
+                          <span className="text-[11px] text-text-secondary">
+                            {" "}
+                            / {s.no_induk}
+                          </span>
+                        )}
                       </td>
+
+                      {/* Kelas */}
+                      <td className="px-6 py-4">
+                        {kelasSiswa ? (
+                          <span className="px-2.5 py-1 bg-surface-container text-text-primary text-[12px] font-bold rounded-lg border border-border-light">
+                            {kelasSiswa}
+                          </span>
+                        ) : (
+                          <span className="text-text-secondary text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Gender */}
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border ${isL ? "bg-info/10 text-info border-info/20" : "bg-tertiary/10 text-tertiary border-tertiary/20"}`}
@@ -1309,21 +1398,22 @@ export default function MasterSiswa() {
                           <span className="material-symbols-outlined text-[13px]">
                             {isL ? "boy" : "girl"}
                           </span>
-                          {isL ? "Laki-laki" : "Perempuan"}
+                          {isL ? "L" : "P"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-text-secondary">
-                        {s.agama}
-                      </td>
+
+                      {/* Status */}
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${st.bg} ${st.text} ${st.border}`}
                         >
-                          {s.status_pd}
+                          {st.label ?? s.status}
                         </span>
                       </td>
+
+                      {/* Aksi */}
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() =>
                               navigate(`/operator/master/siswa/${s.nisn}`)
@@ -1331,16 +1421,18 @@ export default function MasterSiswa() {
                             className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
                             title="Detail Siswa"
                           >
-                            <span className="material-symbols-outlined text-[18px]">
+                            <span className="material-symbols-outlined text-[20px]">
                               visibility
                             </span>
                           </button>
                           <button
-                            onClick={() => navigate(`/operator/master/siswa/edit/${s.nisn}`)}
+                            onClick={() =>
+                              navigate(`/operator/master/siswa/edit/${s.nisn}`)
+                            }
                             className="p-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
                             title="Edit Siswa"
                           >
-                            <span className="material-symbols-outlined text-[18px]">
+                            <span className="material-symbols-outlined text-[20px]">
                               edit
                             </span>
                           </button>
@@ -1354,7 +1446,7 @@ export default function MasterSiswa() {
                             className="p-2 text-text-secondary hover:text-danger hover:bg-danger/10 rounded-xl transition-all"
                             title="Hapus Siswa"
                           >
-                            <span className="material-symbols-outlined text-[18px]">
+                            <span className="material-symbols-outlined text-[20px]">
                               delete
                             </span>
                           </button>
@@ -1368,8 +1460,9 @@ export default function MasterSiswa() {
           </table>
         </div>
 
+        {/* Pagination / Footer */}
         {!isLoading && (total > 0 || siswaList.length > 0) && (
-          <div className="px-6 py-4 border-t border-border-light bg-surface-container-lowest/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-6 py-5 border-t border-border-light bg-background-light/30 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-text-secondary font-medium">
               Menampilkan{" "}
               <span className="font-bold text-text-primary">
@@ -1384,20 +1477,25 @@ export default function MasterSiswa() {
               )}{" "}
               siswa
             </p>
-            {(search || status) && (
+            <div className="flex items-center gap-1.5">
               <button
-                onClick={() => {
-                  setSearch("");
-                  setStatus("");
-                }}
-                className="text-sm font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                className="px-3.5 py-2 border border-border-light rounded-xl text-text-secondary hover:bg-white hover:text-primary hover:border-primary transition-all disabled:opacity-50 text-sm font-bold"
+                disabled
               >
-                <span className="material-symbols-outlined text-[16px]">
-                  filter_alt_off
-                </span>
-                Hapus Filter
+                Previous
               </button>
-            )}
+              <div className="flex items-center gap-1 px-1">
+                <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-white text-sm font-bold shadow-soft">
+                  1
+                </button>
+              </div>
+              <button
+                className="px-3.5 py-2 border border-border-light rounded-xl text-text-secondary hover:bg-white hover:text-primary hover:border-primary transition-all text-sm font-bold"
+                disabled
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

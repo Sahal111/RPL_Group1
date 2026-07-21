@@ -1091,7 +1091,7 @@ const Step4 = ({ form, set }) => (
         />
       </div>
       <div>
-        <Label>Tingkat / Kelas</Label>
+        <Label required>Tingkat / Kelas</Label>
         <SelectField
           value={form.tingkat}
           onChange={(e) => set("tingkat", e.target.value)}
@@ -1305,11 +1305,28 @@ export default function TambahEditSiswa() {
       if (!form.nisn.trim()) return toast.error("NISN wajib diisi.");
       if (!form.tempat_lahir.trim() || !form.tanggal_lahir)
         return toast.error("Tempat & tanggal lahir wajib diisi.");
+      if (!form.agama) return toast.error("Agama wajib dipilih.");
+      if (!form.jenis_kelamin)
+        return toast.error("Jenis kelamin wajib dipilih.");
+    }
+    if (currentStep === 2) {
+      if (!form.nama_ibu_kandung?.trim())
+        return toast.error("Nama ibu kandung wajib diisi.");
+    }
+    if (currentStep === 3) {
+      if (!form.alamat_jalan?.trim())
+        return toast.error("Alamat jalan wajib diisi.");
     }
     if (currentStep < 4) {
       setCurrentStep((s) => s + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const handleSubmit = () => {
+    if (!form.tingkat) return toast.error("Tingkat / Kelas wajib dipilih.");
+    if (!form.tanggal_masuk) return toast.error("Tanggal masuk wajib diisi.");
+    mutation.mutate(form);
   };
 
   const handlePrevStep = () => {
@@ -1339,7 +1356,7 @@ export default function TambahEditSiswa() {
      RENDER
      ══════════════════════════════════════════════════════════ */
   return (
-    <div className="flex-1 p-gutter mx-auto w-full max-w-6xl">
+    <div className="space-y-6">
       {/* ── Page Header ── */}
       <div className="mb-space-lg flex items-center justify-between">
         <div>
@@ -1443,7 +1460,7 @@ export default function TambahEditSiswa() {
           ) : (
             <button
               type="button"
-              onClick={() => mutation.mutate(form)}
+              onClick={handleSubmit}
               disabled={mutation.isPending}
               className="px-6 py-3 rounded-[12px] bg-primary text-on-primary font-label-md text-label-md font-bold hover:bg-primary-container hover:text-on-primary-container hover:shadow-md transition-all shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
