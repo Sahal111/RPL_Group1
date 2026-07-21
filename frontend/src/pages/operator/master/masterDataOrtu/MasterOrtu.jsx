@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import api from "../../../lib/axios";
+import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
 import {
   CheckCircle2,

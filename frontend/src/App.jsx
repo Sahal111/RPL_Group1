@@ -16,23 +16,24 @@ import ContactPage from "./pages/public/ContactPage";
 import OperatorLayout from "./pages/operator/OperatorLayout";
 import DashboardOperator from "./pages/operator/DashboardOperator";
 import ManajemenAkun from "./pages/operator/ManajemenAkun";
-import MasterGuru from "./pages/operator/master/MasterGuru";
-import MasterSiswa from "./pages/operator/master/MasterSiswa";
-import MasterKelas from "./pages/operator/master/MasterKelas";
-import MasterOrtu from "./pages/operator/master/MasterOrtu";
-import TahunAjaran from "./pages/operator/master/TahunAjaran";
+import MasterGuru from "./pages/operator/master/masterDataGuru/MasterGuru";
+import MasterSiswa from "./pages/operator/master/masterDataSiswa/MasterSiswa";
+import TambahEditSiswa from "./pages/operator/master/masterDataSiswa/TambahEditSiswa";
+import MasterKelas from "./pages/operator/master/masterDataKelas/MasterKelas";
+import MasterOrtu from "./pages/operator/master/masterDataOrtu/MasterOrtu";
+import TahunAjaran from "./pages/operator/master/masterDataTahunAjaran/TahunAjaran";
 import ApprovalOrtu from "./pages/operator/ApprovalOrtu";
-import DetailGuru from "./pages/operator/master/DetailGuru";
-import DetailSiswa from "./pages/operator/master/DetailSiswa";
-import DetailKelas from "./pages/operator/master/DetailKelas";
-import DetailOrtu from "./pages/operator/master/DetailOrtu";
+import DetailGuru from "./pages/operator/master/masterDataGuru/DetailGuru";
+import DetailSiswa from "./pages/operator/master/masterDataSiswa/DetailSiswa";
+import DetailKelas from "./pages/operator/master/masterDataKelas/DetailKelas";
+import DetailOrtu from "./pages/operator/master/masterDataOrtu/DetailOrtu";
 import NaikKelas from "./pages/operator/master/NaikKelas";
-import DetailTahunAjaran from "./pages/operator/master/DetailTahunAjaran";
-import MasterMapel from "./pages/operator/master/MasterMapel";
+import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaran/DetailTahunAjaran";
+import MasterMapel from "./pages/operator/master/masterDataMapel/MasterMapel";
 import MasterJadwal from "./pages/operator/master/MasterJadwal";
 import PengumumanOperator from "./pages/operator/master/PengumumanOperator";
 import GaleriOperator from "./pages/operator/master/GaleriOperator";
-import DetailDataOrtu from "./pages/operator/master/DetailDataOrtu"; // sesuaikan path import
+import DetailDataOrtu from "./pages/operator/master/masterDataOrtu/DetailDataOrtu";
 
 // Guru
 import GuruLayout from "./pages/guru/GuruLayout";
@@ -104,6 +105,8 @@ export default function App() {
         <Route path="dashboard" element={<DashboardOperator />} />
         <Route path="master/guru" element={<MasterGuru />} />
         <Route path="master/siswa" element={<MasterSiswa />} />
+        <Route path="master/siswa/tambah" element={<TambahEditSiswa />} />
+        <Route path="master/siswa/edit/:nisn" element={<TambahEditSiswa />} />
         <Route path="master/kelas" element={<MasterKelas />} />
         <Route path="master/ortu" element={<MasterOrtu />} />
         <Route path="master/tahun-ajaran" element={<TahunAjaran />} />

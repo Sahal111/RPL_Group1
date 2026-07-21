@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../../lib/axios";
+import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
 import { Plus, Search, Pencil, Trash2, X, Eye, Camera } from "lucide-react";
 
