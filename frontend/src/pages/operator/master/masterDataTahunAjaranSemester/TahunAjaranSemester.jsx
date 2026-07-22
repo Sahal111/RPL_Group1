@@ -34,18 +34,65 @@ function daysRemaining(end) {
   return diff;
 }
 
+function getTglMulai(t) {
+  if (!t || !t.semesters) return null;
+  const ganjil = t.semesters.find(s => s.nama === 'Ganjil');
+  return ganjil ? ganjil.tgl_mulai : null;
+}
+
+function getTglSelesai(t) {
+  if (!t || !t.semesters) return null;
+  const genap = t.semesters.find(s => s.nama === 'Genap');
+  const ganjil = t.semesters.find(s => s.nama === 'Ganjil');
+  return genap ? genap.tgl_selesai : (ganjil ? ganjil.tgl_selesai : null);
+}
+
 // ── Modal Tambah / Edit Tahun Ajaran ──────────────────────────────────────────
 function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
   const [form, setForm] = useState({
-    nama: "",
-    tanggal_mulai: "",
-    tanggal_selesai: "",
+    tahun: "",
+    is_active: false,
+    buat_semester: true,
+    semester_ganjil_mulai: "",
+    semester_ganjil_selesai: "",
+    semester_genap_mulai: "",
+    semester_genap_selesai: "",
+    semester_aktif: "Ganjil"
   });
 
   useEffect(() => {
-    if (open)
-      setForm(editData ?? { nama: "", tanggal_mulai: "", tanggal_selesai: "" });
+    if (open) {
+      if (editData) {
+        const ganjil = editData.semesters?.find(s => s.nama === 'Ganjil');
+        const genap = editData.semesters?.find(s => s.nama === 'Genap');
+        let semAktif = "";
+        if (ganjil?.is_active) semAktif = "Ganjil";
+        else if (genap?.is_active) semAktif = "Genap";
+        
+        setForm({
+          tahun: editData.tahun || "",
+          is_active: editData.is_active || false,
+          buat_semester: !!(ganjil || genap),
+          semester_ganjil_mulai: ganjil?.tgl_mulai || "",
+          semester_ganjil_selesai: ganjil?.tgl_selesai || "",
+          semester_genap_mulai: genap?.tgl_mulai || "",
+          semester_genap_selesai: genap?.tgl_selesai || "",
+          semester_aktif: semAktif
+        });
+      } else {
+        setForm({ 
+          tahun: "", 
+          is_active: false, 
+          buat_semester: true,
+          semester_ganjil_mulai: "",
+          semester_ganjil_selesai: "",
+          semester_genap_mulai: "",
+          semester_genap_selesai: "",
+          semester_aktif: "Ganjil"
+        });
+      }
+    }
   }, [open, editData]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -72,109 +119,187 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
 
   if (!open) return null;
 
+  const inputCls =
+    "w-full px-4 py-2.5 bg-background-light border border-border-light rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all";
+  const labelCls =
+    "block text-label-md font-semibold text-text-secondary mb-1.5";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div
-        className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md border border-border-light animate-fade-up"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <span className="material-symbols-outlined text-[20px]">
-                calendar_today
+                {isEdit ? "edit_note" : "add_circle"}
               </span>
             </div>
-            <h3
-              className="font-semibold text-text-primary"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-            >
+            <h3 className="text-section-title font-semibold text-on-surface">
               {isEdit ? "Edit Tahun Ajaran" : "Tambah Tahun Ajaran"}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-container transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-container-low hover:text-on-surface transition-colors"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-5 max-h-[68vh] overflow-y-auto custom-scrollbar">
+          {/* INFORMASI TAHUN AJARAN */}
           <div>
-            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-              Nama <span className="text-danger">*</span>
-              <span className="normal-case font-normal text-text-secondary ml-1">
-                (maks. 20 karakter)
-              </span>
-            </label>
-            <input
-              value={form.nama}
-              onChange={(e) => set("nama", e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-light bg-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-text-primary placeholder:text-text-secondary"
-              placeholder="Contoh: 2025/2026"
-              maxLength={20}
-            />
-            <p className="text-xs text-text-secondary mt-1">
-              {form.nama.length}/20 karakter
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+            <h4 className="text-body-md font-bold text-on-surface mb-3 border-b border-border-light pb-2">INFORMASI TAHUN AJARAN</h4>
             <div>
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                Tanggal Mulai <span className="text-danger">*</span>
+              <label className={labelCls}>
+                Nama Tahun Ajaran <span className="text-danger">*</span>
               </label>
               <input
-                type="date"
-                value={form.tanggal_mulai}
-                onChange={(e) => set("tanggal_mulai", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border-light bg-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-text-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                Tanggal Selesai <span className="text-danger">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.tanggal_selesai}
-                onChange={(e) => set("tanggal_selesai", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border-light bg-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-text-primary"
+                value={form.tahun}
+                onChange={(e) => set("tahun", e.target.value)}
+                className={inputCls}
+                placeholder="Contoh: 2025/2026"
+                maxLength={9}
               />
             </div>
           </div>
 
-          {/* Duration preview */}
-          {form.tanggal_mulai && form.tanggal_selesai && (
-            <div className="flex items-center gap-2 px-4 py-3 bg-primary/5 rounded-xl border border-primary/10 text-sm text-primary">
-              <span className="material-symbols-outlined text-[18px]">
-                info
-              </span>
-              <span>
-                Durasi:{" "}
-                <strong>
-                  {daysBetween(form.tanggal_mulai, form.tanggal_selesai)} hari
-                </strong>
-              </span>
+          {/* PENGATURAN SEMESTER */}
+          <div>
+            <div className="flex items-center justify-between border-b border-border-light pb-2 mb-3">
+               <h4 className="text-body-md font-bold text-on-surface">PENGATURAN SEMESTER</h4>
+               <label className="flex items-center gap-2 cursor-pointer">
+                 <input 
+                   type="checkbox" 
+                   checked={form.buat_semester}
+                   onChange={(e) => set("buat_semester", e.target.checked)}
+                   className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary"
+                 />
+                 <span className="text-label-md font-medium text-text-secondary">Buat Semester Otomatis</span>
+               </label>
             </div>
-          )}
+            
+            {form.buat_semester && (
+              <div className="space-y-4">
+                {/* Semester Ganjil */}
+                <div className="p-4 bg-background-light rounded-xl border border-border-light">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-outlined text-[18px] text-primary">looks_one</span>
+                    <h5 className="text-body-md font-bold text-on-surface">Semester Ganjil</h5>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Tanggal Mulai</label>
+                      <input
+                        type="date"
+                        value={form.semester_ganjil_mulai}
+                        onChange={(e) => set("semester_ganjil_mulai", e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Tanggal Selesai</label>
+                      <input
+                        type="date"
+                        value={form.semester_ganjil_selesai}
+                        onChange={(e) => set("semester_ganjil_selesai", e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Semester Genap */}
+                <div className="p-4 bg-background-light rounded-xl border border-border-light">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-outlined text-[18px] text-text-secondary">looks_two</span>
+                    <h5 className="text-body-md font-bold text-on-surface">Semester Genap</h5>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Tanggal Mulai</label>
+                      <input
+                        type="date"
+                        value={form.semester_genap_mulai}
+                        onChange={(e) => set("semester_genap_mulai", e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Tanggal Selesai</label>
+                      <input
+                        type="date"
+                        value={form.semester_genap_selesai}
+                        onChange={(e) => set("semester_genap_selesai", e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* PENGATURAN LAIN */}
+          <div>
+            <h4 className="text-body-md font-bold text-on-surface mb-3 border-b border-border-light pb-2">PENGATURAN</h4>
+            <div className="space-y-3">
+               <label className="flex items-center gap-3 cursor-pointer">
+                 <input 
+                   type="checkbox" 
+                   checked={form.is_active}
+                   onChange={(e) => {
+                     set("is_active", e.target.checked);
+                     if (!e.target.checked) set("semester_aktif", "");
+                   }}
+                   className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary"
+                 />
+                 <span className="text-body-md font-medium text-on-surface">Jadikan Tahun Ajaran Aktif</span>
+               </label>
+               
+               {form.is_active && form.buat_semester && (
+                 <div className="ml-7 flex flex-col gap-2">
+                   <p className="text-label-md text-text-secondary mb-1">Pilih semester yang aktif:</p>
+                   <label className="flex items-center gap-2 cursor-pointer">
+                     <input 
+                       type="radio" 
+                       name="semester_aktif"
+                       checked={form.semester_aktif === 'Ganjil'}
+                       onChange={() => set("semester_aktif", "Ganjil")}
+                       className="w-4 h-4 border-border-light text-primary focus:ring-primary"
+                     />
+                     <span className="text-body-md text-on-surface">Semester Ganjil</span>
+                   </label>
+                   <label className="flex items-center gap-2 cursor-pointer">
+                     <input 
+                       type="radio" 
+                       name="semester_aktif"
+                       checked={form.semester_aktif === 'Genap'}
+                       onChange={() => set("semester_aktif", "Genap")}
+                       className="w-4 h-4 border-border-light text-primary focus:ring-primary"
+                     />
+                     <span className="text-body-md text-on-surface">Semester Genap</span>
+                   </label>
+                 </div>
+               )}
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 px-6 py-4 border-t border-border-light">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border-light bg-background-light">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-lg border border-border-light text-text-secondary hover:bg-surface-container-low font-medium transition-colors text-body-md"
           >
             Batal
           </button>
           <button
             onClick={() => mutation.mutate(form)}
             disabled={mutation.isPending}
-            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="px-5 py-2.5 rounded-lg bg-primary text-white font-semibold hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-body-md"
           >
             {mutation.isPending ? (
               <>
@@ -317,14 +442,14 @@ export default function TahunAjaran() {
 
   const list = data ?? [];
   const filtered = list.filter(
-    (t) => !search || t.nama?.toLowerCase().includes(search.toLowerCase()),
+    (t) => !search || t.tahun?.toLowerCase().includes(search.toLowerCase()),
   );
   const aktif = list.find((t) => t.is_active);
 
   // compute stats
-  const hariSisa = aktif ? daysRemaining(aktif.tanggal_selesai) : null;
+  const hariSisa = aktif ? daysRemaining(getTglSelesai(aktif)) : null;
   const hariTotal = aktif
-    ? daysBetween(aktif.tanggal_mulai, aktif.tanggal_selesai)
+    ? daysBetween(getTglMulai(aktif), getTglSelesai(aktif))
     : null;
   const hariBerjalan =
     aktif && hariTotal !== null && hariSisa !== null
@@ -395,7 +520,7 @@ export default function TahunAjaran() {
         <StatCard
           icon="calendar_today"
           label="Tahun Ajaran Aktif"
-          value={aktif?.nama ?? "-"}
+          value={aktif?.tahun ?? "-"}
           badge={aktif ? "Aktif" : undefined}
           badgeColor="success"
         />
@@ -567,13 +692,13 @@ export default function TahunAjaran() {
                             <span
                               className={`font-semibold text-sm ${t.is_active ? "text-primary" : "text-text-primary"}`}
                             >
-                              {t.nama}
+                              {t.tahun}
                             </span>
                           </div>
                         </td>
 
                         <td className="px-5 py-4 text-text-secondary text-xs hidden sm:table-cell">
-                          {fmt(t.tanggal_mulai)} – {fmt(t.tanggal_selesai)}
+                          {fmt(getTglMulai(t))} – {fmt(getTglSelesai(t))}
                         </td>
 
                         <td className="px-5 py-4">
@@ -612,7 +737,7 @@ export default function TahunAjaran() {
                                 onClick={() => {
                                   if (
                                     confirm(
-                                      `Jadikan "${t.nama}" sebagai tahun ajaran aktif?`,
+                                      `Jadikan "${t.tahun}" sebagai tahun ajaran aktif?`,
                                     )
                                   )
                                     setAktif.mutate(t.id);
@@ -639,7 +764,7 @@ export default function TahunAjaran() {
                             </button>
                             <button
                               onClick={() => {
-                                if (confirm(`Hapus tahun ajaran "${t.nama}"?`))
+                                if (confirm(`Hapus tahun ajaran "${t.tahun}"?`))
                                   hapus.mutate(t.id);
                               }}
                               title="Hapus"
@@ -667,11 +792,11 @@ export default function TahunAjaran() {
                                   <span className="material-symbols-outlined text-[14px] text-primary">
                                     school
                                   </span>
-                                  Detail Periode — {t.nama}
+                                  Detail Periode — {t.tahun}
                                 </span>
                                 <span className="text-xs text-text-secondary">
-                                  {fmt(t.tanggal_mulai)} –{" "}
-                                  {fmt(t.tanggal_selesai)}
+                                  {fmt(getTglMulai(t))} –{" "}
+                                  {fmt(getTglSelesai(t))}
                                 </span>
                               </div>
 
@@ -763,8 +888,8 @@ export default function TahunAjaran() {
                                   <span>Durasi total</span>
                                   <span className="font-medium">
                                     {daysBetween(
-                                      t.tanggal_mulai,
-                                      t.tanggal_selesai,
+                                      getTglMulai(t),
+                                      getTglSelesai(t),
                                     ) ?? "?"}{" "}
                                     hari
                                   </span>
@@ -829,11 +954,11 @@ export default function TahunAjaran() {
                   className="text-2xl font-bold mb-1"
                   style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                 >
-                  {aktif.nama}
+                  {aktif.tahun}
                 </h4>
                 <p className="text-xs text-white/70 mb-4">
-                  {fmtLong(aktif.tanggal_mulai)} –{" "}
-                  {fmtLong(aktif.tanggal_selesai)}
+                  {fmtLong(getTglMulai(aktif))} –{" "}
+                  {fmtLong(getTglSelesai(aktif))}
                 </p>
 
                 {/* Progress ring simulation with bar */}
@@ -869,17 +994,17 @@ export default function TahunAjaran() {
                 <span className="material-symbols-outlined text-primary text-[18px]">
                   timeline
                 </span>
-                Timeline {aktif.nama}
+                Timeline {aktif.tahun}
               </h3>
               <div className="relative border-l-2 border-outline-variant/30 ml-3 space-y-5">
                 <TimelineItem
                   title="Mulai Tahun Ajaran"
-                  subtitle={fmtLong(aktif.tanggal_mulai)}
+                  subtitle={fmtLong(getTglMulai(aktif))}
                   active={false}
                 />
                 <TimelineItem
                   title="Semester Ganjil (Berjalan)"
-                  subtitle={`${fmt(aktif.tanggal_mulai)} – pertengahan`}
+                  subtitle={`${fmt(getTglMulai(aktif))} – pertengahan`}
                   active={true}
                 />
                 <TimelineItem
@@ -889,7 +1014,7 @@ export default function TahunAjaran() {
                 />
                 <TimelineItem
                   title="Semester Genap"
-                  subtitle={`Awal Januari – ${fmt(aktif.tanggal_selesai)}`}
+                  subtitle={`Awal Januari – ${fmt(getTglSelesai(aktif))}`}
                   active={false}
                 />
                 <div className="relative pl-6">
@@ -898,7 +1023,7 @@ export default function TahunAjaran() {
                     Selesai
                   </div>
                   <div className="text-xs text-text-secondary mt-0.5">
-                    {fmtLong(aktif.tanggal_selesai)}
+                    {fmtLong(getTglSelesai(aktif))}
                   </div>
                 </div>
               </div>

@@ -6,13 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\TahunAjaran;
 use App\Models\Kelas;
 use App\Models\RiwayatKelas;
+use App\Models\Semester;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TahunAjaranController extends Controller
 {
     public function index()
     {
-        $data = TahunAjaran::orderByDesc('tahun')->get();
+        $data = TahunAjaran::with('semesters')->orderByDesc('tahun')->get();
 
         return response()->json(['success' => true, 'data' => $data]);
     }
@@ -58,18 +60,62 @@ class TahunAjaranController extends Controller
     {
         $request->validate([
             'tahun' => 'required|string|max:9|unique:tahun_ajarans,tahun',
+            'is_active' => 'nullable|boolean',
+            'buat_semester' => 'nullable|boolean',
+            'semester_ganjil_mulai' => 'nullable|date',
+            'semester_ganjil_selesai' => 'nullable|date',
+            'semester_genap_mulai' => 'nullable|date',
+            'semester_genap_selesai' => 'nullable|date',
+            'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
         ]);
 
-        $tahunAjaran = TahunAjaran::create([
-            'tahun' => $request->tahun,
-            'is_active' => false,
-        ]);
+        DB::beginTransaction();
+        try {
+            if ($request->is_active) {
+                TahunAjaran::query()->update(['is_active' => false]);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tahun ajaran berhasil ditambahkan.',
-            'data' => $tahunAjaran,
-        ], 201);
+            $tahunAjaran = TahunAjaran::create([
+                'tahun' => $request->tahun,
+                'is_active' => $request->is_active ?? false,
+            ]);
+
+            if ($request->buat_semester) {
+                if ($request->semester_aktif) {
+                    Semester::query()->update(['is_active' => false]);
+                }
+                
+                Semester::create([
+                    'tahun_ajaran_id' => $tahunAjaran->id,
+                    'nama' => 'Ganjil',
+                    'tgl_mulai' => $request->semester_ganjil_mulai,
+                    'tgl_selesai' => $request->semester_ganjil_selesai,
+                    'is_active' => ($request->is_active && $request->semester_aktif === 'Ganjil'),
+                ]);
+
+                Semester::create([
+                    'tahun_ajaran_id' => $tahunAjaran->id,
+                    'nama' => 'Genap',
+                    'tgl_mulai' => $request->semester_genap_mulai,
+                    'tgl_selesai' => $request->semester_genap_selesai,
+                    'is_active' => ($request->is_active && $request->semester_aktif === 'Genap'),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tahun ajaran berhasil ditambahkan.',
+                'data' => $tahunAjaran->load('semesters'),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
@@ -78,17 +124,64 @@ class TahunAjaranController extends Controller
 
         $request->validate([
             'tahun' => 'required|string|max:9|unique:tahun_ajarans,tahun,' . $id,
+            'is_active' => 'nullable|boolean',
+            'buat_semester' => 'nullable|boolean',
+            'semester_ganjil_mulai' => 'nullable|date',
+            'semester_ganjil_selesai' => 'nullable|date',
+            'semester_genap_mulai' => 'nullable|date',
+            'semester_genap_selesai' => 'nullable|date',
+            'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
         ]);
 
-        $tahunAjaran->update([
-            'tahun' => $request->tahun,
-        ]);
+        DB::beginTransaction();
+        try {
+            if ($request->is_active && !$tahunAjaran->is_active) {
+                TahunAjaran::query()->update(['is_active' => false]);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tahun ajaran berhasil diperbarui.',
-            'data' => $tahunAjaran,
-        ]);
+            $tahunAjaran->update([
+                'tahun' => $request->tahun,
+                'is_active' => $request->is_active ?? $tahunAjaran->is_active,
+            ]);
+
+            if ($request->buat_semester) {
+                if ($request->semester_aktif && $request->is_active) {
+                    Semester::query()->update(['is_active' => false]);
+                }
+
+                Semester::updateOrCreate(
+                    ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Ganjil'],
+                    [
+                        'tgl_mulai' => $request->semester_ganjil_mulai,
+                        'tgl_selesai' => $request->semester_ganjil_selesai,
+                        'is_active' => ($request->is_active && $request->semester_aktif === 'Ganjil') ? true : DB::raw('is_active'),
+                    ]
+                );
+
+                Semester::updateOrCreate(
+                    ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Genap'],
+                    [
+                        'tgl_mulai' => $request->semester_genap_mulai,
+                        'tgl_selesai' => $request->semester_genap_selesai,
+                        'is_active' => ($request->is_active && $request->semester_aktif === 'Genap') ? true : DB::raw('is_active'),
+                    ]
+                );
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tahun ajaran berhasil diperbarui.',
+                'data' => $tahunAjaran->load('semesters'),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function setAktif($id)
