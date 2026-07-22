@@ -256,10 +256,7 @@ export default function MasterSiswa() {
                 {selected.size} siswa dipilih
               </span>
               <div className="h-6 w-px bg-white/20" />
-              <button
-                onClick={() => navigate("/operator/master/siswa/mutasi")}
-                className="flex items-center gap-2 text-sm font-bold hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors"
-              >
+              <button className="flex items-center gap-2 text-sm font-bold hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors">
                 <span className="material-symbols-outlined text-[18px]">
                   swap_horiz
                 </span>{" "}
@@ -512,7 +509,6 @@ export default function MasterSiswa() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => navigate("/operator/master/siswa/mutasi")}
                             className="p-2 text-text-secondary hover:text-warning hover:bg-warning/10 rounded-xl transition-all"
                             title="Mutasi Siswa"
                           >
