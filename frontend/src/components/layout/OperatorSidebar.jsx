@@ -176,14 +176,7 @@ export function SidebarContent({ onClose }) {
               icon="calendar_today"
               onClick={onClose}
             >
-              Tahun Ajaran
-            </NavItem>
-            <NavItem
-              to="/operator/master/semester"
-              icon="date_range"
-              onClick={onClose}
-            >
-              Semester
+              Tahun Ajaran & Semester
             </NavItem>
           </div>
         </div>

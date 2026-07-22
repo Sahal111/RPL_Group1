@@ -509,6 +509,11 @@ export default function MasterSiswa() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
+                            onClick={() =>
+                              navigate(
+                                `/operator/master/siswa/${s.nisn}/mutasi`,
+                              )
+                            }
                             className="p-2 text-text-secondary hover:text-warning hover:bg-warning/10 rounded-xl transition-all"
                             title="Mutasi Siswa"
                           >

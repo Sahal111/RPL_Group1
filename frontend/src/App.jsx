@@ -21,14 +21,15 @@ import MasterSiswa from "./pages/operator/master/masterDataSiswa/MasterSiswa";
 import TambahEditSiswa from "./pages/operator/master/masterDataSiswa/TambahEditSiswa";
 import MasterKelas from "./pages/operator/master/masterDataKelas/MasterKelas";
 import MasterOrtu from "./pages/operator/master/masterDataOrtu/MasterOrtu";
-import TahunAjaran from "./pages/operator/master/masterDataTahunAjaran/TahunAjaran";
+import TahunAjaran from "./pages/operator/master/masterDataTahunAjaranSemester/TahunAjaranSemester";
 import ApprovalOrtu from "./pages/operator/ApprovalOrtu";
 import DetailGuru from "./pages/operator/master/masterDataGuru/DetailGuru";
 import DetailSiswa from "./pages/operator/master/masterDataSiswa/DetailSiswa";
+import MutasiSiswa from "./pages/operator/master/masterDataSiswa/MutasiSiswa";
 import DetailKelas from "./pages/operator/master/masterDataKelas/DetailKelas";
 import DetailOrtu from "./pages/operator/master/masterDataOrtu/DetailOrtu";
 import NaikKelas from "./pages/operator/master/NaikKelas";
-import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaran/DetailTahunAjaran";
+import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaranSemester";
 import MasterMapel from "./pages/operator/master/masterDataMapel/MasterMapel";
 import MasterJadwal from "./pages/operator/master/MasterJadwal";
 import PengumumanOperator from "./pages/operator/master/PengumumanOperator";
@@ -113,6 +114,7 @@ export default function App() {
         <Route path="ortu-pending" element={<ApprovalOrtu />} />
         <Route path="master/guru/:nuptk" element={<DetailGuru />} />
         <Route path="master/siswa/:nisn" element={<DetailSiswa />} />
+        <Route path="master/siswa/:nisn/mutasi" element={<MutasiSiswa />} />
         <Route path="master/kelas/:id" element={<DetailKelas />} />
         <Route path="master/ortu/:id" element={<DetailOrtu />} />
         <Route path="master/naik-kelas" element={<NaikKelas />} />
