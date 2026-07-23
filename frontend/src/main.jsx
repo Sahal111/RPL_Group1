@@ -22,7 +22,7 @@ createRoot(document.getElementById("root")).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <App />
-          <Toaster position="top-right" />
+          <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
         </AuthProvider>
       </QueryClientProvider>
     </BrowserRouter>
