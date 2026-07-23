@@ -1,3 +1,4 @@
+import React from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
@@ -610,7 +611,7 @@ export default function TahunAjaran() {
     : null;
   const hariBerjalan =
     aktif && hariTotal !== null && hariSisa !== null
-      ? hariTotal - hariSisa
+      ? Math.max(0, hariTotal - hariSisa)
       : null;
   const progress = hariTotal
     ? Math.max(0, Math.min(100, Math.round((hariBerjalan / hariTotal) * 100)))
@@ -803,10 +804,9 @@ export default function TahunAjaran() {
                   </tr>
                 ) : (
                   filtered.map((t) => (
-                    <>
+                    <React.Fragment key={t.id}>
                       {/* Main Row */}
                       <tr
-                        key={t.id}
                         className={`group cursor-pointer transition-colors ${
                           t.is_active
                             ? "bg-primary/3 hover:bg-primary/5"
@@ -865,12 +865,22 @@ export default function TahunAjaran() {
                             (() => {
                               const now = new Date();
                               const mulai = getTglMulai(t);
+                              const selesai = getTglSelesai(t);
+                              // Sudah lewat tanggal selesai → Selesai
+                              if (selesai && new Date(selesai) < now)
+                                return (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
+                                    Selesai
+                                  </span>
+                                );
+                              // Belum mulai atau tanggal belum diisi → Akan Datang
                               if (!mulai || new Date(mulai) > now)
                                 return (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
                                     Akan Datang
                                   </span>
                                 );
+                              // Sedang berjalan tapi tidak aktif (edge case)
                               return (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
                                   Selesai
@@ -1168,7 +1178,7 @@ export default function TahunAjaran() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))
                 )}
               </tbody>
