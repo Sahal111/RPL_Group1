@@ -876,8 +876,18 @@ export default function DetailSemester() {
                     label: "Tambah Event",
                     to: "/kepsek/kalender",
                   },
-                  { icon: "file_upload", label: "Import Nilai", to: null },
-                  { icon: "print", label: "Cetak Rapor", to: null },
+                  {
+                    icon: "file_upload",
+                    label: "Import Nilai",
+                    to: null,
+                    comingSoon: true,
+                  },
+                  {
+                    icon: "print",
+                    label: "Cetak Rapor",
+                    to: null,
+                    comingSoon: true,
+                  },
                   {
                     icon: "bar_chart",
                     label: "Monitoring",
@@ -897,6 +907,22 @@ export default function DetailSemester() {
                         {action.label}
                       </span>
                     </Link>
+                  ) : action.comingSoon ? (
+                    <div
+                      key={action.label}
+                      title="Fitur belum tersedia"
+                      className="relative flex items-center gap-2 px-3 py-2.5 bg-surface-container border border-border-light/40 rounded-xl cursor-not-allowed opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-[18px] text-text-secondary">
+                        {action.icon}
+                      </span>
+                      <span className="font-medium text-text-secondary text-xs">
+                        {action.label}
+                      </span>
+                      <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded bg-outline-variant text-text-secondary leading-none">
+                        Segera
+                      </span>
+                    </div>
                   ) : (
                     <button
                       key={action.label}

@@ -491,8 +491,7 @@ export default function DetailTahunAjaran() {
             )}
           </div>
           <p className="text-sm text-text-secondary">
-            Central command and operational overview for the current academic
-            period.
+            Ringkasan operasional dan pengelolaan tahun ajaran ini.
           </p>
         </div>
 
@@ -504,7 +503,7 @@ export default function DetailTahunAjaran() {
             <span className="material-symbols-outlined text-[18px]">
               arrow_back
             </span>
-            Back
+            Kembali
           </button>
           {!ta.is_active && (
             <button
@@ -1012,9 +1011,15 @@ export default function DetailTahunAjaran() {
                   <div className="text-sm text-gray-400">
                     Status Cetak Rapor
                   </div>
-                  <span className="px-2 py-1 rounded bg-gray-700 text-xs font-medium text-gray-300">
-                    Locked
-                  </span>
+                  {ta.is_tutup_buku ? (
+                    <span className="px-2 py-1 rounded bg-emerald-700/60 text-xs font-medium text-emerald-300">
+                      Terbuka
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 rounded bg-gray-700 text-xs font-medium text-gray-300">
+                      Terkunci
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

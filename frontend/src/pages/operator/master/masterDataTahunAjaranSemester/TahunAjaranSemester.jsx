@@ -1252,26 +1252,52 @@ export default function TahunAjaran() {
                 Timeline {aktif.tahun}
               </h3>
               <div className="relative border-l-2 border-outline-variant/30 ml-3 space-y-5">
-                <TimelineItem
-                  title="Mulai Tahun Ajaran"
-                  subtitle={fmtLong(getTglMulai(aktif))}
-                  active={false}
-                />
-                <TimelineItem
-                  title="Semester Ganjil (Berjalan)"
-                  subtitle={`${fmt(getTglMulai(aktif))} – pertengahan`}
-                  active={true}
-                />
-                <TimelineItem
-                  title="Libur Semester Ganjil"
-                  subtitle="Akhir Desember – Awal Januari"
-                  active={false}
-                />
-                <TimelineItem
-                  title="Semester Genap"
-                  subtitle={`Awal Januari – ${fmt(getTglSelesai(aktif))}`}
-                  active={false}
-                />
+                {(() => {
+                  const ganjil = aktif.semesters?.find(
+                    (s) => s.nama === "Ganjil",
+                  );
+                  const genap = aktif.semesters?.find(
+                    (s) => s.nama === "Genap",
+                  );
+                  const now = new Date();
+                  const isGanjilAktif = ganjil?.is_active === true;
+                  const isGenapAktif = genap?.is_active === true;
+                  const isLiburAktif =
+                    !isGanjilAktif &&
+                    !isGenapAktif &&
+                    ganjil?.tgl_selesai &&
+                    genap?.tgl_mulai &&
+                    now > new Date(ganjil.tgl_selesai) &&
+                    now < new Date(genap.tgl_mulai);
+                  return (
+                    <>
+                      <TimelineItem
+                        title="Mulai Tahun Ajaran"
+                        subtitle={fmtLong(ganjil?.tgl_mulai)}
+                        active={false}
+                      />
+                      <TimelineItem
+                        title="Semester Ganjil"
+                        subtitle={`${fmt(ganjil?.tgl_mulai)} – ${fmt(ganjil?.tgl_selesai)}`}
+                        active={isGanjilAktif}
+                      />
+                      <TimelineItem
+                        title="Libur Semester Ganjil"
+                        subtitle={
+                          ganjil?.tgl_selesai && genap?.tgl_mulai
+                            ? `${fmt(ganjil.tgl_selesai)} – ${fmt(genap.tgl_mulai)}`
+                            : "Antara Ganjil & Genap"
+                        }
+                        active={isLiburAktif}
+                      />
+                      <TimelineItem
+                        title="Semester Genap"
+                        subtitle={`${fmt(genap?.tgl_mulai)} – ${fmt(genap?.tgl_selesai)}`}
+                        active={isGenapAktif}
+                      />
+                    </>
+                  );
+                })()}
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-outline-variant/50 ring-4 ring-surface-container-lowest border-2 border-dashed border-outline-variant" />
                   <div className="text-sm font-medium text-text-secondary">
