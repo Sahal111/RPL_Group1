@@ -29,7 +29,7 @@ import MutasiSiswa from "./pages/operator/master/masterDataSiswa/MutasiSiswa";
 import DetailKelas from "./pages/operator/master/masterDataKelas/DetailKelas";
 import DetailOrtu from "./pages/operator/master/masterDataOrtu/DetailOrtu";
 import NaikKelas from "./pages/operator/master/NaikKelas";
-import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaranSemester";
+import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaran";
 import MasterMapel from "./pages/operator/master/masterDataMapel/MasterMapel";
 import MasterJadwal from "./pages/operator/master/MasterJadwal";
 import PengumumanOperator from "./pages/operator/master/PengumumanOperator";
