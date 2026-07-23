@@ -100,9 +100,15 @@ function ModalEditSemester({
     mutationFn: () =>
       api.put(`/operator/master-data/tahun-ajaran/${tahunAjaranId}`, {
         tahun: tahunAjaran?.tahun,
+        is_active: tahunAjaran?.is_active ?? false,
         buat_semester: true,
         [`semester_${namaSem}_mulai`]: form.tgl_mulai || null,
         [`semester_${namaSem}_selesai`]: form.tgl_selesai || null,
+        // Kirim semester_aktif hanya kalau TA ini aktif,
+        // supaya backend tahu mana semester yang sedang aktif & tidak me-reset yang lain.
+        ...(tahunAjaran?.is_active && semester?.is_active
+          ? { semester_aktif: semester.nama }
+          : {}),
       }),
     onSuccess: () => {
       toast.success("Semester berhasil diperbarui.");

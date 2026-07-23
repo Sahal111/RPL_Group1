@@ -196,7 +196,7 @@ class TahunAjaranController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tahun' => 'required|string|max:9|unique:tahun_ajarans,tahun',
+            'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', 'unique:tahun_ajarans,tahun'],
             'is_active' => 'nullable|boolean',
             'buat_semester' => 'nullable|boolean',
             'semester_ganjil_mulai' => 'nullable|date',
@@ -270,7 +270,7 @@ class TahunAjaranController extends Controller
         $tahunAjaran = TahunAjaran::findOrFail($id);
 
         $request->validate([
-            'tahun' => 'required|string|max:9|unique:tahun_ajarans,tahun,' . $id,
+            'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', 'unique:tahun_ajarans,tahun,' . $id],
             'is_active' => 'nullable|boolean',
             'buat_semester' => 'nullable|boolean',
             'semester_ganjil_mulai' => 'nullable|date',
@@ -292,6 +292,15 @@ class TahunAjaranController extends Controller
             ]);
 
             if ($request->buat_semester) {
+                // Ambil nilai is_active lama dari DB sebelum di-reset,
+                // agar tidak kehilangan status aktif saat update tanggal saja.
+                $semGanjilLama = Semester::where('tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('nama', 'Ganjil')->first();
+                $semGenapLama = Semester::where('tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('nama', 'Genap')->first();
+
+                // Kalau semester_aktif eksplisit dikirim dan TA ini aktif,
+                // reset semua semester lain baru set yang dipilih.
                 if ($request->semester_aktif && $request->is_active) {
                     Semester::query()->update(['is_active' => false]);
                 }
@@ -301,7 +310,10 @@ class TahunAjaranController extends Controller
                     [
                         'tgl_mulai' => $request->semester_ganjil_mulai,
                         'tgl_selesai' => $request->semester_ganjil_selesai,
-                        'is_active' => ($request->is_active && $request->semester_aktif === 'Ganjil') ? true : DB::raw('is_active'),
+                        // Jika semester_aktif eksplisit → pakai itu; kalau tidak → pertahankan nilai lama
+                        'is_active' => $request->has('semester_aktif') && $request->is_active
+                            ? ($request->semester_aktif === 'Ganjil')
+                            : ($semGanjilLama?->is_active ?? false),
                     ]
                 );
 
@@ -310,7 +322,9 @@ class TahunAjaranController extends Controller
                     [
                         'tgl_mulai' => $request->semester_genap_mulai,
                         'tgl_selesai' => $request->semester_genap_selesai,
-                        'is_active' => ($request->is_active && $request->semester_aktif === 'Genap') ? true : DB::raw('is_active'),
+                        'is_active' => $request->has('semester_aktif') && $request->is_active
+                            ? ($request->semester_aktif === 'Genap')
+                            : ($semGenapLama?->is_active ?? false),
                     ]
                 );
             }
