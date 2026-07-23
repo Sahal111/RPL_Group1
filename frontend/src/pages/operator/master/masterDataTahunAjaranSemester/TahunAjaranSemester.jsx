@@ -37,15 +37,15 @@ function daysRemaining(end) {
 
 function getTglMulai(t) {
   if (!t || !t.semesters) return null;
-  const ganjil = t.semesters.find(s => s.nama === 'Ganjil');
+  const ganjil = t.semesters.find((s) => s.nama === "Ganjil");
   return ganjil ? ganjil.tgl_mulai : null;
 }
 
 function getTglSelesai(t) {
   if (!t || !t.semesters) return null;
-  const genap = t.semesters.find(s => s.nama === 'Genap');
-  const ganjil = t.semesters.find(s => s.nama === 'Ganjil');
-  return genap ? genap.tgl_selesai : (ganjil ? ganjil.tgl_selesai : null);
+  const genap = t.semesters.find((s) => s.nama === "Genap");
+  const ganjil = t.semesters.find((s) => s.nama === "Ganjil");
+  return genap ? genap.tgl_selesai : ganjil ? ganjil.tgl_selesai : null;
 }
 
 // ── Modal Tambah / Edit Tahun Ajaran ──────────────────────────────────────────
@@ -61,7 +61,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     semester_ganjil_selesai: "",
     semester_genap_mulai: "",
     semester_genap_selesai: "",
-    semester_aktif: "Ganjil"
+    semester_aktif: "Ganjil",
   });
 
   // Calculate semester date ranges automatically when TA start/end dates change
@@ -69,7 +69,8 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     if (!startStr || !endStr) return {};
     const start = new Date(startStr);
     const end = new Date(endStr);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) return {};
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end)
+      return {};
 
     const startYear = start.getFullYear();
     const dec31 = `${startYear}-12-31`;
@@ -86,8 +87,8 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
   useEffect(() => {
     if (open) {
       if (editData) {
-        const ganjil = editData.semesters?.find(s => s.nama === 'Ganjil');
-        const genap = editData.semesters?.find(s => s.nama === 'Genap');
+        const ganjil = editData.semesters?.find((s) => s.nama === "Ganjil");
+        const genap = editData.semesters?.find((s) => s.nama === "Genap");
         const startTA = ganjil?.tgl_mulai || "";
         const endTA = genap?.tgl_selesai || ganjil?.tgl_selesai || "";
 
@@ -101,20 +102,20 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
           semester_ganjil_selesai: ganjil?.tgl_selesai || "",
           semester_genap_mulai: genap?.tgl_mulai || "",
           semester_genap_selesai: genap?.tgl_selesai || "",
-          semester_aktif: "Ganjil"
+          semester_aktif: "Ganjil",
         });
       } else {
-        setForm({ 
-          tahun: "", 
+        setForm({
+          tahun: "",
           tgl_mulai_ta: "",
           tgl_selesai_ta: "",
-          is_active: false, 
+          is_active: false,
           buat_semester: true,
           semester_ganjil_mulai: "",
           semester_ganjil_selesai: "",
           semester_genap_mulai: "",
           semester_genap_selesai: "",
-          semester_aktif: "Ganjil"
+          semester_aktif: "Ganjil",
         });
       }
     }
@@ -169,7 +170,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
           ...updated,
           tgl_mulai_ta: startTA,
           tgl_selesai_ta: endTA,
-          ...autoSem
+          ...autoSem,
         };
       }
       return updated;
@@ -204,7 +205,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     "block text-label-md font-semibold text-text-secondary mb-1.5";
 
   return createPortal(
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 transition-all duration-200"
       onClick={onClose}
     >
@@ -224,7 +225,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
               <h3 className="text-section-title font-bold text-on-surface">
                 {isEdit ? "Edit Tahun Ajaran" : "Tambah Tahun Ajaran"}
               </h3>
-              <p className="text-xs text-text-secondary">Kelola periode akademis dan semester sekolah</p>
+              <p className="text-xs text-text-secondary">
+                Kelola periode akademis dan semester sekolah
+              </p>
             </div>
           </div>
           <button
@@ -240,8 +243,12 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
           {/* INFORMASI TAHUN AJARAN */}
           <div>
             <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
-              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">INFORMASI TAHUN AJARAN</h4>
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                calendar_today
+              </span>
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                INFORMASI TAHUN AJARAN
+              </h4>
             </div>
             <div className="space-y-3.5">
               <div>
@@ -260,7 +267,8 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>
-                    Tanggal Mulai Tahun Ajaran <span className="text-danger">*</span>
+                    Tanggal Mulai Tahun Ajaran{" "}
+                    <span className="text-danger">*</span>
                   </label>
                   <input
                     type="date"
@@ -271,7 +279,8 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                 </div>
                 <div>
                   <label className={labelCls}>
-                    Tanggal Selesai Tahun Ajaran <span className="text-danger">*</span>
+                    Tanggal Selesai Tahun Ajaran{" "}
+                    <span className="text-danger">*</span>
                   </label>
                   <input
                     type="date"
@@ -287,29 +296,41 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
           {/* PENGATURAN SEMESTER */}
           <div>
             <div className="flex items-center justify-between border-b border-border-light pb-2 mb-3">
-               <div className="flex items-center gap-2">
-                 <span className="material-symbols-outlined text-primary text-[18px]">date_range</span>
-                 <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">PENGATURAN SEMESTER</h4>
-               </div>
-               <label className="flex items-center gap-2 cursor-pointer select-none">
-                 <input 
-                   type="checkbox" 
-                   checked={form.buat_semester}
-                   onChange={(e) => set("buat_semester", e.target.checked)}
-                   className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"
-                 />
-                 <span className="text-xs font-semibold text-text-secondary">Buat Semester Otomatis</span>
-               </label>
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[18px]">
+                  date_range
+                </span>
+                <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                  PENGATURAN SEMESTER
+                </h4>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.buat_semester}
+                  onChange={(e) => set("buat_semester", e.target.checked)}
+                  className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"
+                />
+                <span className="text-xs font-semibold text-text-secondary">
+                  Buat Semester Otomatis
+                </span>
+              </label>
             </div>
-            
+
             {form.buat_semester && (
               <div className="space-y-3.5">
                 {/* Semester Ganjil (Readonly Label Header) */}
                 <div className="p-4 bg-background-light/70 rounded-xl border border-border-light/80 shadow-xs">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-6 h-6 rounded-md bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">1</span>
-                    <span className="text-body-md font-bold text-on-surface select-none">Semester Ganjil</span>
-                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium ml-auto">Otomatis</span>
+                    <span className="w-6 h-6 rounded-md bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
+                      1
+                    </span>
+                    <span className="text-body-md font-bold text-on-surface select-none">
+                      Semester Ganjil
+                    </span>
+                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium ml-auto">
+                      Otomatis
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -317,7 +338,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                       <input
                         type="date"
                         value={form.semester_ganjil_mulai}
-                        onChange={(e) => set("semester_ganjil_mulai", e.target.value)}
+                        onChange={(e) =>
+                          set("semester_ganjil_mulai", e.target.value)
+                        }
                         className={inputCls}
                       />
                     </div>
@@ -326,7 +349,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                       <input
                         type="date"
                         value={form.semester_ganjil_selesai}
-                        onChange={(e) => set("semester_ganjil_selesai", e.target.value)}
+                        onChange={(e) =>
+                          set("semester_ganjil_selesai", e.target.value)
+                        }
                         className={inputCls}
                       />
                     </div>
@@ -336,9 +361,15 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                 {/* Semester Genap (Readonly Label Header) */}
                 <div className="p-4 bg-background-light/70 rounded-xl border border-border-light/80 shadow-xs">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-6 h-6 rounded-md bg-text-secondary/10 text-text-secondary font-bold text-xs flex items-center justify-center">2</span>
-                    <span className="text-body-md font-bold text-on-surface select-none">Semester Genap</span>
-                    <span className="text-[10px] bg-surface-container text-text-secondary px-2 py-0.5 rounded-full font-medium ml-auto">Otomatis</span>
+                    <span className="w-6 h-6 rounded-md bg-text-secondary/10 text-text-secondary font-bold text-xs flex items-center justify-center">
+                      2
+                    </span>
+                    <span className="text-body-md font-bold text-on-surface select-none">
+                      Semester Genap
+                    </span>
+                    <span className="text-[10px] bg-surface-container text-text-secondary px-2 py-0.5 rounded-full font-medium ml-auto">
+                      Otomatis
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -346,7 +377,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                       <input
                         type="date"
                         value={form.semester_genap_mulai}
-                        onChange={(e) => set("semester_genap_mulai", e.target.value)}
+                        onChange={(e) =>
+                          set("semester_genap_mulai", e.target.value)
+                        }
                         className={inputCls}
                       />
                     </div>
@@ -355,7 +388,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                       <input
                         type="date"
                         value={form.semester_genap_selesai}
-                        onChange={(e) => set("semester_genap_selesai", e.target.value)}
+                        onChange={(e) =>
+                          set("semester_genap_selesai", e.target.value)
+                        }
                         className={inputCls}
                       />
                     </div>
@@ -368,34 +403,43 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
           {/* PENGATURAN LAINNYA */}
           <div>
             <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">settings</span>
-              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">PENGATURAN LAINNYA</h4>
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                settings
+              </span>
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                PENGATURAN LAINNYA
+              </h4>
             </div>
             <div className="space-y-2">
-               <label className="flex items-center gap-3 cursor-pointer select-none">
-                 <input 
-                   type="checkbox" 
-                   checked={form.is_active}
-                   onChange={(e) => {
-                     const active = e.target.checked;
-                     setForm((f) => ({
-                       ...f,
-                       is_active: active,
-                       semester_aktif: active ? "Ganjil" : ""
-                     }));
-                   }}
-                   className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"
-                 />
-                 <span className="text-body-md font-medium text-on-surface">Jadikan Tahun Ajaran Aktif</span>
-               </label>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => {
+                    const active = e.target.checked;
+                    setForm((f) => ({
+                      ...f,
+                      is_active: active,
+                      semester_aktif: active ? "Ganjil" : "",
+                    }));
+                  }}
+                  className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"
+                />
+                <span className="text-body-md font-medium text-on-surface">
+                  Jadikan Tahun Ajaran Aktif
+                </span>
+              </label>
 
-               {/* Informational Warning Note */}
-               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-amber-800">
-                 <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">info</span>
-                 <p className="text-xs leading-relaxed text-amber-900 font-medium">
-                   Mengaktifkan Tahun Ajaran ini akan menonaktifkan Tahun Ajaran yang sedang aktif.
-                 </p>
-               </div>
+              {/* Informational Warning Note */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-amber-800">
+                <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">
+                  info
+                </span>
+                <p className="text-xs leading-relaxed text-amber-900 font-medium">
+                  Mengaktifkan Tahun Ajaran ini akan menonaktifkan Tahun Ajaran
+                  yang sedang aktif.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -429,7 +473,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -1001,7 +1045,7 @@ export default function TahunAjaran() {
                                     <button
                                       onClick={() =>
                                         navigate(
-                                          `/operator/master/tahun-ajaran/${t.id}`,
+                                          `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
                                         )
                                       }
                                       className="text-primary text-xs font-medium hover:underline flex items-center gap-0.5"
@@ -1079,7 +1123,7 @@ export default function TahunAjaran() {
                                     <button
                                       onClick={() =>
                                         navigate(
-                                          `/operator/master/tahun-ajaran/${t.id}`,
+                                          `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
                                         )
                                       }
                                       className="text-primary text-xs font-medium hover:underline flex items-center gap-0.5"

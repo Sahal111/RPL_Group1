@@ -30,6 +30,7 @@ import DetailKelas from "./pages/operator/master/masterDataKelas/DetailKelas";
 import DetailOrtu from "./pages/operator/master/masterDataOrtu/DetailOrtu";
 import NaikKelas from "./pages/operator/master/NaikKelas";
 import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaran";
+import DetailSemester from "./pages/operator/master/masterDataTahunAjaranSemester/DetailSemester";
 import MasterMapel from "./pages/operator/master/masterDataMapel/MasterMapel";
 import MasterJadwal from "./pages/operator/master/MasterJadwal";
 import PengumumanOperator from "./pages/operator/master/PengumumanOperator";
@@ -119,6 +120,10 @@ export default function App() {
         <Route path="master/ortu/:id" element={<DetailOrtu />} />
         <Route path="master/naik-kelas" element={<NaikKelas />} />
         <Route path="master/tahun-ajaran/:id" element={<DetailTahunAjaran />} />
+        <Route
+          path="master/tahun-ajaran/:taId/semester/:semesterNama"
+          element={<DetailSemester />}
+        />
         <Route path="master/mapel" element={<MasterMapel />} />
         <Route path="master/jadwal-pelajaran" element={<MasterJadwal />} />
         <Route path="master/pengumuman" element={<PengumumanOperator />} />
