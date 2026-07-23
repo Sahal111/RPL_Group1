@@ -419,6 +419,16 @@ export default function DetailTahunAjaran() {
   const totalKelas = data.total_kelas ?? 0;
   const totalSiswa = data.total_siswa ?? 0;
   const distribusi = data.distribusi_tingkat ?? [];
+  const totalGuru = data.total_guru ?? 0;
+  const totalMapel = data.total_mapel ?? 0;
+  const totalWaliKelas = data.total_wali_kelas ?? 0;
+  const totalRuangan = data.total_ruangan ?? 0;
+  const totalJadwal = data.total_jadwal ?? 0;
+  const kalender = data.kalender ?? [];
+  const aktivitas = data.aktivitas ?? [];
+  const taPrev = data.ta_prev ?? null;
+  const taNext = data.ta_next ?? null;
+  const checklist = data.checklist ?? {};
   const semesters = ta.semesters ?? [];
   const ganjil = semesters.find((s) => s.nama === "Ganjil");
   const genap = semesters.find((s) => s.nama === "Genap");
@@ -610,6 +620,82 @@ export default function DetailTahunAjaran() {
         />
       </div>
 
+      {/* ── Timeline Akademik ── */}
+      <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6 overflow-hidden">
+        <h3
+          className="text-section-title font-section-title text-text-primary mb-6"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
+          Timeline Akademik
+        </h3>
+        <div className="relative max-w-full overflow-x-auto pb-4">
+          <div className="min-w-[600px] relative px-4">
+            {/* Track */}
+            <div className="absolute top-[22px] left-4 right-4 h-1 bg-surface-container-high rounded-full" />
+            {/* Active Track */}
+            <div
+              className="absolute top-[22px] left-4 h-1 bg-primary rounded-full transition-all duration-700"
+              style={{ width: `${Math.min(progressTA, 100) * 0.8}%` }}
+            />
+            <div className="relative flex justify-between items-start z-10">
+              {[
+                { label: "Awal TA", date: fmt(ta.tanggal_mulai), done: true },
+                {
+                  label:
+                    semAktif?.nama === "Ganjil"
+                      ? "Semester Ganjil"
+                      : "Semester Genap",
+                  date: semAktif ? fmt(semAktif.tgl_mulai) : "—",
+                  current: !!semAktif,
+                  done: false,
+                },
+                {
+                  label: "UAS Ganjil",
+                  date: ganjil ? fmt(ganjil.tgl_selesai) : "—",
+                  done: false,
+                },
+                {
+                  label: "Awal Genap",
+                  date: genap ? fmt(genap.tgl_mulai) : "—",
+                  done: false,
+                },
+                {
+                  label: "Akhir TA",
+                  date: fmt(ta.tanggal_selesai),
+                  done: false,
+                },
+              ].map((point, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  {point.current ? (
+                    <>
+                      <div className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary text-white animate-bounce mb-1">
+                        NOW
+                      </div>
+                      <div className="w-5 h-5 bg-white border-4 border-primary rounded-full" />
+                    </>
+                  ) : (
+                    <div
+                      className={`w-4 h-4 rounded-full mt-[3px] ${
+                        point.done
+                          ? "bg-primary ring-4 ring-primary/20"
+                          : "bg-white border-2 border-outline-variant"
+                      }`}
+                    />
+                  )}
+                  <div
+                    className={`text-xs font-semibold text-center ${point.done || point.current ? "text-text-primary" : "text-text-secondary"}`}
+                  >
+                    {point.label}
+                  </div>
+                  <div className="text-[10px] text-text-secondary text-center">
+                    {point.date}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
       {/* ── Bento Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Col (span 2) */}
@@ -791,6 +877,95 @@ export default function DetailTahunAjaran() {
               </div>
             </div>
           </div>
+          {/* ── Daftar Kelas Table ── */}
+          <KelasTable
+            kelasList={kelasList}
+            totalKelas={totalKelas}
+            totalSiswa={totalSiswa}
+            navigate={navigate}
+          />
+
+          {/* ── Checklist Kesiapan ── */}
+          {(() => {
+            const items = [
+              { key: "ta_dibuat", label: "Tahun Ajaran dibuat" },
+              {
+                key: "semester_dibuat",
+                label: "Semester dibuat (Ganjil & Genap)",
+              },
+              { key: "rombel_dibuat", label: "Rombel / Kelas dibuat" },
+              { key: "guru_mengajar", label: "Guru mengajar ditugaskan" },
+              { key: "mapel_lengkap", label: "Mata Pelajaran tersedia" },
+              { key: "wali_kelas", label: "Wali Kelas ditentukan" },
+              { key: "jadwal_selesai", label: "Jadwal pelajaran dibuat" },
+              { key: "kalender", label: "Kalender Akademik diisi" },
+              {
+                key: "siswa_terdistribusi",
+                label: "Siswa terdistribusi ke kelas",
+              },
+              { key: "kepsek_dikunci", label: "Kepala Sekolah dikunci" },
+            ];
+            const done = items.filter((i) => checklist[i.key]).length;
+            const pct = Math.round((done / items.length) * 100);
+            return (
+              <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3
+                      className="text-section-title font-section-title text-text-primary flex items-center gap-2"
+                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                    >
+                      <span className="material-symbols-outlined text-primary">
+                        checklist
+                      </span>
+                      Kesiapan Tahun Ajaran
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Pastikan semua item terpenuhi sebelum tahun ajaran
+                      berjalan.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`text-2xl font-bold ${pct === 100 ? "text-success" : pct >= 60 ? "text-warning" : "text-danger"}`}
+                    >
+                      {pct}%
+                    </span>
+                    <span className="text-xs text-text-secondary">
+                      {done}/{items.length} selesai
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden mb-5">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${pct === 100 ? "bg-success" : pct >= 60 ? "bg-warning" : "bg-danger"}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+                  {items.map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center gap-2.5 py-1.5 border-b border-border-light/40 last:border-0"
+                    >
+                      <span
+                        className={`material-symbols-outlined text-[18px] shrink-0 ${checklist[item.key] ? "text-success" : "text-outline-variant"}`}
+                      >
+                        {checklist[item.key]
+                          ? "check_circle"
+                          : "radio_button_unchecked"}
+                      </span>
+                      <span
+                        className={`text-sm ${checklist[item.key] ? "text-text-primary" : "text-text-secondary"}`}
+                      >
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Col */}
@@ -844,7 +1019,6 @@ export default function DetailTahunAjaran() {
               </div>
             </div>
           </div>
-
           {/* Info Periode */}
           <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
             <h3
@@ -889,6 +1063,22 @@ export default function DetailTahunAjaran() {
                       : "-",
                   icon: "hourglass_empty",
                 },
+                {
+                  label: "Total Hari Libur",
+                  value:
+                    ta.total_hari_libur != null
+                      ? `${ta.total_hari_libur} hari`
+                      : "-",
+                  icon: "event_busy",
+                },
+                {
+                  label: "Hari Efektif (Est.)",
+                  value:
+                    hariTotal != null && ta.total_hari_libur != null
+                      ? `${Math.max(0, hariTotal - ta.total_hari_libur)} hari`
+                      : "-",
+                  icon: "today",
+                },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -909,93 +1099,473 @@ export default function DetailTahunAjaran() {
               ))}
             </div>
           </div>
-        </div>
-      </div>
+          {/* ── Otoritas Tanda Tangan ── */}
+          <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+            <h3
+              className="text-section-title font-section-title text-text-primary mb-4 flex items-center gap-2"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
+              <span className="material-symbols-outlined text-accent-gold">
+                verified
+              </span>
+              Otoritas Tanda Tangan
+            </h3>
 
-      {/* ── Timeline Akademik ── */}
-      <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6 overflow-hidden">
-        <h3
-          className="text-section-title font-section-title text-text-primary mb-6"
-          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-        >
-          Timeline Akademik
-        </h3>
-        <div className="relative max-w-full overflow-x-auto pb-4">
-          <div className="min-w-[600px] relative px-4">
-            {/* Track */}
-            <div className="absolute top-[22px] left-4 right-4 h-1 bg-surface-container-high rounded-full" />
-            {/* Active Track */}
-            <div
-              className="absolute top-[22px] left-4 h-1 bg-primary rounded-full transition-all duration-700"
-              style={{ width: `${Math.min(progressTA, 100) * 0.8}%` }}
-            />
-            <div className="relative flex justify-between items-start z-10">
-              {[
-                { label: "Awal TA", date: fmt(ta.tanggal_mulai), done: true },
-                {
-                  label:
-                    semAktif?.nama === "Ganjil"
-                      ? "Semester Ganjil"
-                      : "Semester Genap",
-                  date: semAktif ? fmt(semAktif.tgl_mulai) : "—",
-                  current: !!semAktif,
-                  done: false,
-                },
-                {
-                  label: "UAS Ganjil",
-                  date: ganjil ? fmt(ganjil.tgl_selesai) : "—",
-                  done: false,
-                },
-                {
-                  label: "Awal Genap",
-                  date: genap ? fmt(genap.tgl_mulai) : "—",
-                  done: false,
-                },
-                {
-                  label: "Akhir TA",
-                  date: fmt(ta.tanggal_selesai),
-                  done: false,
-                },
-              ].map((point, i) => (
-                <div key={i} className="flex flex-col items-center gap-2">
-                  {point.current ? (
-                    <>
-                      <div className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary text-white animate-bounce mb-1">
-                        NOW
-                      </div>
-                      <div className="w-5 h-5 bg-white border-4 border-primary rounded-full" />
-                    </>
-                  ) : (
-                    <div
-                      className={`w-4 h-4 rounded-full mt-[3px] ${
-                        point.done
-                          ? "bg-primary ring-4 ring-primary/20"
-                          : "bg-white border-2 border-outline-variant"
-                      }`}
-                    />
-                  )}
-                  <div
-                    className={`text-xs font-semibold text-center ${point.done || point.current ? "text-text-primary" : "text-text-secondary"}`}
-                  >
-                    {point.label}
+            {ta.kepsek_nama ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-border-light">
+                  <div className="w-9 h-9 rounded-full bg-accent-gold/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px] text-accent-gold">
+                      person
+                    </span>
                   </div>
-                  <div className="text-[10px] text-text-secondary text-center">
-                    {point.date}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-text-secondary mb-0.5">
+                      Nama Kepala Sekolah
+                    </p>
+                    <p className="text-sm font-semibold text-text-primary truncate">
+                      {ta.kepsek_nama}
+                    </p>
                   </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-border-light">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px] text-primary">
+                      badge
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-text-secondary mb-0.5">NIP</p>
+                    <p className="text-sm font-semibold text-text-primary">
+                      {ta.kepsek_nip || (
+                        <span className="italic text-text-secondary font-normal">
+                          Belum diisi
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-text-secondary flex items-start gap-1 mt-1">
+                  <span className="material-symbols-outlined text-[12px] shrink-0 mt-0.5">
+                    info
+                  </span>
+                  Data ini akan muncul sebagai footer pada rapor dan ijazah.
+                  Ubah di menu Pengaturan Sekolah.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center py-6 text-text-secondary gap-2">
+                <span className="material-symbols-outlined text-[36px] text-outline-variant">
+                  manage_accounts
+                </span>
+                <p className="text-sm text-center">
+                  Kepala Sekolah belum dikonfigurasi.
+                </p>
+                <button
+                  onClick={() => navigate("/operator/pengaturan")}
+                  className="text-primary text-xs font-medium hover:underline"
+                >
+                  Atur di Pengaturan →
+                </button>
+              </div>
+            )}
+          </div>
+          {/* ── Status Tutup Buku ── */}
+          <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+            <h3
+              className="text-section-title font-section-title text-text-primary mb-4 flex items-center gap-2"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
+              <span className="material-symbols-outlined text-text-secondary">
+                lock_clock
+              </span>
+              Status Tutup Buku
+            </h3>
+            <div className="space-y-3">
+              <div
+                className={`flex items-center gap-3 p-3 rounded-xl border ${
+                  ta.is_tutup_buku
+                    ? "bg-success/5 border-success/20"
+                    : "bg-warning/5 border-warning/20"
+                }`}
+              >
+                <span
+                  className={`material-symbols-outlined text-[24px] ${
+                    ta.is_tutup_buku ? "text-success" : "text-warning"
+                  }`}
+                >
+                  {ta.is_tutup_buku ? "check_circle" : "pending"}
+                </span>
+                <div>
+                  <p
+                    className={`text-sm font-semibold ${
+                      ta.is_tutup_buku ? "text-success" : "text-warning"
+                    }`}
+                  >
+                    {ta.is_tutup_buku ? "Sudah Diproses" : "Belum Diproses"}
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {ta.is_tutup_buku
+                      ? "Proses kenaikan kelas sudah dieksekusi."
+                      : "Kenaikan kelas massal belum dilakukan."}
+                  </p>
+                </div>
+              </div>
+              {!ta.is_tutup_buku && (
+                <button
+                  onClick={() => navigate("/operator/master/naik-kelas")}
+                  className="w-full py-2 rounded-xl border border-primary text-primary text-sm font-semibold hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    arrow_forward
+                  </span>
+                  Ke Halaman Naik Kelas
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Daftar Kelas Table ── */}
-      <KelasTable
-        kelasList={kelasList}
-        totalKelas={totalKelas}
-        totalSiswa={totalSiswa}
-        navigate={navigate}
-      />
+      {/* ── Statistik Akademik + Kalender + Aktivitas + Navigasi (grid) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Statistik Akademik */}
+        <div className="lg:col-span-2 bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+          <h3
+            className="text-section-title font-section-title text-text-primary flex items-center gap-2 mb-5"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
+            <span className="material-symbols-outlined text-info">
+              bar_chart
+            </span>
+            Statistik Akademik
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              {
+                icon: "school",
+                label: "Total Kelas",
+                value: totalKelas,
+                color: "text-primary",
+                bg: "bg-primary/10",
+              },
+              {
+                icon: "people",
+                label: "Total Siswa",
+                value: totalSiswa,
+                color: "text-tertiary",
+                bg: "bg-tertiary/10",
+              },
+              {
+                icon: "person",
+                label: "Guru Mengajar",
+                value: totalGuru,
+                color: "text-info",
+                bg: "bg-info/10",
+              },
+              {
+                icon: "menu_book",
+                label: "Mata Pelajaran",
+                value: totalMapel,
+                color: "text-accent-gold",
+                bg: "bg-accent-gold/10",
+              },
+              {
+                icon: "supervisor_account",
+                label: "Wali Kelas",
+                value: totalWaliKelas,
+                color: "text-success",
+                bg: "bg-success/10",
+              },
+              {
+                icon: "door_open",
+                label: "Ruangan",
+                value: totalRuangan,
+                color: "text-warning",
+                bg: "bg-warning/10",
+              },
+              {
+                icon: "schedule",
+                label: "Entri Jadwal",
+                value: totalJadwal,
+                color: "text-primary",
+                bg: "bg-primary/10",
+              },
+              {
+                icon: "today",
+                label: "Hari Efektif",
+                value: ta.total_hari_efektif ?? "-",
+                color: "text-success",
+                bg: "bg-success/10",
+              },
+              {
+                icon: "event_busy",
+                label: "Hari Libur",
+                value: ta.total_hari_libur ?? "-",
+                color: "text-danger",
+                bg: "bg-danger/10",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="flex items-center gap-3 p-3 rounded-xl bg-surface-container-lowest border border-border-light hover:shadow-sm transition-shadow"
+              >
+                <div
+                  className={`w-9 h-9 rounded-xl ${s.bg} ${s.color} flex items-center justify-center shrink-0`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {s.icon}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] text-text-secondary uppercase tracking-wide">
+                    {s.label}
+                  </p>
+                  <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right col — Navigasi TA + Aktivitas */}
+        <div className="space-y-5">
+          {/* Navigasi TA */}
+          <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-text-secondary text-[18px]">
+                swap_horiz
+              </span>
+              Navigasi Tahun Ajaran
+            </h3>
+            <div className="space-y-2">
+              {taPrev ? (
+                <button
+                  onClick={() =>
+                    navigate(`/operator/master/tahun-ajaran/${taPrev.id}`)
+                  }
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:bg-surface-container-low hover:border-primary/30 transition-all group"
+                >
+                  <div className="flex items-center gap-2 text-text-secondary group-hover:text-primary">
+                    <span className="material-symbols-outlined text-[16px]">
+                      arrow_back
+                    </span>
+                    <div className="text-left">
+                      <p className="text-[10px] uppercase tracking-wide">
+                        Sebelumnya
+                      </p>
+                      <p className="text-sm font-semibold">{taPrev.tahun}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${taPrev.is_active ? "bg-success/10 text-success" : "bg-surface-variant text-text-secondary"}`}
+                  >
+                    {taPrev.is_active ? "Aktif" : "Selesai"}
+                  </span>
+                </button>
+              ) : (
+                <div className="p-3 rounded-xl border border-dashed border-border-light text-center text-xs text-text-secondary">
+                  Tidak ada TA sebelumnya
+                </div>
+              )}
+              {taNext ? (
+                <button
+                  onClick={() =>
+                    navigate(`/operator/master/tahun-ajaran/${taNext.id}`)
+                  }
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border-light hover:bg-surface-container-low hover:border-primary/30 transition-all group"
+                >
+                  <div className="flex items-center gap-2 text-text-secondary group-hover:text-primary">
+                    <span className="material-symbols-outlined text-[16px]">
+                      arrow_forward
+                    </span>
+                    <div className="text-left">
+                      <p className="text-[10px] uppercase tracking-wide">
+                        Berikutnya
+                      </p>
+                      <p className="text-sm font-semibold">{taNext.tahun}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${taNext.is_active ? "bg-success/10 text-success" : "bg-info/10 text-info"}`}
+                  >
+                    {taNext.is_active ? "Aktif" : "Akan Datang"}
+                  </span>
+                </button>
+              ) : (
+                <div className="p-3 rounded-xl border border-dashed border-border-light text-center text-xs text-text-secondary">
+                  Tidak ada TA berikutnya
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Operasi Cepat */}
+          <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-text-secondary text-[18px]">
+                bolt
+              </span>
+              Operasi Cepat
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {
+                  icon: "add",
+                  label: "Tambah Kelas",
+                  path: "/operator/master/kelas",
+                },
+                {
+                  icon: "event_note",
+                  label: "Buat Jadwal",
+                  path: "/operator/master/jadwal-pelajaran",
+                },
+                {
+                  icon: "upgrade",
+                  label: "Naik Kelas",
+                  path: "/operator/master/naik-kelas",
+                },
+                {
+                  icon: "menu_book",
+                  label: "Mata Pelajaran",
+                  path: "/operator/master/mata-pelajaran",
+                },
+              ].map((op) => (
+                <button
+                  key={op.label}
+                  onClick={() => navigate(op.path)}
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border-light hover:border-primary/30 hover:bg-primary/5 text-text-secondary hover:text-primary transition-all"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {op.icon}
+                  </span>
+                  <span className="text-[10px] font-medium text-center leading-tight">
+                    {op.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Aktivitas Terbaru */}
+          {aktivitas.length > 0 && (
+            <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-5">
+              <h3 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-text-secondary text-[18px]">
+                  history
+                </span>
+                Aktivitas Terbaru
+              </h3>
+              <div className="space-y-3 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border-light">
+                {aktivitas.map((a) => (
+                  <div key={a.id} className="flex gap-3 pl-5 relative">
+                    <div className="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-surface-container border-2 border-outline-variant shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-text-primary">
+                        {a.keterangan ?? a.action}
+                      </p>
+                      <p className="text-[10px] text-text-secondary mt-0.5">
+                        {a.user?.username ?? "Sistem"} ·{" "}
+                        {new Date(a.created_at).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Kalender Akademik ── */}
+      {kalender.length > 0 && (
+        <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+          <h3
+            className="text-section-title font-section-title text-text-primary flex items-center gap-2 mb-5"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
+            <span className="material-symbols-outlined text-primary">
+              calendar_month
+            </span>
+            Kalender Akademik
+          </h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {kalender.map((k) => {
+              const jenisConfig = {
+                libur: {
+                  color: "text-danger",
+                  bg: "bg-danger/10",
+                  border: "border-danger/20",
+                  icon: "event_busy",
+                },
+                ujian: {
+                  color: "text-warning",
+                  bg: "bg-warning/10",
+                  border: "border-warning/20",
+                  icon: "quiz",
+                },
+                kegiatan: {
+                  color: "text-info",
+                  bg: "bg-info/10",
+                  border: "border-info/20",
+                  icon: "celebration",
+                },
+                rapat: {
+                  color: "text-accent-gold",
+                  bg: "bg-accent-gold/10",
+                  border: "border-accent-gold/20",
+                  icon: "groups",
+                },
+                lainnya: {
+                  color: "text-text-secondary",
+                  bg: "bg-surface-container",
+                  border: "border-border-light",
+                  icon: "event",
+                },
+              };
+              const cfg = jenisConfig[k.jenis] ?? jenisConfig.lainnya;
+              const tgl =
+                k.tanggal_selesai && k.tanggal_selesai !== k.tanggal_mulai
+                  ? `${fmt(k.tanggal_mulai)} – ${fmt(k.tanggal_selesai)}`
+                  : fmt(k.tanggal_mulai);
+              return (
+                <div
+                  key={k.id}
+                  className={`flex gap-3 p-3 rounded-xl border ${cfg.border} ${cfg.bg}`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/60`}
+                  >
+                    <span
+                      className={`material-symbols-outlined text-[16px] ${cfg.color}`}
+                    >
+                      {cfg.icon}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p
+                      className={`text-xs font-semibold ${cfg.color} truncate`}
+                    >
+                      {k.judul}
+                    </p>
+                    <p className="text-[10px] text-text-secondary mt-0.5">
+                      {tgl}
+                    </p>
+                    {k.is_nasional && (
+                      <span className="text-[9px] bg-white/70 text-text-secondary px-1.5 py-0.5 rounded-full mt-1 inline-block">
+                        Nasional
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

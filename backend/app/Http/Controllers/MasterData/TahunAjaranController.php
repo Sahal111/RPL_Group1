@@ -23,7 +23,6 @@ class TahunAjaranController extends Controller
     {
         $tahunAjaran = TahunAjaran::with('semesters')->findOrFail($id);
 
-        // Alias fields agar frontend bisa pakai ta.nama, ta.tanggal_mulai, ta.tanggal_selesai
         $ganjil = $tahunAjaran->semesters->firstWhere('nama', 'Ganjil');
         $genap = $tahunAjaran->semesters->firstWhere('nama', 'Genap');
 
@@ -32,6 +31,28 @@ class TahunAjaranController extends Controller
         $tahunAjaran->tanggal_selesai = $genap?->tgl_selesai ?? $ganjil?->tgl_selesai;
         $tahunAjaran->semester_aktif = $tahunAjaran->semesters->firstWhere('is_active', true)?->nama ?? null;
 
+        // ── Otoritas Tanda Tangan ──
+        $tahunAjaran->kepsek_nama = \App\Models\Pengaturan::where('key', 'kepala_madrasah')->value('value') ?? '';
+        $tahunAjaran->kepsek_nip = \App\Models\Pengaturan::where('key', 'nip_kepala_madrasah')->value('value') ?? '';
+
+        // ── Hari Libur dari kalender_akademiks ──
+        $totalHariLibur = \App\Models\KalenderAkademik::where('tahun_ajaran_id', $id)
+            ->where('jenis', 'libur')
+            ->get()
+            ->sum(function ($k) {
+                $mulai = \Carbon\Carbon::parse($k->tanggal_mulai);
+                $selesai = $k->tanggal_selesai
+                    ? \Carbon\Carbon::parse($k->tanggal_selesai)
+                    : $mulai;
+                return $mulai->diffInDays($selesai) + 1;
+            });
+        $tahunAjaran->total_hari_libur = $totalHariLibur;
+
+        // ── Status Tutup Buku ──
+        $sudahNaikKelas = \App\Models\RiwayatKelas::where('tahun_ajaran_id', $id)
+            ->where('jenis_perubahan', 'naik_kelas')
+            ->exists();
+        $tahunAjaran->is_tutup_buku = $sudahNaikKelas;
         // Ambil semua kelas pada tahun ajaran ini beserta wali kelas dan semester
         $kelasList = Kelas::with(['wali:id,nuptk,nama', 'semester:id,nama'])
             ->where('tahun_ajaran_id', $id)
@@ -66,13 +87,108 @@ class TahunAjaranController extends Controller
             ];
         })->values();
 
+        // ── Stats tambahan ──────────────────────────────────────
+        $semesterIds = $tahunAjaran->semesters->pluck('id');
+
+        $totalGuruMengajar = \App\Models\PlotGuruMapel::where('tahun_ajaran_id', $id)
+            ->where('is_active', true)
+            ->distinct('guru_id')->count('guru_id');
+
+        $totalMapel = \App\Models\PlotGuruMapel::where('tahun_ajaran_id', $id)
+            ->where('is_active', true)
+            ->distinct('mapel_id')->count('mapel_id');
+
+        $totalWaliKelas = $kelasList->filter(fn($k) => $k['nama_wali'] !== '-')->count();
+
+        $totalRuangan = $kelasList->filter(fn($k) => !empty($k['ruangan']))->pluck('ruangan')->unique()->count();
+
+        $totalJadwal = \App\Models\JadwalPelajaran::whereIn('semester_id', $semesterIds)
+            ->where('is_active', true)->count();
+
+        // ── Hari libur & efektif ──────────────────────────────
+        $totalHariLibur = \App\Models\KalenderAkademik::where('tahun_ajaran_id', $id)
+            ->where('jenis', 'libur')
+            ->get()
+            ->sum(function ($k) {
+                $mulai = \Carbon\Carbon::parse($k->tanggal_mulai);
+                $selesai = $k->tanggal_selesai ? \Carbon\Carbon::parse($k->tanggal_selesai) : $mulai;
+                return $mulai->diffInDays($selesai) + 1;
+            });
+
+        $tglMulai = $ganjil?->tgl_mulai;
+        $tglSelesai = $genap?->tgl_selesai ?? $ganjil?->tgl_selesai;
+        $hariTotal = ($tglMulai && $tglSelesai)
+            ? (int) \Carbon\Carbon::parse($tglMulai)->diffInDays(\Carbon\Carbon::parse($tglSelesai))
+            : null;
+        $hariEfektif = $hariTotal !== null ? max(0, $hariTotal - $totalHariLibur) : null;
+
+        // ── Kepsek ────────────────────────────────────────────
+        $kepsekNama = \App\Models\Pengaturan::where('key', 'kepala_madrasah')->value('value') ?? '';
+        $kepsekNip = \App\Models\Pengaturan::where('key', 'nip_kepala_madrasah')->value('value') ?? '';
+
+        // ── Tutup buku ────────────────────────────────────────
+        $sudahNaikKelas = \App\Models\RiwayatKelas::where('tahun_ajaran_id', $id)
+            ->where('jenis_perubahan', 'naik_kelas')->exists();
+
+        // ── Kalender akademik ─────────────────────────────────
+        $kalender = \App\Models\KalenderAkademik::where('tahun_ajaran_id', $id)
+            ->orderBy('tanggal_mulai')
+            ->get(['id', 'judul', 'jenis', 'tanggal_mulai', 'tanggal_selesai', 'is_nasional']);
+
+        // ── Aktivitas terbaru ─────────────────────────────────
+        $aktivitas = \App\Models\ActivityLog::with('user:id,username')
+            ->where('module', 'tahun_ajaran')
+            ->where('subject_id', $id)
+            ->latest()
+            ->take(8)
+            ->get(['id', 'user_id', 'action', 'keterangan', 'created_at']);
+
+        // ── Navigasi TA sebelum & sesudah ────────────────────
+        $allTA = TahunAjaran::orderBy('tahun')->pluck('tahun', 'id');
+        $taIds = $allTA->keys()->values();
+        $currentIndex = $taIds->search($tahunAjaran->id);
+        $taPrev = $currentIndex > 0 ? TahunAjaran::find($taIds[$currentIndex - 1], ['id', 'tahun', 'is_active']) : null;
+        $taNext = ($currentIndex !== false && $currentIndex < $taIds->count() - 1)
+            ? TahunAjaran::find($taIds[$currentIndex + 1], ['id', 'tahun', 'is_active']) : null;
+
+        // ── Checklist kesiapan ───────────────────────────────
+        $checklist = [
+            'ta_dibuat' => true,
+            'semester_dibuat' => $tahunAjaran->semesters->count() >= 2,
+            'rombel_dibuat' => $kelasList->count() > 0,
+            'guru_mengajar' => $totalGuruMengajar > 0,
+            'mapel_lengkap' => $totalMapel > 0,
+            'wali_kelas' => $totalWaliKelas > 0,
+            'jadwal_selesai' => $totalJadwal > 0,
+            'kalender' => $kalender->count() > 0,
+            'siswa_terdistribusi' => $kelasList->sum('total_siswa') > 0,
+            'kepsek_dikunci' => !empty($kepsekNama),
+        ];
+
+        // ── Append ke objek tahunAjaran ───────────────────────
+        $tahunAjaran->kepsek_nama = $kepsekNama;
+        $tahunAjaran->kepsek_nip = $kepsekNip;
+        $tahunAjaran->total_hari_libur = $totalHariLibur;
+        $tahunAjaran->total_hari_efektif = $hariEfektif;
+        $tahunAjaran->is_tutup_buku = $sudahNaikKelas;
+
         return response()->json([
             'success' => true,
             'data' => $tahunAjaran,
             'kelas' => $kelasList,
             'total_kelas' => $kelasList->count(),
             'total_siswa' => $kelasList->sum('total_siswa'),
+            'total_guru' => $totalGuruMengajar,
+            'total_mapel' => $totalMapel,
+            'total_wali_kelas' => $totalWaliKelas,
+            'total_ruangan' => $totalRuangan,
+            'total_jadwal' => $totalJadwal,
             'distribusi_tingkat' => $distribusiTingkat,
+            'kalender' => $kalender,
+            'aktivitas' => $aktivitas,
+            'ta_prev' => $taPrev,
+            'ta_next' => $taNext,
+            'checklist' => $checklist,
         ]);
     }
 

@@ -790,7 +790,6 @@ export default function TahunAjaran() {
                             </span>
                           </button>
                         </td>
-
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2.5">
                             <div
@@ -809,11 +808,9 @@ export default function TahunAjaran() {
                             </span>
                           </div>
                         </td>
-
                         <td className="px-5 py-4 text-text-secondary text-xs hidden sm:table-cell">
                           {fmt(getTglMulai(t))} – {fmt(getTglSelesai(t))}
                         </td>
-
                         <td className="px-5 py-4">
                           {t.is_active ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
@@ -821,12 +818,23 @@ export default function TahunAjaran() {
                               Aktif
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                              Selesai
-                            </span>
+                            (() => {
+                              const now = new Date();
+                              const mulai = getTglMulai(t);
+                              if (!mulai || new Date(mulai) > now)
+                                return (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
+                                    Akan Datang
+                                  </span>
+                                );
+                              return (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
+                                  Selesai
+                                </span>
+                              );
+                            })()
                           )}
                         </td>
-
                         <td className="px-5 py-4">
                           <div
                             className="flex items-center justify-end gap-1"
@@ -932,16 +940,64 @@ export default function TahunAjaran() {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3 ml-10 sm:ml-0">
-                                    {t.is_active ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
-                                        <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
-                                        Aktif
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                                        Selesai
-                                      </span>
-                                    )}
+                                    {(() => {
+                                      const ganjilSem = t.semesters?.find(
+                                        (s) => s.nama === "Ganjil",
+                                      );
+                                      if (ganjilSem?.is_active)
+                                        return (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
+                                            <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
+                                            Aktif
+                                          </span>
+                                        );
+                                      const now = new Date();
+                                      const mulai = ganjilSem?.tgl_mulai;
+                                      if (!mulai || new Date(mulai) > now)
+                                        return (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
+                                            Akan Datang
+                                          </span>
+                                        );
+                                      return (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
+                                          Selesai
+                                        </span>
+                                      );
+                                    })()}
+                                    {t.is_active &&
+                                      !t.semesters?.find(
+                                        (s) => s.nama === "Ganjil",
+                                      )?.is_active && (
+                                        <button
+                                          onClick={() => {
+                                            if (
+                                              confirm(
+                                                "Aktifkan Semester Ganjil?",
+                                              )
+                                            )
+                                              api
+                                                .patch(
+                                                  `/operator/master-data/tahun-ajaran/${t.id}/semester-aktif`,
+                                                  { semester_nama: "Ganjil" },
+                                                )
+                                                .then(() => {
+                                                  toast.success(
+                                                    "Semester Ganjil diaktifkan.",
+                                                  );
+                                                  queryClient.invalidateQueries(
+                                                    ["tahun-ajaran"],
+                                                  );
+                                                })
+                                                .catch(() =>
+                                                  toast.error("Gagal."),
+                                                );
+                                          }}
+                                          className="text-xs px-2 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                                        >
+                                          Aktifkan
+                                        </button>
+                                      )}
                                     <button
                                       onClick={() =>
                                         navigate(
@@ -975,9 +1031,51 @@ export default function TahunAjaran() {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3 ml-10 sm:ml-0">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                                      Belum aktif
-                                    </span>
+                                    {t.semesters?.find(
+                                      (s) => s.nama === "Genap",
+                                    )?.is_active ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
+                                        <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
+                                        Aktif
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
+                                        Belum aktif
+                                      </span>
+                                    )}
+                                    {t.is_active &&
+                                      !t.semesters?.find(
+                                        (s) => s.nama === "Genap",
+                                      )?.is_active && (
+                                        <button
+                                          onClick={() => {
+                                            if (
+                                              confirm(
+                                                "Aktifkan Semester Genap?",
+                                              )
+                                            )
+                                              api
+                                                .patch(
+                                                  `/operator/master-data/tahun-ajaran/${t.id}/semester-aktif`,
+                                                  { semester_nama: "Genap" },
+                                                )
+                                                .then(() => {
+                                                  toast.success(
+                                                    "Semester Genap diaktifkan.",
+                                                  );
+                                                  queryClient.invalidateQueries(
+                                                    ["tahun-ajaran"],
+                                                  );
+                                                })
+                                                .catch(() =>
+                                                  toast.error("Gagal."),
+                                                );
+                                          }}
+                                          className="text-xs px-2 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                                        >
+                                          Aktifkan
+                                        </button>
+                                      )}
                                     <button
                                       onClick={() =>
                                         navigate(
