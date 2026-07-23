@@ -103,17 +103,27 @@ function SemesterCard({ semester, isActive }) {
           : "border border-border-light bg-surface-container-lowest opacity-80 hover:opacity-100 transition-opacity"
       }`}
     >
-      {isActive && (
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-success text-xs font-semibold bg-white px-2 py-1 rounded shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />{" "}
-          Running
-        </div>
-      )}
-      {!isActive && (
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-text-secondary text-xs font-medium bg-surface-container px-2 py-1 rounded">
-          Upcoming
-        </div>
-      )}
+      {(() => {
+        const now = new Date();
+        if (isActive)
+          return (
+            <div className="absolute top-4 right-4 flex items-center gap-1 text-success text-xs font-semibold bg-white px-2 py-1 rounded shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />{" "}
+              Running
+            </div>
+          );
+        if (!semester.tgl_mulai || new Date(semester.tgl_mulai) > now)
+          return (
+            <div className="absolute top-4 right-4 flex items-center gap-1 text-info text-xs font-medium bg-info/10 px-2 py-1 rounded">
+              Akan Datang
+            </div>
+          );
+        return (
+          <div className="absolute top-4 right-4 flex items-center gap-1 text-text-secondary text-xs font-medium bg-surface-container px-2 py-1 rounded">
+            Selesai
+          </div>
+        );
+      })()}
       <h4 className="font-semibold text-text-primary text-base mb-1">
         Semester {semester.nama}
       </h4>
@@ -643,6 +653,46 @@ export default function DetailTahunAjaran() {
                 isActive={genap?.is_active ?? false}
               />
             </div>
+            {ta.is_active && (
+              <div className="mt-4 pt-4 border-t border-border-light flex items-center justify-between">
+                <p className="text-sm text-text-secondary">
+                  Semester aktif:{" "}
+                  <span className="font-semibold text-primary">
+                    {semAktif?.nama ?? "-"}
+                  </span>
+                </p>
+                <button
+                  onClick={() => {
+                    const target =
+                      semAktif?.nama === "Ganjil" ? "Genap" : "Ganjil";
+                    if (confirm(`Pindah ke Semester ${target}?`))
+                      api
+                        .patch(
+                          `/operator/master-data/tahun-ajaran/${id}/semester-aktif`,
+                          {
+                            semester_nama: target,
+                          },
+                        )
+                        .then(() => {
+                          toast.success(`Semester ${target} diaktifkan.`);
+                          queryClient.invalidateQueries([
+                            "detail-tahun-ajaran",
+                            id,
+                          ]);
+                          queryClient.invalidateQueries(["tahun-ajaran"]);
+                        })
+                        .catch(() => toast.error("Gagal mengganti semester."));
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-primary text-primary text-sm font-semibold hover:bg-primary/10 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    swap_horiz
+                  </span>
+                  Pindah ke Semester{" "}
+                  {semAktif?.nama === "Ganjil" ? "Genap" : "Ganjil"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Kebijakan Kurikulum + Rombel (grid) */}

@@ -225,7 +225,30 @@ class TahunAjaranController extends Controller
             'data' => $tahunAjaran->load('semesters'),
         ]);
     }
+    public function setSemesterAktif(Request $request, $id)
+    {
+        $request->validate([
+            'semester_nama' => 'required|in:Ganjil,Genap',
+        ]);
 
+        $tahunAjaran = TahunAjaran::findOrFail($id);
+        if (!$tahunAjaran->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aktifkan tahun ajaran ini terlebih dahulu.',
+            ], 422);
+        }
+
+        Semester::where('tahun_ajaran_id', $id)->update(['is_active' => false]);
+        Semester::where('tahun_ajaran_id', $id)
+            ->where('nama', $request->semester_nama)
+            ->update(['is_active' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Semester {$request->semester_nama} berhasil diaktifkan.",
+        ]);
+    }
     public function destroy($id)
     {
         $tahunAjaran = TahunAjaran::findOrFail($id);

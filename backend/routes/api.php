@@ -147,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/tahun-ajaran/{id}', [TahunAjaranController::class, 'show']);
             Route::put('/tahun-ajaran/{id}', [TahunAjaranController::class, 'update']);
             Route::patch('/tahun-ajaran/{id}/aktif', [TahunAjaranController::class, 'setAktif']);
+            Route::patch('/tahun-ajaran/{id}/semester-aktif', [TahunAjaranController::class, 'setSemesterAktif']);
             Route::delete('/tahun-ajaran/{id}', [TahunAjaranController::class, 'destroy']);
 
             // Naik Kelas Massal
