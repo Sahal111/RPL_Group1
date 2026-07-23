@@ -21,10 +21,19 @@ class TahunAjaranController extends Controller
 
     public function show($id)
     {
-        $tahunAjaran = TahunAjaran::findOrFail($id);
+        $tahunAjaran = TahunAjaran::with('semesters')->findOrFail($id);
 
-        // Ambil semua kelas pada tahun ajaran ini beserta wali kelas
-        $kelasList = Kelas::with(['wali:id,nuptk,nama'])
+        // Alias fields agar frontend bisa pakai ta.nama, ta.tanggal_mulai, ta.tanggal_selesai
+        $ganjil = $tahunAjaran->semesters->firstWhere('nama', 'Ganjil');
+        $genap = $tahunAjaran->semesters->firstWhere('nama', 'Genap');
+
+        $tahunAjaran->nama = $tahunAjaran->tahun;
+        $tahunAjaran->tanggal_mulai = $ganjil?->tgl_mulai;
+        $tahunAjaran->tanggal_selesai = $genap?->tgl_selesai ?? $ganjil?->tgl_selesai;
+        $tahunAjaran->semester_aktif = $tahunAjaran->semesters->firstWhere('is_active', true)?->nama ?? null;
+
+        // Ambil semua kelas pada tahun ajaran ini beserta wali kelas dan semester
+        $kelasList = Kelas::with(['wali:id,nuptk,nama', 'semester:id,nama'])
             ->where('tahun_ajaran_id', $id)
             ->orderBy('tingkat')
             ->orderBy('nama_kelas')
@@ -38,6 +47,7 @@ class TahunAjaranController extends Controller
                     'id' => $k->id,
                     'nama_kelas' => $k->nama_kelas,
                     'tingkat' => $k->tingkat,
+                    'semester' => $k->semester?->nama ?? '-',
                     'kurikulum' => $k->kurikulum,
                     'kapasitas' => $k->kapasitas,
                     'ruangan' => $k->ruangan,
@@ -47,12 +57,22 @@ class TahunAjaranController extends Controller
                 ];
             });
 
+        // Hitung distribusi per tingkat untuk stat card
+        $distribusiTingkat = $kelasList->groupBy('tingkat')->map(function ($group, $tingkat) {
+            return [
+                'tingkat' => $tingkat,
+                'jumlah_kelas' => $group->count(),
+                'jumlah_siswa' => $group->sum('total_siswa'),
+            ];
+        })->values();
+
         return response()->json([
-            'success'      => true,
-            'data'         => $tahunAjaran,
-            'kelas'        => $kelasList,
-            'total_kelas'  => $kelasList->count(),
-            'total_siswa'  => $kelasList->sum('total_siswa'),
+            'success' => true,
+            'data' => $tahunAjaran,
+            'kelas' => $kelasList,
+            'total_kelas' => $kelasList->count(),
+            'total_siswa' => $kelasList->sum('total_siswa'),
+            'distribusi_tingkat' => $distribusiTingkat,
         ]);
     }
 
@@ -84,7 +104,7 @@ class TahunAjaranController extends Controller
                 if ($request->semester_aktif) {
                     Semester::query()->update(['is_active' => false]);
                 }
-                
+
                 Semester::create([
                     'tahun_ajaran_id' => $tahunAjaran->id,
                     'nama' => 'Ganjil',
@@ -186,17 +206,23 @@ class TahunAjaranController extends Controller
 
     public function setAktif($id)
     {
-        // Non-aktifkan semua dulu
+        // Non-aktifkan semua tahun ajaran & semester
         TahunAjaran::query()->update(['is_active' => false]);
-        
-        // Aktifkan yang dipilih
+        Semester::query()->update(['is_active' => false]);
+
+        // Aktifkan tahun ajaran yang dipilih
         $tahunAjaran = TahunAjaran::findOrFail($id);
         $tahunAjaran->update(['is_active' => true]);
+
+        // Aktifkan semester Ganjil secara default
+        Semester::where('tahun_ajaran_id', $id)
+            ->where('nama', 'Ganjil')
+            ->update(['is_active' => true]);
 
         return response()->json([
             'success' => true,
             'message' => 'Tahun ajaran aktif berhasil diubah.',
-            'data' => $tahunAjaran,
+            'data' => $tahunAjaran->load('semesters'),
         ]);
     }
 
@@ -206,7 +232,7 @@ class TahunAjaranController extends Controller
 
         // Cek apakah ada kelas yang pakai tahun ajaran ini
         $adaKelas = Kelas::where('tahun_ajaran_id', $id)->exists();
-        
+
         if ($adaKelas) {
             return response()->json([
                 'success' => false,

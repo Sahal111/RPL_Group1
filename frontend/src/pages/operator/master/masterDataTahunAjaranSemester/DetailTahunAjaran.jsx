@@ -1,39 +1,19 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
-import {
-  ArrowLeft,
-  CalendarDays,
-  School,
-  Users,
-  CheckCircle,
-  BookOpen,
-  ChevronRight,
-  MapPin,
-  Loader2,
-} from "lucide-react";
+import toast from "react-hot-toast";
 
-function StatCard({ icon: Icon, label, value, color = "blue" }) {
-  const colors = {
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-green-50 text-green-600",
-    purple: "bg-purple-50 text-purple-600",
-    amber: "bg-amber-50 text-amber-600",
-  };
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors[color]}`}>
-        <Icon size={22} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
-      </div>
-    </div>
-  );
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmt(str) {
+  if (!str) return "-";
+  return new Date(str).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-function formatTanggal(str) {
+function fmtLong(str) {
   if (!str) return "-";
   return new Date(str).toLocaleDateString("id-ID", {
     day: "numeric",
@@ -42,9 +22,322 @@ function formatTanggal(str) {
   });
 }
 
+function daysBetween(a, b) {
+  if (!a || !b) return null;
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+function daysRemaining(end) {
+  if (!end) return null;
+  return Math.round((new Date(end) - new Date()) / 86400000);
+}
+
+function calcProgress(start, end) {
+  if (!start || !end) return 0;
+  const total = daysBetween(start, end);
+  if (!total) return 0;
+  const elapsed = total - (daysRemaining(end) ?? 0);
+  return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+}
+
+// ── Skeleton ─────────────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-[18px] p-5 border border-border-light animate-pulse">
+      <div className="w-10 h-10 bg-surface-container-high rounded-xl mb-4" />
+      <div className="h-3 w-24 bg-surface-container-high rounded mb-2" />
+      <div className="h-6 w-32 bg-surface-container-high rounded" />
+    </div>
+  );
+}
+
+// ── Stat Card ────────────────────────────────────────────────────────────────
+function StatCard({
+  icon,
+  label,
+  value,
+  badge,
+  badgeText,
+  iconBg = "bg-primary/10",
+  iconColor = "text-primary",
+  extra,
+}) {
+  return (
+    <div className="bg-white rounded-[18px] p-5 border border-border-light shadow-sm relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[100px] -z-0 group-hover:scale-110 transition-transform" />
+      <div className="flex justify-between items-start mb-4 relative z-10">
+        <div
+          className={`w-10 h-10 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center`}
+        >
+          <span className="material-symbols-outlined text-[20px]">{icon}</span>
+        </div>
+        {badge && (
+          <span className={`text-xs font-medium px-2 py-1 rounded-md ${badge}`}>
+            {badgeText}
+          </span>
+        )}
+      </div>
+      <h3 className="text-sm text-text-secondary mb-1 relative z-10">
+        {label}
+      </h3>
+      <div className="text-2xl font-bold text-text-primary font-headline-md relative z-10">
+        {value}
+      </div>
+      {extra && <div className="relative z-10">{extra}</div>}
+    </div>
+  );
+}
+
+// ── Semester Card ─────────────────────────────────────────────────────────────
+function SemesterCard({ semester, isActive }) {
+  if (!semester) return null;
+
+  const progress = calcProgress(semester.tgl_mulai, semester.tgl_selesai);
+  const sisa = daysRemaining(semester.tgl_selesai);
+
+  return (
+    <div
+      className={`rounded-xl p-4 relative ${
+        isActive
+          ? "border-2 border-primary/20 bg-primary/5"
+          : "border border-border-light bg-surface-container-lowest opacity-80 hover:opacity-100 transition-opacity"
+      }`}
+    >
+      {isActive && (
+        <div className="absolute top-4 right-4 flex items-center gap-1 text-success text-xs font-semibold bg-white px-2 py-1 rounded shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />{" "}
+          Running
+        </div>
+      )}
+      {!isActive && (
+        <div className="absolute top-4 right-4 flex items-center gap-1 text-text-secondary text-xs font-medium bg-surface-container px-2 py-1 rounded">
+          Upcoming
+        </div>
+      )}
+      <h4 className="font-semibold text-text-primary text-base mb-1">
+        Semester {semester.nama}
+      </h4>
+      <p className="text-sm text-text-secondary mb-4 flex items-center gap-1">
+        <span className="material-symbols-outlined text-[16px]">event</span>
+        {fmt(semester.tgl_mulai)} – {fmt(semester.tgl_selesai)}
+      </p>
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-text-secondary font-medium">
+          <span>Progress</span>
+          <span>{isActive ? `${progress}%` : "0%"}</span>
+        </div>
+        <div
+          className={`w-full rounded-full h-2 overflow-hidden shadow-inner ${isActive ? "bg-white" : "bg-surface-container-high"}`}
+        >
+          <div
+            className={`h-full rounded-full ${isActive ? "bg-primary" : "bg-border-light"}`}
+            style={{ width: isActive ? `${progress}%` : "0%" }}
+          />
+        </div>
+      </div>
+      <div
+        className={`mt-4 pt-4 flex justify-between items-center ${isActive ? "border-t border-primary/10" : "border-t border-border-light"}`}
+      >
+        <span className="text-xs text-text-secondary">
+          {isActive && sisa !== null
+            ? `${Math.max(0, sisa)} hari tersisa`
+            : "Belum dimulai"}
+        </span>
+        <span className="text-xs text-text-secondary font-medium">
+          {semester.is_active ? "Aktif" : "Nonaktif"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Rombel Row ────────────────────────────────────────────────────────────────
+function RombelRow({ tingkat, jumlah_kelas, jumlah_siswa, dotColor }) {
+  return (
+    <div className="flex items-center justify-between p-2 rounded hover:bg-surface-container-low transition-colors">
+      <div className="flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+        <span className="text-sm font-medium">Kelas {tingkat}</span>
+      </div>
+      <div className="text-sm flex gap-4">
+        <span className="text-text-secondary">{jumlah_kelas} Rombel</span>
+        <span className="font-semibold">{jumlah_siswa} Siswa</span>
+      </div>
+    </div>
+  );
+}
+
+const ROMBEL_COLORS = [
+  "bg-primary",
+  "bg-accent-gold",
+  "bg-info",
+  "bg-tertiary",
+  "bg-success",
+  "bg-warning",
+];
+
+// ── Kelas Table ───────────────────────────────────────────────────────────────
+function KelasTable({ kelasList, totalKelas, totalSiswa, navigate }) {
+  return (
+    <div className="bg-white rounded-[20px] border border-border-light shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border-light flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-info text-[20px]">
+            school
+          </span>
+          <h3 className="text-section-title font-section-title text-text-primary">
+            Daftar Kelas
+          </h3>
+        </div>
+        <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
+          {totalKelas} kelas
+        </span>
+      </div>
+
+      {kelasList.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-text-secondary">
+          <span className="material-symbols-outlined text-[48px] text-outline-variant mb-3">
+            school
+          </span>
+          <p className="font-medium">Belum ada kelas pada tahun ajaran ini</p>
+          <button
+            onClick={() => navigate("/operator/master/kelas")}
+            className="mt-3 text-primary text-sm hover:underline flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-[14px]">add</span>
+            Buat kelas baru
+          </button>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
+            <thead className="bg-surface-container text-text-secondary uppercase text-[10px] tracking-wider">
+              <tr>
+                <th className="px-5 py-3 text-left">Nama Kelas</th>
+                <th className="px-5 py-3 text-left">Tingkat</th>
+                <th className="px-5 py-3 text-left">Semester</th>
+                <th className="px-5 py-3 text-left">Wali Kelas</th>
+                <th className="px-5 py-3 text-left">Kurikulum</th>
+                <th className="px-5 py-3 text-left">Ruangan</th>
+                <th className="px-5 py-3 text-center">Kapasitas</th>
+                <th className="px-5 py-3 text-center">Siswa Aktif</th>
+                <th className="px-5 py-3 text-center">Status</th>
+                <th className="px-5 py-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-container text-sm">
+              {kelasList.map((k) => (
+                <tr
+                  key={k.id}
+                  className="hover:bg-surface-container-lowest transition-colors"
+                >
+                  <td className="px-5 py-3 font-semibold text-text-primary">
+                    {k.nama_kelas}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">
+                      Tingkat {k.tingkat}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-text-secondary">
+                    Semester {k.semester}
+                  </td>
+                  <td className="px-5 py-3 text-text-secondary">
+                    {k.nama_wali !== "-" ? (
+                      k.nama_wali
+                    ) : (
+                      <span className="text-outline-variant italic">
+                        Belum ditentukan
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="flex items-center gap-1 text-text-secondary">
+                      <span className="material-symbols-outlined text-[13px] text-outline-variant">
+                        menu_book
+                      </span>
+                      {k.kurikulum}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    {k.ruangan ? (
+                      <span className="flex items-center gap-1 text-text-secondary">
+                        <span className="material-symbols-outlined text-[13px] text-outline-variant">
+                          location_on
+                        </span>
+                        {k.ruangan}
+                      </span>
+                    ) : (
+                      <span className="text-outline-variant italic">-</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-center text-text-secondary">
+                    {k.kapasitas}
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    <span
+                      className={`font-semibold ${
+                        k.total_siswa >= k.kapasitas
+                          ? "text-danger"
+                          : k.total_siswa >= k.kapasitas * 0.8
+                            ? "text-warning"
+                            : "text-success"
+                      }`}
+                    >
+                      {k.total_siswa}
+                    </span>
+                    <span className="text-text-secondary text-xs">
+                      /{k.kapasitas}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    {k.is_active ? (
+                      <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium border border-success/20">
+                        Aktif
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-surface-variant text-text-secondary px-2 py-0.5 rounded-full font-medium border border-outline-variant/30">
+                        Nonaktif
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    <button
+                      onClick={() => navigate(`/operator/master/kelas/${k.id}`)}
+                      className="text-primary hover:text-on-primary-fixed-variant text-xs font-medium hover:underline"
+                    >
+                      Detail
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-surface-container">
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-5 py-3 text-sm font-semibold text-text-primary"
+                >
+                  Total: {totalKelas} Kelas
+                </td>
+                <td className="px-5 py-3 text-center text-sm font-semibold text-text-primary">
+                  {totalSiswa}
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function DetailTahunAjaran() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["detail-tahun-ajaran", id],
@@ -52,24 +345,59 @@ export default function DetailTahunAjaran() {
       api.get(`/operator/master-data/tahun-ajaran/${id}`).then((r) => r.data),
   });
 
+  const setAktif = useMutation({
+    mutationFn: () =>
+      api.patch(`/operator/master-data/tahun-ajaran/${id}/aktif`),
+    onSuccess: () => {
+      toast.success("Tahun ajaran berhasil diaktifkan.");
+      queryClient.invalidateQueries(["detail-tahun-ajaran", id]);
+      queryClient.invalidateQueries(["tahun-ajaran"]);
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message ?? "Gagal mengaktifkan."),
+  });
+
+  const hapus = useMutation({
+    mutationFn: () => api.delete(`/operator/master-data/tahun-ajaran/${id}`),
+    onSuccess: () => {
+      toast.success("Tahun ajaran dihapus.");
+      navigate("/operator/master/tahun-ajaran");
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message ?? "Gagal menghapus."),
+  });
+
+  // ── Loading ──
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh] gap-2 text-gray-400">
-        <Loader2 size={20} className="animate-spin" />
-        <span>Memuat data...</span>
+      <div className="space-y-6 pb-12 w-full max-w-container-max mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+        <div className="h-64 bg-white rounded-[20px] border border-border-light animate-pulse" />
       </div>
     );
   }
 
+  // ── Error ──
   if (isError || !data?.data) {
     return (
-      <div className="text-center py-20 text-gray-400">
-        <CalendarDays size={48} className="mx-auto mb-4 opacity-30" />
-        <p className="font-medium">Tahun ajaran tidak ditemukan.</p>
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-text-secondary">
+        <span className="material-symbols-outlined text-[56px] text-outline-variant">
+          calendar_today
+        </span>
+        <p className="font-medium text-text-primary">
+          Tahun ajaran tidak ditemukan.
+        </p>
         <button
           onClick={() => navigate("/operator/master/tahun-ajaran")}
-          className="mt-4 text-blue-600 text-sm hover:underline"
+          className="text-primary text-sm hover:underline flex items-center gap-1"
         >
+          <span className="material-symbols-outlined text-[16px]">
+            arrow_back
+          </span>
           Kembali ke daftar
         </button>
       </div>
@@ -80,188 +408,544 @@ export default function DetailTahunAjaran() {
   const kelasList = data.kelas ?? [];
   const totalKelas = data.total_kelas ?? 0;
   const totalSiswa = data.total_siswa ?? 0;
+  const distribusi = data.distribusi_tingkat ?? [];
+  const semesters = ta.semesters ?? [];
+  const ganjil = semesters.find((s) => s.nama === "Ganjil");
+  const genap = semesters.find((s) => s.nama === "Genap");
+  const semAktif = semesters.find((s) => s.is_active);
+
+  const progressTA = calcProgress(ta.tanggal_mulai, ta.tanggal_selesai);
+  const hariTotal = daysBetween(ta.tanggal_mulai, ta.tanggal_selesai);
+  const hariSisaTA = daysRemaining(ta.tanggal_selesai);
+  const hariBerjalan =
+    hariTotal !== null && hariSisaTA !== null ? hariTotal - hariSisaTA : null;
+
+  const hariSisaSem = semAktif ? daysRemaining(semAktif.tgl_selesai) : null;
+  const progressSem = semAktif
+    ? calcProgress(semAktif.tgl_mulai, semAktif.tgl_selesai)
+    : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500">
+    <div className="w-full space-y-6 pb-12 opacity-0 animate-fade-up">
+      {/* ── Breadcrumb ── */}
+      <nav className="flex items-center gap-1.5 text-xs text-text-secondary">
+        <span>Dashboard</span>
+        <span className="material-symbols-outlined text-[14px]">
+          chevron_right
+        </span>
+        <span>Master Data</span>
+        <span className="material-symbols-outlined text-[14px]">
+          chevron_right
+        </span>
         <button
           onClick={() => navigate("/operator/master/tahun-ajaran")}
-          className="hover:text-blue-600 transition-colors flex items-center gap-1"
+          className="hover:text-primary transition-colors"
         >
-          <ArrowLeft size={14} />
           Tahun Ajaran
         </button>
-        <ChevronRight size={14} />
-        <span className="text-gray-800 font-medium">{ta.nama}</span>
-      </div>
+        <span className="material-symbols-outlined text-[14px]">
+          chevron_right
+        </span>
+        <span className="text-primary font-semibold">Detail</span>
+      </nav>
 
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
-                <CalendarDays className="text-white" size={28} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">{ta.nama}</h1>
-                <p className="text-blue-100 text-sm mt-0.5">
-                  {formatTanggal(ta.tanggal_mulai)} – {formatTanggal(ta.tanggal_selesai)}
-                </p>
-              </div>
-            </div>
+      {/* ── Page Header ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h2
+              className="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-text-primary tracking-tight"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
+              Tahun Ajaran {ta.nama ?? ta.tahun}
+            </h2>
             {ta.is_active ? (
-              <span className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/30">
-                <CheckCircle size={14} />
-                Aktif
+              <span className="px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-semibold border border-success/20 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                Active
               </span>
             ) : (
-              <span className="bg-white/10 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full border border-white/20">
+              <span className="px-2.5 py-1 rounded-full bg-surface-variant text-text-secondary text-xs font-semibold border border-outline-variant/30">
                 Non-aktif
               </span>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          icon={CalendarDays}
-          label="Durasi"
-          value={(() => {
-            if (!ta.tanggal_mulai || !ta.tanggal_selesai) return "-";
-            const d = Math.round(
-              (new Date(ta.tanggal_selesai) - new Date(ta.tanggal_mulai)) /
-                (1000 * 60 * 60 * 24)
-            );
-            return `${d} hari`;
-          })()}
-          color="blue"
-        />
-        <StatCard icon={School} label="Total Kelas" value={totalKelas} color="purple" />
-        <StatCard icon={Users} label="Total Siswa Aktif" value={totalSiswa} color="green" />
-      </div>
-
-      {/* Daftar Kelas */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <School size={18} className="text-blue-600" />
-            <h2 className="font-semibold text-gray-800">Daftar Kelas</h2>
-          </div>
-          <span className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">
-            {totalKelas} kelas
-          </span>
+          <p className="text-sm text-text-secondary">
+            Central command and operational overview for the current academic
+            period.
+          </p>
         </div>
 
-        {kelasList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <School size={40} className="mb-3 opacity-30" />
-            <p className="font-medium">Belum ada kelas pada tahun ajaran ini</p>
-            <Link
-              to="/operator/master/kelas"
-              className="mt-3 text-blue-600 text-sm hover:underline"
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <button
+            onClick={() => navigate("/operator/master/tahun-ajaran")}
+            className="px-4 py-2 rounded-lg border border-border-light bg-white text-text-primary text-sm font-medium hover:bg-surface-container-low transition-colors shadow-sm flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_back
+            </span>
+            Back
+          </button>
+          {!ta.is_active && (
+            <button
+              onClick={() => {
+                if (
+                  confirm(`Jadikan "${ta.tahun}" sebagai tahun ajaran aktif?`)
+                )
+                  setAktif.mutate();
+              }}
+              disabled={setAktif.isPending}
+              className="px-4 py-2 rounded-lg border border-success/30 bg-success/10 text-success text-sm font-medium hover:bg-success/20 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
-              Buat kelas baru
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
-                <tr>
-                  <th className="px-5 py-3 text-left">Nama Kelas</th>
-                  <th className="px-5 py-3 text-left">Tingkat</th>
-                  <th className="px-5 py-3 text-left">Semester</th>
-                  <th className="px-5 py-3 text-left">Wali Kelas</th>
-                  <th className="px-5 py-3 text-left">Kurikulum</th>
-                  <th className="px-5 py-3 text-left">Ruangan</th>
-                  <th className="px-5 py-3 text-center">Kapasitas</th>
-                  <th className="px-5 py-3 text-center">Siswa Aktif</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {kelasList.map((k) => (
-                  <tr key={k.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3 font-semibold text-gray-800">
-                      {k.nama_kelas}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                        Tingkat {k.tingkat}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-gray-600">
-                      Semester {k.semester}
-                    </td>
-                    <td className="px-5 py-3 text-gray-600">
-                      {k.nama_wali ?? (
-                        <span className="text-gray-300 italic">Belum ditentukan</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="flex items-center gap-1 text-gray-600">
-                        <BookOpen size={13} className="text-gray-400" />
-                        {k.kurikulum}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      {k.ruangan ? (
-                        <span className="flex items-center gap-1 text-gray-600">
-                          <MapPin size={12} className="text-gray-400" />
-                          {k.ruangan}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300 italic">-</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-center text-gray-600">
-                      {k.kapasitas}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <span
-                        className={`font-semibold ${
-                          k.total_siswa >= k.kapasitas
-                            ? "text-red-600"
-                            : k.total_siswa >= k.kapasitas * 0.8
-                              ? "text-amber-600"
-                              : "text-green-600"
-                        }`}
-                      >
-                        {k.total_siswa}
-                      </span>
-                      <span className="text-gray-400 text-xs">/{k.kapasitas}</span>
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      {k.is_active ? (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                          Aktif
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
-                          Non-aktif
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <Link
-                        to={`/operator/master/kelas/${k.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline"
-                      >
-                        Detail
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              <span className="material-symbols-outlined text-[18px]">
+                check_circle
+              </span>
+              Aktifkan
+            </button>
+          )}
+          <button
+            onClick={() =>
+              navigate("/operator/master/tahun-ajaran", {
+                state: { editId: ta.id },
+              })
+            }
+            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-on-primary-fixed-variant transition-colors shadow-sm flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+            Edit
+          </button>
+        </div>
       </div>
+
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Tahun Ajaran */}
+        <StatCard
+          icon="calendar_month"
+          label="Tahun Ajaran"
+          value={ta.tahun}
+          badge="text-text-secondary bg-surface-container-low"
+          badgeText="Periode"
+          iconBg="bg-primary/10"
+          iconColor="text-primary"
+        />
+
+        {/* Semester Aktif */}
+        <StatCard
+          icon="star"
+          label="Semester Aktif"
+          value={
+            semAktif
+              ? `${semAktif.nama} (${semAktif.nama === "Ganjil" ? "1" : "2"})`
+              : "-"
+          }
+          badge="text-text-secondary bg-surface-container-low"
+          badgeText="Current"
+          iconBg="bg-accent-gold/20"
+          iconColor="text-accent-gold"
+        />
+
+        {/* Progress Hari */}
+        <StatCard
+          icon="timeline"
+          label="Progress Hari"
+          value={`${progressSem}%`}
+          badge="text-info bg-info/10"
+          badgeText={hariBerjalan !== null ? `Hari ke-${hariBerjalan}` : "—"}
+          iconBg="bg-info/10"
+          iconColor="text-info"
+          extra={
+            <div className="w-full bg-surface-container-high rounded-full h-1.5 mt-3 overflow-hidden">
+              <div
+                className="bg-info h-1.5 rounded-full transition-all duration-700"
+                style={{ width: `${progressSem}%` }}
+              />
+            </div>
+          }
+        />
+
+        {/* Sisa Hari Semester */}
+        <StatCard
+          icon="hourglass_empty"
+          label="Sisa Hari (Semester)"
+          value={
+            hariSisaSem !== null ? `${Math.max(0, hariSisaSem)} hari` : "-"
+          }
+          badge="text-text-secondary bg-surface-container-low"
+          badgeText="Countdown"
+          iconBg="bg-warning/10"
+          iconColor="text-warning"
+        />
+
+        {/* Total Kelas */}
+        <StatCard
+          icon="groups"
+          label="Total Kelas Aktif"
+          value={totalKelas}
+          badge="text-text-secondary bg-surface-container-low"
+          badgeText="Rombel"
+          iconBg="bg-success/10"
+          iconColor="text-success"
+        />
+
+        {/* Total Siswa */}
+        <StatCard
+          icon="people"
+          label="Total Siswa"
+          value={totalSiswa}
+          badge="text-text-secondary bg-surface-container-low"
+          badgeText="Aktif"
+          iconBg="bg-tertiary/10"
+          iconColor="text-tertiary"
+        />
+      </div>
+
+      {/* ── Bento Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Col (span 2) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Semester Management */}
+          <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3
+                  className="text-section-title font-section-title text-text-primary flex items-center gap-2"
+                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                >
+                  <span className="material-symbols-outlined text-primary">
+                    view_timeline
+                  </span>
+                  Semester Management
+                </h3>
+                <p className="text-sm text-text-secondary mt-1">
+                  Timeline and operational status for periods.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  navigate("/operator/master/tahun-ajaran", {
+                    state: { editId: ta.id },
+                  })
+                }
+                className="text-primary hover:bg-primary/5 p-2 rounded-lg transition-colors"
+                title="Edit"
+              >
+                <span className="material-symbols-outlined">edit_calendar</span>
+              </button>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <SemesterCard
+                semester={ganjil}
+                isActive={ganjil?.is_active ?? false}
+              />
+              <SemesterCard
+                semester={genap}
+                isActive={genap?.is_active ?? false}
+              />
+            </div>
+          </div>
+
+          {/* Kebijakan Kurikulum + Rombel (grid) */}
+          <div className="grid sm:grid-cols-2 gap-6">
+            {/* Kebijakan Kurikulum */}
+            <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="material-symbols-outlined text-accent-gold">
+                    menu_book
+                  </span>
+                  <h3
+                    className="text-section-title font-section-title text-text-primary"
+                    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                  >
+                    Kebijakan Kurikulum
+                  </h3>
+                </div>
+                <p className="text-sm text-text-secondary mb-4">
+                  Basis pembelajaran dan evaluasi tahun ini.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-lg border border-border-light">
+                    <span className="text-sm text-text-secondary">
+                      Versi Kurikulum
+                    </span>
+                    <span className="text-xs font-semibold text-text-primary">
+                      Merdeka (Rev 2024)
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-lg border border-border-light">
+                    <span className="text-sm text-text-secondary">
+                      Standar Penilaian
+                    </span>
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-semibold rounded">
+                      Skala 0-100
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-lg border border-border-light">
+                    <span className="text-sm text-text-secondary">
+                      KKM / KKTP Global
+                    </span>
+                    <span className="px-2 py-1 bg-accent-gold/10 text-accent-gold text-xs font-semibold rounded">
+                      75.00
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Rombongan Belajar */}
+            <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-info">
+                  groups
+                </span>
+                <h3
+                  className="text-section-title font-section-title text-text-primary"
+                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                >
+                  Rombongan Belajar
+                </h3>
+              </div>
+              <p className="text-sm text-text-secondary mb-4">
+                Distribusi kelas aktif.
+              </p>
+
+              {distribusi.length === 0 ? (
+                <div className="text-center py-8 text-text-secondary text-sm">
+                  <span className="material-symbols-outlined text-[32px] text-outline-variant block mb-2">
+                    school
+                  </span>
+                  Belum ada kelas
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {distribusi.map((d, i) => (
+                    <RombelRow
+                      key={d.tingkat}
+                      tingkat={d.tingkat}
+                      jumlah_kelas={d.jumlah_kelas}
+                      jumlah_siswa={d.jumlah_siswa}
+                      dotColor={ROMBEL_COLORS[i % ROMBEL_COLORS.length]}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 pt-4 border-t border-border-light flex justify-between items-center">
+                <div className="text-sm font-semibold text-text-primary">
+                  Total: {totalKelas} Kelas
+                </div>
+                <div className="text-sm font-semibold text-text-primary">
+                  {totalSiswa} Siswa
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Col */}
+        <div className="space-y-6">
+          {/* Metrik Akademik */}
+          <div className="bg-background-dark text-white rounded-[20px] p-6 relative overflow-hidden shadow-lg">
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent pointer-events-none" />
+            <h3
+              className="text-section-title font-section-title mb-4 flex items-center gap-2"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
+              <span className="material-symbols-outlined text-accent-gold">
+                analytics
+              </span>
+              Metrik Akademik {semAktif ? `(${semAktif.nama})` : ""}
+            </h3>
+            <div className="space-y-4 relative z-10">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Progress Semester</span>
+                  <span className="font-semibold">{progressSem}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div
+                    className="bg-success h-1.5 rounded-full transition-all duration-700"
+                    style={{ width: `${progressSem}%` }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Progress Tahun Ajaran</span>
+                  <span className="font-semibold">{progressTA}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div
+                    className="bg-warning h-1.5 rounded-full transition-all duration-700"
+                    style={{ width: `${progressTA}%` }}
+                  />
+                </div>
+              </div>
+              <div className="pt-4 mt-2 border-t border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-400">
+                    Status Cetak Rapor
+                  </div>
+                  <span className="px-2 py-1 rounded bg-gray-700 text-xs font-medium text-gray-300">
+                    Locked
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Periode */}
+          <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6">
+            <h3
+              className="text-section-title font-section-title text-text-primary mb-4 flex items-center gap-2"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
+              <span className="material-symbols-outlined text-text-secondary">
+                date_range
+              </span>
+              Ringkasan Periode
+            </h3>
+            <div className="space-y-3">
+              {[
+                {
+                  label: "Mulai Tahun Ajaran",
+                  value: fmtLong(ta.tanggal_mulai),
+                  icon: "event",
+                },
+                {
+                  label: "Selesai Tahun Ajaran",
+                  value: fmtLong(ta.tanggal_selesai),
+                  icon: "event_busy",
+                },
+                {
+                  label: "Durasi Total",
+                  value: hariTotal !== null ? `${hariTotal} hari` : "-",
+                  icon: "hourglass_full",
+                },
+                {
+                  label: "Hari Berjalan",
+                  value:
+                    hariBerjalan !== null
+                      ? `${Math.max(0, hariBerjalan)} hari`
+                      : "-",
+                  icon: "timer",
+                },
+                {
+                  label: "Sisa Hari (TA)",
+                  value:
+                    hariSisaTA !== null
+                      ? `${Math.max(0, hariSisaTA)} hari`
+                      : "-",
+                  icon: "hourglass_empty",
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between py-2 border-b border-border-light/60 last:border-0 gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-text-secondary">
+                      {item.icon}
+                    </span>
+                    <span className="text-xs text-text-secondary">
+                      {item.label}
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-text-primary text-right">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Timeline Akademik ── */}
+      <div className="bg-white rounded-[20px] border border-border-light shadow-sm p-6 overflow-hidden">
+        <h3
+          className="text-section-title font-section-title text-text-primary mb-6"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
+          Timeline Akademik
+        </h3>
+        <div className="relative max-w-full overflow-x-auto pb-4">
+          <div className="min-w-[600px] relative px-4">
+            {/* Track */}
+            <div className="absolute top-[22px] left-4 right-4 h-1 bg-surface-container-high rounded-full" />
+            {/* Active Track */}
+            <div
+              className="absolute top-[22px] left-4 h-1 bg-primary rounded-full transition-all duration-700"
+              style={{ width: `${Math.min(progressTA, 100) * 0.8}%` }}
+            />
+            <div className="relative flex justify-between items-start z-10">
+              {[
+                { label: "Awal TA", date: fmt(ta.tanggal_mulai), done: true },
+                {
+                  label:
+                    semAktif?.nama === "Ganjil"
+                      ? "Semester Ganjil"
+                      : "Semester Genap",
+                  date: semAktif ? fmt(semAktif.tgl_mulai) : "—",
+                  current: !!semAktif,
+                  done: false,
+                },
+                {
+                  label: "UAS Ganjil",
+                  date: ganjil ? fmt(ganjil.tgl_selesai) : "—",
+                  done: false,
+                },
+                {
+                  label: "Awal Genap",
+                  date: genap ? fmt(genap.tgl_mulai) : "—",
+                  done: false,
+                },
+                {
+                  label: "Akhir TA",
+                  date: fmt(ta.tanggal_selesai),
+                  done: false,
+                },
+              ].map((point, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  {point.current ? (
+                    <>
+                      <div className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary text-white animate-bounce mb-1">
+                        NOW
+                      </div>
+                      <div className="w-5 h-5 bg-white border-4 border-primary rounded-full" />
+                    </>
+                  ) : (
+                    <div
+                      className={`w-4 h-4 rounded-full mt-[3px] ${
+                        point.done
+                          ? "bg-primary ring-4 ring-primary/20"
+                          : "bg-white border-2 border-outline-variant"
+                      }`}
+                    />
+                  )}
+                  <div
+                    className={`text-xs font-semibold text-center ${point.done || point.current ? "text-text-primary" : "text-text-secondary"}`}
+                  >
+                    {point.label}
+                  </div>
+                  <div className="text-[10px] text-text-secondary text-center">
+                    {point.date}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Daftar Kelas Table ── */}
+      <KelasTable
+        kelasList={kelasList}
+        totalKelas={totalKelas}
+        totalSiswa={totalSiswa}
+        navigate={navigate}
+      />
     </div>
   );
 }
