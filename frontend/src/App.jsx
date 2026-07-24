@@ -27,6 +27,7 @@ import DetailGuru from "./pages/operator/master/masterDataGuru/DetailGuru";
 import DetailSiswa from "./pages/operator/master/masterDataSiswa/DetailSiswa";
 import MutasiSiswa from "./pages/operator/master/masterDataSiswa/MutasiSiswa";
 import DetailKelas from "./pages/operator/master/masterDataKelas/DetailKelas";
+import DetailKelasPeriodeAkademik from "./pages/operator/master/masterDataKelas/DetailKelasPeriodeAkademik";
 import DetailOrtu from "./pages/operator/master/masterDataOrtu/DetailOrtu";
 import NaikKelas from "./pages/operator/master/NaikKelas";
 import DetailTahunAjaran from "./pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaran";
@@ -117,6 +118,7 @@ export default function App() {
         <Route path="master/siswa/:nisn" element={<DetailSiswa />} />
         <Route path="master/siswa/:nisn/mutasi" element={<MutasiSiswa />} />
         <Route path="master/kelas/:id" element={<DetailKelas />} />
+        <Route path="master/kelas/:kelasId/periode/:periodeId" element={<DetailKelasPeriodeAkademik />} />
         <Route path="master/ortu/:id" element={<DetailOrtu />} />
         <Route path="master/naik-kelas" element={<NaikKelas />} />
         <Route path="master/tahun-ajaran/:id" element={<DetailTahunAjaran />} />
