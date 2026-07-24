@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
@@ -43,22 +44,6 @@ function statusLabel(siswa, kapasitas, wali) {
     };
   return { text: "Aktif", cls: "bg-success/10 text-success border-success/20" };
 }
-
-// ── Form field ─────────────────────────────────────────────────────────────────
-function Field({ label, required, children }) {
-  return (
-    <div>
-      <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
-        {label} {required && <span className="text-danger">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-const INPUT =
-  "w-full px-3 py-2.5 rounded-xl border border-border-light bg-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-text-primary placeholder:text-text-secondary";
-const SELECT = INPUT + " appearance-none";
 
 // ── Modal Tambah / Edit Kelas ─────────────────────────────────────────────────
 function ModalKelas({ open, onClose, editData, queryClient }) {
@@ -107,130 +92,202 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+  const inputCls =
+    "w-full px-3.5 py-2.5 bg-background-light border border-border-light rounded-xl text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-text-secondary/50";
+  const labelCls =
+    "block text-label-md font-semibold text-text-secondary mb-1.5";
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 transition-all duration-200"
+      onClick={onClose}
+    >
       <div
-        className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg border border-border-light animate-fade-up"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-border-light/80 animate-in fade-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light bg-surface-container-lowest">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[20px]">
-                meeting_room
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+              <span className="material-symbols-outlined text-[22px]">
+                {isEdit ? "edit_note" : "add_circle"}
               </span>
             </div>
-            <h3
-              className="font-semibold text-text-primary"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-            >
-              {isEdit ? "Edit Data Kelas" : "Tambah Kelas Baru"}
-            </h3>
+            <div>
+              <h3 className="text-section-title font-bold text-on-surface">
+                {isEdit ? "Edit Kelas" : "Tambah Kelas"}
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Kelola data kelas dan ruangan belajar
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-container hover:text-on-surface transition-colors"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 grid grid-cols-2 gap-4 max-h-[68vh] overflow-y-auto">
-          <Field label="ID Kelas" required>
-            <input
-              value={form.id}
-              onChange={(e) => set("id", e.target.value)}
-              className={INPUT}
-              placeholder="Contoh: 1A-2026"
-              disabled={isEdit}
-            />
-          </Field>
+        <div className="px-6 py-5 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+          {/* INFORMASI KELAS */}
+          <div>
+            <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                meeting_room
+              </span>
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                INFORMASI KELAS
+              </h4>
+            </div>
+            <div className="space-y-3.5">
+              <div>
+                <label className={labelCls}>
+                  ID Kelas <span className="text-danger">*</span>
+                </label>
+                <input
+                  value={form.id}
+                  onChange={(e) => set("id", e.target.value)}
+                  className={inputCls}
+                  placeholder="Contoh: 1A-2026"
+                  disabled={isEdit}
+                />
+              </div>
 
-          <Field label="Nama Kelas" required>
-            <input
-              value={form.nama_kelas}
-              onChange={(e) => set("nama_kelas", e.target.value)}
-              className={INPUT}
-              placeholder="Contoh: Kelas 1A"
-            />
-          </Field>
+              <div>
+                <label className={labelCls}>
+                  Nama Kelas <span className="text-danger">*</span>
+                </label>
+                <input
+                  value={form.nama_kelas}
+                  onChange={(e) => set("nama_kelas", e.target.value)}
+                  className={inputCls}
+                  placeholder="Contoh: Kelas 1A"
+                />
+              </div>
 
-          <Field label="Tingkat" required>
-            <select
-              value={form.tingkat}
-              onChange={(e) => set("tingkat", e.target.value)}
-              className={SELECT}
-            >
-              {[1, 2, 3, 4, 5, 6].map((t) => (
-                <option key={t} value={t}>
-                  Kelas {t}
-                </option>
-              ))}
-            </select>
-          </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>
+                    Tingkat <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    value={form.tingkat}
+                    onChange={(e) => set("tingkat", e.target.value)}
+                    className={inputCls}
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((t) => (
+                      <option key={t} value={t}>
+                        Kelas {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>
+                    Kurikulum <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    value={form.kurikulum}
+                    onChange={(e) => set("kurikulum", e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
+                    <option value="Kurikulum 2013">Kurikulum 2013</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <Field label="Kurikulum" required>
-            <select
-              value={form.kurikulum}
-              onChange={(e) => set("kurikulum", e.target.value)}
-              className={SELECT}
-            >
-              <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
-              <option value="Kurikulum 2013">Kurikulum 2013</option>
-            </select>
-          </Field>
+          {/* DETAIL RUANGAN */}
+          <div>
+            <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                door_open
+              </span>
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                DETAIL RUANGAN
+              </h4>
+            </div>
+            <div className="space-y-3.5">
+              <div>
+                <label className={labelCls}>Ruangan</label>
+                <input
+                  value={form.ruangan}
+                  onChange={(e) => set("ruangan", e.target.value)}
+                  className={inputCls}
+                  placeholder="Contoh: R-101"
+                />
+              </div>
 
-          <Field label="Ruangan">
-            <input
-              value={form.ruangan}
-              onChange={(e) => set("ruangan", e.target.value)}
-              className={INPUT}
-              placeholder="Contoh: R-101"
-            />
-          </Field>
+              <div>
+                <label className={labelCls}>Kapasitas Siswa</label>
+                <input
+                  type="number"
+                  value={form.kapasitas}
+                  onChange={(e) => set("kapasitas", e.target.value)}
+                  className={inputCls}
+                  placeholder="30"
+                />
+              </div>
+            </div>
+          </div>
 
-          <Field label="Kapasitas">
-            <input
-              type="number"
-              value={form.kapasitas}
-              onChange={(e) => set("kapasitas", e.target.value)}
-              className={INPUT}
-              placeholder="30"
-            />
-          </Field>
+          {/* INFORMASI TAMBAHAN */}
+          <div>
+            <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                info
+              </span>
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                INFORMASI TAMBAHAN
+              </h4>
+            </div>
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-amber-800">
+              <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">
+                info
+              </span>
+              <p className="text-xs leading-relaxed text-amber-900 font-medium">
+                Data kelas akan otomatis menggunakan tahun ajaran yang sedang aktif. Pastikan semua informasi sudah benar sebelum menyimpan.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 px-6 py-4 border-t border-border-light">
+        <div className="flex gap-3 px-6 py-4 border-t border-border-light bg-surface-container-lowest">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+            className="flex-1 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container-low text-body-md font-semibold transition-colors"
           >
             Batal
           </button>
           <button
             onClick={() => mutation.mutate(form)}
             disabled={mutation.isPending}
-            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-body-md font-semibold hover:bg-primary-700 shadow-sm hover:shadow transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {mutation.isPending ? (
               <>
-                <span className="material-symbols-outlined text-[16px] animate-spin">
+                <span className="material-symbols-outlined text-[18px] animate-spin">
                   progress_activity
                 </span>
                 Menyimpan...
               </>
             ) : isEdit ? (
-              "Perbarui"
+              "Perbarui Data"
             ) : (
-              "Simpan"
+              "Simpan Data"
             )}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
