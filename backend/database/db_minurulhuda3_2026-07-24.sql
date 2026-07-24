@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-13 03:18:53 +0000
+# Generation Time: 2026-07-24 12:58:24 +0000
 # ************************************************************
 
 
@@ -83,6 +83,15 @@ CREATE TABLE `activity_logs` (
   CONSTRAINT `fk_actlog_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail seluruh aksi di sistem. Log tidak boleh diubah/dihapus kecuali purging rutin';
 
+LOCK TABLES `activity_logs` WRITE;
+/*!40000 ALTER TABLE `activity_logs` DISABLE KEYS */;
+
+INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `module`, `subject_id`, `keterangan`, `ip_address`, `user_agent`, `created_at`)
+VALUES
+	(1,1,'update','tahun_ajaran',1,'Memperbarui tahun ajaran 2026/2027.','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-07-23 22:19:29');
+
+/*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table admin_ppdb_profiles
@@ -151,6 +160,15 @@ CREATE TABLE `bendaharas` (
   CONSTRAINT `fk_benda_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Profil bendahara: jenis kewenangan (BOS/Rutin/Komite) dan SK pengangkatan';
 
+LOCK TABLES `bendaharas` WRITE;
+/*!40000 ALTER TABLE `bendaharas` DISABLE KEYS */;
+
+INSERT INTO `bendaharas` (`id`, `user_id`, `guru_id`, `jenis_bendahara`, `no_sk`, `tanggal_sk`, `tmt`, `is_active`, `created_at`, `updated_at`)
+VALUES
+	(1,5,4,'','SK-BENDAHARA-01',NULL,NULL,1,'2026-07-20 21:44:26','2026-07-20 21:44:26');
+
+/*!40000 ALTER TABLE `bendaharas` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table berkas_pendaftars
@@ -219,6 +237,16 @@ CREATE TABLE `cache` (
   KEY `idx_cache_expiration` (`expiration`) COMMENT 'Untuk prune (hapus) cache yang sudah expired'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Cache database driver Laravel. Pertimbangkan Redis untuk produksi';
 
+LOCK TABLES `cache` WRITE;
+/*!40000 ALTER TABLE `cache` DISABLE KEYS */;
+
+INSERT INTO `cache` (`key`, `value`, `expiration`)
+VALUES
+	('laravel-cache-5c785c036466adea360111aa28563bfd556b5fba','i:1;',1784558990),
+	('laravel-cache-5c785c036466adea360111aa28563bfd556b5fba:timer','i:1784558990;',1784558990);
+
+/*!40000 ALTER TABLE `cache` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table cache_locks
@@ -709,6 +737,18 @@ CREATE TABLE `gurus` (
   CONSTRAINT `fk_gurus_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data induk guru/PTK standar Dapodik. Satu baris = satu individu guru/tendik';
 
+LOCK TABLES `gurus` WRITE;
+/*!40000 ALTER TABLE `gurus` DISABLE KEYS */;
+
+INSERT INTO `gurus` (`id`, `user_id`, `nuptk`, `nip`, `nip_lama`, `no_karpeg`, `no_karis_karsu`, `nik`, `no_kk`, `nama`, `gelar_depan`, `gelar_belakang`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`, `golongan_darah`, `agama`, `nama_ibu_kandung`, `alamat_jalan`, `rt`, `rw`, `desa_kelurahan`, `kecamatan`, `kota_kabupaten`, `provinsi`, `kode_pos`, `no_hp`, `email`, `jenis_ptk`, `status_kepegawaian`, `status_aktif`, `tanggal_bergabung`, `tmt_pns`, `tmt_gty`, `foto`, `is_verified`, `verified_at`, `verified_by`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`, `deleted_by`)
+VALUES
+	(1,2,'1111111111111111',NULL,NULL,NULL,NULL,NULL,NULL,'Kepala Sekolah Test',NULL,NULL,'L',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Kepala Sekolah',NULL,1,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL,NULL,NULL,NULL),
+	(2,3,'2222222222222222',NULL,NULL,NULL,NULL,NULL,NULL,'Guru Pengajar Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Guru Kelas',NULL,1,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL,NULL,NULL,NULL),
+	(3,4,'3333333333333333',NULL,NULL,NULL,NULL,NULL,NULL,'Wali Kelas Test',NULL,NULL,'L',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Guru Kelas',NULL,1,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL,NULL,NULL,NULL),
+	(4,5,'4444444444444444',NULL,NULL,NULL,NULL,NULL,NULL,'Bendahara Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Guru Kelas',NULL,1,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL,NULL,NULL,NULL);
+
+/*!40000 ALTER TABLE `gurus` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table jadwals
@@ -888,7 +928,15 @@ VALUES
 	(5,'PTS','PTS','sumatif',20.00,'K13',1,'2026-07-13 10:14:43','2026-07-13 10:14:43'),
 	(6,'PAS/PAT','PAS','sumatif',20.00,'K13',1,'2026-07-13 10:14:43','2026-07-13 10:14:43'),
 	(7,'Sikap (Spiritual)','PSP','sikap',NULL,'Semua',1,'2026-07-13 10:14:43','2026-07-13 10:14:43'),
-	(8,'Sikap (Sosial)','PSS','sikap',NULL,'Semua',1,'2026-07-13 10:14:43','2026-07-13 10:14:43');
+	(8,'Sikap (Sosial)','PSS','sikap',NULL,'Semua',1,'2026-07-13 10:14:43','2026-07-13 10:14:43'),
+	(9,'Nilai Formatif','NF','formatif',40.00,'Merdeka',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(10,'Nilai Sumatif','NS','sumatif',60.00,'Merdeka',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(11,'Pengetahuan (K13)','NPH','formatif',30.00,'K13',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(12,'Keterampilan (K13)','NPK','formatif',30.00,'K13',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(13,'PTS','PTS','sumatif',20.00,'K13',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(14,'PAS/PAT','PAS','sumatif',20.00,'K13',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(15,'Sikap (Spiritual)','PSP','sikap',NULL,'Semua',1,'2026-07-23 14:33:11','2026-07-23 14:33:11'),
+	(16,'Sikap (Sosial)','PSS','sikap',NULL,'Semua',1,'2026-07-23 14:33:11','2026-07-23 14:33:11');
 
 /*!40000 ALTER TABLE `komponen_penilaians` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1115,6 +1163,15 @@ CREATE TABLE `orang_tuas` (
   CONSTRAINT `fk_ortu_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master orang tua/wali. Satu baris per individu. Satu ortu bisa linked ke banyak anak via orang_tua_siswa';
 
+LOCK TABLES `orang_tuas` WRITE;
+/*!40000 ALTER TABLE `orang_tuas` DISABLE KEYS */;
+
+INSERT INTO `orang_tuas` (`id`, `user_id`, `nama`, `nik`, `hubungan`, `status`, `status_hidup`, `tempat_lahir`, `tahun_lahir`, `jenis_kelamin`, `agama`, `kewarganegaraan`, `kebutuhan_khusus`, `pendidikan`, `pekerjaan`, `penghasilan`, `no_hp`, `email`, `alamat`, `created_at`, `updated_at`, `deleted_at`)
+VALUES
+	(1,6,'Orang Tua Test',NULL,'Ayah','Kandung','Masih Hidup',NULL,NULL,NULL,NULL,'WNI',NULL,NULL,NULL,NULL,'081234567890',NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL);
+
+/*!40000 ALTER TABLE `orang_tuas` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table password_reset_tokens
@@ -1219,7 +1276,8 @@ VALUES
 	(7,'kode_registrasi_ortu','','akademik','Kode untuk registrasi akun ortu','2026-07-13 10:14:43',NULL),
 	(8,'kurikulum_aktif','Merdeka','akademik','K13 atau Merdeka','2026-07-13 10:14:43',NULL),
 	(9,'kkm_default','70','akademik','KKM/KKTP default nilai','2026-07-13 10:14:43',NULL),
-	(10,'hari_efektif','[\"Senin\",\"Selasa\",\"Rabu\",\"Kamis\",\"Jumat\",\"Sabtu\"]','akademik','Hari sekolah aktif','2026-07-13 10:17:49',NULL);
+	(10,'hari_efektif','[\"Senin\",\"Selasa\",\"Rabu\",\"Kamis\",\"Jumat\",\"Sabtu\"]','akademik','Hari sekolah aktif','2026-07-13 10:17:49',NULL),
+	(21,'nip_kepala_madrasah','','sekolah','NIP Kepala Madrasah aktif',NULL,NULL);
 
 /*!40000 ALTER TABLE `pengaturans` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1313,6 +1371,15 @@ CREATE TABLE `personal_access_tokens` (
   KEY `idx_pat_expires` (`expires_at`) COMMENT 'Untuk query dan cleanup token expired'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Token API Sanctum untuk autentikasi stateless React/mobile';
 
+LOCK TABLES `personal_access_tokens` WRITE;
+/*!40000 ALTER TABLE `personal_access_tokens` DISABLE KEYS */;
+
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
+VALUES
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-24 19:55:02',NULL,'2026-07-20 21:48:50','2026-07-24 19:55:02');
+
+/*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table plot_guru_mapels
@@ -1531,7 +1598,12 @@ LOCK TABLES `semesters` WRITE;
 
 INSERT INTO `semesters` (`id`, `tahun_ajaran_id`, `nama`, `tgl_mulai`, `tgl_selesai`, `is_active`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,1,'Ganjil',NULL,NULL,1,'2026-07-13 10:14:43','2026-07-13 10:14:43',NULL);
+	(1,1,'Ganjil','2026-07-05','2026-12-31',0,'2026-07-13 10:14:43','2026-07-23 22:16:39',NULL),
+	(4,1,'Genap','2027-01-02','2027-06-30',0,'2026-07-22 21:24:55','2026-07-23 22:16:39',NULL),
+	(5,4,'Ganjil','2026-07-05','2026-12-31',1,'2026-07-22 21:28:31','2026-07-23 22:16:39',NULL),
+	(6,4,'Genap','2027-01-02','2027-06-30',0,'2026-07-22 21:28:31','2026-07-23 22:16:39',NULL),
+	(9,6,'Ganjil','2028-07-12','2028-12-31',0,'2026-07-23 14:36:02','2026-07-23 22:16:39',NULL),
+	(10,6,'Genap','2029-01-02','2029-06-29',0,'2026-07-23 14:36:02','2026-07-23 22:16:39',NULL);
 
 /*!40000 ALTER TABLE `semesters` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1651,6 +1723,15 @@ CREATE TABLE `siswas` (
   CONSTRAINT `fk_siswas_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data induk siswa standar Dapodik. Tabel pusat yang direferensi hampir semua tabel lain';
 
+LOCK TABLES `siswas` WRITE;
+/*!40000 ALTER TABLE `siswas` DISABLE KEYS */;
+
+INSERT INTO `siswas` (`id`, `user_id`, `nisn`, `nis`, `nik`, `no_kk`, `nama_kepala_keluarga`, `kode_anak`, `nama`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`, `agama`, `golongan_darah`, `kewarganegaraan`, `nama_ibu_kandung`, `anak_ke`, `jumlah_saudara`, `status_dalam_keluarga`, `pembiaya_sekolah`, `kebutuhan_khusus`, `riwayat_penyakit`, `imunisasi`, `alamat_jalan`, `rt`, `rw`, `desa_kelurahan`, `kecamatan`, `kota_kabupaten`, `provinsi`, `kode_pos`, `jarak_tempat_tinggal`, `waktu_tempuh`, `moda_transportasi`, `asal_sekolah`, `tanggal_masuk`, `tingkat`, `status`, `foto`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`)
+VALUES
+	(1,NULL,'0987654321','234567890','2345678901567890','1234567890123456','hjggyugughjh','MFZCODXUI0','muhammad sahal anwar hadi','L','bogor','2006-11-25','Islam','A','WNI','hggyyygggjjgjh',1,10,'Kandung','Orang Tua',NULL,NULL,'Lengkap','trftyfghvvawesrdtfyguhlijknhbgvfdsqwertyugvfrertykuhmghfgndgesfc','001','002','kencana','tanah sareal','kota bogor','jawa barat','12345',3.5,10,'motor','Tk nurul huda','2026-07-05',1,'aktif','foto-siswa/YssUBq0D6ESG79iaHrrHKhiKA9w3YnbwAaelbtG3.png','2026-07-21 13:48:57','2026-07-22 14:30:38',NULL,NULL,NULL);
+
+/*!40000 ALTER TABLE `siswas` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table tagihans
@@ -1709,7 +1790,9 @@ LOCK TABLES `tahun_ajarans` WRITE;
 
 INSERT INTO `tahun_ajarans` (`id`, `tahun`, `is_active`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,'2026/2027',1,'2026-07-13 10:14:43','2026-07-13 10:14:43',NULL);
+	(1,'2026/2027',0,'2026-07-13 10:14:43','2026-07-23 22:16:39',NULL),
+	(4,'2027/2028',1,'2026-07-22 21:26:27','2026-07-23 22:16:39',NULL),
+	(6,'2028/2029',0,'2026-07-23 14:36:02','2026-07-23 22:16:39',NULL);
 
 /*!40000 ALTER TABLE `tahun_ajarans` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1737,7 +1820,13 @@ LOCK TABLES `user_roles` WRITE;
 
 INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`)
 VALUES
-	(1,1,2,'2026-07-13 10:14:43');
+	(1,1,2,'2026-07-13 10:14:43'),
+	(2,2,1,'2026-07-20 21:44:26'),
+	(3,3,3,'2026-07-20 21:44:26'),
+	(4,4,4,'2026-07-20 21:44:26'),
+	(5,5,5,'2026-07-20 21:44:26'),
+	(6,6,6,'2026-07-20 21:44:26'),
+	(7,7,7,'2026-07-20 21:44:42');
 
 /*!40000 ALTER TABLE `user_roles` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1775,7 +1864,13 @@ LOCK TABLES `users` WRITE;
 
 INSERT INTO `users` (`id`, `name`, `username`, `email`, `email_verified_at`, `password`, `foto`, `is_active`, `remember_token`, `last_login_at`, `last_login_ip`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,'Operator Admin','operator','operator@minurulhuda3.sch.id',NULL,'$2y$12$Ka0fZdNKB9MTWq0Afutsr.UmNBzJEA231w5LNVK8gbB8MVlRu7Ucu',NULL,1,NULL,NULL,NULL,'2026-07-13 10:14:43','2026-07-13 10:14:43',NULL);
+	(1,'Operator Admin','operator','operator@minurulhuda3.sch.id',NULL,'$2y$12$Ka0fZdNKB9MTWq0Afutsr.UmNBzJEA231w5LNVK8gbB8MVlRu7Ucu',NULL,1,NULL,'2026-07-20 21:48:50',NULL,'2026-07-13 10:14:43','2026-07-20 21:48:50',NULL),
+	(2,'Kepala Sekolah Test','kepsek','kepsek@minurulhuda3.sch.id',NULL,'$2y$12$Ilx/ZIGRjk3eopeHtT7R6uY.KDbxlIAEP42pwIGf6fyn4ESH1msmi',NULL,1,NULL,'2026-07-20 21:48:19',NULL,'2026-07-20 21:44:26','2026-07-20 21:48:19',NULL),
+	(3,'Guru Pengajar Test','guru','guru@minurulhuda3.sch.id',NULL,'$2y$12$BncsGDUitGZP09NJHrpBreU3RUA143ClMgqC20afe4AodYwbDoJKW',NULL,1,NULL,'2026-07-20 21:47:56',NULL,'2026-07-20 21:44:26','2026-07-20 21:47:56',NULL),
+	(4,'Wali Kelas Test','walikelas','walikelas@minurulhuda3.sch.id',NULL,'$2y$12$rUj4Ew3FBzqA/wbO1kJXhOb80gAA6b6BKlJJ2RFSXqvd4ldIW2ZoK',NULL,1,NULL,'2026-07-20 21:48:09',NULL,'2026-07-20 21:44:26','2026-07-20 21:48:09',NULL),
+	(5,'Bendahara Test','bendahara','bendahara@minurulhuda3.sch.id',NULL,'$2y$12$GxYEfgJTZ7hX5LJBvPcrS.2BgX0qxVqKV70jMy8pjymx4eAqLO3Xi',NULL,1,NULL,'2026-07-20 21:47:32',NULL,'2026-07-20 21:44:26','2026-07-20 21:47:32',NULL),
+	(6,'Orang Tua Test','ortu','ortu@minurulhuda3.sch.id',NULL,'$2y$12$Y0SfFgmE2QBkkLok9WkbbOhmPOhgnhOEnfrYgSDeQncl4u3MxIuhS',NULL,1,NULL,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL),
+	(7,'Admin PPDB Test','adminppdb','adminppdb@minurulhuda3.sch.id',NULL,'$2y$12$Lr.CpCLqD/1Zq1om.SzUe.6PHVXx64SwiVcBd.i2cTf7hSuFfPxIi',NULL,1,NULL,'2026-07-20 21:47:46',NULL,'2026-07-20 21:44:42','2026-07-20 21:47:46',NULL);
 
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1806,6 +1901,15 @@ CREATE TABLE `wali_kelas` (
   CONSTRAINT `fk_walikelas_ta` FOREIGN KEY (`tahun_ajaran_id`) REFERENCES `tahun_ajarans` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Penugasan resmi wali kelas per kelas per tahun ajaran. Dilengkapi nomor SK untuk akuntabilitas';
 
+LOCK TABLES `wali_kelas` WRITE;
+/*!40000 ALTER TABLE `wali_kelas` DISABLE KEYS */;
+
+INSERT INTO `wali_kelas` (`id`, `guru_id`, `kelas_id`, `tahun_ajaran_id`, `semester_id`, `no_sk`, `tanggal_sk`, `tmt`, `is_active`, `created_at`, `updated_at`)
+VALUES
+	(1,3,1,1,1,'SK-WALIKELAS-01',NULL,NULL,1,'2026-07-20 21:44:26','2026-07-20 21:44:26');
+
+/*!40000 ALTER TABLE `wali_kelas` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 
