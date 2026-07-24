@@ -66,11 +66,8 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
 
   const emptyForm = {
     id: "",
-    id_tahun_ajaran: "",
     nama_kelas: "",
     tingkat: "1",
-    semester: "1",
-    nuptk_wali: "",
     kurikulum: "Kurikulum Merdeka",
     ruangan: "",
     kapasitas: "30",
@@ -82,24 +79,12 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
     if (open)
       setForm(
         editData
-          ? { ...emptyForm, ...editData, nuptk_wali: editData.nuptk_wali ?? "" }
+          ? { ...emptyForm, ...editData }
           : emptyForm,
       );
   }, [open, editData]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const { data: guruList } = useQuery({
-    queryKey: ["guru-dropdown"],
-    queryFn: () =>
-      api.get("/operator/master-data/guru").then((r) => r.data.data.data),
-  });
-
-  const { data: tahunAjaranList } = useQuery({
-    queryKey: ["tahun-ajaran-dropdown"],
-    queryFn: () =>
-      api.get("/operator/master-data/tahun-ajaran").then((r) => r.data.data),
-  });
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -153,23 +138,6 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
 
         {/* Body */}
         <div className="px-6 py-5 grid grid-cols-2 gap-4 max-h-[68vh] overflow-y-auto">
-          <div className="col-span-2">
-            <Field label="Tahun Ajaran" required>
-              <select
-                value={form.id_tahun_ajaran}
-                onChange={(e) => set("id_tahun_ajaran", e.target.value)}
-                className={SELECT}
-              >
-                <option value="">-- Pilih Tahun Ajaran --</option>
-                {(tahunAjaranList ?? []).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nama} {t.is_active ? "(Aktif)" : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
           <Field label="ID Kelas" required>
             <input
               value={form.id}
@@ -203,46 +171,16 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
             </select>
           </Field>
 
-          <Field label="Semester" required>
+          <Field label="Kurikulum" required>
             <select
-              value={form.semester}
-              onChange={(e) => set("semester", e.target.value)}
+              value={form.kurikulum}
+              onChange={(e) => set("kurikulum", e.target.value)}
               className={SELECT}
             >
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
+              <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
+              <option value="Kurikulum 2013">Kurikulum 2013</option>
             </select>
           </Field>
-
-          <div className="col-span-2">
-            <Field label="Wali Kelas">
-              <select
-                value={form.nuptk_wali}
-                onChange={(e) => set("nuptk_wali", e.target.value)}
-                className={SELECT}
-              >
-                <option value="">-- Pilih Wali Kelas --</option>
-                {(guruList ?? []).map((g) => (
-                  <option key={g.nuptk} value={g.nuptk}>
-                    {g.nama_lengkap}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <div className="col-span-2">
-            <Field label="Kurikulum">
-              <select
-                value={form.kurikulum}
-                onChange={(e) => set("kurikulum", e.target.value)}
-                className={SELECT}
-              >
-                <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
-                <option value="Kurikulum 2013">Kurikulum 2013</option>
-              </select>
-            </Field>
-          </div>
 
           <Field label="Ruangan">
             <input

@@ -56,19 +56,36 @@ class MasterDataKelasController extends Controller
 
     public function store(Request $request)
     {
+        $tahunAjaranAktif = \App\Models\TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = \App\Models\Semester::where('is_active', true)->first();
+
+        if (!$request->tahun_ajaran_id && !$tahunAjaranAktif) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Belum ada Tahun Ajaran aktif. Silakan aktifkan Tahun Ajaran terlebih dahulu.',
+            ], 422);
+        }
+
         $request->validate([
-            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajarans,id',
+            'tahun_ajaran_id' => 'nullable|integer|exists:tahun_ajarans,id',
             'semester_id' => 'nullable|integer|exists:semesters,id',
             'nama_kelas' => 'required|string|max:20',
             'tingkat' => 'required|integer|in:1,2,3,4,5,6',
-            'kurikulum' => 'required|in:K13,Merdeka,Lainnya',
+            'kurikulum' => 'required|string|max:50',
             'wali_kelas_id' => 'nullable|integer|exists:gurus,id',
             'kapasitas' => 'required|integer|min:1|max:60',
             'ruangan' => 'nullable|string|max:50',
         ]);
 
         $kelas = Kelas::create([
-            ...$request->only(['tahun_ajaran_id', 'semester_id', 'nama_kelas', 'tingkat', 'kurikulum', 'wali_kelas_id', 'kapasitas', 'ruangan']),
+            'tahun_ajaran_id' => $request->tahun_ajaran_id ?? $tahunAjaranAktif->id,
+            'semester_id' => $request->semester_id ?? $semesterAktif?->id,
+            'nama_kelas' => $request->nama_kelas,
+            'tingkat' => $request->tingkat,
+            'kurikulum' => $request->kurikulum,
+            'wali_kelas_id' => $request->wali_kelas_id,
+            'kapasitas' => $request->kapasitas,
+            'ruangan' => $request->ruangan,
             'is_active' => 1,
         ]);
 
@@ -80,28 +97,28 @@ class MasterDataKelasController extends Controller
         $kelas = Kelas::findOrFail($id);
 
         $request->validate([
-            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajarans,id',
+            'tahun_ajaran_id' => 'nullable|integer|exists:tahun_ajarans,id',
             'semester_id' => 'nullable|integer|exists:semesters,id',
             'nama_kelas' => 'required|string|max:20',
             'tingkat' => 'required|integer|in:1,2,3,4,5,6',
-            'kurikulum' => 'required|in:K13,Merdeka,Lainnya',
+            'kurikulum' => 'required|string|max:50',
             'wali_kelas_id' => 'nullable|integer|exists:gurus,id',
             'kapasitas' => 'required|integer|min:1|max:60',
             'ruangan' => 'nullable|string|max:50',
             'is_active' => 'boolean',
         ]);
 
-        $kelas->update($request->only([
-            'tahun_ajaran_id',
-            'semester_id',
-            'nama_kelas',
-            'tingkat',
-            'kurikulum',
-            'wali_kelas_id',
-            'kapasitas',
-            'ruangan',
-            'is_active',
-        ]));
+        $kelas->update(array_filter([
+            'tahun_ajaran_id' => $request->tahun_ajaran_id ?? $kelas->tahun_ajaran_id,
+            'semester_id' => $request->semester_id ?? $kelas->semester_id,
+            'nama_kelas' => $request->nama_kelas,
+            'tingkat' => $request->tingkat,
+            'kurikulum' => $request->kurikulum,
+            'wali_kelas_id' => $request->has('wali_kelas_id') ? $request->wali_kelas_id : $kelas->wali_kelas_id,
+            'kapasitas' => $request->kapasitas,
+            'ruangan' => $request->ruangan,
+            'is_active' => $request->has('is_active') ? $request->is_active : $kelas->is_active,
+        ], fn($v) => !is_null($v)));
 
         return response()->json(['success' => true, 'message' => 'Kelas berhasil diperbarui.', 'data' => $kelas->fresh('wali')]);
     }
