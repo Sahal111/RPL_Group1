@@ -122,15 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/orang-tua/{id}', [MasterDataOrtuController::class, 'update']);
             Route::delete('/orang-tua/{id}', [MasterDataOrtuController::class, 'destroy']);
 
-            // Tahun Ajaran — HARUS SEBELUM /kelas/{id}
-            Route::get('/kelas/tahun-ajaran', [MasterDataKelasController::class, 'tahunAjaranDropdown']);
-
             // Kelas
-            // Route::get('/kelas', [MasterDataKelasController::class, 'index']);
-            // Route::post('/kelas', [MasterDataKelasController::class, 'store']);
-            // Route::get('/kelas/{id}', [MasterDataKelasController::class, 'show']);
-            // Route::put('/kelas/{id}', [MasterDataKelasController::class, 'update']);
-            // Route::delete('/kelas/{id}', [MasterDataKelasController::class, 'destroy']);
             Route::get('/kelas', [MasterDataKelasController::class, 'index']);
             Route::post('/kelas', [MasterDataKelasController::class, 'store']);
             Route::get('/kelas/dropdown', [MasterDataKelasController::class, 'dropdown']);

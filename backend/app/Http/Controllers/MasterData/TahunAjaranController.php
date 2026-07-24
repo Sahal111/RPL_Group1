@@ -8,6 +8,10 @@ use App\Models\ActivityLog;
 use App\Models\Kelas;
 use App\Models\RiwayatKelas;
 use App\Models\Semester;
+use App\Models\PlotGuruMapel;
+use App\Models\Absensi;
+use App\Models\KalenderAkademik;
+use App\Models\UserWaliKelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -33,8 +37,8 @@ class TahunAjaranController extends Controller
         $tahunAjaran->semester_aktif = $tahunAjaran->semesters->firstWhere('is_active', true)?->nama ?? null;
 
         // ── Otoritas Tanda Tangan ──
-        $tahunAjaran->kepsek_nama = \App\Models\Pengaturan::where('key', 'kepala_madrasah')->value('value') ?? '';
-        $tahunAjaran->kepsek_nip = \App\Models\Pengaturan::where('key', 'nip_kepala_madrasah')->value('value') ?? '';
+        $kepsekNama = \App\Models\Pengaturan::where('key', 'kepala_madrasah')->value('value') ?? '';
+        $kepsekNip = \App\Models\Pengaturan::where('key', 'nip_kepala_madrasah')->value('value') ?? '';
 
         // ── Hari Libur dari kalender_akademiks ──
         $totalHariLibur = \App\Models\KalenderAkademik::where('tahun_ajaran_id', $id)
@@ -47,13 +51,12 @@ class TahunAjaranController extends Controller
                     : $mulai;
                 return $mulai->diffInDays($selesai) + 1;
             });
-        $tahunAjaran->total_hari_libur = $totalHariLibur;
 
         // ── Status Tutup Buku ──
         $sudahNaikKelas = \App\Models\RiwayatKelas::where('tahun_ajaran_id', $id)
             ->where('jenis_perubahan', 'naik_kelas')
             ->exists();
-        $tahunAjaran->is_tutup_buku = $sudahNaikKelas;
+
         // Ambil semua kelas pada tahun ajaran ini beserta wali kelas dan semester
         $kelasList = Kelas::with(['wali:id,nuptk,nama', 'semester:id,nama'])
             ->where('tahun_ajaran_id', $id)
@@ -106,30 +109,12 @@ class TahunAjaranController extends Controller
         $totalJadwal = \App\Models\JadwalPelajaran::whereIn('semester_id', $semesterIds)
             ->where('is_active', true)->count();
 
-        // ── Hari libur & efektif ──────────────────────────────
-        $totalHariLibur = \App\Models\KalenderAkademik::where('tahun_ajaran_id', $id)
-            ->where('jenis', 'libur')
-            ->get()
-            ->sum(function ($k) {
-                $mulai = \Carbon\Carbon::parse($k->tanggal_mulai);
-                $selesai = $k->tanggal_selesai ? \Carbon\Carbon::parse($k->tanggal_selesai) : $mulai;
-                return $mulai->diffInDays($selesai) + 1;
-            });
-
         $tglMulai = $ganjil?->tgl_mulai;
         $tglSelesai = $genap?->tgl_selesai ?? $ganjil?->tgl_selesai;
         $hariTotal = ($tglMulai && $tglSelesai)
             ? (int) \Carbon\Carbon::parse($tglMulai)->diffInDays(\Carbon\Carbon::parse($tglSelesai))
             : null;
         $hariEfektif = $hariTotal !== null ? max(0, $hariTotal - $totalHariLibur) : null;
-
-        // ── Kepsek ────────────────────────────────────────────
-        $kepsekNama = \App\Models\Pengaturan::where('key', 'kepala_madrasah')->value('value') ?? '';
-        $kepsekNip = \App\Models\Pengaturan::where('key', 'nip_kepala_madrasah')->value('value') ?? '';
-
-        // ── Tutup buku ────────────────────────────────────────
-        $sudahNaikKelas = \App\Models\RiwayatKelas::where('tahun_ajaran_id', $id)
-            ->where('jenis_perubahan', 'naik_kelas')->exists();
 
         // ── Kalender akademik ─────────────────────────────────
         $kalender = \App\Models\KalenderAkademik::where('tahun_ajaran_id', $id)
@@ -204,6 +189,8 @@ class TahunAjaranController extends Controller
             'semester_genap_mulai' => 'nullable|date',
             'semester_genap_selesai' => 'nullable|date',
             'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
+            'tgl_mulai_ta' => 'nullable|date',
+            'tgl_selesai_ta' => 'nullable|date',
         ]);
 
         DB::beginTransaction();
@@ -278,6 +265,8 @@ class TahunAjaranController extends Controller
             'semester_genap_mulai' => 'nullable|date',
             'semester_genap_selesai' => 'nullable|date',
             'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
+            'tgl_mulai_ta' => 'nullable|date',
+            'tgl_selesai_ta' => 'nullable|date',
         ]);
 
         DB::beginTransaction();
@@ -292,8 +281,8 @@ class TahunAjaranController extends Controller
             ]);
 
             if ($request->buat_semester) {
-                // Ambil nilai is_active lama dari DB sebelum di-reset,
-                // agar tidak kehilangan status aktif saat update tanggal saja.
+                // Ambil nilai lama dari DB sebelum di-update,
+                // agar tidak kehilangan tanggal/status aktif saat update salah satu semester saja.
                 $semGanjilLama = Semester::where('tahun_ajaran_id', $tahunAjaran->id)
                     ->where('nama', 'Ganjil')->first();
                 $semGenapLama = Semester::where('tahun_ajaran_id', $tahunAjaran->id)
@@ -301,32 +290,43 @@ class TahunAjaranController extends Controller
 
                 // Kalau semester_aktif eksplisit dikirim dan TA ini aktif,
                 // reset semua semester lain baru set yang dipilih.
-                if ($request->semester_aktif && $request->is_active) {
+                if ($request->has('semester_aktif') && $request->semester_aktif && $request->is_active) {
                     Semester::query()->update(['is_active' => false]);
                 }
 
-                Semester::updateOrCreate(
-                    ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Ganjil'],
-                    [
-                        'tgl_mulai' => $request->semester_ganjil_mulai,
-                        'tgl_selesai' => $request->semester_ganjil_selesai,
-                        // Jika semester_aktif eksplisit → pakai itu; kalau tidak → pertahankan nilai lama
-                        'is_active' => $request->has('semester_aktif') && $request->is_active
-                            ? ($request->semester_aktif === 'Ganjil')
-                            : ($semGanjilLama?->is_active ?? false),
-                    ]
-                );
+                if ($request->has('semester_ganjil_mulai') || $request->has('semester_ganjil_selesai') || !$semGanjilLama) {
+                    Semester::updateOrCreate(
+                        ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Ganjil'],
+                        [
+                            'tgl_mulai' => $request->has('semester_ganjil_mulai')
+                                ? $request->semester_ganjil_mulai
+                                : $semGanjilLama?->tgl_mulai,
+                            'tgl_selesai' => $request->has('semester_ganjil_selesai')
+                                ? $request->semester_ganjil_selesai
+                                : $semGanjilLama?->tgl_selesai,
+                            'is_active' => $request->has('semester_aktif') && $request->is_active
+                                ? ($request->semester_aktif === 'Ganjil')
+                                : ($semGanjilLama?->is_active ?? false),
+                        ]
+                    );
+                }
 
-                Semester::updateOrCreate(
-                    ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Genap'],
-                    [
-                        'tgl_mulai' => $request->semester_genap_mulai,
-                        'tgl_selesai' => $request->semester_genap_selesai,
-                        'is_active' => $request->has('semester_aktif') && $request->is_active
-                            ? ($request->semester_aktif === 'Genap')
-                            : ($semGenapLama?->is_active ?? false),
-                    ]
-                );
+                if ($request->has('semester_genap_mulai') || $request->has('semester_genap_selesai') || !$semGenapLama) {
+                    Semester::updateOrCreate(
+                        ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Genap'],
+                        [
+                            'tgl_mulai' => $request->has('semester_genap_mulai')
+                                ? $request->semester_genap_mulai
+                                : $semGenapLama?->tgl_mulai,
+                            'tgl_selesai' => $request->has('semester_genap_selesai')
+                                ? $request->semester_genap_selesai
+                                : $semGenapLama?->tgl_selesai,
+                            'is_active' => $request->has('semester_aktif') && $request->is_active
+                                ? ($request->semester_aktif === 'Genap')
+                                : ($semGenapLama?->is_active ?? false),
+                        ]
+                    );
+                }
             }
 
             DB::commit();
@@ -414,21 +414,39 @@ class TahunAjaranController extends Controller
     {
         $tahunAjaran = TahunAjaran::findOrFail($id);
 
-        // Cek apakah ada kelas yang pakai tahun ajaran ini
+        // Cek seluruh relasi data akademik yang terikat pada tahun ajaran ini
         $adaKelas = Kelas::where('tahun_ajaran_id', $id)->exists();
+        $adaPlotGuru = PlotGuruMapel::where('tahun_ajaran_id', $id)->exists();
+        $adaRiwayatKelas = RiwayatKelas::where('tahun_ajaran_id', $id)->exists();
+        $adaAbsensi = Absensi::where('tahun_ajaran_id', $id)->exists();
+        $adaKalender = KalenderAkademik::where('tahun_ajaran_id', $id)->exists();
+        $adaWaliKelas = UserWaliKelas::where('tahun_ajaran_id', $id)->exists();
 
-        if ($adaKelas) {
+        if ($adaKelas || $adaPlotGuru || $adaRiwayatKelas || $adaAbsensi || $adaKalender || $adaWaliKelas) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tahun ajaran ini sudah dipakai oleh kelas. Hapus kelas terlebih dahulu.',
+                'message' => 'Tahun ajaran ini tidak dapat dihapus karena sudah memiliki data akademik (kelas, jadwal/plot guru, absensi, kalender, atau penugasan wali kelas).',
             ], 422);
         }
 
-        $tahunAjaran->delete();
+        DB::beginTransaction();
+        try {
+            // Hapus semester pendamping secara bersih agar tidak meninggalkan orphan rows
+            $tahunAjaran->semesters()->delete();
+            $tahunAjaran->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tahun ajaran berhasil dihapus.',
-        ]);
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tahun ajaran berhasil dihapus.',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus tahun ajaran: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

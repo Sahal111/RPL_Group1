@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
 
@@ -90,9 +90,18 @@ function ModalEditSemester({
   queryClient,
 }) {
   const [form, setForm] = useState({
-    tgl_mulai: semester?.tgl_mulai?.slice(0, 10) ?? "",
-    tgl_selesai: semester?.tgl_selesai?.slice(0, 10) ?? "",
+    tgl_mulai: "",
+    tgl_selesai: "",
   });
+
+  useEffect(() => {
+    if (open && semester) {
+      setForm({
+        tgl_mulai: semester.tgl_mulai ? semester.tgl_mulai.slice(0, 10) : "",
+        tgl_selesai: semester.tgl_selesai ? semester.tgl_selesai.slice(0, 10) : "",
+      });
+    }
+  }, [open, semester]);
 
   const namaSem = semester?.nama?.toLowerCase() ?? "ganjil";
 

@@ -92,6 +92,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
         const genap = editData.semesters?.find((s) => s.nama === "Genap");
         const startTA = ganjil?.tgl_mulai || "";
         const endTA = genap?.tgl_selesai || ganjil?.tgl_selesai || "";
+        const activeSem = editData.semesters?.find((s) => s.is_active);
 
         setForm({
           tahun: editData.tahun || "",
@@ -103,7 +104,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
           semester_ganjil_selesai: ganjil?.tgl_selesai || "",
           semester_genap_mulai: genap?.tgl_mulai || "",
           semester_genap_selesai: genap?.tgl_selesai || "",
-          semester_aktif: "Ganjil",
+          semester_aktif: activeSem?.nama || "Ganjil",
         });
       } else {
         setForm({
@@ -179,10 +180,12 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
   };
 
   const mutation = useMutation({
-    mutationFn: (data) =>
-      isEdit
-        ? api.put(`/operator/master-data/tahun-ajaran/${editData.id}`, data)
-        : api.post("/operator/master-data/tahun-ajaran", data),
+    mutationFn: (data) => {
+      const { tgl_mulai_ta, tgl_selesai_ta, ...payload } = data;
+      return isEdit
+        ? api.put(`/operator/master-data/tahun-ajaran/${editData.id}`, payload)
+        : api.post("/operator/master-data/tahun-ajaran", payload);
+    },
     onSuccess: () => {
       toast.success(
         `Tahun ajaran berhasil ${isEdit ? "diperbarui" : "ditambahkan"}.`,
@@ -421,7 +424,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                     setForm((f) => ({
                       ...f,
                       is_active: active,
-                      semester_aktif: active ? "Ganjil" : "",
+                      semester_aktif: active ? (f.semester_aktif || "Ganjil") : "",
                     }));
                   }}
                   className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"

@@ -58,7 +58,7 @@
 - [x] Master Data Orang Tua — CRUD ortu, attach anak; `MasterOrtu.jsx`, `DetailOrtu.jsx`, `DetailDataOrtu.jsx`
 - [x] Master Data Mapel — CRUD mapel, toggle aktif; `MasterMapel.jsx`
 - [x] Master Data Jadwal Pelajaran — CRUD jadwal; `MasterJadwal.jsx`
-- [x] Tahun Ajaran — CRUD, set aktif, detail; `TahunAjaran.jsx`, `DetailTahunAjaran.jsx`
+- [x] Master Data Tahun Ajaran & Semester — CRUD, set aktif, set semester aktif, detail TA & Semester, validasi hapus & DB integrity; `TahunAjaranSemester.jsx`, `DetailTahunAjaran.jsx`, `DetailSemester.jsx`, `TahunAjaranController.php`
 - [x] Naik Kelas — preview & proses naik kelas massal; `NaikKelas.jsx`
 - [x] Pengumuman — CRUD; `PengumumanOperator.jsx`
 - [x] Galeri Foto — upload & hapus; `GaleriOperator.jsx`
@@ -130,6 +130,10 @@
 - `frontend/src/components/layout/Sidebar.jsx`
 - `frontend/src/main.jsx`
 - `frontend/src/App.jsx`
+- `frontend/src/pages/operator/master/masterDataTahunAjaranSemester/TahunAjaranSemester.jsx`
+- `frontend/src/pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaran.jsx`
+- `frontend/src/pages/operator/master/masterDataTahunAjaranSemester/DetailSemester.jsx`
+- `backend/app/Http/Controllers/MasterData/TahunAjaranController.php`
 
 ---
 
