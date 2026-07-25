@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
@@ -10,6 +10,7 @@ const KELOMPOK_OPTIONS = [
   "C - Muatan Lokal",
   "Pengembangan Diri",
   "Ekstrakurikuler",
+  "Lainnya",
 ];
 const TINGKAT_OPTIONS = ["1", "2", "3", "4", "5", "6"];
 const KURIKULUM_OPTIONS = ["Kurikulum 2013", "Kurikulum Merdeka", "Keduanya"];
@@ -21,6 +22,8 @@ const KELOMPOK_BADGE = {
   "Pengembangan Diri": "bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]",
   Ekstrakurikuler:
     "bg-on-primary-container text-success border border-success/20",
+  Lainnya:
+    "bg-surface-container text-text-secondary border border-border-light",
 };
 
 const KELOMPOK_ICON = {
@@ -29,13 +32,13 @@ const KELOMPOK_ICON = {
   "C - Muatan Lokal": "diversity_3",
   "Pengembangan Diri": "self_improvement",
   Ekstrakurikuler: "sports_soccer",
+  Lainnya: "category",
 };
 
 /* ─── Modal Form ─────────────────────────────────────────────── */
 function ModalMapel({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
 
-  // tingkat disimpan sebagai array di form, null/kosong = semua tingkat
   const parseTingkat = (raw) => {
     if (!raw || raw === "Semua") return [];
     return String(raw)
@@ -48,7 +51,7 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
     kode: "",
     nama_mapel: "",
     kelompok: "A - Wajib",
-    tingkat: [], // [] = semua tingkat
+    tingkat: [],
     jam_per_minggu: "2",
     kurikulum: "Keduanya",
   };
@@ -113,7 +116,6 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -133,7 +135,6 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-6 py-5 space-y-4 max-h-[68vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -198,7 +199,6 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
               Tingkat <span className="text-danger">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
-              {/* Tombol "Semua" */}
               <button
                 type="button"
                 onClick={() => set("tingkat", [])}
@@ -252,7 +252,6 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
             </select>
           </div>
 
-          {/* Toggle status (edit only) */}
           {isEdit && (
             <div className="flex items-center justify-between bg-surface-container-low rounded-xl px-4 py-3 border border-border-light">
               <div>
@@ -282,7 +281,6 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-border-light">
           <button
             onClick={onClose}
@@ -310,6 +308,296 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
             )}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Modal Import ───────────────────────────────────────────── */
+function ModalImport({ open, onClose, queryClient }) {
+  const fileRef = useRef(null);
+  const [file, setFile] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [result, setResult] = useState(null); // hasil import
+
+  useEffect(() => {
+    if (open) {
+      setFile(null);
+      setResult(null);
+    }
+  }, [open]);
+
+  const importMutation = useMutation({
+    mutationFn: (formData) =>
+      api.post("/operator/master-data/mapel/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+    onSuccess: (res) => {
+      setResult(res.data);
+      queryClient.invalidateQueries(["master-mapel"]);
+      if (res.data.imported > 0) {
+        toast.success(`${res.data.imported} data berhasil diimpor!`);
+      }
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message ?? "Gagal mengimpor file.");
+    },
+  });
+
+  const handleFile = (f) => {
+    if (!f) return;
+    if (!f.name.match(/\.(csv|txt)$/i)) {
+      toast.error("Hanya file CSV yang diizinkan.");
+      return;
+    }
+    setFile(f);
+    setResult(null);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleFile(e.dataTransfer.files[0]);
+  };
+
+  const handleSubmit = () => {
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    importMutation.mutate(fd);
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      const res = await api.get("/operator/master-data/mapel/template", {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "template_import_mapel.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mengunduh template.");
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#EDE9FE] flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-[#5B21B6]">
+                upload_file
+              </span>
+            </div>
+            <div>
+              <h3 className="text-section-title font-semibold text-on-surface">
+                Import Mata Pelajaran
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Upload file CSV untuk import massal
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-container-low hover:text-on-surface transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {/* Info format */}
+          <div className="bg-[#EDE9FE]/40 border border-[#DDD6FE] rounded-xl p-4">
+            <p className="text-label-md font-semibold text-[#5B21B6] mb-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">
+                info
+              </span>
+              Format CSV yang diperlukan
+            </p>
+            <p className="text-xs text-[#5B21B6]/80 font-mono bg-white/70 rounded-lg px-3 py-2 border border-[#DDD6FE]">
+              kode, nama_mapel, kelompok, tingkat, jam_per_minggu, kurikulum
+            </p>
+            <ul className="text-xs text-text-secondary mt-2 space-y-1 list-disc list-inside">
+              <li>
+                <span className="font-medium">kelompok</span>: A - Wajib / B -
+                Wajib / C - Muatan Lokal / Pengembangan Diri / Ekstrakurikuler
+              </li>
+              <li>
+                <span className="font-medium">tingkat</span>: Semua / angka
+                dipisah koma (1,2,3)
+              </li>
+              <li>
+                <span className="font-medium">kurikulum</span>: Kurikulum 2013 /
+                Kurikulum Merdeka / Keduanya
+              </li>
+            </ul>
+            <button
+              onClick={downloadTemplate}
+              className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#5B21B6] hover:underline"
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                download
+              </span>
+              Unduh template CSV
+            </button>
+          </div>
+
+          {/* Drop zone */}
+          {!result && (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : file
+                    ? "border-success bg-on-primary-container"
+                    : "border-border-light hover:border-primary/50 hover:bg-background-light"
+              }`}
+            >
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,.txt"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files[0])}
+              />
+              {file ? (
+                <>
+                  <span className="material-symbols-outlined text-[36px] text-success mb-2">
+                    check_circle
+                  </span>
+                  <p className="text-body-md font-semibold text-on-surface">
+                    {file.name}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">
+                    {(file.size / 1024).toFixed(1)} KB · Klik untuk ganti file
+                  </p>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[36px] text-text-secondary mb-2">
+                    cloud_upload
+                  </span>
+                  <p className="text-body-md font-semibold text-on-surface">
+                    Drag & drop file CSV di sini
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">
+                    atau klik untuk memilih file
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Hasil import */}
+          {result && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-on-primary-container border border-success/20 rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-success">
+                    {result.imported}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">
+                    Data Diimpor
+                  </p>
+                </div>
+                <div
+                  className={`border rounded-xl p-4 text-center ${result.skipped > 0 ? "bg-[#FEF3C7] border-[#FDE68A]" : "bg-surface-container-low border-border-light"}`}
+                >
+                  <p
+                    className={`text-2xl font-bold ${result.skipped > 0 ? "text-warning" : "text-text-secondary"}`}
+                  >
+                    {result.skipped}
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">
+                    Baris Dilewati
+                  </p>
+                </div>
+              </div>
+
+              {result.errors && result.errors.length > 0 && (
+                <div className="bg-error-container border border-danger/20 rounded-xl p-3 max-h-32 overflow-y-auto">
+                  <p className="text-xs font-semibold text-danger mb-1.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">
+                      warning
+                    </span>
+                    Detail Baris Bermasalah
+                  </p>
+                  {result.errors.map((e, i) => (
+                    <p key={i} className="text-xs text-danger/80 font-mono">
+                      • {e}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setFile(null);
+                  setResult(null);
+                }}
+                className="w-full py-2 border border-border-light rounded-lg text-sm text-text-secondary hover:bg-surface-container-low transition-colors"
+              >
+                Import File Lain
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!result && (
+          <div className="flex gap-3 px-6 py-4 border-t border-border-light">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-border-light rounded-lg text-on-surface font-semibold hover:bg-surface-container-low transition-colors text-body-md"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!file || importMutation.isPending}
+              className="flex-1 py-2.5 bg-[#5B21B6] text-white rounded-lg font-semibold hover:bg-[#4C1D95] transition-colors text-body-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {importMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Mengimpor...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[18px]">
+                    upload
+                  </span>
+                  Proses Import
+                </>
+              )}
+            </button>
+          </div>
+        )}
+        {result && (
+          <div className="px-6 py-4 border-t border-border-light">
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-on-primary-fixed-variant transition-colors text-body-md"
+            >
+              Selesai
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -374,6 +662,8 @@ export default function MasterMapel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterKelompok, setFilterKelompok] = useState("");
   const [filterTingkat, setFilterTingkat] = useState("");
@@ -431,6 +721,34 @@ export default function MasterMapel() {
     },
   });
 
+  /* ── Export CSV ── */
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      const res = await api.get("/operator/master-data/mapel/export", {
+        params: {
+          kelompok: filterKelompok || undefined,
+          tingkat: filterTingkat || undefined,
+          is_active: filterStatus !== "" ? filterStatus : undefined,
+        },
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(
+        new Blob([res.data], { type: "text/csv" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `master_mapel_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Data berhasil diekspor.");
+    } catch {
+      toast.error("Gagal mengekspor data.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const list = data?.data ?? [];
   const meta = data;
   const totalData = meta?.total ?? 0;
@@ -485,12 +803,36 @@ export default function MasterMapel() {
             </span>
             <span className="hidden sm:inline">Refresh</span>
           </button>
-          <button className="bg-surface-container-lowest hover:bg-surface-container-low border border-border-light text-on-surface font-semibold py-2 px-3 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm text-label-md">
+
+          {/* Tombol Import */}
+          <button
+            onClick={() => setImportOpen(true)}
+            className="bg-[#EDE9FE] hover:bg-[#DDD6FE] border border-[#DDD6FE] text-[#5B21B6] font-semibold py-2 px-3 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm text-label-md"
+          >
             <span className="material-symbols-outlined text-[18px]">
-              file_download
+              upload_file
             </span>
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline">Import</span>
           </button>
+
+          {/* Tombol Export */}
+          <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="bg-surface-container-lowest hover:bg-surface-container-low border border-border-light text-on-surface font-semibold py-2 px-3 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm text-label-md disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {exportLoading ? (
+              <div className="w-4 h-4 border-2 border-on-surface border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span className="material-symbols-outlined text-[18px]">
+                file_download
+              </span>
+            )}
+            <span className="hidden sm:inline">
+              {exportLoading ? "Mengekspor..." : "Export CSV"}
+            </span>
+          </button>
+
           <button
             onClick={() => {
               setEditData(null);
@@ -506,7 +848,6 @@ export default function MasterMapel() {
 
       {/* ── Stats Grid ──────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Total */}
         <div className="bg-surface-container-lowest border border-border-light p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
           <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center mb-2">
             <span className="material-symbols-outlined text-[18px] text-text-secondary">
@@ -519,7 +860,6 @@ export default function MasterMapel() {
           </h3>
         </div>
 
-        {/* Aktif */}
         <div className="bg-surface-container-lowest border border-border-light p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
           <div className="w-8 h-8 rounded-full bg-on-primary-container flex items-center justify-center mb-2">
             <span className="material-symbols-outlined text-[18px] text-success">
@@ -542,7 +882,6 @@ export default function MasterMapel() {
           )}
         </div>
 
-        {/* Non-aktif */}
         <div className="bg-surface-container-lowest border border-border-light p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
           <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center mb-2">
             <span className="material-symbols-outlined text-[18px] text-text-secondary">
@@ -555,7 +894,6 @@ export default function MasterMapel() {
           </h3>
         </div>
 
-        {/* Halaman ini */}
         <div className="bg-surface-container-lowest border border-border-light p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
           <div className="w-8 h-8 rounded-full bg-[#DBEAFE] flex items-center justify-center mb-2">
             <span className="material-symbols-outlined text-[18px] text-info">
@@ -574,7 +912,6 @@ export default function MasterMapel() {
         {/* Toolbar */}
         <div className="p-4 border-b border-border-light space-y-3">
           <div className="flex flex-col sm:flex-row justify-between gap-3">
-            {/* Search */}
             <div className="relative w-full sm:max-w-md">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">
                 search
@@ -587,7 +924,6 @@ export default function MasterMapel() {
                 className="w-full pl-10 pr-4 py-2 bg-background-light border border-border-light rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
               />
             </div>
-            {/* Mobile filter toggle */}
             <button
               className="sm:hidden flex items-center justify-center gap-2 border border-border-light rounded-lg py-2 px-4 bg-background-light text-text-secondary text-label-md"
               onClick={() => setMobileFilterOpen((v) => !v)}
@@ -602,11 +938,9 @@ export default function MasterMapel() {
             </button>
           </div>
 
-          {/* Filter chips */}
           <div
             className={`${mobileFilterOpen ? "flex" : "hidden"} sm:flex flex-wrap items-center gap-2`}
           >
-            {/* Kelompok */}
             <div className="relative">
               <select
                 value={filterKelompok}
@@ -625,7 +959,6 @@ export default function MasterMapel() {
               </span>
             </div>
 
-            {/* Tingkat */}
             <div className="relative">
               <select
                 value={filterTingkat}
@@ -644,7 +977,6 @@ export default function MasterMapel() {
               </span>
             </div>
 
-            {/* Status */}
             <div className="relative">
               <select
                 value={filterStatus}
@@ -660,7 +992,6 @@ export default function MasterMapel() {
               </span>
             </div>
 
-            {/* Active filter chips */}
             {filterKelompok && (
               <div className="flex items-center border border-primary/30 bg-primary/5 rounded-lg px-3 py-1.5">
                 <span className="text-label-md text-primary">
@@ -729,21 +1060,32 @@ export default function MasterMapel() {
               <p className="text-label-md text-text-secondary mb-5">
                 {search || hasActiveFilters
                   ? "Coba ubah kata kunci atau filter pencarian"
-                  : "Mulai tambahkan mata pelajaran baru untuk menyusun kurikulum"}
+                  : "Mulai tambahkan mata pelajaran baru atau import dari CSV"}
               </p>
               {!hasActiveFilters && (
-                <button
-                  onClick={() => {
-                    setEditData(null);
-                    setModalOpen(true);
-                  }}
-                  className="bg-primary text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2 hover:bg-on-primary-fixed-variant transition-colors text-label-md"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    add
-                  </span>
-                  Tambah Data Pertama
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setImportOpen(true)}
+                    className="border border-[#DDD6FE] bg-[#EDE9FE] text-[#5B21B6] font-semibold py-2 px-4 rounded-lg flex items-center gap-2 hover:bg-[#DDD6FE] transition-colors text-label-md"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      upload_file
+                    </span>
+                    Import CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditData(null);
+                      setModalOpen(true);
+                    }}
+                    className="bg-primary text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2 hover:bg-on-primary-fixed-variant transition-colors text-label-md"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      add
+                    </span>
+                    Tambah Manual
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -782,14 +1124,12 @@ export default function MasterMapel() {
                     key={m.id}
                     className={`hover:bg-background-light/60 transition-colors group ${!m.is_active ? "opacity-60" : ""}`}
                   >
-                    {/* Kode */}
                     <td className="py-3 px-4">
                       <span className="font-mono font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-lg text-xs tracking-wide border border-primary/15">
                         {m.kode}
                       </span>
                     </td>
 
-                    {/* Nama */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5 min-w-[160px]">
                         <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
@@ -803,7 +1143,6 @@ export default function MasterMapel() {
                       </div>
                     </td>
 
-                    {/* Kelompok */}
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${KELOMPOK_BADGE[m.kelompok] ?? "bg-surface-container text-on-surface-variant border border-border-light"}`}
@@ -812,29 +1151,34 @@ export default function MasterMapel() {
                       </span>
                     </td>
 
-                    {/* Tingkat */}
                     <td className="py-3 px-4">
                       <div className="flex flex-wrap gap-1 justify-center">
                         {(() => {
-                          const tingkats = m.tingkat
-                            ? String(m.tingkat)
-                                .split(",")
-                                .map((t) => t.trim())
-                                .filter(Boolean)
-                            : ["1", "2", "3", "4", "5", "6"];
-                          return tingkats.map((t) => (
-                            <span
-                              key={t}
-                              className="bg-[#EDE9FE] text-[#5B21B6] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#DDD6FE] whitespace-nowrap"
-                            >
-                              Tk.{t}
-                            </span>
-                          ));
+                          // null/kosong = berlaku untuk semua tingkat
+                          const raw = m.tingkat ? String(m.tingkat).trim() : "";
+                          if (!raw || raw.toLowerCase() === "semua") {
+                            return (
+                              <span className="bg-[#DBEAFE] text-[#1D4ED8] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#BFDBFE] whitespace-nowrap">
+                                Semua
+                              </span>
+                            );
+                          }
+                          return raw
+                            .split(",")
+                            .map((t) => t.trim())
+                            .filter(Boolean)
+                            .map((t) => (
+                              <span
+                                key={t}
+                                className="bg-[#EDE9FE] text-[#5B21B6] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#DDD6FE] whitespace-nowrap"
+                              >
+                                Tk.{t}
+                              </span>
+                            ));
                         })()}
                       </div>
                     </td>
 
-                    {/* Jam */}
                     <td className="py-3 px-4 text-center">
                       <span className="font-semibold text-on-surface">
                         {m.jam_per_minggu}
@@ -842,7 +1186,6 @@ export default function MasterMapel() {
                       <span className="text-text-secondary text-xs"> jam</span>
                     </td>
 
-                    {/* Kurikulum */}
                     <td className="py-3 px-4">
                       {m.kurikulum === "Keduanya" ? (
                         <div className="flex flex-wrap gap-1">
@@ -864,7 +1207,6 @@ export default function MasterMapel() {
                       )}
                     </td>
 
-                    {/* Status */}
                     <td className="py-3 px-4 text-center">
                       {m.is_active ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-on-primary-container text-success border border-success/20">
@@ -879,10 +1221,8 @@ export default function MasterMapel() {
                       )}
                     </td>
 
-                    {/* Aksi */}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Toggle aktif */}
                         <button
                           onClick={() => toggleActive.mutate(m.id)}
                           title={m.is_active ? "Non-aktifkan" : "Aktifkan"}
@@ -897,7 +1237,6 @@ export default function MasterMapel() {
                           </span>
                         </button>
 
-                        {/* Edit */}
                         <button
                           onClick={() => {
                             setEditData({ ...m });
@@ -910,7 +1249,6 @@ export default function MasterMapel() {
                           </span>
                         </button>
 
-                        {/* Hapus */}
                         <button
                           onClick={() => setDeleteTarget(m)}
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-error-container hover:text-danger transition-colors"
@@ -1017,6 +1355,11 @@ export default function MasterMapel() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => hapus.mutate(deleteTarget.id)}
         isPending={hapus.isPending}
+      />
+      <ModalImport
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        queryClient={queryClient}
       />
     </div>
   );
