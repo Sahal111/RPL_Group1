@@ -1,4 +1,4 @@
-# RPL_Group1 — SIAKAD (Sistem Informasi Akademik Sekolah)
+# RPL_Group1 — SIAKAD MI Nurul Huda 3
 
 ## 🏗️ Tech Stack
 
@@ -7,20 +7,22 @@
 - **Styling**: TailwindCSS v4
 - **Server State**: TanStack React Query v5
 - **Routing**: React Router DOM v7
-- **HTTP Client**: Axios
-- **Icons**: Lucide React
+- **HTTP Client**: Axios v1.18
+- **Icons**: Lucide React v1.21
 - **Charts**: Recharts v3
-- **Export**: jsPDF + jsPDF-AutoTable, XLSX
-- **Notifikasi**: React Hot Toast
-- **Date**: Day.js
+- **PDF Export**: jsPDF v4 + jsPDF-AutoTable v5
+- **Excel**: SheetJS (xlsx v0.18) — tersedia di frontend
+- **Notifikasi**: React Hot Toast v2
+- **Date**: Day.js v1.11
 - **Linter**: OxLint
 
 ### Backend
 - **Framework**: Laravel 12.x (PHP 8.2+)
-- **Auth**: Laravel Sanctum (token-based)
+- **Auth**: Laravel Sanctum v4 (token-based, `Bearer` via header)
 - **Database**: MySQL 8.x
-- **Entry points**: `backend/routes/api.php`, `backend/routes/web.php`
+- **Entry points**: `backend/routes/api.php`
 - **Dependencies**: `backend/composer.json`
+- **⚠️ TIDAK ADA library eksternal selain yang ada di composer.json saat ini** — jangan tambahkan tanpa konfirmasi user. Khususnya: PhpSpreadsheet **belum diinstall**. Gunakan pure-PHP ZipArchive + SimpleXML untuk baca/tulis .xlsx.
 
 ---
 
@@ -32,9 +34,9 @@
 | `guru` | Guru | Dashboard, input absensi, rekap, jadwal, profil |
 | `ortu` | Orang Tua / Wali | Pantau absensi anak, pengumuman, profil |
 | `kepsek` | Kepala Sekolah | Monitoring, data guru & siswa (read-only), kalender, pengumuman |
-| `wali_kelas` | Wali Kelas | Placeholder dashboard aktif — scope fitur belum final |
-| `bendahara` | Bendahara | Placeholder dashboard aktif — scope fitur belum final |
-| `admin_ppdb` | Admin PPDB | Placeholder dashboard aktif — scope fitur belum final |
+| `wali_kelas` | Wali Kelas | Placeholder dashboard — scope fitur belum final |
+| `bendahara` | Bendahara | Placeholder dashboard — scope fitur belum final |
+| `admin_ppdb` | Admin PPDB | Placeholder dashboard — scope fitur belum final |
 
 > Role disimpan di tabel `roles` (kolom: `id`, `slug`, `nama`, `deskripsi`, `is_active`).
 > Relasi user ↔ role lewat pivot `user_roles`. Role check pakai slug langsung — tidak ada mapping ID hardcode di middleware.
@@ -50,18 +52,19 @@
 
 ### Operator
 - [x] Autentikasi — login, logout, guard token via Sanctum; `AuthContext.jsx`, `axios.js`, `ProtectedRoute.jsx`
+- [x] Dashboard Operator; `DashboardOperator.jsx`
 - [x] Manajemen Akun — CRUD user, toggle aktif, reset password, hapus; `ManajemenAkun.jsx`
 - [x] Approval Ortu — list pending, approve/reject; `ApprovalOrtu.jsx`
-- [x] Master Data Guru — CRUD guru, upload foto, lihat detail & akun terhubung; `MasterGuru.jsx`, `DetailGuru.jsx`
-- [x] Master Data Siswa — CRUD siswa, upload foto, assign kelas, regenerate kode anak; `MasterSiswa.jsx`, `DetailSiswa.jsx`
+- [x] Master Data Guru — CRUD guru, upload foto, lihat detail & akun terhubung; `MasterGuru.jsx`, `DetailGuru.jsx`, `TambahEditGuru.jsx`
+- [x] Master Data Siswa — CRUD siswa, upload foto, assign kelas, mutasi, regenerate kode anak; `MasterSiswa.jsx`, `DetailSiswa.jsx`, `TambahEditSiswa.jsx`, `MutasiSiswa.jsx`
 - [x] Master Data Kelas — CRUD kelas, filter tahun ajaran & semester, detail kelas dinamis dari API, riwayat akademik per tahun ajaran, riwayat wali kelas; `MasterKelas.jsx`, `DetailKelas.jsx`, `DetailKelasPeriodeAkademik.jsx`
-- [x] Master Data Orang Tua — CRUD ortu, attach anak; `MasterOrtu.jsx`, `DetailOrtu.jsx`, `DetailDataOrtu.jsx`
-- [x] Master Data Mapel — CRUD mapel, toggle aktif; `MasterMapel.jsx`
-- [x] Master Data Jadwal Pelajaran — CRUD jadwal; `MasterJadwal.jsx`
+- [x] Master Data Orang Tua — CRUD ortu, attach anak, detail keluarga; `MasterOrtu.jsx`, `DetailOrtu.jsx`, `DetailDataOrtu.jsx`, `TambahEditOrtu.jsx`
+- [x] Master Data Mapel — CRUD mapel, toggle aktif, **import/export/template Excel (.xlsx) via pure-PHP ZipArchive** (tanpa PhpSpreadsheet); `MasterMapel.jsx`, `MasterDataMapelController.php`
+- [x] Master Data Jadwal Pelajaran — CRUD jadwal; `MasterJadwal.jsx`, `JadwalPelajaranController.php`
 - [x] Master Data Tahun Ajaran & Semester — CRUD, set aktif, set semester aktif, detail TA & Semester, validasi hapus & DB integrity; `TahunAjaranSemester.jsx`, `DetailTahunAjaran.jsx`, `DetailSemester.jsx`, `TahunAjaranController.php`
-- [x] Naik Kelas — preview & proses naik kelas massal; `NaikKelas.jsx`
-- [x] Pengumuman — CRUD; `PengumumanOperator.jsx`
-- [x] Galeri Foto — upload & hapus; `GaleriOperator.jsx`
+- [x] Naik Kelas — preview & proses naik kelas massal; `NaikKelas.jsx`, `NaikKelasController.php`
+- [x] Pengumuman — CRUD; `PengumumanOperator.jsx`, `PengumumanController.php`
+- [x] Galeri Foto — upload & hapus; `GaleriOperator.jsx`, `GaleriController.php`
 
 ### Guru
 - [x] Dashboard Guru; `DashboardGuru.jsx`
@@ -79,7 +82,7 @@
 - [x] Data Guru (read-only); `DataGuruKepsek.jsx`, `DetailGuruKepsek.jsx`
 - [x] Data Siswa (read-only); `DataSiswaKepsek.jsx`, `DetailSiswaKepsek.jsx`
 - [x] Pengumuman Kepsek; `PengumumanKepsek.jsx`
-- [x] Kalender Akademik; `KalenderAkademik.jsx`
+- [x] Kalender Akademik — CRUD event; `KalenderAkademik.jsx`, `KalenderAkademikController.php`
 - [x] Profil Kepsek; `ProfilKepsek.jsx`
 
 ### Ortu
@@ -113,6 +116,10 @@
 - [x] Penambahan redirect ke semua role baru (`wali_kelas`, `bendahara`, `admin_ppdb`) pada `redirectMap`; `LoginPage.jsx`
 - [x] Pendaftaran rute baru untuk semua role di `App.jsx`
 
+### Bug Fixes yang Sudah Diselesaikan
+- [x] **Fix route mapel** — `export`, `import`, `template` tidak terdaftar di `api.php` sehingga jatuh ke wildcard `{id}` → 404; diperbaiki dengan menambahkan 3 route statis sebelum `GET /mapel/{id}`; `api.php`
+- [x] **Fix import/export/template mapel dari CSV → Excel** — controller diganti menggunakan pure-PHP ZipArchive + SimpleXML untuk generate `.xlsx` (tanpa PhpSpreadsheet); frontend diupdate untuk accept `.xlsx`/`.xls`; `MasterDataMapelController.php`, `MasterMapel.jsx`
+
 ### Testing
 - [x] `TestingUserSeeder.php` — Seed akun uji coba semua role:
   - `operator` / `operator123`
@@ -123,7 +130,11 @@
   - `ortu` / `ortu123`
   - `adminppdb` / `adminppdb123`
 
-### Komponen & File Stabil — jangan diubah kecuali ada bug eksplisit:
+---
+
+## 🔒 Komponen & File Stabil — JANGAN DIUBAH kecuali ada bug eksplisit
+
+### Frontend
 - `frontend/src/contexts/AuthContext.jsx`
 - `frontend/src/lib/axios.js`
 - `frontend/src/routes/ProtectedRoute.jsx`
@@ -133,6 +144,8 @@
 - `frontend/src/pages/operator/master/masterDataTahunAjaranSemester/TahunAjaranSemester.jsx`
 - `frontend/src/pages/operator/master/masterDataTahunAjaranSemester/DetailTahunAjaran.jsx`
 - `frontend/src/pages/operator/master/masterDataTahunAjaranSemester/DetailSemester.jsx`
+
+### Backend
 - `backend/app/Http/Controllers/MasterData/TahunAjaranController.php`
 
 ---
@@ -154,35 +167,162 @@
 
 ---
 
-## 📁 Struktur Project
+## 📁 Struktur Project Lengkap
 
 ```
 RPL_Group1/
 ├── frontend/
 │   └── src/
-│       ├── contexts/AuthContext.jsx
-│       ├── lib/axios.js
-│       ├── routes/ProtectedRoute.jsx
-│       ├── components/layout/Sidebar.jsx
-│       ├── hooks/useSelectedAnak.js
+│       ├── contexts/
+│       │   └── AuthContext.jsx
+│       ├── lib/
+│       │   └── axios.js              ← baseURL: VITE_API_URL ?? http://127.0.0.1:8001/api
+│       ├── routes/
+│       │   └── ProtectedRoute.jsx
+│       ├── hooks/
+│       │   └── useSelectedAnak.js
+│       ├── components/layout/
+│       │   ├── Sidebar.jsx
+│       │   ├── OperatorSidebar.jsx
+│       │   ├── OperatorTopBar.jsx
+│       │   └── OperatorFooter.jsx
 │       ├── pages/
 │       │   ├── auth/
+│       │   │   ├── LoginPage.jsx
+│       │   │   └── RegisterOrtuPage.jsx
 │       │   ├── public/
-│       │   ├── operator/master/
+│       │   │   ├── LandingPage.jsx
+│       │   │   ├── GalleryPage.jsx
+│       │   │   ├── AboutPage.jsx
+│       │   │   ├── ContactPage.jsx
+│       │   │   ├── PublicNavbar.jsx
+│       │   │   └── PublicFooter.jsx
+│       │   ├── operator/
+│       │   │   ├── OperatorLayout.jsx
+│       │   │   ├── DashboardOperator.jsx
+│       │   │   ├── ManajemenAkun.jsx
+│       │   │   ├── ApprovalOrtu.jsx
+│       │   │   └── master/
+│       │   │       ├── MasterJadwal.jsx
+│       │   │       ├── NaikKelas.jsx
+│       │   │       ├── PengumumanOperator.jsx
+│       │   │       ├── GaleriOperator.jsx
+│       │   │       ├── masterDataGuru/
+│       │   │       │   ├── MasterGuru.jsx
+│       │   │       │   ├── DetailGuru.jsx
+│       │   │       │   └── TambahEditGuru.jsx
+│       │   │       ├── masterDataSiswa/
+│       │   │       │   ├── MasterSiswa.jsx
+│       │   │       │   ├── DetailSiswa.jsx
+│       │   │       │   ├── TambahEditSiswa.jsx
+│       │   │       │   └── MutasiSiswa.jsx
+│       │   │       ├── masterDataKelas/
+│       │   │       │   ├── MasterKelas.jsx
+│       │   │       │   ├── DetailKelas.jsx
+│       │   │       │   └── DetailKelasPeriodeAkademik.jsx
+│       │   │       ├── masterDataOrtu/
+│       │   │       │   ├── MasterOrtu.jsx
+│       │   │       │   ├── DetailOrtu.jsx
+│       │   │       │   ├── DetailDataOrtu.jsx
+│       │   │       │   └── TambahEditOrtu.jsx
+│       │   │       ├── masterDataMapel/
+│       │   │       │   ├── MasterMapel.jsx       ← import/export Excel (.xlsx)
+│       │   │       │   └── TambahEditMapel.jsx
+│       │   │       └── masterDataTahunAjaranSemester/
+│       │   │           ├── TahunAjaranSemester.jsx  ← STABIL
+│       │   │           ├── DetailTahunAjaran.jsx    ← STABIL
+│       │   │           └── DetailSemester.jsx       ← STABIL
 │       │   ├── guru/
+│       │   │   ├── GuruLayout.jsx
+│       │   │   ├── DashboardGuru.jsx
+│       │   │   ├── DataSiswaGuru.jsx
+│       │   │   ├── DetailSiswaGuru.jsx
+│       │   │   ├── InputAbsensi.jsx
+│       │   │   ├── RekapAbsensiGuru.jsx
+│       │   │   ├── RiwayatAbsensiSiswaGuru.jsx
+│       │   │   ├── JadwalMengajarGuru.jsx
+│       │   │   ├── PengumumanGuru.jsx
+│       │   │   └── ProfilGuru.jsx
 │       │   ├── kepsek/
-│       │   └── ortu/
-│       └── App.jsx
+│       │   │   ├── KepsekLayout.jsx
+│       │   │   ├── DashboardKepsek.jsx
+│       │   │   ├── MonitoringAbsensi.jsx
+│       │   │   ├── DataGuruKepsek.jsx
+│       │   │   ├── DetailGuruKepsek.jsx
+│       │   │   ├── DataSiswaKepsek.jsx
+│       │   │   ├── DetailSiswaKepsek.jsx
+│       │   │   ├── PengumumanKepsek.jsx
+│       │   │   ├── KalenderAkademik.jsx
+│       │   │   └── ProfilKepsek.jsx
+│       │   ├── ortu/
+│       │   │   ├── OrtuLayout.jsx
+│       │   │   ├── AbsensiAnak.jsx
+│       │   │   ├── RiwayatAbsensiAnak.jsx
+│       │   │   ├── DataAnak.jsx
+│       │   │   ├── TambahAnak.jsx
+│       │   │   ├── PengumumanOrtu.jsx
+│       │   │   └── ProfilOrtu.jsx
+│       │   ├── walikelas/
+│       │   │   ├── WaliKelasLayout.jsx
+│       │   │   └── DashboardWaliKelas.jsx      ← placeholder
+│       │   ├── bendahara/
+│       │   │   ├── BendaharaLayout.jsx
+│       │   │   └── DashboardBendahara.jsx      ← placeholder
+│       │   └── adminppdb/
+│       │       ├── AdminPpdbLayout.jsx
+│       │       └── DashboardAdminPpdb.jsx      ← placeholder
+│       ├── App.jsx
+│       └── main.jsx
 │
 └── backend/
     ├── app/
-    │   ├── Http/Controllers/   # Auth/, Operator/, MasterData/, Guru/, Kepsek/, Ortu/, Absensi/
-    │   ├── Http/Middleware/    # RoleMiddleware.php
+    │   ├── Http/
+    │   │   ├── Controllers/
+    │   │   │   ├── Auth/AuthController.php
+    │   │   │   ├── Operator/OperatorController.php
+    │   │   │   ├── Guru/GuruController.php
+    │   │   │   ├── Kepsek/KepsekController.php
+    │   │   │   ├── Kepsek/KalenderAkademikController.php
+    │   │   │   ├── Ortu/OrtuController.php
+    │   │   │   ├── Absensi/AbsensiController.php
+    │   │   │   ├── GaleriController.php
+    │   │   │   ├── PengumumanController.php
+    │   │   │   └── MasterData/
+    │   │   │       ├── MasterDataGuruController.php
+    │   │   │       ├── MasterDataSiswaController.php
+    │   │   │       ├── MasterDataKelasController.php
+    │   │   │       ├── MasterDataOrtuController.php
+    │   │   │       ├── MasterDataMapelController.php  ← xlsx pure-PHP
+    │   │   │       ├── JadwalPelajaranController.php
+    │   │   │       ├── TahunAjaranController.php      ← STABIL
+    │   │   │       └── NaikKelasController.php
+    │   │   └── Middleware/RoleMiddleware.php
     │   └── Models/
+    │       ├── User.php
+    │       ├── Role.php
+    │       ├── Guru.php
+    │       ├── Siswa.php
+    │       ├── OrangTua.php
+    │       ├── Kelas.php
+    │       ├── RiwayatKelas.php      ← alias: SiswaKelas.php (backward-compat)
+    │       ├── TahunAjaran.php
+    │       ├── Semester.php
+    │       ├── MataPelajaran.php     ← $table = 'mapels'
+    │       ├── JadwalPelajaran.php   ← $table = 'jadwals'
+    │       ├── PlotGuruMapel.php
+    │       ├── Absensi.php
+    │       ├── Pengumuman.php
+    │       ├── Galeri.php
+    │       ├── KalenderAkademik.php
+    │       ├── Pengaturan.php
+    │       ├── OperatorProfile.php
+    │       ├── UserBendahara.php
+    │       ├── UserWaliKelas.php
+    │       └── ActivityLog.php
     ├── routes/api.php
     └── database/
         ├── migrations/
-        └── db_minurulhuda3.sql
+        └── db_minurulhuda3.sql       ← GROUND TRUTH schema
 ```
 
 ---
@@ -194,13 +334,13 @@ RPL_Group1/
 
 ### Tabel Utama
 
-| Tabel | Primary Key | Catatan |
-|-------|-------------|---------|
+| Tabel | Primary Key | Catatan Penting |
+|-------|-------------|-----------------|
 | `users` | `id` (bigint) | Akun login semua role |
 | `roles` | `id` (tinyint) | Kolom: `slug`, `nama`, `is_active` |
 | `user_roles` | pivot | Kolom: `user_id`, `role_id` |
-| `gurus` | `id` (bigint) | `nuptk` adalah kolom unik, **bukan** PK |
-| `siswas` | `id` (bigint) | `nisn` adalah kolom unik, **bukan** PK |
+| `gurus` | `id` (bigint) | `nuptk` = unique, **bukan PK** |
+| `siswas` | `id` (bigint) | `nisn` = unique, **bukan PK** |
 | `orang_tuas` | `id` (bigint) | Data orang tua / wali |
 | `orang_tua_siswa` | pivot | Kolom: `orang_tua_id`, `siswa_id` |
 | `kelas` | `id` (bigint) | FK wali: `wali_kelas_id` → `gurus.id` |
@@ -221,10 +361,10 @@ RPL_Group1/
 | `activity_logs` | `id` (bigint) | Log aktivitas |
 | `personal_access_tokens` | `id` | Sanctum tokens |
 
-### ⚠️ Perbedaan Kritis vs Dokumentasi Lama
+### ⚠️ Perbedaan Kritis vs Asumsi Umum
 
-| Yang SALAH (dokumentasi lama) | Yang BENAR (aktual DB) |
-|-------------------------------|------------------------|
+| Yang SALAH (asumsi lama / umum) | Yang BENAR (aktual DB) |
+|----------------------------------|------------------------|
 | PK `siswas` = `nisn` | PK `siswas` = `id`, `nisn` hanya unique |
 | PK `gurus` = `nuptk` | PK `gurus` = `id`, `nuptk` hanya unique |
 | Tabel `siswa_kelas` | Tabel `riwayat_kelas` |
@@ -244,27 +384,95 @@ RPL_Group1/
 
 ---
 
+## 🌐 API Routes Terdaftar (`backend/routes/api.php`)
+
+### Public (tanpa auth)
+| Method | Path | Controller |
+|--------|------|------------|
+| POST | `/api/auth/login` | `AuthController@login` |
+| POST | `/api/auth/register-ortu` | `AuthController@registerOrtu` |
+| GET | `/api/galeri` | `GaleriController@index` |
+
+### Auth (Sanctum)
+| Method | Path | Controller |
+|--------|------|------------|
+| POST | `/api/auth/logout` | `AuthController@logout` |
+| GET | `/api/auth/me` | `AuthController@me` |
+| GET | `/api/pengumuman` | `PengumumanController@index` |
+
+### Absensi (role: guru, operator)
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/absensi/kelas/{id_kelas}` | |
+| POST | `/api/absensi` | |
+| PUT | `/api/absensi/{id}` | |
+| GET | `/api/absensi/rekap/{id_kelas}` | role: guru, kepsek, operator |
+| GET | `/api/absensi/siswa/{nisn}` | role: guru, operator, ortu |
+
+### Operator (`/api/operator/*`, role: operator)
+| Method | Path | Keterangan |
+|--------|------|------------|
+| GET | `/operator/pengaturan/kode-registrasi` | |
+| POST | `/operator/pengaturan/kode-registrasi` | |
+| GET | `/operator/users` | |
+| POST | `/operator/operator\|guru\|kepsek\|ortu\|bendahara\|walikelas` | Create user |
+| PATCH | `/operator/users/{id}/toggle-active` | |
+| PATCH | `/operator/users/{id}/approve-ortu` | |
+| PATCH | `/operator/users/{id}/reset-password` | |
+| DELETE | `/operator/users/{id}` | |
+| GET/PUT | `/operator/ortu/{id}` | |
+| GET | `/operator/ortu/pending` | |
+| POST | `/operator/ortu/{id}/anak` | |
+| **master-data/guru** | CRUD + dropdown + foto + akun | |
+| **master-data/siswa** | CRUD + foto + assign-kelas + mutasi | |
+| **master-data/orang-tua** | CRUD | |
+| **master-data/kelas** | CRUD + dropdown + riwayat | |
+| **master-data/tahun-ajaran** | CRUD + setAktif + setSemesterAktif | |
+| **master-data/naik-kelas** | preview + proses | |
+| GET | `master-data/mapel/dropdown` | ⚠️ Harus SEBELUM `{id}` |
+| GET | `master-data/mapel/export` | ⚠️ Harus SEBELUM `{id}` |
+| GET | `master-data/mapel/template` | ⚠️ Harus SEBELUM `{id}` |
+| POST | `master-data/mapel/import` | ⚠️ Harus SEBELUM `{id}` |
+| GET/POST | `master-data/mapel` | CRUD mapel |
+| GET/PUT/PATCH/DELETE | `master-data/mapel/{id}` | |
+| **master-data/jadwal-pelajaran** | CRUD | |
+| POST/PUT/DELETE | `/operator/pengumuman` | |
+| POST/DELETE | `/operator/galeri` | |
+
+### Guru (`/api/guru/*`, role: guru)
+`dashboard`, `siswa`, `siswa/{nisn}`, `kelas`, `kelas/{id_kelas}`, `kelas/{id}/riwayat`, `kelas/{id}/rekap`, `kelas/{id}/jadwal-hari-ini`, `jadwal`, `profil`, `profil/update`
+
+### Kepsek (`/api/kepsek/*`, role: kepsek)
+`dashboard`, `rekap`, `siswa-alpa`, `guru`, `guru/{nuptk}`, `siswa`, `siswa/{nisn}`, `kelas-filter`, `pengumuman` (CRUD), `kalender` (CRUD), `profil`, `profil/update`
+
+### Ortu (`/api/ortu/*`, role: ortu)
+`dashboard`, `profil-anak`, `absensi`, `pengumuman`, `daftar-anak`, `anak` (CRUD), `profil`, `profil` (update)
+
+---
+
 ## 🔧 Konvensi Kode
 
 ### Frontend
 - Setiap role punya **Layout sendiri** (`OperatorLayout.jsx`, `GuruLayout.jsx`, dst.)
 - Auth state via `useAuth()` dari `AuthContext`
-- `api` dari `lib/axios.js` — sudah auto-attach Bearer token
+- `api` dari `lib/axios.js` — sudah auto-attach Bearer token dari `localStorage.getItem("token")`
 - `BASE_URL` foto: `import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001"`
-- Styling hanya TailwindCSS
-- API call langsung di komponen, tidak ada folder `api/` terpisah
+- Styling hanya TailwindCSS v4
+- API call langsung di komponen via React Query — tidak ada folder `api/` terpisah
+- State management: React Query untuk server state, `useState` untuk UI state lokal
 
 ### Backend (Laravel)
 - Semua route di `backend/routes/api.php` prefix `/api`
 - Protected routes: `middleware('auth:sanctum')`
-- Role guard: `middleware('role:operator')` via `RoleMiddleware` — cek lewat slug di `user_roles`, tidak ada mapping ID hardcode
+- Role guard: `middleware('role:operator')` via `RoleMiddleware` — cek lewat slug di `user_roles`
+- **⚠️ Route statis WAJIB didaftar SEBELUM wildcard `{id}`** (contoh: `/mapel/export` harus sebelum `/mapel/{id}`)
 - Model `Siswa` → `$table = 'siswas'`, PK = `id`, `nisn` unique
 - Model `Guru` → `$table = 'gurus'`, PK = `id`, `nuptk` unique
 - Model `RiwayatKelas` → `$table = 'riwayat_kelas'`, punya `scopeAktif()` untuk filter siswa aktif
-- Model `SiswaKelas` → alias backward-compatible untuk `RiwayatKelas`, gunakan `RiwayatKelas` untuk kode baru
+- Model `SiswaKelas` → alias backward-compatible untuk `RiwayatKelas`; gunakan `RiwayatKelas` untuk kode baru
 - Model `JadwalPelajaran` → `$table = 'jadwals'`
 - Model `MataPelajaran` → `$table = 'mapels'`
-- Endpoint `GET /kelas/{id}/riwayat` → `riwayatAkademik()` di `MasterDataKelasController` — return riwayat akademik per tahun ajaran, riwayat wali, dan stats aggregate
+- **Excel**: gunakan `ZipArchive` + `SimpleXML` (built-in PHP) — PhpSpreadsheet belum diinstall
 
 ---
 
@@ -283,7 +491,6 @@ php artisan migrate && php artisan serve    # port 8000/8001
 npm run dev
 ```
 
-
 ---
 
 ## ⚠️ ATURAN AI — WAJIB DIIKUTI
@@ -299,32 +506,31 @@ npm run dev
 6. **Jangan ubah** `App.jsx`, `AuthContext.jsx`, `axios.js`, atau `ProtectedRoute.jsx` tanpa konfirmasi eksplisit.
 7. **Jangan install** dependency baru tanpa konfirmasi user.
 8. **Kalau ragu apakah boleh ubah sesuatu — tanya dulu, jangan asumsi boleh.**
+9. **⚠️ Route statis dulu, baru wildcard** — saat tambah route baru di Laravel, pastikan route seperti `/mapel/export` didaftar SEBELUM `/mapel/{id}` agar tidak tertimpa.
 
 ### Soal Status Fitur
-9. **Fitur HANYA boleh dipindahkan ke COMPLETED kalau user sudah bilang secara eksplisit**: "done", "selesai", "udah beres", "fix", atau kata setara lainnya.
-10. **Selama user belum bilang done = fitur masih IN PROGRESS** — meskipun kode sudah ditulis, meskipun kelihatan sudah berjalan.
-11. **Jangan auto-complete** — jangan anggap fitur selesai hanya karena AI sudah selesai menulis kodenya.
-12. **Jangan pindahkan** fitur dari IN PROGRESS ke COMPLETED atas inisiatif sendiri.
+10. **Fitur HANYA boleh dipindahkan ke COMPLETED kalau user sudah bilang secara eksplisit**: "done", "selesai", "udah beres", "fix", atau kata setara lainnya.
+11. **Selama user belum bilang done = fitur masih IN PROGRESS** — meskipun kode sudah ditulis, meskipun kelihatan sudah berjalan.
+12. **Jangan auto-complete** — jangan anggap fitur selesai hanya karena AI sudah selesai menulis kodenya.
+13. **Jangan pindahkan** fitur dari IN PROGRESS ke COMPLETED atas inisiatif sendiri.
 
 ### Setelah Selesai (hanya jika user bilang done)
-13. Centang `[x]` di IN PROGRESS, lalu pindahkan ke section COMPLETED role yang sesuai.
-14. Kosongkan IN PROGRESS (isi kembali jadi `- [ ] *(kosong)*`).
+14. Centang `[x]` di IN PROGRESS, lalu pindahkan ke section COMPLETED role yang sesuai.
+15. Kosongkan IN PROGRESS (isi kembali jadi `- [ ] *(kosong)*`).
 
 ### 🧠 Aturan Eksekusi & Kualitas Kode (Power Rules)
-15. **Search Before Write:** Periksa model, kolom database, atau komponen yang sudah ada sebelum menulis kode baru. Dilarang menebak nama variabel/kolom/fungsi!
-16. **Plan Before Code:** Untuk fitur baru/kompleks, berikan rancangan alur terlebih dahulu dan tunggu persetujuan user sebelum generate kode.
-17. **Re-use Over Re-create:** Cek komponen atau helper yang sudah ada sebelum membuat baru. Hindari duplikasi kode.
-18. **Mandatory Auth & Role Check:** Setiap endpoint Laravel baru WAJIB dilengkapi middleware role yang sesuai.
-19. **Root Cause Analysis:** Saat fix bug, jelaskan AKAR MASALAH-nya terlebih dahulu sebelum memberikan solusi.
-20. **Targeted Output:** Saat mengedit file panjang, berikan HANYA bagian kode yang diubah (gunakan komentar `// ... existing code ...`). Jangan cetak ulang seluruh file.
-21. **No Over-Engineering:** Fokus 100% pada requirement. Jangan tambahkan fitur ekstra, styling berlebihan, atau refactor yang tidak diminta.
+16. **Search Before Write:** Periksa model, kolom database, atau komponen yang sudah ada sebelum menulis kode baru. Dilarang menebak nama variabel/kolom/fungsi!
+17. **Plan Before Code:** Untuk fitur baru/kompleks, berikan rancangan alur terlebih dahulu dan tunggu persetujuan user sebelum generate kode.
+18. **Re-use Over Re-create:** Cek komponen atau helper yang sudah ada sebelum membuat baru. Hindari duplikasi kode.
+19. **Mandatory Auth & Role Check:** Setiap endpoint Laravel baru WAJIB dilengkapi middleware role yang sesuai.
+20. **Root Cause Analysis:** Saat fix bug, jelaskan AKAR MASALAH-nya terlebih dahulu sebelum memberikan solusi.
+21. **Targeted Output:** Saat mengedit file panjang, berikan HANYA bagian kode yang diubah (gunakan komentar `// ... existing code ...`). Jangan cetak ulang seluruh file.
+22. **No Over-Engineering:** Fokus 100% pada requirement. Jangan tambahkan fitur ekstra, styling berlebihan, atau refactor yang tidak diminta.
 
 ### 🛡️ Aturan Keamanan Database & Migrasi
-22. **DILARANG KERAS `migrate:fresh` / `migrate:reset`** tanpa izin eksplisit. Data di database adalah SUCI.
-23. **Dilarang Edit File Migrasi Lama:** Perlu ubah skema? **Buat file migrasi baru** (contoh: `add_kolom_to_tabel`).
-24. **Cek Skema Sebelum Query:** Sebelum menulis Eloquent/SQL, periksa nama tabel dan kolom yang benar-benar ada. Jangan berasumsi!
-25. **Jaga Integritas Relasi:** Saat membuat tabel baru atau fitur hapus, pertimbangkan Foreign Key constraint dan Soft Deletes.
-26. **Aman Saat Seeding & Import:** Gunakan `updateOrCreate()` atau `firstOrCreate()`, hindari `create()` biasa yang bisa trigger duplicate error.
-27. **Konsistensi Penamaan:** snake_case plural untuk tabel (`tahun_ajaran`, `siswa_kelas`), snake_case untuk foreign key (`siswa_id`, `nuptk_wali`).
-
-
+23. **DILARANG KERAS `migrate:fresh` / `migrate:reset`** tanpa izin eksplisit. Data di database adalah SUCI.
+24. **Dilarang Edit File Migrasi Lama:** Perlu ubah skema? **Buat file migrasi baru** (contoh: `add_kolom_to_tabel`).
+25. **Cek Skema Sebelum Query:** Sebelum menulis Eloquent/SQL, periksa nama tabel dan kolom yang benar-benar ada. Jangan berasumsi!
+26. **Jaga Integritas Relasi:** Saat membuat tabel baru atau fitur hapus, pertimbangkan Foreign Key constraint dan Soft Deletes.
+27. **Aman Saat Seeding & Import:** Gunakan `updateOrCreate()` atau `firstOrCreate()`, hindari `create()` biasa yang bisa trigger duplicate error.
+28. **Konsistensi Penamaan:** snake_case plural untuk tabel, snake_case untuk foreign key.

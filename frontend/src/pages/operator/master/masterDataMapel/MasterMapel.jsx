@@ -346,8 +346,8 @@ function ModalImport({ open, onClose, queryClient }) {
 
   const handleFile = (f) => {
     if (!f) return;
-    if (!f.name.match(/\.(csv|txt)$/i)) {
-      toast.error("Hanya file CSV yang diizinkan.");
+    if (!f.name.match(/\.(xlsx|xls)$/i)) {
+      toast.error("Hanya file Excel (.xlsx / .xls) yang diizinkan.");
       return;
     }
     setFile(f);
@@ -372,10 +372,14 @@ function ModalImport({ open, onClose, queryClient }) {
       const res = await api.get("/operator/master-data/mapel/template", {
         responseType: "blob",
       });
-      const url = URL.createObjectURL(new Blob([res.data]));
+      const url = URL.createObjectURL(
+        new Blob([res.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+      );
       const a = document.createElement("a");
       a.href = url;
-      a.download = "template_import_mapel.csv";
+      a.download = "template_import_mapel.xlsx";
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -401,7 +405,7 @@ function ModalImport({ open, onClose, queryClient }) {
                 Import Mata Pelajaran
               </h3>
               <p className="text-xs text-text-secondary">
-                Upload file CSV untuk import massal
+                Upload file Excel (.xlsx) untuk import massal
               </p>
             </div>
           </div>
@@ -420,10 +424,11 @@ function ModalImport({ open, onClose, queryClient }) {
               <span className="material-symbols-outlined text-[16px]">
                 info
               </span>
-              Format CSV yang diperlukan
+              Format Excel yang diperlukan
             </p>
             <p className="text-xs text-[#5B21B6]/80 font-mono bg-white/70 rounded-lg px-3 py-2 border border-[#DDD6FE]">
-              kode, nama_mapel, kelompok, tingkat, jam_per_minggu, kurikulum
+              kode | nama_mapel | kelompok | tingkat | jam_per_minggu |
+              kurikulum
             </p>
             <ul className="text-xs text-text-secondary mt-2 space-y-1 list-disc list-inside">
               <li>
@@ -446,7 +451,7 @@ function ModalImport({ open, onClose, queryClient }) {
               <span className="material-symbols-outlined text-[14px]">
                 download
               </span>
-              Unduh template CSV
+              Unduh template Excel (.xlsx)
             </button>
           </div>
 
@@ -471,7 +476,7 @@ function ModalImport({ open, onClose, queryClient }) {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv,.txt"
+                accept=".xlsx,.xls"
                 className="hidden"
                 onChange={(e) => handleFile(e.target.files[0])}
               />
@@ -493,10 +498,10 @@ function ModalImport({ open, onClose, queryClient }) {
                     cloud_upload
                   </span>
                   <p className="text-body-md font-semibold text-on-surface">
-                    Drag & drop file CSV di sini
+                    Drag & drop file Excel di sini
                   </p>
                   <p className="text-xs text-text-secondary mt-1">
-                    atau klik untuk memilih file
+                    atau klik untuk memilih file (.xlsx / .xls)
                   </p>
                 </>
               )}
@@ -721,7 +726,7 @@ export default function MasterMapel() {
     },
   });
 
-  /* ── Export CSV ── */
+  /* ── Export Excel ── */
   const handleExport = async () => {
     setExportLoading(true);
     try {
@@ -734,11 +739,13 @@ export default function MasterMapel() {
         responseType: "blob",
       });
       const url = URL.createObjectURL(
-        new Blob([res.data], { type: "text/csv" }),
+        new Blob([res.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
       );
       const a = document.createElement("a");
       a.href = url;
-      a.download = `master_mapel_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `master_mapel_${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Data berhasil diekspor.");
@@ -829,7 +836,7 @@ export default function MasterMapel() {
               </span>
             )}
             <span className="hidden sm:inline">
-              {exportLoading ? "Mengekspor..." : "Export CSV"}
+              {exportLoading ? "Mengekspor..." : "Export Excel"}
             </span>
           </button>
 

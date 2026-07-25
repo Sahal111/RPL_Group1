@@ -151,6 +151,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
             // Mata Pelajaran
             Route::get('/mapel/dropdown', [MasterDataMapelController::class, 'dropdown']);
+            Route::get('/mapel/export', [MasterDataMapelController::class, 'export']);
+            Route::get('/mapel/template', [MasterDataMapelController::class, 'downloadTemplate']);
+            Route::post('/mapel/import', [MasterDataMapelController::class, 'import']);
             Route::get('/mapel', [MasterDataMapelController::class, 'index']);
             Route::post('/mapel', [MasterDataMapelController::class, 'store']);
             Route::get('/mapel/{id}', [MasterDataMapelController::class, 'show']);
