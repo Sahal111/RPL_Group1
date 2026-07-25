@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-25 10:04:11 +0000
+# Generation Time: 2026-07-25 12:52:56 +0000
 # ************************************************************
 
 
@@ -972,8 +972,10 @@ LOCK TABLES `mapels` WRITE;
 
 INSERT INTO `mapels` (`id`, `kode`, `nama_mapel`, `kelompok`, `tingkat`, `kurikulum`, `jam_per_minggu`, `is_active`, `urutan_rapor`, `created_at`, `updated_at`)
 VALUES
-	(1,'MTK','Matematika','A - Wajib',NULL,'Kurikulum Merdeka',2,1,NULL,'2026-07-25 16:48:27','2026-07-25 16:49:52'),
-	(2,'IPA','Ilmu Pengetahuan Alam','A - Wajib','1,2,3,4,6','Keduanya',12,1,NULL,'2026-07-25 16:56:23','2026-07-25 17:03:29');
+	(1,'MTK','Matematika','A - Wajib',NULL,'Keduanya',4,1,NULL,'2026-07-25 16:48:27','2026-07-25 19:23:29'),
+	(2,'IPA','Ilmu Pengetahuan Alam','A - Wajib','4,5,6','Kurikulum Merdeka',3,1,NULL,'2026-07-25 16:56:23','2026-07-25 19:23:29'),
+	(3,'BTQ','Baca Tulis Quran','C - Muatan Lokal','1,2,3','Kurikulum 2013',2,1,NULL,'2026-07-25 19:23:29','2026-07-25 19:23:29'),
+	(4,'PJOK','Pendidikan Jasmani','B - Wajib',NULL,'Keduanya',3,1,NULL,'2026-07-25 19:23:29','2026-07-25 19:23:29');
 
 /*!40000 ALTER TABLE `mapels` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1388,7 +1390,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-25 17:03:29',NULL,'2026-07-20 21:48:50','2026-07-25 17:03:29');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-25 19:34:18',NULL,'2026-07-20 21:48:50','2026-07-25 19:34:18');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
