@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-24 12:58:24 +0000
+# Generation Time: 2026-07-25 10:00:23 +0000
 # ************************************************************
 
 
@@ -892,7 +892,9 @@ LOCK TABLES `kelas` WRITE;
 INSERT INTO `kelas` (`id`, `tahun_ajaran_id`, `semester_id`, `nama_kelas`, `tingkat`, `kurikulum`, `wali_kelas_id`, `kapasitas`, `ruangan`, `is_active`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
 	(1,1,1,'1-A',1,'Merdeka',NULL,32,NULL,1,'2026-07-13 10:14:43','2026-07-13 10:14:43',NULL),
-	(2,1,1,'2-A',2,'Merdeka',NULL,32,NULL,1,'2026-07-13 10:14:43','2026-07-13 10:14:43',NULL);
+	(2,1,1,'2-A',2,'Merdeka',NULL,32,NULL,1,'2026-07-13 10:14:43','2026-07-24 21:17:33','2026-07-24 21:17:33'),
+	(4,4,5,'1B',1,'Merdeka',NULL,30,'R-01',1,'2026-07-25 14:35:18','2026-07-25 15:02:33',NULL),
+	(5,4,5,'1A',1,'Merdeka',NULL,30,'R-02',1,'2026-07-25 16:45:16','2026-07-25 16:45:28',NULL);
 
 /*!40000 ALTER TABLE `kelas` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -951,9 +953,9 @@ CREATE TABLE `mapels` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `kode` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Kode resmi Dapodik/EMIS untuk sinkronisasi. Contoh: PAI001, MTK001',
   `nama_mapel` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nama lengkap mata pelajaran sesuai kurikulum',
-  `kelompok` enum('A','B','C','Muatan Lokal','Ekstra','Agama','Lainnya') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Kelompok mapel: A=Umum, B=Peminatan, C=Kejuruan, Agama=PAI/Quran dll',
+  `kelompok` enum('A - Wajib','B - Wajib','C - Muatan Lokal','Pengembangan Diri','Ekstrakurikuler','Lainnya') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `tingkat` tinyint unsigned DEFAULT NULL COMMENT 'Tingkat kelas yang pakai mapel ini (1-6 untuk MI). NULL = berlaku untuk semua tingkat',
-  `kurikulum` enum('K13','Merdeka','Lainnya') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Merdeka' COMMENT 'Kurikulum yang menggunakan mapel ini',
+  `kurikulum` enum('Kurikulum 2013','Kurikulum Merdeka','Keduanya') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Kurikulum 2013',
   `jam_per_minggu` tinyint unsigned DEFAULT NULL COMMENT 'Jumlah jam pelajaran per minggu. Dipakai untuk validasi jadwal dan beban mengajar guru',
   `is_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1=Mapel aktif dipakai. 0=Sudah tidak dipakai (misalnya kurikulum lama)',
   `urutan_rapor` tinyint unsigned DEFAULT NULL COMMENT 'Nomor urut tampil di rapor. Contoh: 1=PAI, 2=PPKn, 3=Bahasa Indonesia, ...',
@@ -965,6 +967,16 @@ CREATE TABLE `mapels` (
   KEY `idx_mapels_aktif` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master mata pelajaran standar Dapodik. Dipakai untuk plot mengajar dan input nilai';
 
+LOCK TABLES `mapels` WRITE;
+/*!40000 ALTER TABLE `mapels` DISABLE KEYS */;
+
+INSERT INTO `mapels` (`id`, `kode`, `nama_mapel`, `kelompok`, `tingkat`, `kurikulum`, `jam_per_minggu`, `is_active`, `urutan_rapor`, `created_at`, `updated_at`)
+VALUES
+	(1,'MTK','Matematika','A - Wajib',NULL,'Kurikulum Merdeka',2,1,NULL,'2026-07-25 16:48:27','2026-07-25 16:49:52'),
+	(2,'IPA','Ilmu Pengetahuan Alam','A - Wajib',NULL,'Keduanya',12,1,NULL,'2026-07-25 16:56:23','2026-07-25 16:56:23');
+
+/*!40000 ALTER TABLE `mapels` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table migrations
@@ -1376,7 +1388,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-24 19:55:02',NULL,'2026-07-20 21:48:50','2026-07-24 19:55:02');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-25 16:56:23',NULL,'2026-07-20 21:48:50','2026-07-25 16:56:23');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1602,8 +1614,8 @@ VALUES
 	(4,1,'Genap','2027-01-02','2027-06-30',0,'2026-07-22 21:24:55','2026-07-23 22:16:39',NULL),
 	(5,4,'Ganjil','2026-07-05','2026-12-31',1,'2026-07-22 21:28:31','2026-07-23 22:16:39',NULL),
 	(6,4,'Genap','2027-01-02','2027-06-30',0,'2026-07-22 21:28:31','2026-07-23 22:16:39',NULL),
-	(9,6,'Ganjil','2028-07-12','2028-12-31',0,'2026-07-23 14:36:02','2026-07-23 22:16:39',NULL),
-	(10,6,'Genap','2029-01-02','2029-06-29',0,'2026-07-23 14:36:02','2026-07-23 22:16:39',NULL);
+	(9,6,'Ganjil','2028-07-12','2028-12-31',0,'2026-07-23 14:36:02','2026-07-24 20:34:33','2026-07-24 20:34:33'),
+	(10,6,'Genap','2029-01-02','2029-06-29',0,'2026-07-23 14:36:02','2026-07-24 20:34:33','2026-07-24 20:34:33');
 
 /*!40000 ALTER TABLE `semesters` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1792,7 +1804,7 @@ INSERT INTO `tahun_ajarans` (`id`, `tahun`, `is_active`, `created_at`, `updated_
 VALUES
 	(1,'2026/2027',0,'2026-07-13 10:14:43','2026-07-23 22:16:39',NULL),
 	(4,'2027/2028',1,'2026-07-22 21:26:27','2026-07-23 22:16:39',NULL),
-	(6,'2028/2029',0,'2026-07-23 14:36:02','2026-07-23 22:16:39',NULL);
+	(6,'2028/2029',0,'2026-07-23 14:36:02','2026-07-24 20:34:33','2026-07-24 20:34:33');
 
 /*!40000 ALTER TABLE `tahun_ajarans` ENABLE KEYS */;
 UNLOCK TABLES;
