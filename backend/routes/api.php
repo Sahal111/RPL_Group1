@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('master-data')->group(function () {
             // Guru
             Route::get('/guru', [MasterDataGuruController::class, 'index']);
+            Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
             Route::post('/guru', [MasterDataGuruController::class, 'store']);
             Route::get('/guru/{nuptk}', [MasterDataGuruController::class, 'show']);
             Route::put('/guru/{nuptk}', [MasterDataGuruController::class, 'update']);

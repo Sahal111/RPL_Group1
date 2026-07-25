@@ -50,12 +50,12 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
 
   const emptyForm = {
-    id: "",
     nama_kelas: "",
     tingkat: "1",
-    kurikulum: "Kurikulum Merdeka",
+    kurikulum: "Merdeka",
     ruangan: "",
     kapasitas: "30",
+    is_active: true,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -64,7 +64,14 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
     if (open)
       setForm(
         editData
-          ? { ...emptyForm, ...editData }
+          ? {
+              nama_kelas: editData.nama_kelas ?? "",
+              tingkat: editData.tingkat ?? "1",
+              kurikulum: editData.kurikulum ?? "Merdeka",
+              ruangan: editData.ruangan ?? "",
+              kapasitas: editData.kapasitas ?? "30",
+              is_active: editData.is_active ?? true,
+            }
           : emptyForm,
       );
   }, [open, editData]);
@@ -96,6 +103,19 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
     "w-full px-3.5 py-2.5 bg-background-light border border-border-light rounded-xl text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-text-secondary/50";
   const labelCls =
     "block text-label-md font-semibold text-text-secondary mb-1.5";
+
+  // Payload bersih yang dikirim ke backend
+  const buildPayload = () => {
+    const payload = {
+      nama_kelas: form.nama_kelas,
+      tingkat: form.tingkat,
+      kurikulum: form.kurikulum,
+      ruangan: form.ruangan || null,
+      kapasitas: form.kapasitas,
+    };
+    if (isEdit) payload.is_active = form.is_active;
+    return payload;
+  };
 
   return createPortal(
     <div
@@ -146,26 +166,13 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
             <div className="space-y-3.5">
               <div>
                 <label className={labelCls}>
-                  ID Kelas <span className="text-danger">*</span>
-                </label>
-                <input
-                  value={form.id}
-                  onChange={(e) => set("id", e.target.value)}
-                  className={inputCls}
-                  placeholder="Contoh: 1A-2026"
-                  disabled={isEdit}
-                />
-              </div>
-
-              <div>
-                <label className={labelCls}>
                   Nama Kelas <span className="text-danger">*</span>
                 </label>
                 <input
                   value={form.nama_kelas}
                   onChange={(e) => set("nama_kelas", e.target.value)}
                   className={inputCls}
-                  placeholder="Contoh: Kelas 1A"
+                  placeholder="Contoh: 1A"
                 />
               </div>
 
@@ -195,8 +202,8 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
                     onChange={(e) => set("kurikulum", e.target.value)}
                     className={inputCls}
                   >
-                    <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
-                    <option value="Kurikulum 2013">Kurikulum 2013</option>
+                    <option value="Merdeka">Kurikulum Merdeka</option>
+                    <option value="K13">Kurikulum 2013</option>
                   </select>
                 </div>
               </div>
@@ -237,24 +244,51 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
             </div>
           </div>
 
-          {/* INFORMASI TAMBAHAN */}
-          <div>
-            <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">
-                info
-              </span>
-              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                INFORMASI TAMBAHAN
-              </h4>
+          {/* STATUS — hanya tampil saat edit */}
+          {isEdit && (
+            <div>
+              <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
+                <span className="material-symbols-outlined text-primary text-[18px]">
+                  toggle_on
+                </span>
+                <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                  STATUS KELAS
+                </h4>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-xl border border-border-light">
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">
+                    Kelas Aktif
+                  </p>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Kelas nonaktif tidak muncul di filter default
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => set("is_active", !form.is_active)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    form.is_active ? "bg-success" : "bg-surface-container-high"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      form.is_active ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-amber-800">
-              <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">
-                info
-              </span>
-              <p className="text-xs leading-relaxed text-amber-900 font-medium">
-                Data kelas akan otomatis menggunakan tahun ajaran yang sedang aktif. Pastikan semua informasi sudah benar sebelum menyimpan.
-              </p>
-            </div>
+          )}
+
+          {/* INFO */}
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5">
+            <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">
+              info
+            </span>
+            <p className="text-xs leading-relaxed text-amber-900 font-medium">
+              Tahun ajaran dan semester otomatis mengikuti yang sedang aktif.
+            </p>
           </div>
         </div>
 
@@ -267,7 +301,7 @@ function ModalKelas({ open, onClose, editData, queryClient }) {
             Batal
           </button>
           <button
-            onClick={() => mutation.mutate(form)}
+            onClick={() => mutation.mutate(buildPayload())}
             disabled={mutation.isPending}
             className="flex-1 py-2.5 rounded-xl bg-primary text-white text-body-md font-semibold hover:bg-primary-700 shadow-sm hover:shadow transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
@@ -384,7 +418,7 @@ function DrawerDetail({ kelas, open, onClose, onEdit, onDelete }) {
   const { text: stText, cls: stCls } = statusLabel(
     siswa,
     kap,
-    kelas.wali?.nama_lengkap ?? kelas.nama_wali,
+    kelas.wali?.nama ?? kelas.nama_wali,
   );
 
   const tabs = [
@@ -416,8 +450,8 @@ function DrawerDetail({ kelas, open, onClose, onEdit, onDelete }) {
               </h3>
               <p className="text-xs text-text-secondary mt-0.5">
                 Kode: <span className="font-mono font-medium">{kelas.id}</span>
-                {kelas.tahun_ajaran?.nama
-                  ? ` • TA ${kelas.tahun_ajaran.nama}`
+                {kelas.tahun_ajaran?.tahun
+                  ? ` • TA ${kelas.tahun_ajaran.tahun}`
                   : ""}
               </p>
             </div>
@@ -459,16 +493,14 @@ function DrawerDetail({ kelas, open, onClose, onEdit, onDelete }) {
                   <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
                     Wali Kelas
                   </p>
-                  {(kelas.wali?.nama_lengkap ?? kelas.nama_wali) ? (
+                  {(kelas.wali?.nama ?? kelas.nama_wali) ? (
                     <>
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
-                          {initials(
-                            kelas.wali?.nama_lengkap ?? kelas.nama_wali,
-                          )}
+                          {initials(kelas.wali?.nama ?? kelas.nama_wali)}
                         </div>
                         <span className="text-sm font-medium text-text-primary leading-tight">
-                          {kelas.wali?.nama_lengkap ?? kelas.nama_wali}
+                          {kelas.wali?.nama ?? kelas.nama_wali}
                         </span>
                       </div>
                       {kelas.wali?.nuptk && (
@@ -564,11 +596,16 @@ function DrawerDetail({ kelas, open, onClose, onEdit, onDelete }) {
                 </h4>
                 {[
                   { label: "Tingkat", value: `Kelas ${kelas.tingkat}` },
-                  { label: "Semester", value: `Semester ${kelas.semester}` },
+                  {
+                    label: "Semester",
+                    value: kelas.semester?.nama
+                      ? `Semester ${kelas.semester.nama}`
+                      : "-",
+                  },
                   { label: "Kurikulum", value: kelas.kurikulum || "-" },
                   {
                     label: "Tahun Ajaran",
-                    value: kelas.tahun_ajaran?.nama || "-",
+                    value: kelas.tahun_ajaran?.tahun || "-",
                   },
                   {
                     label: "Status",
@@ -724,7 +761,7 @@ export default function MasterKelas() {
   const kelasPenuh = kelasList.filter(
     (k) => k.kapasitas && k.total_siswa >= k.kapasitas,
   ).length;
-  const totalWali = kelasList.filter((k) => k.wali || k.nama_wali).length;
+  const totalWali = kelasList.filter((k) => k.wali).length;
   const totalKap = kelasList.reduce((s, k) => s + (k.kapasitas ?? 0), 0);
   const sisaPct = totalKap
     ? Math.round(((totalKap - totalSiswa) / totalKap) * 100)
@@ -890,7 +927,8 @@ export default function MasterKelas() {
             <option value="">Tahun Ajaran (Semua)</option>
             {(tahunAjaranList ?? []).map((t) => (
               <option key={t.id} value={t.id}>
-                {t.nama}
+                {t.tahun}
+                {t.is_active ? " (Aktif)" : ""}
               </option>
             ))}
           </select>
@@ -1026,9 +1064,9 @@ export default function MasterKelas() {
                   const { text: stText, cls: stCls } = statusLabel(
                     s,
                     kap,
-                    k.wali?.nama_lengkap ?? k.nama_wali,
+                    k.wali?.nama ?? k.nama_wali,
                   );
-                  const waliName = k.wali?.nama_lengkap ?? k.nama_wali;
+                  const waliName = k.wali?.nama ?? k.nama_wali;
 
                   return (
                     <tr
@@ -1063,7 +1101,8 @@ export default function MasterKelas() {
                           {k.nama_kelas}
                         </p>
                         <p className="text-[10px] text-text-secondary mt-0.5">
-                          Sem. {k.semester} • {k.kurikulum}
+                          {k.semester?.nama ? `Sem. ${k.semester.nama} • ` : ""}
+                          {k.kurikulum}
                         </p>
                       </td>
                       <td className="py-3.5 px-4 hidden md:table-cell">

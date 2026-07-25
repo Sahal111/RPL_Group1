@@ -35,7 +35,7 @@ class MasterDataGuruController extends Controller
     // DETAIL satu guru
     public function show($nuptk)
     {
-       $guru = Guru::with('user')->where('nuptk', $nuptk)->firstOrFail();
+        $guru = Guru::with('user')->where('nuptk', $nuptk)->firstOrFail();
 
         return response()->json([
             'success' => true,
@@ -187,6 +187,15 @@ class MasterDataGuruController extends Controller
             'success' => true,
             'message' => 'Data guru berhasil dihapus.',
         ]);
+    }
+
+    // DROPDOWN ringan — untuk select wali kelas di form kelas
+    public function dropdown()
+    {
+        $guru = Guru::orderBy('nama')
+            ->get(['id', 'nama', 'nuptk', 'jenis_ptk']);
+
+        return response()->json(['success' => true, 'data' => $guru]);
     }
 
     public function uploadFoto(Request $request, $nuptk)

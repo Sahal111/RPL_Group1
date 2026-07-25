@@ -12,11 +12,22 @@ class MasterDataKelasController extends Controller
 {
     public function index(Request $request)
     {
-        $kelas = Kelas::with('wali')
+        // Default: tampilkan kelas milik TA yang aktif.
+        // Kalau operator pilih TA lain lewat filter, gunakan itu.
+        $tahunAjaranAktif = \App\Models\TahunAjaran::where('is_active', true)->value('id');
+        $filterTaId = $request->tahun_ajaran_id ?? $tahunAjaranAktif;
+
+        $perPage = (int) ($request->per_page ?? 10);
+
+        $kelas = Kelas::with(['wali:id,nama,nuptk', 'tahunAjaran:id,tahun', 'semester:id,nama'])
+            ->when($filterTaId, fn($q) => $q->where('tahun_ajaran_id', $filterTaId))
             ->when($request->tingkat, fn($q) => $q->where('tingkat', $request->tingkat))
-            ->when($request->search, fn($q) => $q->where('nama_kelas', 'like', "%{$request->search}%"))
+            ->when($request->semester, fn($q) => $q->whereHas('semester', fn($s) => $s->where('nama', $request->semester)))
+            ->when($request->search, fn($q) => $q->where(function ($s) use ($request) {
+                $s->where('nama_kelas', 'like', "%{$request->search}%");
+            }))
             ->orderBy('tingkat')->orderBy('nama_kelas')
-            ->paginate(15);
+            ->paginate($perPage);
 
         $kelas->getCollection()->transform(function ($k) {
             $k->total_siswa = RiwayatKelas::where('kelas_id', $k->id)
@@ -30,7 +41,7 @@ class MasterDataKelasController extends Controller
 
     public function show($id)
     {
-        $kelas = Kelas::with('wali')->findOrFail($id);
+        $kelas = Kelas::with(['wali:id,nama,nuptk', 'tahunAjaran:id,tahun', 'semester:id,nama'])->findOrFail($id);
 
         $siswaAktif = RiwayatKelas::with('siswa')
             ->where('kelas_id', $id)
@@ -120,7 +131,7 @@ class MasterDataKelasController extends Controller
             'is_active' => $request->has('is_active') ? $request->is_active : $kelas->is_active,
         ], fn($v) => !is_null($v)));
 
-        return response()->json(['success' => true, 'message' => 'Kelas berhasil diperbarui.', 'data' => $kelas->fresh('wali')]);
+        return response()->json(['success' => true, 'message' => 'Kelas berhasil diperbarui.', 'data' => $kelas->fresh(['wali:id,nama,nuptk', 'tahunAjaran:id,tahun', 'semester:id,nama'])]);
     }
 
     public function destroy($id)
