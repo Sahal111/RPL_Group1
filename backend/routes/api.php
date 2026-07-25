@@ -129,6 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/kelas/dropdown', [MasterDataKelasController::class, 'dropdown']);
             Route::get('/kelas/tahun-ajaran', [MasterDataKelasController::class, 'tahunAjaranDropdown']);
             Route::get('/kelas/{id}', [MasterDataKelasController::class, 'show']);
+            Route::get('/kelas/{kelasId}/periode/{tahunAjaranId}', [MasterDataKelasController::class, 'showPeriode']);
             Route::put('/kelas/{id}', [MasterDataKelasController::class, 'update']);
             Route::delete('/kelas/{id}', [MasterDataKelasController::class, 'destroy']);
             Route::post('/kelas/{id}/siswa', [MasterDataKelasController::class, 'tambahSiswa']);

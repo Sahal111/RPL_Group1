@@ -166,6 +166,50 @@ class MasterDataKelasController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
 
+    /**
+     * Detail kelas untuk periode (tahun ajaran) tertentu.
+     * GET /kelas/:kelasId/periode/:tahunAjaranId
+     */
+    public function showPeriode($kelasId, $tahunAjaranId)
+    {
+        $kelas = Kelas::with(['wali:id,nama,nuptk', 'tahunAjaran:id,tahun', 'semester:id,nama'])
+            ->findOrFail($kelasId);
+
+        // Wali kelas khusus untuk tahun ajaran ini (dari tabel wali_kelas)
+        $waliPeriode = \App\Models\UserWaliKelas::with('guru:id,nama,nuptk,foto')
+            ->where('kelas_id', $kelasId)
+            ->where('tahun_ajaran_id', $tahunAjaranId)
+            ->first();
+
+        // Info tahun ajaran yang diminta
+        $tahunAjaran = \App\Models\TahunAjaran::with('semesters')
+            ->findOrFail($tahunAjaranId);
+
+        // Semua siswa yang pernah di kelas ini pada TA ini
+        $siswaList = RiwayatKelas::with(['siswa:id,nama_lengkap,nisn,jenis_kelamin,foto', 'semester:id,nama'])
+            ->where('kelas_id', $kelasId)
+            ->where('tahun_ajaran_id', $tahunAjaranId)
+            ->orderBy('no_absen')
+            ->get();
+
+        $siswaAktif = $siswaList->whereNull('tanggal_keluar')->values();
+        $siswaKeluar = $siswaList->whereNotNull('tanggal_keluar')->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'kelas' => $kelas,
+                'tahun_ajaran' => $tahunAjaran,
+                'wali_periode' => $waliPeriode,
+                'siswa_aktif' => $siswaAktif,
+                'siswa_keluar' => $siswaKeluar,
+                'total_siswa' => $siswaAktif->count(),
+                'total_laki' => $siswaAktif->filter(fn($r) => $r->siswa?->jenis_kelamin === 'L')->count(),
+                'total_perempuan' => $siswaAktif->filter(fn($r) => $r->siswa?->jenis_kelamin === 'P')->count(),
+            ],
+        ]);
+    }
+
     public function tambahSiswa(Request $request, $id)
     {
         $request->validate([
