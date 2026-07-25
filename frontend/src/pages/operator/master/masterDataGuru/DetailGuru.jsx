@@ -17,6 +17,9 @@ import {
   Camera,
 } from "lucide-react";
 
+const BASE_URL =
+  import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
+
 export default function DetailGuru() {
   const { nuptk } = useParams();
   const navigate = useNavigate();
@@ -35,7 +38,9 @@ export default function DetailGuru() {
   const { data: akunGuru, refetch: refetchAkun } = useQuery({
     queryKey: ["guru-akun", nuptk],
     queryFn: () =>
-      api.get(`/operator/master-data/guru/${nuptk}/akun`).then((r) => r.data.data),
+      api
+        .get(`/operator/master-data/guru/${nuptk}/akun`)
+        .then((r) => r.data.data),
   });
 
   const uploadFoto = useMutation({
@@ -99,9 +104,7 @@ export default function DetailGuru() {
       </div>
     );
 
-  const fotoUrl = guru.foto
-    ? `http://127.0.0.1:8001/storage/${guru.foto}`
-    : null;
+  const fotoUrl = guru.foto ? `${BASE_URL}/storage/${guru.foto}` : null;
 
   return (
     <div>
@@ -175,15 +178,15 @@ export default function DetailGuru() {
                   <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
                     {guru.status_kepegawaian}
                   </span>
-                  {guru.golongan && (
+                  {/* {guru.golongan && (
                     <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">
                       Gol. {guru.golongan}
                     </span>
-                  )}
+                  )} */}
                   <span
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full ${guru.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}
+                    className={`... ${guru.status_aktif ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}
                   >
-                    {guru.is_active ? "Aktif" : "Non-aktif"}
+                    {guru.status_aktif ? "Aktif" : "Non-aktif"}
                   </span>
                 </div>
               </div>
@@ -218,11 +221,11 @@ export default function DetailGuru() {
             {/* Kepegawaian */}
             <Section title="Kepegawaian">
               <div className="grid grid-cols-2 gap-4">
-                <InfoItem label="Golongan" value={guru.golongan ?? "-"} />
+                {/* <InfoItem label="Golongan" value={guru.golongan ?? "-"} />
                 <InfoItem
                   label="TMT Golongan"
                   value={guru.tmt_golongan ?? "-"}
-                />
+                /> */}
               </div>
             </Section>
 
@@ -236,11 +239,14 @@ export default function DetailGuru() {
                   label="RT / RW"
                   value={`${guru.rt ?? "-"} / ${guru.rw ?? "-"}`}
                 />
-                <InfoItem label="Desa/Kelurahan" value={guru.desa ?? "-"} />
+                <InfoItem
+                  label="Desa/Kelurahan"
+                  value={guru.desa_kelurahan ?? "-"}
+                />
                 <InfoItem label="Kecamatan" value={guru.kecamatan ?? "-"} />
                 <InfoItem
                   label="Kabupaten/Kota"
-                  value={guru.kabupaten ?? "-"}
+                  value={guru.kota_kabupaten ?? "-"}
                 />
                 <InfoItem label="Provinsi" value={guru.provinsi ?? "-"} />
                 <InfoItem label="Kode Pos" value={guru.kode_pos ?? "-"} />

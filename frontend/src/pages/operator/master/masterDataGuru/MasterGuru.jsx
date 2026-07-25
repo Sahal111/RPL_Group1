@@ -26,7 +26,8 @@ const agamaOptions = [
   "Kristen Katolik",
   "Hindu",
   "Buddha",
-  "Khonghucu",
+  "Konghucu", 
+  "Lainnya", 
 ];
 const perkawinanOpts = ["Belum Kawin", "Kawin", "Cerai Hidup", "Cerai Mati"];
 
@@ -34,7 +35,7 @@ const defaultForm = {
   nuptk: "",
   nip: "",
   nik: "",
-  nama_lengkap: "",
+  nama: "",
   jenis_kelamin: "L",
   tanggal_lahir: "",
   tempat_lahir: "",
@@ -49,9 +50,9 @@ const defaultForm = {
   alamat_jalan: "",
   rt: "",
   rw: "",
-  desa: "",
+  desa_kelurahan: "",
   kecamatan: "",
-  kabupaten: "",
+  kota_kabupaten: "",
   provinsi: "",
   kode_pos: "",
 };
@@ -237,7 +238,7 @@ function ModalGuru({ open, onClose, editData, queryClient }) {
                           fontFamily: "'Plus Jakarta Sans', sans-serif",
                         }}
                       >
-                        {form.nama_lengkap?.charAt(0)?.toUpperCase() || "?"}
+                        {form.nama?.charAt(0)?.toUpperCase() || "?"}
                       </span>
                     )}
                   </div>
@@ -284,8 +285,8 @@ function ModalGuru({ open, onClose, editData, queryClient }) {
                 <div className="col-span-2">
                   <Field label="Nama Lengkap" required>
                     <input
-                      value={form.nama_lengkap}
-                      onChange={(e) => set("nama_lengkap", e.target.value)}
+                      value={form.nama}
+                      onChange={(e) => set("nama", e.target.value)}
                       className={INPUT}
                       placeholder="Nama lengkap dengan gelar"
                     />
@@ -469,8 +470,8 @@ function ModalGuru({ open, onClose, editData, queryClient }) {
               </Field>
               <Field label="Desa/Kelurahan">
                 <input
-                  value={form.desa}
-                  onChange={(e) => set("desa", e.target.value)}
+                  value={form.desa_kelurahan}
+                  onChange={(e) => set("desa_kelurahan", e.target.value)}
                   className={INPUT}
                   placeholder="Nama desa"
                 />
@@ -485,8 +486,8 @@ function ModalGuru({ open, onClose, editData, queryClient }) {
               </Field>
               <Field label="Kabupaten/Kota">
                 <input
-                  value={form.kabupaten}
-                  onChange={(e) => set("kabupaten", e.target.value)}
+                  value={form.kota_kabupaten}
+                  onChange={(e) => set("kota_kabupaten", e.target.value)}
                   className={INPUT}
                   placeholder="Nama kabupaten"
                 />
@@ -629,7 +630,13 @@ export default function MasterGuru() {
     queryFn: () =>
       api
         .get("/operator/master-data/guru", {
-          params: { search, jenis_ptk: jenis, per_page: 10, page },
+          params: {
+            search,
+            jenis_ptk: jenis,
+            status_aktif: statusFilter,
+            per_page: 10,
+            page,
+          },
         })
         .then((r) => r.data.data),
     keepPreviousData: true,

@@ -20,8 +20,8 @@ class MasterDataGuruController extends Controller
             ->when($request->jenis_ptk, function ($q) use ($request) {
                 $q->where('jenis_ptk', $request->jenis_ptk);
             })
-            ->when($request->status, function ($q) use ($request) {
-                $q->where('status_kepegawaian', $request->status);
+            ->when($request->status_aktif, function ($q) use ($request) {
+                $q->where('status_aktif', $request->status_aktif === 'aktif' ? 1 : 0);
             })
             ->orderBy('nama')
             ->paginate(15);
@@ -54,12 +54,12 @@ class MasterDataGuruController extends Controller
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string|max:60',
-            'agama' => 'required|in:Islam,Kristen Protestan,KristenKatolik,Hindu,Buddha,Khonghucu',
-            'status_perkawinan' => 'nullable|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
+            'agama' => 'required|in:Islam,Kristen Protestan,Kristen Katolik,Hindu,Buddha,Konghucu,Lainnya',
+            // 'status_perkawinan' => 'nullable|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
             'jenis_ptk' => 'required|string',
             'status_kepegawaian' => 'required|string',
-            'golongan' => 'nullable|string|max:10',
-            'tmt_golongan' => 'nullable|date',
+            // 'golongan' => 'nullable|string|max:10',
+            // 'tmt_golongan' => 'nullable|date',
             'no_hp' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'alamat_jalan' => 'nullable|string',
@@ -81,11 +81,11 @@ class MasterDataGuruController extends Controller
             'tanggal_lahir',
             'tempat_lahir',
             'agama',
-            'status_perkawinan',
+            // 'status_perkawinan',
             'jenis_ptk',
             'status_kepegawaian',
-            'golongan',
-            'tmt_golongan',
+            // 'golongan',
+            // 'tmt_golongan',
             'no_hp',
             'email',
             'alamat_jalan',
@@ -116,12 +116,12 @@ class MasterDataGuruController extends Controller
             'jenis_kelamin' => 'required|in:L,P',
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string|max:60',
-            'agama' => 'required|in:Islam,Kristen Protestan,KristenKatolik,Hindu,Buddha,Khonghucu',
-            'status_perkawinan' => 'nullable|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
+            'agama' => 'required|in:Islam,Kristen Protestan,Kristen Katolik,Hindu,Buddha,Konghucu,Lainnya',
+            // 'status_perkawinan' => 'nullable|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
             'jenis_ptk' => 'required|string',
             'status_kepegawaian' => 'required|string',
-            'golongan' => 'nullable|string|max:10',
-            'tmt_golongan' => 'nullable|date',
+            // 'golongan' => 'nullable|string|max:10',
+            // 'tmt_golongan' => 'nullable|date',
             'no_hp' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'alamat_jalan' => 'nullable|string',
@@ -143,11 +143,11 @@ class MasterDataGuruController extends Controller
             'tanggal_lahir',
             'tempat_lahir',
             'agama',
-            'status_perkawinan',
+            // 'status_perkawinan',
             'jenis_ptk',
             'status_kepegawaian',
-            'golongan',
-            'tmt_golongan',
+            // 'golongan',
+            // 'tmt_golongan',
             'no_hp',
             'email',
             'alamat_jalan',
