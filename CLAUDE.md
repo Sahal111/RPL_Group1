@@ -54,7 +54,7 @@
 - [x] Approval Ortu — list pending, approve/reject; `ApprovalOrtu.jsx`
 - [x] Master Data Guru — CRUD guru, upload foto, lihat detail & akun terhubung; `MasterGuru.jsx`, `DetailGuru.jsx`
 - [x] Master Data Siswa — CRUD siswa, upload foto, assign kelas, regenerate kode anak; `MasterSiswa.jsx`, `DetailSiswa.jsx`
-- [x] Master Data Kelas — CRUD kelas, tambah/keluarkan siswa, batalkan keluar; `MasterKelas.jsx`, `DetailKelas.jsx`
+- [x] Master Data Kelas — CRUD kelas, filter tahun ajaran & semester, detail kelas dinamis dari API, riwayat akademik per tahun ajaran, riwayat wali kelas; `MasterKelas.jsx`, `DetailKelas.jsx`, `DetailKelasPeriodeAkademik.jsx`
 - [x] Master Data Orang Tua — CRUD ortu, attach anak; `MasterOrtu.jsx`, `DetailOrtu.jsx`, `DetailDataOrtu.jsx`
 - [x] Master Data Mapel — CRUD mapel, toggle aktif; `MasterMapel.jsx`
 - [x] Master Data Jadwal Pelajaran — CRUD jadwal; `MasterJadwal.jsx`
@@ -216,7 +216,7 @@ RPL_Group1/
 | `kalender_akademiks` | `id` (bigint) | Kalender event |
 | `pengaturans` | `id` (bigint) | Setting sistem (key-value) |
 | `operator_profiles` | `id` (bigint) | Profil operator |
-| `wali_kelas` | `id` (bigint) | Detail penugasan wali kelas |
+| `wali_kelas` | `id` (bigint) | Kolom: `guru_id`, `kelas_id`, `tahun_ajaran_id`, `semester_id`, `is_active` |
 | `bendaharas` | `id` (bigint) | Profil bendahara |
 | `activity_logs` | `id` (bigint) | Log aktivitas |
 | `personal_access_tokens` | `id` | Sanctum tokens |
@@ -264,6 +264,7 @@ RPL_Group1/
 - Model `SiswaKelas` → alias backward-compatible untuk `RiwayatKelas`, gunakan `RiwayatKelas` untuk kode baru
 - Model `JadwalPelajaran` → `$table = 'jadwals'`
 - Model `MataPelajaran` → `$table = 'mapels'`
+- Endpoint `GET /kelas/{id}/riwayat` → `riwayatAkademik()` di `MasterDataKelasController` — return riwayat akademik per tahun ajaran, riwayat wali, dan stats aggregate
 
 ---
 

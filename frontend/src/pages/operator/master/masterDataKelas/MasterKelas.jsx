@@ -727,7 +727,14 @@ export default function MasterKelas() {
     queryFn: () =>
       api
         .get("/operator/master-data/kelas", {
-          params: { search, tingkat, semester, page, per_page: 10 },
+          params: {
+            search,
+            tingkat,
+            semester,
+            tahun_ajaran_id: tahunAjaranFilter || undefined,
+            page,
+            per_page: 10,
+          },
         })
         .then((r) => r.data.data),
     keepPreviousData: true,
@@ -817,18 +824,6 @@ export default function MasterKelas() {
               refresh
             </span>
             <span className="hidden sm:inline">Refresh</span>
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-lowest border border-border-light text-text-secondary rounded-xl text-sm hover:bg-surface-container-high transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">
-              upload
-            </span>
-            <span className="hidden sm:inline">Import</span>
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-lowest border border-border-light text-text-secondary rounded-xl text-sm hover:bg-surface-container-high transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">
-              download
-            </span>
-            <span className="hidden sm:inline">Export</span>
           </button>
           <button
             onClick={() => {
@@ -941,8 +936,8 @@ export default function MasterKelas() {
             className="px-3 py-2.5 bg-surface-container-low border border-border-light rounded-xl text-sm text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
           >
             <option value="">Semester (Semua)</option>
-            <option value="1">Semester 1</option>
-            <option value="2">Semester 2</option>
+            <option value="Ganjil">Semester Ganjil</option>
+            <option value="Genap">Semester Genap</option>
           </select>
           <select
             value={tingkat}
