@@ -36,7 +36,7 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
 
   const emptyForm = {
-    kode_mapel: "",
+    kode: "",
     nama_mapel: "",
     kelompok: "A - Wajib",
     tingkat: "Semua",
@@ -51,7 +51,12 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
     if (open) {
       setForm(
         editData
-          ? { ...editData, jam_per_minggu: String(editData.jam_per_minggu) }
+          ? {
+              ...editData,
+              kode: editData.kode ?? "",
+              jam_per_minggu: String(editData.jam_per_minggu),
+              tingkat: editData.tingkat ?? "Semua",
+            }
           : emptyForm,
       );
     }
@@ -115,10 +120,8 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
                 Kode Mapel <span className="text-danger">*</span>
               </label>
               <input
-                value={form.kode_mapel}
-                onChange={(e) =>
-                  set("kode_mapel", e.target.value.toUpperCase())
-                }
+                value={form.kode}
+                onChange={(e) => set("kode", e.target.value.toUpperCase())}
                 placeholder="MTK, IPA, ..."
                 maxLength={20}
                 className={inputCls}
@@ -738,7 +741,7 @@ export default function MasterMapel() {
                     {/* Kode */}
                     <td className="py-3 px-4">
                       <span className="font-mono font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-lg text-xs tracking-wide border border-primary/15">
-                        {m.kode_mapel}
+                        {m.kode}
                       </span>
                     </td>
 

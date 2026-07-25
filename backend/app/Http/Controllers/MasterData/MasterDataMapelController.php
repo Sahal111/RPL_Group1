@@ -19,6 +19,7 @@ class MasterDataMapelController extends Controller
             )
             ->when($request->kelompok, fn($q) => $q->where('kelompok', $request->kelompok))
             ->when($request->tingkat, fn($q) => $q->where('tingkat', $request->tingkat))
+            ->when($request->is_active !== null && $request->is_active !== '', fn($q) => $q->where('is_active', (bool) $request->is_active))
             ->orderBy('kelompok')
             ->orderBy('nama_mapel')
             ->paginate(20);
@@ -29,7 +30,7 @@ class MasterDataMapelController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode_mapel' => 'required|string|max:20|unique:mapels,kode',
+            'kode' => 'required|string|max:20|unique:mapels,kode',
             'nama_mapel' => 'required|string|max:100',
             'kelompok' => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
             'tingkat' => 'required|in:Semua,1,2,3,4,5,6',
@@ -38,14 +39,12 @@ class MasterDataMapelController extends Controller
         ]);
 
         $mapel = MataPelajaran::create([
-            ...$request->only([
-                'kode_mapel',
-                'nama_mapel',
-                'kelompok',
-                'tingkat',
-                'jam_per_minggu',
-                'kurikulum',
-            ]),
+            'kode' => $request->kode,
+            'nama_mapel' => $request->nama_mapel,
+            'kelompok' => $request->kelompok,
+            'tingkat' => $request->tingkat === 'Semua' ? null : $request->tingkat,
+            'jam_per_minggu' => $request->jam_per_minggu,
+            'kurikulum' => $request->kurikulum,
             'is_active' => true,
         ]);
 
@@ -56,18 +55,12 @@ class MasterDataMapelController extends Controller
         ], 201);
     }
 
-    public function show($id)
-    {
-        $mapel = MataPelajaran::findOrFail($id);
-        return response()->json(['success' => true, 'data' => $mapel]);
-    }
-
     public function update(Request $request, $id)
     {
         $mapel = MataPelajaran::findOrFail($id);
 
         $request->validate([
-            'kode_mapel' => "required|string|max:20|unique:mapels,kode,{$id}",
+            'kode' => "required|string|max:20|unique:mapels,kode,{$id}",
             'nama_mapel' => 'required|string|max:100',
             'kelompok' => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
             'tingkat' => 'required|in:Semua,1,2,3,4,5,6',
@@ -76,21 +69,27 @@ class MasterDataMapelController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $mapel->update($request->only([
-            'kode_mapel',
-            'nama_mapel',
-            'kelompok',
-            'tingkat',
-            'jam_per_minggu',
-            'kurikulum',
-            'is_active',
-        ]));
+        $mapel->update([
+            'kode' => $request->kode,
+            'nama_mapel' => $request->nama_mapel,
+            'kelompok' => $request->kelompok,
+            'tingkat' => $request->tingkat === 'Semua' ? null : $request->tingkat,
+            'jam_per_minggu' => $request->jam_per_minggu,
+            'kurikulum' => $request->kurikulum,
+            'is_active' => $request->boolean('is_active', $mapel->is_active),
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Mata pelajaran berhasil diperbarui.',
             'data' => $mapel->fresh(),
         ]);
+    }
+
+    public function show($id)
+    {
+        $mapel = MataPelajaran::findOrFail($id);
+        return response()->json(['success' => true, 'data' => $mapel]);
     }
 
     public function toggleActive($id)

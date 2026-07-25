@@ -24,7 +24,7 @@ class MataPelajaran extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'jam_per_minggu' => 'integer',
-        'tingkat' => 'integer',
+        'tingkat' => 'string',
         'urutan_rapor' => 'integer',
     ];
 
