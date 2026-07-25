@@ -35,17 +35,38 @@ const KELOMPOK_ICON = {
 function ModalMapel({ open, onClose, editData, queryClient }) {
   const isEdit = !!editData;
 
+  // tingkat disimpan sebagai array di form, null/kosong = semua tingkat
+  const parseTingkat = (raw) => {
+    if (!raw || raw === "Semua") return [];
+    return String(raw)
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  };
+
   const emptyForm = {
     kode: "",
     nama_mapel: "",
     kelompok: "A - Wajib",
-    tingkat: "Semua",
+    tingkat: [], // [] = semua tingkat
     jam_per_minggu: "2",
     kurikulum: "Keduanya",
   };
 
   const [form, setForm] = useState(emptyForm);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const toggleTingkat = (t) => {
+    setForm((f) => {
+      const cur = f.tingkat ?? [];
+      return {
+        ...f,
+        tingkat: cur.includes(t)
+          ? cur.filter((x) => x !== t)
+          : [...cur, t].sort(),
+      };
+    });
+  };
 
   useEffect(() => {
     if (open) {
@@ -55,7 +76,7 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
               ...editData,
               kode: editData.kode ?? "",
               jam_per_minggu: String(editData.jam_per_minggu),
-              tingkat: editData.tingkat ?? "Semua",
+              tingkat: parseTingkat(editData.tingkat),
             }
           : emptyForm,
       );
@@ -172,40 +193,63 @@ function ModalMapel({ open, onClose, editData, queryClient }) {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>
-                Tingkat <span className="text-danger">*</span>
-              </label>
-              <select
-                value={form.tingkat}
-                onChange={(e) => set("tingkat", e.target.value)}
-                className={inputCls}
+          <div>
+            <label className={labelCls}>
+              Tingkat <span className="text-danger">*</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {/* Tombol "Semua" */}
+              <button
+                type="button"
+                onClick={() => set("tingkat", [])}
+                className={`px-3 py-1.5 rounded-lg text-label-md font-semibold border transition-colors ${
+                  (form.tingkat ?? []).length === 0
+                    ? "bg-primary text-white border-primary"
+                    : "bg-background-light text-text-secondary border-border-light hover:border-primary/50"
+                }`}
               >
-                <option value="Semua">Semua Tingkat</option>
-                {TINGKAT_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    Tingkat {t}
-                  </option>
-                ))}
-              </select>
+                Semua
+              </button>
+              {TINGKAT_OPTIONS.map((t) => {
+                const selected = (form.tingkat ?? []).includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => toggleTingkat(t)}
+                    className={`px-3 py-1.5 rounded-lg text-label-md font-semibold border transition-colors ${
+                      selected
+                        ? "bg-[#EDE9FE] text-[#5B21B6] border-[#DDD6FE]"
+                        : "bg-background-light text-text-secondary border-border-light hover:border-[#C4B5FD]"
+                    }`}
+                  >
+                    Tk. {t}
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className={labelCls}>
-                Kurikulum <span className="text-danger">*</span>
-              </label>
-              <select
-                value={form.kurikulum}
-                onChange={(e) => set("kurikulum", e.target.value)}
-                className={inputCls}
-              >
-                {KURIKULUM_OPTIONS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <p className="text-xs text-text-secondary mt-1.5">
+              {(form.tingkat ?? []).length === 0
+                ? "Berlaku untuk semua tingkat (1–6)"
+                : `Dipilih: Tingkat ${(form.tingkat ?? []).join(", ")}`}
+            </p>
+          </div>
+
+          <div>
+            <label className={labelCls}>
+              Kurikulum <span className="text-danger">*</span>
+            </label>
+            <select
+              value={form.kurikulum}
+              onChange={(e) => set("kurikulum", e.target.value)}
+              className={inputCls}
+            >
+              {KURIKULUM_OPTIONS.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Toggle status (edit only) */}
@@ -769,16 +813,25 @@ export default function MasterMapel() {
                     </td>
 
                     {/* Tingkat */}
-                    <td className="py-3 px-4 text-center">
-                      {m.tingkat === "Semua" ? (
-                        <span className="text-xs text-text-secondary italic">
-                          Semua
-                        </span>
-                      ) : (
-                        <span className="bg-[#EDE9FE] text-[#5B21B6] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#DDD6FE]">
-                          Tk. {m.tingkat}
-                        </span>
-                      )}
+                    <td className="py-3 px-4">
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {(() => {
+                          const tingkats = m.tingkat
+                            ? String(m.tingkat)
+                                .split(",")
+                                .map((t) => t.trim())
+                                .filter(Boolean)
+                            : ["1", "2", "3", "4", "5", "6"];
+                          return tingkats.map((t) => (
+                            <span
+                              key={t}
+                              className="bg-[#EDE9FE] text-[#5B21B6] text-xs font-semibold px-2 py-0.5 rounded-full border border-[#DDD6FE] whitespace-nowrap"
+                            >
+                              Tk.{t}
+                            </span>
+                          ));
+                        })()}
+                      </div>
                     </td>
 
                     {/* Jam */}
@@ -791,9 +844,24 @@ export default function MasterMapel() {
 
                     {/* Kurikulum */}
                     <td className="py-3 px-4">
-                      <span className="text-xs text-text-secondary">
-                        {m.kurikulum}
-                      </span>
+                      {m.kurikulum === "Keduanya" ? (
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] whitespace-nowrap">
+                            K2013
+                          </span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] whitespace-nowrap">
+                            Merdeka
+                          </span>
+                        </div>
+                      ) : m.kurikulum === "Kurikulum 2013" ? (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] whitespace-nowrap">
+                          K2013
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] whitespace-nowrap">
+                          Merdeka
+                        </span>
+                      )}
                     </td>
 
                     {/* Status */}

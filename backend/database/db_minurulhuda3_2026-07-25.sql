@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-25 10:00:23 +0000
+# Generation Time: 2026-07-25 10:04:11 +0000
 # ************************************************************
 
 
@@ -954,7 +954,7 @@ CREATE TABLE `mapels` (
   `kode` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Kode resmi Dapodik/EMIS untuk sinkronisasi. Contoh: PAI001, MTK001',
   `nama_mapel` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nama lengkap mata pelajaran sesuai kurikulum',
   `kelompok` enum('A - Wajib','B - Wajib','C - Muatan Lokal','Pengembangan Diri','Ekstrakurikuler','Lainnya') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tingkat` tinyint unsigned DEFAULT NULL COMMENT 'Tingkat kelas yang pakai mapel ini (1-6 untuk MI). NULL = berlaku untuk semua tingkat',
+  `tingkat` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Tingkat yang menggunakan mapel ini. NULL = semua tingkat. Multi: "1,3,5"',
   `kurikulum` enum('Kurikulum 2013','Kurikulum Merdeka','Keduanya') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Kurikulum 2013',
   `jam_per_minggu` tinyint unsigned DEFAULT NULL COMMENT 'Jumlah jam pelajaran per minggu. Dipakai untuk validasi jadwal dan beban mengajar guru',
   `is_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1=Mapel aktif dipakai. 0=Sudah tidak dipakai (misalnya kurikulum lama)',
@@ -973,7 +973,7 @@ LOCK TABLES `mapels` WRITE;
 INSERT INTO `mapels` (`id`, `kode`, `nama_mapel`, `kelompok`, `tingkat`, `kurikulum`, `jam_per_minggu`, `is_active`, `urutan_rapor`, `created_at`, `updated_at`)
 VALUES
 	(1,'MTK','Matematika','A - Wajib',NULL,'Kurikulum Merdeka',2,1,NULL,'2026-07-25 16:48:27','2026-07-25 16:49:52'),
-	(2,'IPA','Ilmu Pengetahuan Alam','A - Wajib',NULL,'Keduanya',12,1,NULL,'2026-07-25 16:56:23','2026-07-25 16:56:23');
+	(2,'IPA','Ilmu Pengetahuan Alam','A - Wajib','1,2,3,4,6','Keduanya',12,1,NULL,'2026-07-25 16:56:23','2026-07-25 17:03:29');
 
 /*!40000 ALTER TABLE `mapels` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1388,7 +1388,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-25 16:56:23',NULL,'2026-07-20 21:48:50','2026-07-25 16:56:23');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-25 17:03:29',NULL,'2026-07-20 21:48:50','2026-07-25 17:03:29');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;

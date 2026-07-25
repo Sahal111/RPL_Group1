@@ -33,16 +33,22 @@ class MasterDataMapelController extends Controller
             'kode' => 'required|string|max:20|unique:mapels,kode',
             'nama_mapel' => 'required|string|max:100',
             'kelompok' => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
-            'tingkat' => 'required|in:Semua,1,2,3,4,5,6',
+            'tingkat' => 'nullable|array',
+            'tingkat.*' => 'in:1,2,3,4,5,6',
             'jam_per_minggu' => 'required|integer|min:1|max:40',
             'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka,Keduanya',
         ]);
+
+        $tingkatRaw = $request->tingkat;
+        $tingkatValue = (empty($tingkatRaw) || count($tingkatRaw) === 6)
+            ? null
+            : implode(',', $tingkatRaw);
 
         $mapel = MataPelajaran::create([
             'kode' => $request->kode,
             'nama_mapel' => $request->nama_mapel,
             'kelompok' => $request->kelompok,
-            'tingkat' => $request->tingkat === 'Semua' ? null : $request->tingkat,
+            'tingkat' => $tingkatValue,
             'jam_per_minggu' => $request->jam_per_minggu,
             'kurikulum' => $request->kurikulum,
             'is_active' => true,
@@ -63,17 +69,23 @@ class MasterDataMapelController extends Controller
             'kode' => "required|string|max:20|unique:mapels,kode,{$id}",
             'nama_mapel' => 'required|string|max:100',
             'kelompok' => 'required|in:A - Wajib,B - Wajib,C - Muatan Lokal,Pengembangan Diri,Ekstrakurikuler',
-            'tingkat' => 'required|in:Semua,1,2,3,4,5,6',
+            'tingkat' => 'nullable|array',
+            'tingkat.*' => 'in:1,2,3,4,5,6',
             'jam_per_minggu' => 'required|integer|min:1|max:40',
             'kurikulum' => 'required|in:Kurikulum 2013,Kurikulum Merdeka,Keduanya',
             'is_active' => 'boolean',
         ]);
 
+        $tingkatRaw = $request->tingkat;
+        $tingkatValue = (empty($tingkatRaw) || count($tingkatRaw) === 6)
+            ? null
+            : implode(',', $tingkatRaw);
+
         $mapel->update([
             'kode' => $request->kode,
             'nama_mapel' => $request->nama_mapel,
             'kelompok' => $request->kelompok,
-            'tingkat' => $request->tingkat === 'Semua' ? null : $request->tingkat,
+            'tingkat' => $tingkatValue,
             'jam_per_minggu' => $request->jam_per_minggu,
             'kurikulum' => $request->kurikulum,
             'is_active' => $request->boolean('is_active', $mapel->is_active),
