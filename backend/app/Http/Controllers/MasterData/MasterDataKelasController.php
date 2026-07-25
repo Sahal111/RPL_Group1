@@ -167,6 +167,93 @@ class MasterDataKelasController extends Controller
     }
 
     /**
+     * Riwayat akademik sebuah kelas: per tahun ajaran dengan info wali & jumlah siswa.
+     * GET /kelas/:id/riwayat
+     */
+    public function riwayatAkademik($id)
+    {
+        $kelas = Kelas::with(['wali:id,nama,nuptk,foto', 'tahunAjaran:id,tahun,is_active', 'semester:id,nama'])
+            ->findOrFail($id);
+
+        // Ambil semua tahun ajaran yang pernah dipakai kelas ini (dari riwayat_kelas)
+        $tahunAjaranIds = RiwayatKelas::where('kelas_id', $id)
+            ->whereNotNull('tahun_ajaran_id')
+            ->distinct()
+            ->pluck('tahun_ajaran_id');
+
+        // Tambahkan tahun ajaran kelas itu sendiri kalau belum masuk
+        if ($kelas->tahun_ajaran_id && !$tahunAjaranIds->contains($kelas->tahun_ajaran_id)) {
+            $tahunAjaranIds->push($kelas->tahun_ajaran_id);
+        }
+
+        $tahunAjarans = \App\Models\TahunAjaran::with('semesters')
+            ->whereIn('id', $tahunAjaranIds)
+            ->orderByDesc('id')
+            ->get();
+
+        $riwayat = $tahunAjarans->map(function ($ta) use ($id, $kelas) {
+            // Wali kelas pada periode ini
+            $wali = \App\Models\UserWaliKelas::with('guru:id,nama,nuptk,foto')
+                ->where('kelas_id', $id)
+                ->where('tahun_ajaran_id', $ta->id)
+                ->first();
+
+            // Nama wali fallback ke wali kelas saat ini jika periode aktif
+            $waliNama = $wali?->guru?->nama
+                ?? ($ta->is_active ? $kelas->wali?->nama : null);
+
+            // Jumlah siswa aktif pada periode itu
+            $jumlahSiswa = RiwayatKelas::where('kelas_id', $id)
+                ->where('tahun_ajaran_id', $ta->id)
+                ->whereNull('tanggal_keluar')
+                ->whereNotIn('jenis_perubahan', ['mutasi_keluar', 'lulus', 'nonaktif', 'meninggal'])
+                ->count();
+
+            return [
+                'tahun_ajaran_id' => $ta->id,
+                'tahun_ajaran' => $ta->tahun,
+                'is_active' => (bool) $ta->is_active,
+                'wali_nama' => $waliNama,
+                'wali_foto' => $wali?->guru?->foto,
+                'jumlah_siswa' => $jumlahSiswa,
+            ];
+        });
+
+        // Riwayat wali kelas (semua periode)
+        $riwayatWali = \App\Models\UserWaliKelas::with(['guru:id,nama,nuptk,foto', 'tahunAjaran:id,tahun,is_active'])
+            ->where('kelas_id', $id)
+            ->orderByDesc('tahun_ajaran_id')
+            ->get()
+            ->map(function ($w) {
+                return [
+                    'guru_nama' => $w->guru?->nama,
+                    'guru_foto' => $w->guru?->foto,
+                    'tahun_ajaran' => $w->tahunAjaran?->tahun,
+                    'is_active' => (bool) $w->tahunAjaran?->is_active,
+                ];
+            });
+
+        // Stats
+        $totalTahun = $tahunAjaranIds->count();
+        $totalSiswaUnik = RiwayatKelas::where('kelas_id', $id)->distinct('siswa_id')->count('siswa_id');
+        $totalWali = \App\Models\UserWaliKelas::where('kelas_id', $id)->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'kelas' => $kelas,
+                'riwayat_akademik' => $riwayat->values(),
+                'riwayat_wali' => $riwayatWali->values(),
+                'stats' => [
+                    'total_tahun' => $totalTahun,
+                    'total_siswa_unik' => $totalSiswaUnik,
+                    'total_wali' => $totalWali,
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Detail kelas untuk periode (tahun ajaran) tertentu.
      * GET /kelas/:kelasId/periode/:tahunAjaranId
      */
