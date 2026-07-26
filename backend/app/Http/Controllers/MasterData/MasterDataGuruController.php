@@ -324,7 +324,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
-            'status_perkawinan' => 'nullable|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
+            'status_perkawinan' => 'nullable|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
             'nama_pasangan' => 'nullable|string|max:150',
             'nik_pasangan' => 'nullable|string|max:16',
             'pekerjaan_pasangan' => 'nullable|string|max:100',
@@ -341,7 +341,13 @@ class MasterDataGuruController extends Controller
             // Upsert data keluarga
             $guru->keluarga()->updateOrCreate(
                 ['guru_id' => $guru->id],
-                $request->only(['status_perkawinan', 'nama_pasangan', 'nik_pasangan', 'pekerjaan_pasangan', 'jumlah_anak'])
+                [
+                    'status_perkawinan' => $request->status_perkawinan,
+                    'nama_pasangan' => $request->nama_pasangan,
+                    'nik_pasangan' => $request->nik_pasangan,
+                    'pekerjaan_pasangan' => $request->pekerjaan_pasangan,
+                    'jumlah_anak' => $request->jumlah_anak ?? 0,  // ← default 0
+                ]
             );
 
             // Sync data anak — hapus yang lama, insert ulang

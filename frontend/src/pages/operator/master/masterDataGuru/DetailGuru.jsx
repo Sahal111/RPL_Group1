@@ -803,7 +803,9 @@ export default function DetailGuru() {
     queryFn: () =>
       api
         .get(`/operator/master-data/guru/${nuptk}/akun`)
-        .then((r) => r.data.data),
+        .then((r) => r.data.data)
+        .catch(() => null), // ← 404 ditangkap, return null
+    retry: false, // ← jangan retry kalau 404
   });
 
   /* ── Mutations ── */

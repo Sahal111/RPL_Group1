@@ -49,7 +49,13 @@ const statusKepegawaianOpts = [
 ];
 const statusKeaktifanOpts = ["Aktif", "Cuti", "Pensiun", "Mutasi", "Keluar"];
 const statusHidupOpts = ["Aktif", "Meninggal"];
-const statusNikahOpts = ["Belum Kawin", "Kawin", "Cerai Hidup", "Cerai Mati"];
+const statusNikahOpts = [
+  "Belum Menikah",
+  "Menikah",
+  "Cerai Hidup",
+  "Cerai Mati",
+];
+
 const jenjangOpts = [
   "SD",
   "SMP",
@@ -880,7 +886,7 @@ const Step4 = ({ form, set, setAnak, addAnak, removeAnak }) => (
     </div>
 
     {/* Data Pasangan — tampil jika sudah menikah */}
-    {form.status_perkawinan === "Kawin" && (
+    {form.status_perkawinan === "Menikah" && (
       <>
         <Divider />
         <SubSectionLabel>Data Pasangan</SubSectionLabel>
@@ -1299,13 +1305,18 @@ export default function TambahEditGuru() {
       api.get(`/operator/master-data/guru/${nuptk}`).then((r) => r.data.data),
     enabled: isEdit,
   });
-
+const toDateStr = (v) => (v ? String(v).slice(0, 10) : "");
   useEffect(() => {
     if (guruData && isEdit) {
       const keluarga = guruData.keluarga ?? {};
       setForm({
         ...defaultForm,
         ...guruData,
+        tanggal_lahir: toDateStr(guruData.tanggal_lahir),
+        tanggal_bergabung: toDateStr(guruData.tanggal_bergabung),
+        tmt_pns: toDateStr(guruData.tmt_pns),
+        tmt_gty: toDateStr(guruData.tmt_gty),
+        tgl_sk_pengangkatan: toDateStr(guruData.tgl_sk_pengangkatan),
         // flatten keluarga
         status_perkawinan: keluarga.status_perkawinan ?? "",
         nama_pasangan: keluarga.nama_pasangan ?? "",
