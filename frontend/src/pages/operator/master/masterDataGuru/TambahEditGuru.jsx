@@ -1305,34 +1305,80 @@ export default function TambahEditGuru() {
       api.get(`/operator/master-data/guru/${nuptk}`).then((r) => r.data.data),
     enabled: isEdit,
   });
-const toDateStr = (v) => (v ? String(v).slice(0, 10) : "");
+  const toStr = (v) => v ?? "";
+  const toDate = (v) => (v ? String(v).slice(0, 10) : "");
+
   useEffect(() => {
     if (guruData && isEdit) {
       const keluarga = guruData.keluarga ?? {};
+      const rek = guruData.rekenings?.[0] ?? {};
       setForm({
         ...defaultForm,
-        ...guruData,
-        tanggal_lahir: toDateStr(guruData.tanggal_lahir),
-        tanggal_bergabung: toDateStr(guruData.tanggal_bergabung),
-        tmt_pns: toDateStr(guruData.tmt_pns),
-        tmt_gty: toDateStr(guruData.tmt_gty),
-        tgl_sk_pengangkatan: toDateStr(guruData.tgl_sk_pengangkatan),
-        // flatten keluarga
-        status_perkawinan: keluarga.status_perkawinan ?? "",
-        nama_pasangan: keluarga.nama_pasangan ?? "",
-        nik_pasangan: keluarga.nik_pasangan ?? "",
-        pekerjaan_pasangan: keluarga.pekerjaan_pasangan ?? "",
-        jumlah_anak: keluarga.jumlah_anak ?? "",
-        anaks: guruData.anaks ?? [],
-        kontak_darurat: guruData.kontak_darurat ?? [],
-        // flatten rekening utama
-        nama_bank: guruData.rekenings?.[0]?.nama_bank ?? "",
-        no_rekening: guruData.rekenings?.[0]?.no_rekening ?? "",
-        atas_nama: guruData.rekenings?.[0]?.atas_nama ?? "",
-        npwp: guruData.rekenings?.[0]?.npwp ?? "",
-        no_bpjs_kesehatan: guruData.rekenings?.[0]?.no_bpjs_kesehatan ?? "",
-        no_bpjs_ketenagakerjaan:
-          guruData.rekenings?.[0]?.no_bpjs_ketenagakerjaan ?? "",
+        // Identitas
+        nuptk: toStr(guruData.nuptk),
+        nip: toStr(guruData.nip),
+        nik: toStr(guruData.nik),
+        no_kk: toStr(guruData.no_kk),
+        no_karpeg: toStr(guruData.no_karpeg),
+        nama: toStr(guruData.nama),
+        gelar_depan: toStr(guruData.gelar_depan),
+        gelar_belakang: toStr(guruData.gelar_belakang),
+        jenis_kelamin: toStr(guruData.jenis_kelamin) || "L",
+        tempat_lahir: toStr(guruData.tempat_lahir),
+        tanggal_lahir: toDate(guruData.tanggal_lahir),
+        agama: toStr(guruData.agama) || "Islam",
+        golongan_darah: toStr(guruData.golongan_darah),
+        kewarganegaraan: toStr(guruData.kewarganegaraan) || "WNI",
+        status_hidup: toStr(guruData.status_hidup) || "Aktif",
+        nama_ibu_kandung: toStr(guruData.nama_ibu_kandung),
+        // Kontak
+        no_hp: toStr(guruData.no_hp),
+        no_wa: toStr(guruData.no_wa),
+        email: toStr(guruData.email),
+        // Alamat
+        alamat_jalan: toStr(guruData.alamat_jalan),
+        rt: toStr(guruData.rt),
+        rw: toStr(guruData.rw),
+        dusun: toStr(guruData.dusun),
+        desa_kelurahan: toStr(guruData.desa_kelurahan),
+        kecamatan: toStr(guruData.kecamatan),
+        kota_kabupaten: toStr(guruData.kota_kabupaten),
+        provinsi: toStr(guruData.provinsi),
+        kode_pos: toStr(guruData.kode_pos),
+        // Kepegawaian
+        jenis_ptk: toStr(guruData.jenis_ptk),
+        status_kepegawaian: toStr(guruData.status_kepegawaian),
+        status_keaktifan: toStr(guruData.status_keaktifan) || "Aktif",
+        tanggal_bergabung: toDate(guruData.tanggal_bergabung),
+        tmt_pns: toDate(guruData.tmt_pns),
+        tmt_gty: toDate(guruData.tmt_gty),
+        no_sk_pengangkatan: toStr(guruData.no_sk_pengangkatan),
+        tgl_sk_pengangkatan: toDate(guruData.tgl_sk_pengangkatan),
+        instansi_pengangkat: toStr(guruData.instansi_pengangkat),
+        masa_kerja_tahun: toStr(guruData.masa_kerja_tahun),
+        // Keluarga
+        status_perkawinan: toStr(keluarga.status_perkawinan),
+        nama_pasangan: toStr(keluarga.nama_pasangan),
+        nik_pasangan: toStr(keluarga.nik_pasangan),
+        pekerjaan_pasangan: toStr(keluarga.pekerjaan_pasangan),
+        jumlah_anak: keluarga.jumlah_anak ?? 0,
+        anaks: (guruData.anaks ?? []).map((a) => ({
+          ...a,
+          tanggal_lahir: toDate(a.tanggal_lahir),
+          jenis_kelamin: toStr(a.jenis_kelamin),
+          keterangan: toStr(a.keterangan),
+        })),
+        kontak_darurat: (guruData.kontak_darurat ?? []).map((k) => ({
+          ...k,
+          alamat: toStr(k.alamat),
+        })),
+        // Administrasi
+        nama_bank: toStr(rek.nama_bank),
+        no_rekening: toStr(rek.no_rekening),
+        atas_nama: toStr(rek.atas_nama),
+        npwp: toStr(rek.npwp),
+        no_bpjs_kesehatan: toStr(rek.no_bpjs_kesehatan),
+        no_bpjs_ketenagakerjaan: toStr(rek.no_bpjs_ketenagakerjaan),
       });
       if (guruData.foto) setPreview(`${BASE_URL}/storage/${guruData.foto}`);
     }
