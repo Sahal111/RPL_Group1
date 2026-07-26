@@ -1142,6 +1142,7 @@ const Step5 = ({
         />
       </div>
     </div>
+    
     <Divider />
     <SubSectionLabel>Gaji & Tunjangan</SubSectionLabel>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
