@@ -7,6 +7,21 @@ import toast from "react-hot-toast";
 const BASE_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
+const mutasiVerifikasi = useMutation({
+  mutationFn: () =>
+    api.patch(
+      `/operator/master-data/guru/${nuptk}/${guru.is_verified ? "batal-verifikasi" : "verifikasi"}`,
+    ),
+  onSuccess: () => {
+    toast.success(
+      guru.is_verified
+        ? "Verifikasi dibatalkan."
+        : "Data guru berhasil diverifikasi.",
+    );
+    queryClient.invalidateQueries(["guru-detail", nuptk]);
+  },
+});
+
 /* ─── Helper ─── */
 function fmtDate(val) {
   if (!val) return "-";
@@ -928,6 +943,20 @@ export default function DetailGuru() {
           >
             <span className="material-symbols-outlined text-[18px]">edit</span>
             Edit Profil
+          </button>
+          <button
+            onClick={() => mutasiVerifikasi.mutate()}
+            disabled={mutasiVerifikasi.isPending}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[12px] font-label-md text-sm font-bold border transition-colors ${
+              guru.is_verified
+                ? "bg-warning/10 text-warning border-warning/20 hover:bg-warning/20"
+                : "bg-success/10 text-success border-success/20 hover:bg-success/20"
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {guru.is_verified ? "remove_moderator" : "verified_user"}
+            </span>
+            {guru.is_verified ? "Batalkan Verifikasi" : "Verifikasi Data"}
           </button>
           <button
             onClick={() => window.print()}

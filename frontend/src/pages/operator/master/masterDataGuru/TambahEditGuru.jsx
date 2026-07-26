@@ -407,6 +407,18 @@ const Step1 = ({
             />
           </div>
 
+          <div>
+            <Label>No. Karpeg</Label>
+            <input
+              type="text"
+              maxLength={20}
+              value={form.no_karpeg}
+              onChange={(e) => set("no_karpeg", e.target.value)}
+              className={inputCls}
+              placeholder="Nomor Kartu Pegawai (PNS)"
+            />
+          </div>
+          
           {/* Jenis Kelamin */}
           <div>
             <Label required>Jenis Kelamin</Label>
