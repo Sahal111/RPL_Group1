@@ -7,21 +7,6 @@ import toast from "react-hot-toast";
 const BASE_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
-const mutasiVerifikasi = useMutation({
-  mutationFn: () =>
-    api.patch(
-      `/operator/master-data/guru/${nuptk}/${guru.is_verified ? "batal-verifikasi" : "verifikasi"}`,
-    ),
-  onSuccess: () => {
-    toast.success(
-      guru.is_verified
-        ? "Verifikasi dibatalkan."
-        : "Data guru berhasil diverifikasi.",
-    );
-    queryClient.invalidateQueries(["guru-detail", nuptk]);
-  },
-});
-
 /* ─── Helper ─── */
 function fmtDate(val) {
   if (!val) return "-";
@@ -866,7 +851,20 @@ export default function DetailGuru() {
     },
     onError: (err) => toast.error(err.response?.data?.message ?? "Gagal."),
   });
-
+  const mutasiVerifikasi = useMutation({
+    mutationFn: () =>
+      api.patch(
+        `/operator/master-data/guru/${nuptk}/${guru.is_verified ? "batal-verifikasi" : "verifikasi"}`,
+      ),
+    onSuccess: () => {
+      toast.success(
+        guru.is_verified
+          ? "Verifikasi dibatalkan."
+          : "Data guru berhasil diverifikasi.",
+      );
+      queryClient.invalidateQueries(["guru-detail", nuptk]);
+    },
+  });
   /* ── Loading ── */
   if (isLoading) {
     return (
