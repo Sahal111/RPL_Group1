@@ -79,7 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/users/{id}/reset-password', [OperatorController::class, 'resetPassword']);
         Route::delete('/users/{id}', [OperatorController::class, 'destroy']);
         Route::prefix('master-data')->group(function () {
-            // Guru
+            // ── Master Data Guru ──────────────────────────────────────
+// CRUD utama
             Route::get('/guru', [MasterDataGuruController::class, 'index']);
             Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
             Route::post('/guru', [MasterDataGuruController::class, 'store']);
@@ -87,22 +88,64 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/guru/{nuptk}', [MasterDataGuruController::class, 'update']);
             Route::delete('/guru/{nuptk}', [MasterDataGuruController::class, 'destroy']);
             Route::post('/guru/{nuptk}/foto', [MasterDataGuruController::class, 'uploadFoto']);
-            // Lookup akun yang terhubung ke NUPTK
+
+            // Keluarga & anak
+            Route::get('/guru/{nuptk}/keluarga', [MasterDataGuruController::class, 'getKeluarga']);
+            Route::put('/guru/{nuptk}/keluarga', [MasterDataGuruController::class, 'updateKeluarga']);
+
+            // Kontak darurat
+            Route::get('/guru/{nuptk}/kontak-darurat', [MasterDataGuruController::class, 'getKontakDarurat']);
+            Route::post('/guru/{nuptk}/kontak-darurat', [MasterDataGuruController::class, 'storeKontakDarurat']);
+            Route::put('/guru/{nuptk}/kontak-darurat/{id}', [MasterDataGuruController::class, 'updateKontakDarurat']);
+            Route::delete('/guru/{nuptk}/kontak-darurat/{id}', [MasterDataGuruController::class, 'destroyKontakDarurat']);
+
+            // Pendidikan
+            Route::get('/guru/{nuptk}/pendidikan', [MasterDataGuruController::class, 'getPendidikan']);
+            Route::post('/guru/{nuptk}/pendidikan', [MasterDataGuruController::class, 'storePendidikan']);
+            Route::put('/guru/{nuptk}/pendidikan/{id}', [MasterDataGuruController::class, 'updatePendidikan']);
+            Route::delete('/guru/{nuptk}/pendidikan/{id}', [MasterDataGuruController::class, 'destroyPendidikan']);
+
+            // Sertifikasi
+            Route::get('/guru/{nuptk}/sertifikasi', [MasterDataGuruController::class, 'getSertifikasi']);
+            Route::post('/guru/{nuptk}/sertifikasi', [MasterDataGuruController::class, 'storeSertifikasi']);
+            Route::delete('/guru/{nuptk}/sertifikasi/{id}', [MasterDataGuruController::class, 'destroySertifikasi']);
+
+            // Dokumen upload
+            Route::get('/guru/{nuptk}/dokumen', [MasterDataGuruController::class, 'getDokumen']);
+            Route::post('/guru/{nuptk}/dokumen', [MasterDataGuruController::class, 'uploadDokumen']);
+            Route::delete('/guru/{nuptk}/dokumen/{id}', [MasterDataGuruController::class, 'destroyDokumen']);
+
+            // Administrasi (rekening, BPJS, NPWP)
+            Route::get('/guru/{nuptk}/administrasi', [MasterDataGuruController::class, 'getAdministrasi']);
+            Route::put('/guru/{nuptk}/administrasi', [MasterDataGuruController::class, 'updateAdministrasi']);
+
+            // Kompetensi
+            Route::get('/guru/{nuptk}/kompetensi', [MasterDataGuruController::class, 'getKompetensi']);
+            Route::post('/guru/{nuptk}/kompetensi', [MasterDataGuruController::class, 'storeKompetensi']);
+            Route::delete('/guru/{nuptk}/kompetensi/{id}', [MasterDataGuruController::class, 'destroyKompetensi']);
+
+            // Diklat / pelatihan
+            Route::get('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'getDiklat']);
+            Route::post('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'storeDiklat']);
+            Route::delete('/guru/{nuptk}/diklat/{id}', [MasterDataGuruController::class, 'destroyDiklat']);
+
+            // Mutasi
+            Route::get('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'getMutasi']);
+            Route::post('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'storeMutasi']);
+            Route::delete('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'destroyMutasi']);
+
+            // PKG
+            Route::get('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'getPkg']);
+            Route::post('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'storePkg']);
+
+            // Akun (sudah ada, tidak berubah)
             Route::get('/guru/{nuptk}/akun', function (\Illuminate\Http\Request $req, $nuptk) {
                 $guru = \App\Models\Guru::where('nuptk', $nuptk)->with('user')->first();
                 if (!$guru || !$guru->user) {
-                    return response()->json(['success' => true, 'data' => null]);
+                    return response()->json(['success' => false, 'message' => 'Guru belum memiliki akun.'], 404);
                 }
                 $u = $guru->user;
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'id' => $u->id,
-                        'username' => $u->username,
-                        'email' => $u->email,
-                        'is_active' => $u->is_active,
-                    ]
-                ]);
+                return response()->json(['success' => true, 'data' => ['id' => $u->id, 'username' => $u->username ?? $u->email, 'email' => $u->email, 'role' => $u->roles->pluck('name'), 'is_active' => $u->is_active, 'last_login_at' => $u->last_login_at]]);
             });
 
             // Siswa
