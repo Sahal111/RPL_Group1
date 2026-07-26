@@ -17,6 +17,7 @@ import OperatorLayout from "./pages/operator/OperatorLayout";
 import DashboardOperator from "./pages/operator/DashboardOperator";
 import ManajemenAkun from "./pages/operator/ManajemenAkun";
 import MasterGuru from "./pages/operator/master/masterDataGuru/MasterGuru";
+import TambahEditGuru from "./pages/operator/master/masterDataGuru/TambahEditGuru";
 import MasterSiswa from "./pages/operator/master/masterDataSiswa/MasterSiswa";
 import TambahEditSiswa from "./pages/operator/master/masterDataSiswa/TambahEditSiswa";
 import MasterKelas from "./pages/operator/master/masterDataKelas/MasterKelas";
@@ -107,6 +108,8 @@ export default function App() {
         <Route index element={<ManajemenAkun />} />
         <Route path="dashboard" element={<DashboardOperator />} />
         <Route path="master/guru" element={<MasterGuru />} />
+        <Route path="master/guru/tambah" element={<TambahEditGuru />} />
+        <Route path="master/guru/edit/:nuptk" element={<TambahEditGuru />} />
         <Route path="master/siswa" element={<MasterSiswa />} />
         <Route path="master/siswa/tambah" element={<TambahEditSiswa />} />
         <Route path="master/siswa/edit/:nisn" element={<TambahEditSiswa />} />
@@ -118,7 +121,10 @@ export default function App() {
         <Route path="master/siswa/:nisn" element={<DetailSiswa />} />
         <Route path="master/siswa/:nisn/mutasi" element={<MutasiSiswa />} />
         <Route path="master/kelas/:id" element={<DetailKelas />} />
-        <Route path="master/kelas/:kelasId/periode/:periodeId" element={<DetailKelasPeriodeAkademik />} />
+        <Route
+          path="master/kelas/:kelasId/periode/:periodeId"
+          element={<DetailKelasPeriodeAkademik />}
+        />
         <Route path="master/ortu/:id" element={<DetailOrtu />} />
         <Route path="master/naik-kelas" element={<NaikKelas />} />
         <Route path="master/tahun-ajaran/:id" element={<DetailTahunAjaran />} />

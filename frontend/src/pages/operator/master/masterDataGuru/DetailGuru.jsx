@@ -3,39 +3,802 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
-import {
-  ArrowLeft,
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Shield,
-  KeyRound,
-  UserX,
-  UserCheck,
-  Trash2,
-  Camera,
-} from "lucide-react";
 
 const BASE_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
+/* ─── Helper ─── */
+function fmtDate(val) {
+  if (!val) return "-";
+  try {
+    return new Date(val).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return val;
+  }
+}
+
+/* ─── InfoRow — persis border-b border-surface-container seperti template ─── */
+function InfoRow({ label, value, mono = false }) {
+  return (
+    <div className="flex justify-between border-b border-surface-container pb-2">
+      <span className="text-sm text-text-secondary">{label}</span>
+      <span className={`text-sm font-semibold ${mono ? "font-mono" : ""}`}>
+        {value || "-"}
+      </span>
+    </div>
+  );
+}
+
+/* ─── SubLabel ─── */
+function SubLabel({ children }) {
+  return (
+    <p className="text-[11px] font-bold text-text-secondary uppercase tracking-widest mb-3 mt-6">
+      {children}
+    </p>
+  );
+}
+
+/* ─── SectionTitle — sama persis template ─── */
+function SectionTitle({ icon, label, desc }) {
+  return (
+    <div className="flex items-center gap-4 mb-8">
+      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+        <span className="material-symbols-outlined text-3xl">{icon}</span>
+      </div>
+      <div>
+        <h3 className="font-section-title text-section-title text-text-primary">
+          {label}
+        </h3>
+        {desc && <p className="text-sm text-text-secondary">{desc}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Tab Button — persis template ─── */
+function TabBtn({ active, onClick, children, badge }) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        active
+          ? "px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-colors text-primary border-b-2 border-primary bg-surface-container-low/50 rounded-t-lg flex items-center gap-2"
+          : "px-5 py-3.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-container-lowest whitespace-nowrap transition-colors flex items-center gap-2"
+      }
+    >
+      {children}
+      {badge != null && (
+        <span className="bg-surface-container-high px-1.5 py-0.5 rounded text-xs">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/* ─── Metric Card — persis template ─── */
+function MetricCard({ icon, iconBg, iconColor, label, value, sub, subColor }) {
+  return (
+    <div className="bg-surface rounded-xl p-5 border border-border-light shadow-sm flex flex-col justify-center">
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`p-2 ${iconBg} ${iconColor} rounded-lg`}>
+          <span className="material-symbols-outlined">{icon}</span>
+        </div>
+        <span className="text-sm font-medium text-text-secondary">{label}</span>
+      </div>
+      <div className="flex items-end gap-2">
+        <span className="text-3xl font-bold text-text-primary">{value}</span>
+        {sub && (
+          <span
+            className={`text-sm font-medium mb-1 ${subColor ?? "text-text-secondary"}`}
+          >
+            {sub}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 1 — Identitas & Kepegawaian
+   ══════════════════════════════════════════════════════════ */
+function TabIdentitas({ guru }) {
+  return (
+    <div className="space-y-6">
+      {/* Identitas Pribadi */}
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="badge" label="Identitas Pribadi" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+          <div className="space-y-3">
+            <InfoRow label="NUPTK" value={guru.nuptk} mono />
+            <InfoRow label="NIP / NI PPPK" value={guru.nip} mono />
+            <InfoRow label="NIK" value={guru.nik} mono />
+            <InfoRow label="No. Kartu Keluarga" value={guru.no_kk} mono />
+            <InfoRow label="No. Karpeg" value={guru.no_karpeg} mono />
+            <InfoRow
+              label="Jenis Kelamin"
+              value={guru.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+            />
+          </div>
+          <div className="space-y-3">
+            <InfoRow label="Tempat Lahir" value={guru.tempat_lahir} />
+            <InfoRow
+              label="Tanggal Lahir"
+              value={fmtDate(guru.tanggal_lahir)}
+            />
+            <InfoRow label="Agama" value={guru.agama} />
+            <InfoRow label="Golongan Darah" value={guru.golongan_darah} />
+            <InfoRow label="Kewarganegaraan" value={guru.kewarganegaraan} />
+            <InfoRow label="Nama Ibu Kandung" value={guru.nama_ibu_kandung} />
+          </div>
+        </div>
+        <SubLabel>Kontak</SubLabel>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3">
+          <InfoRow label="No. HP" value={guru.no_hp} />
+          <InfoRow label="No. WhatsApp" value={guru.no_wa} />
+          <InfoRow label="Email" value={guru.email} />
+        </div>
+      </div>
+
+      {/* Kepegawaian */}
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="work" label="Status Kepegawaian" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+          <div className="space-y-3">
+            <InfoRow
+              label="Status Kepegawaian"
+              value={guru.status_kepegawaian}
+            />
+            <InfoRow label="Status Keaktifan" value={guru.status_keaktifan} />
+            <InfoRow label="Jenis PTK" value={guru.jenis_ptk} />
+            <InfoRow
+              label="Tanggal Bergabung"
+              value={fmtDate(guru.tanggal_bergabung)}
+            />
+          </div>
+          <div className="space-y-3">
+            <InfoRow label="TMT PNS / PPPK" value={fmtDate(guru.tmt_pns)} />
+            <InfoRow label="TMT GTY" value={fmtDate(guru.tmt_gty)} />
+            <InfoRow
+              label="Masa Kerja"
+              value={
+                guru.masa_kerja_tahun ? `${guru.masa_kerja_tahun} Tahun` : null
+              }
+            />
+          </div>
+        </div>
+        <SubLabel>SK Pengangkatan</SubLabel>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3">
+          <InfoRow label="No. SK" value={guru.no_sk_pengangkatan} />
+          <InfoRow
+            label="Tanggal SK"
+            value={fmtDate(guru.tgl_sk_pengangkatan)}
+          />
+          <InfoRow
+            label="Instansi Pengangkat"
+            value={guru.instansi_pengangkat}
+          />
+        </div>
+      </div>
+
+      {/* Alamat */}
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="location_on" label="Alamat" />
+        <div className="space-y-3 mb-4">
+          <InfoRow label="Jalan" value={guru.alamat_jalan} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+          <InfoRow
+            label="RT / RW"
+            value={`${guru.rt ?? "-"} / ${guru.rw ?? "-"}`}
+          />
+          <InfoRow label="Dusun" value={guru.dusun} />
+          <InfoRow label="Desa / Kelurahan" value={guru.desa_kelurahan} />
+          <InfoRow label="Kecamatan" value={guru.kecamatan} />
+          <InfoRow label="Kabupaten / Kota" value={guru.kota_kabupaten} />
+          <InfoRow label="Provinsi" value={guru.provinsi} />
+          <InfoRow label="Kode Pos" value={guru.kode_pos} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 2 — Penugasan & Kompetensi
+   ══════════════════════════════════════════════════════════ */
+function TabPenugasan({ guru }) {
+  const mapels = guru.plot_mapels ?? [];
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="menu_book" label="Mata Pelajaran & Penugasan" />
+        {mapels.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada data penugasan mengajar.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {mapels.map((m, i) => (
+              <div
+                key={i}
+                className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <span className="text-sm font-medium text-text-primary">
+                  {m.nama_mapel ?? m.mapel}
+                </span>
+                <span className="text-xs text-text-secondary">{m.kelas}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 3 — Pendidikan & Sertifikasi
+   ══════════════════════════════════════════════════════════ */
+function TabPendidikan({ guru }) {
+  const pendidikans = guru.pendidikans ?? [];
+  const sertifikasis = guru.sertifikasis ?? [];
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="school" label="Riwayat Pendidikan" />
+        {pendidikans.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada data pendidikan.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {pendidikans.map((p, i) => (
+              <div
+                key={i}
+                className="p-4 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <p className="font-semibold text-text-primary">
+                  {p.jenjang} — {p.nama_institusi}
+                </p>
+                <p className="text-sm text-text-secondary mt-1">
+                  {p.jurusan} · {p.tahun_lulus}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="workspace_premium" label="Sertifikasi" />
+        {sertifikasis.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada data sertifikasi.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {sertifikasis.map((s, i) => (
+              <div
+                key={i}
+                className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <span className="text-sm font-medium">{s.nama}</span>
+                <span className="text-xs text-text-secondary">
+                  {fmtDate(s.tanggal)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 4 — Keluarga & Kontak
+   ══════════════════════════════════════════════════════════ */
+function TabKeluarga({ guru }) {
+  const keluarga = guru.keluarga ?? {};
+  const anaks = guru.anaks ?? [];
+  const kontaks = guru.kontak_darurat ?? [];
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="family_restroom" label="Data Keluarga" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+          <InfoRow
+            label="Status Perkawinan"
+            value={keluarga.status_perkawinan}
+          />
+          <InfoRow label="Nama Pasangan" value={keluarga.nama_pasangan} />
+          <InfoRow label="NIK Pasangan" value={keluarga.nik_pasangan} mono />
+          <InfoRow
+            label="Pekerjaan Pasangan"
+            value={keluarga.pekerjaan_pasangan}
+          />
+          <InfoRow label="Jumlah Anak" value={keluarga.jumlah_anak} />
+        </div>
+        {anaks.length > 0 && (
+          <>
+            <SubLabel>Data Anak</SubLabel>
+            <div className="space-y-3">
+              {anaks.map((a, i) => (
+                <div
+                  key={i}
+                  className="p-4 bg-surface-container-low rounded-xl border border-border-light"
+                >
+                  <div className="flex justify-between">
+                    <span className="font-medium text-sm">{a.nama}</span>
+                    <span className="text-xs text-text-secondary">
+                      {a.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+                    </span>
+                  </div>
+                  {a.tanggal_lahir && (
+                    <p className="text-xs text-text-secondary mt-1">
+                      {fmtDate(a.tanggal_lahir)}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="contact_phone" label="Kontak Darurat" />
+        {kontaks.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada kontak darurat.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {kontaks.map((k, i) => (
+              <div
+                key={i}
+                className="p-4 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <div className="flex justify-between">
+                  <span className="font-medium text-sm">{k.nama}</span>
+                  <span className="text-xs bg-secondary-container text-on-secondary-fixed-variant px-2 py-0.5 rounded-full font-medium">
+                    {k.hubungan}
+                  </span>
+                </div>
+                <p className="text-sm text-text-secondary mt-1">{k.no_hp}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 5 — Dokumen
+   ══════════════════════════════════════════════════════════ */
+function TabDokumen({ guru }) {
+  const dokumens = guru.dokumens ?? [];
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="folder_open" label="Dokumen Guru" />
+        {dokumens.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada dokumen yang diunggah.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {dokumens.map((d, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <span className="material-symbols-outlined text-primary text-[28px]">
+                  description
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">
+                    {d.nama_dokumen ?? d.jenis_dokumen}
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {fmtDate(d.created_at)}
+                  </p>
+                </div>
+                <a
+                  href={`${BASE_URL}/storage/${d.path}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    download
+                  </span>
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 6 — Riwayat
+   ══════════════════════════════════════════════════════════ */
+function TabRiwayat({ guru }) {
+  const mutasis = guru.mutasis ?? [];
+  const jabatans = guru.jabatans ?? [];
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="swap_horiz" label="Riwayat Mutasi" />
+        {mutasis.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada riwayat mutasi.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {mutasis.map((m, i) => (
+              <div
+                key={i}
+                className="p-4 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <p className="font-medium text-sm">{m.keterangan}</p>
+                <p className="text-xs text-text-secondary mt-1">
+                  {fmtDate(m.tanggal)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <SectionTitle icon="work_history" label="Riwayat Jabatan" />
+        {jabatans.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada riwayat jabatan.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {jabatans.map((j, i) => (
+              <div
+                key={i}
+                className="p-4 bg-surface-container-low rounded-xl border border-border-light"
+              >
+                <p className="font-medium text-sm">{j.nama_jabatan}</p>
+                <p className="text-xs text-text-secondary mt-1">
+                  {fmtDate(j.tmt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB 7 — Akun Login  (PERSIS TEMPLATE)
+   ══════════════════════════════════════════════════════════ */
+function TabAkunLogin({
+  akunGuru,
+  nuptk,
+  navigate,
+  toggleActive,
+  resetPassword,
+  hapusAkun,
+}) {
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+
+  if (!akunGuru) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+          <SectionTitle
+            icon="shield_person"
+            label="Akun Login"
+            desc="Guru ini belum memiliki akun login."
+          />
+          <button
+            onClick={() =>
+              navigate("/operator", { state: { openModal: true, nuptk } })
+            }
+            className="px-4 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Buat Akun Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-6">
+        {/* Main Account Card — PERSIS TEMPLATE */}
+        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+          {/* Header */}
+          <SectionTitle
+            icon="shield_person"
+            label="Akun Login"
+            desc="Informasi akun yang digunakan guru untuk mengakses sistem."
+          />
+
+          {/* Info Grid — 2 kolom */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-8">
+            <div className="space-y-4">
+              <InfoRow label="Username" value={akunGuru.username} />
+              <InfoRow label="Email Login" value={akunGuru.email} />
+              <InfoRow label="Role" value={akunGuru.roles?.[0] ?? "Guru"} />
+              {/* Status Akun — badge khusus */}
+              <div className="flex justify-between border-b border-surface-container pb-2">
+                <span className="text-sm text-text-secondary">Status Akun</span>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${
+                    akunGuru.is_active
+                      ? "bg-success/10 text-success"
+                      : "bg-danger/10 text-danger"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      akunGuru.is_active ? "bg-success" : "bg-danger"
+                    }`}
+                  />
+                  {akunGuru.is_active ? "Aktif" : "Nonaktif"}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <InfoRow
+                label="Terakhir Login"
+                value={
+                  akunGuru.last_login_at
+                    ? fmtDate(akunGuru.last_login_at)
+                    : "Belum pernah login"
+                }
+              />
+              <InfoRow
+                label="Password Terakhir Diubah"
+                value={
+                  akunGuru.password_changed_at
+                    ? fmtDate(akunGuru.password_changed_at)
+                    : "-"
+                }
+              />
+              <InfoRow
+                label="Perangkat Terakhir"
+                value={akunGuru.last_device ?? "-"}
+              />
+            </div>
+          </div>
+
+          {/* Password Section */}
+          <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-text-secondary">
+                Password
+              </span>
+              <button className="text-primary text-sm font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-[18px]">
+                  visibility
+                </span>{" "}
+                Lihat
+              </button>
+            </div>
+            <div className="text-lg tracking-widest font-mono mb-2">
+              ••••••••••••••
+            </div>
+            <p className="text-xs text-text-secondary italic">
+              Password disimpan secara terenkripsi. Demi keamanan sistem
+              disarankan melakukan reset password daripada melihat password.
+            </p>
+          </div>
+
+          {/* Security Grid */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="p-3 rounded-lg bg-surface-bright border border-outline-variant/20 text-center">
+              <p className="text-xs text-text-secondary mb-1">Login Gagal</p>
+              <p className="text-sm font-bold text-text-primary">
+                {akunGuru.failed_logins ?? 0} kali
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-surface-bright border border-outline-variant/20 text-center">
+              <p className="text-xs text-text-secondary mb-1">Status Email</p>
+              {akunGuru.email_verified_at ? (
+                <p className="text-sm font-bold text-success flex items-center justify-center gap-1">
+                  <span className="material-symbols-outlined text-[16px]">
+                    check_circle
+                  </span>{" "}
+                  Terverifikasi
+                </p>
+              ) : (
+                <p className="text-sm font-bold text-text-secondary">Belum</p>
+              )}
+            </div>
+            <div className="p-3 rounded-lg bg-surface-bright border border-outline-variant/20 text-center">
+              <p className="text-xs text-text-secondary mb-1">2FA</p>
+              <p className="text-sm font-bold text-text-secondary">
+                Belum Aktif
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons — persis urutan template */}
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-surface-container">
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="px-4 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">key</span>{" "}
+              Reset Password
+            </button>
+            <button
+              onClick={() => navigate(`/operator/master/guru/edit/${nuptk}`)}
+              className="px-4 py-2 bg-surface border border-outline-variant text-text-primary rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-surface-container-low transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                edit
+              </span>{" "}
+              Edit Username
+            </button>
+            <button
+              onClick={() => navigate(`/operator/master/guru/edit/${nuptk}`)}
+              className="px-4 py-2 bg-surface border border-outline-variant text-text-primary rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-surface-container-low transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                mail
+              </span>{" "}
+              Ubah Email
+            </button>
+            <button
+              onClick={() => {
+                if (
+                  confirm(
+                    `${akunGuru.is_active ? "Nonaktifkan" : "Aktifkan"} akun ini?`,
+                  )
+                )
+                  toggleActive.mutate(akunGuru.id);
+              }}
+              className="px-4 py-2 bg-surface border border-warning/30 text-warning rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-warning/5 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                block
+              </span>{" "}
+              {akunGuru.is_active ? "Nonaktifkan Akun" : "Aktifkan Akun"}
+            </button>
+            <button
+              onClick={() => {
+                if (
+                  confirm(
+                    "Hapus akun login guru ini? Tindakan ini tidak bisa dibatalkan.",
+                  )
+                )
+                  hapusAkun.mutate(akunGuru.id);
+              }}
+              className="px-4 py-2 bg-surface border border-error/30 text-error rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-error/5 transition-colors ml-auto"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                delete
+              </span>{" "}
+              Hapus Akun
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Reset Password */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm border border-border-light">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+              <div>
+                <h3 className="font-bold text-text-primary">Reset Password</h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Akun: {akunGuru.username}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowResetModal(false);
+                  setNewPassword("");
+                }}
+                className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  close
+                </span>
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Password Baru <span className="text-danger">*</span>
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                placeholder="Minimal 8 karakter"
+              />
+            </div>
+            <div className="flex gap-2 px-6 py-4 border-t border-border-light">
+              <button
+                onClick={() => {
+                  setShowResetModal(false);
+                  setNewPassword("");
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  if (newPassword.length < 8) {
+                    toast.error("Password minimal 8 karakter.");
+                    return;
+                  }
+                  resetPassword.mutate({
+                    id: akunGuru.id,
+                    password: newPassword,
+                  });
+                  setShowResetModal(false);
+                  setNewPassword("");
+                }}
+                disabled={resetPassword.isPending}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                {resetPassword.isPending ? "Mereset..." : "Reset Password"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABS CONFIG
+   ══════════════════════════════════════════════════════════ */
+const TABS = [
+  { id: "identitas", label: "Identitas & Kepegawaian" },
+  { id: "penugasan", label: "Penugasan & Kompetensi" },
+  { id: "pendidikan", label: "Pendidikan & Sertifikasi" },
+  { id: "keluarga", label: "Keluarga & Kontak" },
+  { id: "dokumen", label: "Dokumen" },
+  { id: "riwayat", label: "Riwayat" },
+  { id: "akun", label: "Akun Login" },
+];
+
+/* ══════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ══════════════════════════════════════════════════════════ */
 export default function DetailGuru() {
   const { nuptk } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileRef = useRef();
+  const [activeTab, setActiveTab] = useState("identitas");
 
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-
+  /* ── Queries ── */
   const { data: guru, isLoading } = useQuery({
     queryKey: ["guru-detail", nuptk],
     queryFn: () =>
       api.get(`/operator/master-data/guru/${nuptk}`).then((r) => r.data.data),
   });
 
-  const { data: akunGuru, refetch: refetchAkun } = useQuery({
+  const { data: akunGuru } = useQuery({
     queryKey: ["guru-akun", nuptk],
     queryFn: () =>
       api
@@ -43,6 +806,7 @@ export default function DetailGuru() {
         .then((r) => r.data.data),
   });
 
+  /* ── Mutations ── */
   const uploadFoto = useMutation({
     mutationFn: (file) => {
       const fd = new FormData();
@@ -51,7 +815,7 @@ export default function DetailGuru() {
         headers: { "Content-Type": "multipart/form-data" },
       });
     },
-    onSuccess: (res) => {
+    onSuccess: () => {
       toast.success("Foto berhasil diupload.");
       queryClient.invalidateQueries(["guru-detail", nuptk]);
     },
@@ -73,11 +837,7 @@ export default function DetailGuru() {
         password,
         password_confirmation: password,
       }),
-    onSuccess: () => {
-      toast.success("Password berhasil direset.");
-      setShowResetModal(false);
-      setNewPassword("");
-    },
+    onSuccess: () => toast.success("Password berhasil direset."),
     onError: (err) => toast.error(err.response?.data?.message ?? "Gagal."),
   });
 
@@ -90,339 +850,292 @@ export default function DetailGuru() {
     onError: (err) => toast.error(err.response?.data?.message ?? "Gagal."),
   });
 
-  if (isLoading)
+  /* ── Loading ── */
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <span className="material-symbols-outlined text-[48px] text-primary animate-spin">
+          progress_activity
+        </span>
+        <p className="text-sm text-text-secondary">Memuat data guru...</p>
       </div>
     );
+  }
 
-  if (!guru)
+  if (!guru) {
     return (
-      <div className="text-center py-20 text-gray-400">
+      <div className="text-center py-20 text-text-secondary">
         Data guru tidak ditemukan.
       </div>
     );
+  }
 
   const fotoUrl = guru.foto ? `${BASE_URL}/storage/${guru.foto}` : null;
+  const namaLengkap =
+    [guru.gelar_depan, guru.nama, guru.gelar_belakang]
+      .filter(Boolean)
+      .join(" ") ||
+    guru.nama_lengkap ||
+    guru.nama;
+  const riwayatBadge =
+    (guru.mutasis?.length ?? 0) + (guru.jabatans?.length ?? 0) || null;
 
+  /* ══════════════════════════════════════════════════════════
+     RENDER — struktur 1:1 dengan template HTML
+     ══════════════════════════════════════════════════════════ */
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => navigate("/operator/master/guru")}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+    <div className="space-y-6">
+      {/* ── Page Header & Actions ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Detail Guru</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Informasi lengkap data guru
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
-        {/* Kolom Kiri */}
-        <div className="col-span-2 space-y-6">
-          {/* Card Profil */}
-          <div className="card">
-            <div className="flex items-start gap-5 mb-6">
-              {/* Foto */}
-              <div className="relative flex-shrink-0">
-                <div className="w-20 h-20 rounded-2xl bg-blue-100 overflow-hidden">
-                  {fotoUrl ? (
-                    <img
-                      src={fotoUrl}
-                      alt={guru.nama_lengkap}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-blue-700 font-bold text-3xl">
-                        {guru.nama_lengkap?.charAt(0)?.toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-600 rounded-full flex items-center justify-center shadow-md hover:bg-primary-700 transition-colors"
-                  title="Ganti foto"
-                >
-                  <Camera className="w-3.5 h-3.5 text-white" />
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadFoto.mutate(file);
-                  }}
-                />
-              </div>
-
-              {/* Info Utama */}
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  {guru.nama_lengkap}
-                </h2>
-                <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
-                    {guru.jenis_ptk}
-                  </span>
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                    {guru.status_kepegawaian}
-                  </span>
-                  {/* {guru.golongan && (
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">
-                      Gol. {guru.golongan}
-                    </span>
-                  )} */}
-                  <span
-                    className={`... ${guru.status_aktif ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}
-                  >
-                    {guru.status_aktif ? "Aktif" : "Non-aktif"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Data Pribadi */}
-            <Section title="Data Pribadi">
-              <div className="grid grid-cols-2 gap-4">
-                <InfoItem label="NUPTK" value={guru.nuptk} mono />
-                <InfoItem label="NIP" value={guru.nip ?? "-"} mono />
-                <InfoItem label="NIK" value={guru.nik ?? "-"} mono />
-                <InfoItem
-                  label="Jenis Kelamin"
-                  value={guru.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
-                />
-                <InfoItem label="Tempat Lahir" value={guru.tempat_lahir} />
-                <InfoItem label="Tanggal Lahir" value={guru.tanggal_lahir} />
-                <InfoItem label="Agama" value={guru.agama ?? "-"} />
-                <InfoItem
-                  label="Status Perkawinan"
-                  value={guru.status_perkawinan ?? "-"}
-                />
-                {guru.no_hp && (
-                  <InfoItem label="No. HP" value={guru.no_hp} icon={Phone} />
-                )}
-                {guru.email && (
-                  <InfoItem label="Email" value={guru.email} icon={Mail} />
-                )}
-              </div>
-            </Section>
-
-            {/* Kepegawaian */}
-            <Section title="Kepegawaian">
-              <div className="grid grid-cols-2 gap-4">
-                {/* <InfoItem label="Golongan" value={guru.golongan ?? "-"} />
-                <InfoItem
-                  label="TMT Golongan"
-                  value={guru.tmt_golongan ?? "-"}
-                /> */}
-              </div>
-            </Section>
-
-            {/* Alamat */}
-            <Section title="Alamat">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <InfoItem label="Jalan" value={guru.alamat_jalan ?? "-"} />
-                </div>
-                <InfoItem
-                  label="RT / RW"
-                  value={`${guru.rt ?? "-"} / ${guru.rw ?? "-"}`}
-                />
-                <InfoItem
-                  label="Desa/Kelurahan"
-                  value={guru.desa_kelurahan ?? "-"}
-                />
-                <InfoItem label="Kecamatan" value={guru.kecamatan ?? "-"} />
-                <InfoItem
-                  label="Kabupaten/Kota"
-                  value={guru.kota_kabupaten ?? "-"}
-                />
-                <InfoItem label="Provinsi" value={guru.provinsi ?? "-"} />
-                <InfoItem label="Kode Pos" value={guru.kode_pos ?? "-"} />
-              </div>
-            </Section>
+          <h1 className="font-headline-lg text-headline-lg text-text-primary tracking-tight mb-2">
+            Profil Lengkap Guru
+          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-fixed-variant text-xs font-semibold">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  guru.status_keaktifan === "Aktif"
+                    ? "bg-success"
+                    : "bg-outline"
+                }`}
+              />
+              {guru.status_keaktifan ?? "Aktif"}
+            </span>
+            <span className="text-sm text-text-secondary font-medium">
+              Terakhir diperbarui:{" "}
+              {guru.updated_at ? fmtDate(guru.updated_at) : "-"}
+            </span>
           </div>
         </div>
 
-        {/* Kolom Kanan — Akun Login */}
-        <div>
-          <div className="card">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-gray-500" /> Akun Login
-            </h3>
+        {/* Action buttons — urutan persis template */}
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <button
+            onClick={() => navigate("/operator/master/guru")}
+            className="px-4 py-2 bg-surface text-on-surface border border-outline-variant hover:bg-surface-container-low rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_back
+            </span>
+            Kembali
+          </button>
+          <button
+            onClick={() => navigate(`/operator/master/guru/edit/${nuptk}`)}
+            className="px-4 py-2 bg-primary text-on-primary hover:bg-primary/90 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+            Edit Profil
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="p-2 bg-surface text-on-surface border border-outline-variant hover:bg-surface-container-low rounded-lg transition-colors shadow-sm"
+            title="Cetak Profil"
+          >
+            <span className="material-symbols-outlined text-[20px]">print</span>
+          </button>
+          <button
+            onClick={() =>
+              confirm("Nonaktifkan akun guru ini?") &&
+              toast("Fitur ini belum tersedia.")
+            }
+            className="p-2 bg-surface text-danger border border-error-container hover:bg-error-container/20 rounded-lg transition-colors shadow-sm"
+            title="Nonaktifkan Akun"
+          >
+            <span className="material-symbols-outlined text-[20px]">block</span>
+          </button>
+        </div>
+      </div>
 
-            {akunGuru ? (
-              <div className="space-y-3">
-                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-400">Username</p>
-                    <p className="text-sm font-medium text-gray-700">
-                      {akunGuru.username}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Email</p>
-                    <p className="text-sm font-medium text-gray-700">
-                      {akunGuru.email}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Status</p>
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${akunGuru.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}
-                    >
-                      {akunGuru.is_active ? "Aktif" : "Non-aktif"}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowResetModal(true)}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors"
-                >
-                  <KeyRound className="w-4 h-4" /> Reset Password
-                </button>
-                <button
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `${akunGuru.is_active ? "Nonaktifkan" : "Aktifkan"} akun ini?`,
-                      )
-                    )
-                      toggleActive.mutate(akunGuru.id);
-                  }}
-                  className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${akunGuru.is_active ? "border-orange-200 hover:bg-orange-50 text-orange-600" : "border-green-200 hover:bg-green-50 text-green-600"}`}
-                >
-                  {akunGuru.is_active ? (
-                    <>
-                      <UserX className="w-4 h-4" /> Nonaktifkan
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck className="w-4 h-4" /> Aktifkan
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm("Hapus akun login guru ini?"))
-                      hapusAkun.mutate(akunGuru.id);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-red-200 hover:bg-red-50 text-sm text-red-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" /> Hapus Akun Login
-                </button>
-              </div>
+      {/* ── Hero Profile Card (Bento Style) — persis template ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Identity Block — lg:col-span-4 */}
+        <div className="lg:col-span-4 bg-surface rounded-card p-6 border border-border-light shadow-sm flex flex-col items-center text-center">
+          {/* Foto — w-32 h-32 rounded-full, dengan tombol ganti */}
+          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-surface-container-low shadow-sm mb-4 relative">
+            {fotoUrl ? (
+              <img
+                src={fotoUrl}
+                alt={namaLengkap}
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <div className="text-center py-6">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Shield className="w-6 h-6 text-gray-400" />
-                </div>
-                <p className="text-sm text-gray-500 mb-3">
-                  Guru ini belum memiliki akun login.
-                </p>
-                <button
-                  onClick={() =>
-                    navigate("/operator", { state: { openModal: true, nuptk } })
-                  }
-                  className="btn-primary text-sm w-full"
-                >
-                  Buat Akun Login
-                </button>
+              <div className="w-full h-full bg-secondary-container flex items-center justify-center">
+                <span className="text-primary font-bold text-4xl">
+                  {guru.nama?.charAt(0)?.toUpperCase() ?? "?"}
+                </span>
               </div>
             )}
+            {/* Camera button — absolute, bottom-right */}
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="absolute bottom-1 right-1 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+              title="Ganti foto"
+            >
+              <span className="material-symbols-outlined text-on-primary text-[16px]">
+                photo_camera
+              </span>
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadFoto.mutate(file);
+              }}
+            />
+          </div>
+
+          <h2 className="font-section-title text-section-title text-text-primary mb-1">
+            {namaLengkap}
+          </h2>
+          <p className="text-sm text-text-secondary font-medium mb-4">
+            {guru.nip ? `NIP. ${guru.nip}` : `NUPTK. ${guru.nuptk}`}
+          </p>
+
+          {/* Tabel status — persis template */}
+          <div className="w-full flex flex-col gap-2 mt-2">
+            <div className="flex justify-between items-center py-2 border-b border-surface-container-high text-sm">
+              <span className="text-text-secondary">Status</span>
+              <span className="font-semibold text-text-primary">
+                {guru.status_kepegawaian ?? "-"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-surface-container-high text-sm">
+              <span className="text-text-secondary">Peran Utama</span>
+              <span className="font-semibold text-text-primary">
+                {guru.jenis_ptk ?? "-"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 text-sm">
+              <span className="text-text-secondary">Tugas Tambahan</span>
+              <span className="font-semibold text-primary">
+                {guru.tugas_tambahan ?? "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Metrics & Contact Block — lg:col-span-8 */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* 3 Metric Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+            <MetricCard
+              icon="schedule"
+              iconBg="bg-primary-container/10"
+              iconColor="text-primary"
+              label="Total Jam Mengajar"
+              value={guru.total_jam ?? "—"}
+              sub="Jam/Minggu"
+            />
+            <MetricCard
+              icon="school"
+              iconBg="bg-secondary-container/30"
+              iconColor="text-secondary"
+              label="Masa Kerja"
+              value={guru.masa_kerja_tahun ?? "—"}
+              sub="Tahun"
+            />
+            <MetricCard
+              icon="star"
+              iconBg="bg-warning/10"
+              iconColor="text-warning"
+              label="Nilai PKG (2023)"
+              value={guru.nilai_pkg ?? "—"}
+              sub={guru.nilai_pkg ? "(Sangat Baik)" : ""}
+              subColor="text-success"
+            />
+          </div>
+
+          {/* Quick Contact Banner */}
+          <div className="bg-gradient-to-r from-surface to-surface-container-low rounded-xl p-5 border border-border-light shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 mt-auto">
+            <div className="flex flex-wrap items-center gap-6">
+              {guru.no_hp && (
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-text-secondary text-[20px]">
+                    call
+                  </span>
+                  <span className="text-sm font-medium text-text-primary">
+                    {guru.no_hp}
+                  </span>
+                </div>
+              )}
+              {guru.email && (
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-text-secondary text-[20px]">
+                    mail
+                  </span>
+                  <span className="text-sm font-medium text-text-primary">
+                    {guru.email}
+                  </span>
+                </div>
+              )}
+              {(guru.alamat_jalan || guru.kota_kabupaten) && (
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-text-secondary text-[20px]">
+                    location_on
+                  </span>
+                  <span className="text-sm font-medium text-text-primary">
+                    {[guru.alamat_jalan, guru.kota_kabupaten]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
+                </div>
+              )}
+            </div>
+            <button className="p-2 bg-surface border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors shadow-sm flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-[20px]">
+                forum
+              </span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Modal Reset Password */}
-      {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="px-6 py-4 border-b">
-              <h3 className="font-semibold text-gray-800">Reset Password</h3>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Akun: {akunGuru?.username}
-              </p>
-            </div>
-            <div className="px-6 py-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password Baru <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="input-field"
-                placeholder="Minimal 8 karakter"
-              />
-            </div>
-            <div className="flex gap-2 px-6 py-4 border-t">
-              <button
-                onClick={() => {
-                  setShowResetModal(false);
-                  setNewPassword("");
-                }}
-                className="btn-secondary flex-1"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => {
-                  if (newPassword.length < 8) {
-                    toast.error("Password minimal 8 karakter.");
-                    return;
-                  }
-                  resetPassword.mutate({
-                    id: akunGuru.id,
-                    password: newPassword,
-                  });
-                }}
-                disabled={resetPassword.isPending}
-                className="btn-primary flex-1"
-              >
-                {resetPassword.isPending ? "Mereset..." : "Reset"}
-              </button>
-            </div>
-          </div>
+      {/* ── Tabs & Detailed Content Area — mt-4 seperti template ── */}
+      <div className="bg-surface rounded-card border border-border-light shadow-sm overflow-hidden flex flex-col mt-4">
+        {/* Tab Headers (Scrollable on mobile) */}
+        <div className="flex overflow-x-auto scrollbar-hide border-b border-surface-container-high px-2 pt-2">
+          {TABS.map((t) => (
+            <TabBtn
+              key={t.id}
+              active={activeTab === t.id}
+              onClick={() => setActiveTab(t.id)}
+              badge={t.id === "riwayat" ? riwayatBadge : undefined}
+            >
+              {t.label}
+            </TabBtn>
+          ))}
         </div>
-      )}
-    </div>
-  );
-}
 
-// ── Helper Components ──────────────────────────────────────
-function Section({ title, children }) {
-  return (
-    <div className="mt-6">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-        {title}
-      </p>
-      {children}
-    </div>
-  );
-}
+        {/* Tab Content — p-8 di desktop, dikurangi di mobile */}
+        <div className="p-4 sm:p-6 md:p-8">
+          {activeTab === "identitas" && <TabIdentitas guru={guru} />}
+          {activeTab === "penugasan" && <TabPenugasan guru={guru} />}
+          {activeTab === "pendidikan" && <TabPendidikan guru={guru} />}
+          {activeTab === "keluarga" && <TabKeluarga guru={guru} />}
+          {activeTab === "dokumen" && <TabDokumen guru={guru} />}
+          {activeTab === "riwayat" && <TabRiwayat guru={guru} />}
+          {activeTab === "akun" && (
+            <TabAkunLogin
+              akunGuru={akunGuru}
+              nuptk={nuptk}
+              navigate={navigate}
+              toggleActive={toggleActive}
+              resetPassword={resetPassword}
+              hapusAkun={hapusAkun}
+            />
+          )}
+        </div>
+      </div>
 
-function InfoItem({ label, value, mono = false, icon: Icon }) {
-  return (
-    <div>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p
-        className={`text-sm text-gray-700 ${mono ? "font-mono" : "font-medium"}`}
-      >
-        {value}
-      </p>
+      {/* scrollbar-hide CSS — inject sekali */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 }

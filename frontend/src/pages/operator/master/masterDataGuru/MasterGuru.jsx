@@ -747,10 +747,7 @@ export default function MasterGuru() {
             </button>
           </div>
           <button
-            onClick={() => {
-              setEditData(null);
-              setModalOpen(true);
-            }}
+            onClick={() => navigate("/operator/master/guru/tambah")}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-primary-container text-on-primary rounded-xl text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
@@ -938,10 +935,9 @@ export default function MasterGuru() {
                           </span>
                           <p className="font-medium">Belum ada data guru.</p>
                           <button
-                            onClick={() => {
-                              setEditData(null);
-                              setModalOpen(true);
-                            }}
+                            onClick={() =>
+                              navigate("/operator/master/guru/tambah")
+                            }
                             className="text-primary text-sm font-medium hover:underline flex items-center gap-1"
                           >
                             <span className="material-symbols-outlined text-[16px]">
@@ -1069,7 +1065,11 @@ export default function MasterGuru() {
                                 </span>
                               </button>
                               <button
-                                onClick={() => openEdit(g)}
+                                onClick={() =>
+                                  navigate(
+                                    `/operator/master/guru/edit/${g.nuptk}`,
+                                  )
+                                }
                                 title="Edit"
                                 className="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 transition-colors"
                               >
