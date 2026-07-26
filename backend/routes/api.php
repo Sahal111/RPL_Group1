@@ -142,7 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/guru/{nuptk}/akun', function (\Illuminate\Http\Request $req, $nuptk) {
                 $guru = \App\Models\Guru::where('nuptk', $nuptk)->with('user')->first();
                 if (!$guru || !$guru->user) {
-                    return response()->json(['success' => false, 'message' => 'Guru belum memiliki akun.'], 404);
+                    return response()->json(['success' => true, 'data' => null, 'message' => 'Guru belum memiliki akun.'], 200);
                 }
                 $u = $guru->user;
                 return response()->json(['success' => true, 'data' => ['id' => $u->id, 'username' => $u->username ?? $u->email, 'email' => $u->email, 'role' => $u->roles->pluck('name'), 'is_active' => $u->is_active, 'last_login_at' => $u->last_login_at]]);

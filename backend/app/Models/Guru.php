@@ -13,7 +13,7 @@ class Guru extends Model
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
-
+    protected $appends = ['nama_lengkap'];
     protected $fillable = [
         // Identitas
         'user_id',

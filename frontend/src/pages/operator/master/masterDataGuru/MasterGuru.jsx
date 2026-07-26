@@ -19,7 +19,7 @@ const jenisPtkOptions = [
   "Penjaga Sekolah",
   "Lainnya",
 ];
-const statusOptions = ["PNS", "PPPK", "GTY", "GTT", "Honor Daerah", "Lainnya"];
+const statusOptions = ["PNS", "PPPK", "GTY", "GTT", "Honorer", "Lainnya"];
 const agamaOptions = [
   "Islam",
   "Kristen Protestan",
@@ -29,7 +29,12 @@ const agamaOptions = [
   "Konghucu", 
   "Lainnya", 
 ];
-const perkawinanOpts = ["Belum Kawin", "Kawin", "Cerai Hidup", "Cerai Mati"];
+const perkawinanOpts = [
+  "Belum Menikah",
+  "Menikah",
+  "Cerai Hidup",
+  "Cerai Mati",
+];
 
 const defaultForm = {
   nuptk: "",
@@ -43,8 +48,8 @@ const defaultForm = {
   status_perkawinan: "Belum Kawin",
   jenis_ptk: "Guru Kelas",
   status_kepegawaian: "GTT",
-  golongan: "",
-  tmt_golongan: "",
+  // golongan: "",
+  // tmt_golongan: "",
   no_hp: "",
   email: "",
   alamat_jalan: "",
@@ -110,467 +115,467 @@ function SectionLabel({ children }) {
 }
 
 // ── Modal Tambah / Edit Guru ──────────────────────────────────────────────────
-function ModalGuru({ open, onClose, editData, queryClient }) {
-  const isEdit = !!editData;
-  const [form, setForm] = useState(defaultForm);
-  const [preview, setPreview] = useState(null);
-  const [activeSection, setActiveSection] = useState("pribadi");
-  const fileRef = useRef();
+// function ModalGuru({ open, onClose, editData, queryClient }) {
+//   const isEdit = !!editData;
+//   const [form, setForm] = useState(defaultForm);
+//   const [preview, setPreview] = useState(null);
+//   const [activeSection, setActiveSection] = useState("pribadi");
+//   const fileRef = useRef();
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+//   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  useEffect(() => {
-    if (open) {
-      setForm(editData ?? defaultForm);
-      setPreview(editData?.foto ? fotoUrl(editData.foto) : null);
-      setActiveSection("pribadi");
-    }
-  }, [open, editData]);
+//   useEffect(() => {
+//     if (open) {
+//       setForm(editData ?? defaultForm);
+//       setPreview(editData?.foto ? fotoUrl(editData.foto) : null);
+//       setActiveSection("pribadi");
+//     }
+//   }, [open, editData]);
 
-  const mutation = useMutation({
-    mutationFn: async (data) => {
-      const { _foto, ...payload } = data;
-      const res = isEdit
-        ? await api.put(`/operator/master-data/guru/${editData.nuptk}`, payload)
-        : await api.post("/operator/master-data/guru", payload);
-      if (_foto) {
-        const fd = new FormData();
-        fd.append("foto", _foto);
-        await api.post(
-          `/operator/master-data/guru/${res.data.data.nuptk}/foto`,
-          fd,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          },
-        );
-      }
-      return res;
-    },
-    onSuccess: () => {
-      toast.success(
-        `Data guru berhasil ${isEdit ? "diperbarui" : "ditambahkan"}.`,
-      );
-      queryClient.invalidateQueries(["master-guru"]);
-      onClose();
-    },
-    onError: (err) => {
-      const errors = err.response?.data?.errors;
-      if (errors) Object.values(errors).forEach((e) => toast.error(e[0]));
-      else toast.error(err.response?.data?.message ?? "Gagal menyimpan.");
-    },
-  });
+//   const mutation = useMutation({
+//     mutationFn: async (data) => {
+//       const { _foto, ...payload } = data;
+//       const res = isEdit
+//         ? await api.put(`/operator/master-data/guru/${editData.nuptk}`, payload)
+//         : await api.post("/operator/master-data/guru", payload);
+//       if (_foto) {
+//         const fd = new FormData();
+//         fd.append("foto", _foto);
+//         await api.post(
+//           `/operator/master-data/guru/${res.data.data.nuptk}/foto`,
+//           fd,
+//           {
+//             headers: { "Content-Type": "multipart/form-data" },
+//           },
+//         );
+//       }
+//       return res;
+//     },
+//     onSuccess: () => {
+//       toast.success(
+//         `Data guru berhasil ${isEdit ? "diperbarui" : "ditambahkan"}.`,
+//       );
+//       queryClient.invalidateQueries(["master-guru"]);
+//       onClose();
+//     },
+//     onError: (err) => {
+//       const errors = err.response?.data?.errors;
+//       if (errors) Object.values(errors).forEach((e) => toast.error(e[0]));
+//       else toast.error(err.response?.data?.message ?? "Gagal menyimpan.");
+//     },
+//   });
 
-  if (!open) return null;
+//   if (!open) return null;
 
-  const sections = [
-    { id: "pribadi", label: "Data Pribadi", icon: "person" },
-    { id: "kepegawaian", label: "Kepegawaian", icon: "work" },
-    { id: "alamat", label: "Alamat", icon: "location_on" },
-  ];
+//   const sections = [
+//     { id: "pribadi", label: "Data Pribadi", icon: "person" },
+//     { id: "kepegawaian", label: "Kepegawaian", icon: "work" },
+//     { id: "alamat", label: "Alamat", icon: "location_on" },
+//   ];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-auto">
-      <div
-        className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl my-4 border border-border-light animate-fade-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[20px]">
-                supervisor_account
-              </span>
-            </div>
-            <h3
-              className="font-bold text-text-primary text-base"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-            >
-              {isEdit ? "Edit Data Guru" : "Tambah Guru Baru"}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        </div>
+//   return (
+//     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-auto">
+//       <div
+//         className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl my-4 border border-border-light animate-fade-up"
+//         onClick={(e) => e.stopPropagation()}
+//       >
+//         {/* Header */}
+//         <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+//           <div className="flex items-center gap-3">
+//             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+//               <span className="material-symbols-outlined text-[20px]">
+//                 supervisor_account
+//               </span>
+//             </div>
+//             <h3
+//               className="font-bold text-text-primary text-base"
+//               style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+//             >
+//               {isEdit ? "Edit Data Guru" : "Tambah Guru Baru"}
+//             </h3>
+//           </div>
+//           <button
+//             onClick={onClose}
+//             className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+//           >
+//             <span className="material-symbols-outlined text-[20px]">close</span>
+//           </button>
+//         </div>
 
-        {/* Section Tabs */}
-        <div className="flex border-b border-border-light px-6 gap-4 bg-surface-container-lowest">
-          {sections.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setActiveSection(s.id)}
-              className={`flex items-center gap-1.5 py-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                activeSection === s.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[15px]">
-                {s.icon}
-              </span>
-              {s.label}
-            </button>
-          ))}
-        </div>
+//         {/* Section Tabs */}
+//         <div className="flex border-b border-border-light px-6 gap-4 bg-surface-container-lowest">
+//           {sections.map((s) => (
+//             <button
+//               key={s.id}
+//               onClick={() => setActiveSection(s.id)}
+//               className={`flex items-center gap-1.5 py-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+//                 activeSection === s.id
+//                   ? "border-primary text-primary"
+//                   : "border-transparent text-text-secondary hover:text-text-primary"
+//               }`}
+//             >
+//               <span className="material-symbols-outlined text-[15px]">
+//                 {s.icon}
+//               </span>
+//               {s.label}
+//             </button>
+//           ))}
+//         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 max-h-[60vh] overflow-y-auto space-y-4">
-          {activeSection === "pribadi" && (
-            <>
-              {/* Foto Profil */}
-              <div className="flex items-center gap-4 p-4 bg-surface-container-low rounded-xl border border-border-light">
-                <div className="relative shrink-0">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-                    {preview ? (
-                      <img
-                        src={preview}
-                        alt="preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span
-                        className="text-primary font-bold text-xl"
-                        style={{
-                          fontFamily: "'Plus Jakarta Sans', sans-serif",
-                        }}
-                      >
-                        {form.nama?.charAt(0)?.toUpperCase() || "?"}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-md hover:bg-on-primary-fixed-variant transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-white text-[13px]">
-                      photo_camera
-                    </span>
-                  </button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setPreview(URL.createObjectURL(file));
-                        setForm((f) => ({ ...f, _foto: file }));
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">
-                    Foto Profil
-                  </p>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    JPG/PNG, maksimal 2MB
-                  </p>
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="text-xs text-primary hover:underline mt-1"
-                  >
-                    Ganti foto
-                  </button>
-                </div>
-              </div>
+//         {/* Body */}
+//         <div className="px-6 py-5 max-h-[60vh] overflow-y-auto space-y-4">
+//           {activeSection === "pribadi" && (
+//             <>
+//               {/* Foto Profil */}
+//               <div className="flex items-center gap-4 p-4 bg-surface-container-low rounded-xl border border-border-light">
+//                 <div className="relative shrink-0">
+//                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center border-2 border-primary/20">
+//                     {preview ? (
+//                       <img
+//                         src={preview}
+//                         alt="preview"
+//                         className="w-full h-full object-cover"
+//                       />
+//                     ) : (
+//                       <span
+//                         className="text-primary font-bold text-xl"
+//                         style={{
+//                           fontFamily: "'Plus Jakarta Sans', sans-serif",
+//                         }}
+//                       >
+//                         {form.nama?.charAt(0)?.toUpperCase() || "?"}
+//                       </span>
+//                     )}
+//                   </div>
+//                   <button
+//                     type="button"
+//                     onClick={() => fileRef.current?.click()}
+//                     className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-md hover:bg-on-primary-fixed-variant transition-colors"
+//                   >
+//                     <span className="material-symbols-outlined text-white text-[13px]">
+//                       photo_camera
+//                     </span>
+//                   </button>
+//                   <input
+//                     ref={fileRef}
+//                     type="file"
+//                     accept="image/*"
+//                     className="hidden"
+//                     onChange={(e) => {
+//                       const file = e.target.files?.[0];
+//                       if (file) {
+//                         setPreview(URL.createObjectURL(file));
+//                         setForm((f) => ({ ...f, _foto: file }));
+//                       }
+//                     }}
+//                   />
+//                 </div>
+//                 <div>
+//                   <p className="text-sm font-semibold text-text-primary">
+//                     Foto Profil
+//                   </p>
+//                   <p className="text-xs text-text-secondary mt-0.5">
+//                     JPG/PNG, maksimal 2MB
+//                   </p>
+//                   <button
+//                     onClick={() => fileRef.current?.click()}
+//                     className="text-xs text-primary hover:underline mt-1"
+//                   >
+//                     Ganti foto
+//                   </button>
+//                 </div>
+//               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Field label="Nama Lengkap" required>
-                    <input
-                      value={form.nama}
-                      onChange={(e) => set("nama", e.target.value)}
-                      className={INPUT}
-                      placeholder="Nama lengkap dengan gelar"
-                    />
-                  </Field>
-                </div>
-                <Field label="NUPTK" required>
-                  <input
-                    value={form.nuptk}
-                    onChange={(e) => set("nuptk", e.target.value)}
-                    className={INPUT}
-                    placeholder="16 digit NUPTK"
-                    disabled={isEdit}
-                  />
-                </Field>
-                <Field label="NIP">
-                  <input
-                    value={form.nip}
-                    onChange={(e) => set("nip", e.target.value)}
-                    className={INPUT}
-                    placeholder="NIP (opsional)"
-                  />
-                </Field>
-                <Field label="NIK">
-                  <input
-                    value={form.nik}
-                    onChange={(e) => set("nik", e.target.value)}
-                    className={INPUT}
-                    placeholder="16 digit NIK"
-                  />
-                </Field>
-                <Field label="Jenis Kelamin" required>
-                  <select
-                    value={form.jenis_kelamin}
-                    onChange={(e) => set("jenis_kelamin", e.target.value)}
-                    className={SELECT}
-                  >
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
-                  </select>
-                </Field>
-                <Field label="Tempat Lahir" required>
-                  <input
-                    value={form.tempat_lahir}
-                    onChange={(e) => set("tempat_lahir", e.target.value)}
-                    className={INPUT}
-                    placeholder="Kota tempat lahir"
-                  />
-                </Field>
-                <Field label="Tanggal Lahir" required>
-                  <input
-                    type="date"
-                    value={form.tanggal_lahir}
-                    onChange={(e) => set("tanggal_lahir", e.target.value)}
-                    className={INPUT}
-                  />
-                </Field>
-                <Field label="Agama" required>
-                  <select
-                    value={form.agama}
-                    onChange={(e) => set("agama", e.target.value)}
-                    className={SELECT}
-                  >
-                    {agamaOptions.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Status Perkawinan">
-                  <select
-                    value={form.status_perkawinan}
-                    onChange={(e) => set("status_perkawinan", e.target.value)}
-                    className={SELECT}
-                  >
-                    {perkawinanOpts.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="No. HP">
-                  <input
-                    value={form.no_hp}
-                    onChange={(e) => set("no_hp", e.target.value)}
-                    className={INPUT}
-                    placeholder="Nomor WhatsApp aktif"
-                  />
-                </Field>
-                <div className="col-span-2">
-                  <Field label="Email">
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => set("email", e.target.value)}
-                      className={INPUT}
-                      placeholder="Email guru"
-                    />
-                  </Field>
-                </div>
-              </div>
-            </>
-          )}
+//               <div className="grid grid-cols-2 gap-3">
+//                 <div className="col-span-2">
+//                   <Field label="Nama Lengkap" required>
+//                     <input
+//                       value={form.nama}
+//                       onChange={(e) => set("nama", e.target.value)}
+//                       className={INPUT}
+//                       placeholder="Nama lengkap dengan gelar"
+//                     />
+//                   </Field>
+//                 </div>
+//                 <Field label="NUPTK" required>
+//                   <input
+//                     value={form.nuptk}
+//                     onChange={(e) => set("nuptk", e.target.value)}
+//                     className={INPUT}
+//                     placeholder="16 digit NUPTK"
+//                     disabled={isEdit}
+//                   />
+//                 </Field>
+//                 <Field label="NIP">
+//                   <input
+//                     value={form.nip}
+//                     onChange={(e) => set("nip", e.target.value)}
+//                     className={INPUT}
+//                     placeholder="NIP (opsional)"
+//                   />
+//                 </Field>
+//                 <Field label="NIK">
+//                   <input
+//                     value={form.nik}
+//                     onChange={(e) => set("nik", e.target.value)}
+//                     className={INPUT}
+//                     placeholder="16 digit NIK"
+//                   />
+//                 </Field>
+//                 <Field label="Jenis Kelamin" required>
+//                   <select
+//                     value={form.jenis_kelamin}
+//                     onChange={(e) => set("jenis_kelamin", e.target.value)}
+//                     className={SELECT}
+//                   >
+//                     <option value="L">Laki-laki</option>
+//                     <option value="P">Perempuan</option>
+//                   </select>
+//                 </Field>
+//                 <Field label="Tempat Lahir" required>
+//                   <input
+//                     value={form.tempat_lahir}
+//                     onChange={(e) => set("tempat_lahir", e.target.value)}
+//                     className={INPUT}
+//                     placeholder="Kota tempat lahir"
+//                   />
+//                 </Field>
+//                 <Field label="Tanggal Lahir" required>
+//                   <input
+//                     type="date"
+//                     value={form.tanggal_lahir}
+//                     onChange={(e) => set("tanggal_lahir", e.target.value)}
+//                     className={INPUT}
+//                   />
+//                 </Field>
+//                 <Field label="Agama" required>
+//                   <select
+//                     value={form.agama}
+//                     onChange={(e) => set("agama", e.target.value)}
+//                     className={SELECT}
+//                   >
+//                     {agamaOptions.map((a) => (
+//                       <option key={a} value={a}>
+//                         {a}
+//                       </option>
+//                     ))}
+//                   </select>
+//                 </Field>
+//                 <Field label="Status Perkawinan">
+//                   <select
+//                     value={form.status_perkawinan}
+//                     onChange={(e) => set("status_perkawinan", e.target.value)}
+//                     className={SELECT}
+//                   >
+//                     {perkawinanOpts.map((p) => (
+//                       <option key={p} value={p}>
+//                         {p}
+//                       </option>
+//                     ))}
+//                   </select>
+//                 </Field>
+//                 <Field label="No. HP">
+//                   <input
+//                     value={form.no_hp}
+//                     onChange={(e) => set("no_hp", e.target.value)}
+//                     className={INPUT}
+//                     placeholder="Nomor WhatsApp aktif"
+//                   />
+//                 </Field>
+//                 <div className="col-span-2">
+//                   <Field label="Email">
+//                     <input
+//                       type="email"
+//                       value={form.email}
+//                       onChange={(e) => set("email", e.target.value)}
+//                       className={INPUT}
+//                       placeholder="Email guru"
+//                     />
+//                   </Field>
+//                 </div>
+//               </div>
+//             </>
+//           )}
 
-          {activeSection === "kepegawaian" && (
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Jenis PTK" required>
-                <select
-                  value={form.jenis_ptk}
-                  onChange={(e) => set("jenis_ptk", e.target.value)}
-                  className={SELECT}
-                >
-                  {jenisPtkOptions.map((j) => (
-                    <option key={j} value={j}>
-                      {j}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Status Kepegawaian" required>
-                <select
-                  value={form.status_kepegawaian}
-                  onChange={(e) => set("status_kepegawaian", e.target.value)}
-                  className={SELECT}
-                >
-                  {statusOptions.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Golongan">
-                <input
-                  value={form.golongan}
-                  onChange={(e) => set("golongan", e.target.value)}
-                  className={INPUT}
-                  placeholder="Contoh: III/a"
-                />
-              </Field>
-              <Field label="TMT Golongan">
-                <input
-                  type="date"
-                  value={form.tmt_golongan}
-                  onChange={(e) => set("tmt_golongan", e.target.value)}
-                  className={INPUT}
-                />
-              </Field>
-            </div>
-          )}
+//           {activeSection === "kepegawaian" && (
+//             <div className="grid grid-cols-2 gap-3">
+//               <Field label="Jenis PTK" required>
+//                 <select
+//                   value={form.jenis_ptk}
+//                   onChange={(e) => set("jenis_ptk", e.target.value)}
+//                   className={SELECT}
+//                 >
+//                   {jenisPtkOptions.map((j) => (
+//                     <option key={j} value={j}>
+//                       {j}
+//                     </option>
+//                   ))}
+//                 </select>
+//               </Field>
+//               <Field label="Status Kepegawaian" required>
+//                 <select
+//                   value={form.status_kepegawaian}
+//                   onChange={(e) => set("status_kepegawaian", e.target.value)}
+//                   className={SELECT}
+//                 >
+//                   {statusOptions.map((s) => (
+//                     <option key={s} value={s}>
+//                       {s}
+//                     </option>
+//                   ))}
+//                 </select>
+//               </Field>
+//               {/* <Field label="Golongan">
+//                 <input
+//                   value={form.golongan}
+//                   onChange={(e) => set("golongan", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="Contoh: III/a"
+//                 />
+//               </Field>
+//               <Field label="TMT Golongan">
+//                 <input
+//                   type="date"
+//                   value={form.tmt_golongan}
+//                   onChange={(e) => set("tmt_golongan", e.target.value)}
+//                   className={INPUT}
+//                 />
+//               </Field> */}
+//             </div>
+//           )}
 
-          {activeSection === "alamat" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Field label="Alamat Jalan">
-                  <textarea
-                    value={form.alamat_jalan}
-                    onChange={(e) => set("alamat_jalan", e.target.value)}
-                    className={INPUT + " resize-none"}
-                    rows={2}
-                    placeholder="Nama jalan, nomor rumah"
-                  />
-                </Field>
-              </div>
-              <Field label="RT">
-                <input
-                  value={form.rt}
-                  onChange={(e) => set("rt", e.target.value)}
-                  className={INPUT}
-                  placeholder="001"
-                />
-              </Field>
-              <Field label="RW">
-                <input
-                  value={form.rw}
-                  onChange={(e) => set("rw", e.target.value)}
-                  className={INPUT}
-                  placeholder="001"
-                />
-              </Field>
-              <Field label="Desa/Kelurahan">
-                <input
-                  value={form.desa_kelurahan}
-                  onChange={(e) => set("desa_kelurahan", e.target.value)}
-                  className={INPUT}
-                  placeholder="Nama desa"
-                />
-              </Field>
-              <Field label="Kecamatan">
-                <input
-                  value={form.kecamatan}
-                  onChange={(e) => set("kecamatan", e.target.value)}
-                  className={INPUT}
-                  placeholder="Nama kecamatan"
-                />
-              </Field>
-              <Field label="Kabupaten/Kota">
-                <input
-                  value={form.kota_kabupaten}
-                  onChange={(e) => set("kota_kabupaten", e.target.value)}
-                  className={INPUT}
-                  placeholder="Nama kabupaten"
-                />
-              </Field>
-              <Field label="Provinsi">
-                <input
-                  value={form.provinsi}
-                  onChange={(e) => set("provinsi", e.target.value)}
-                  className={INPUT}
-                  placeholder="Nama provinsi"
-                />
-              </Field>
-              <div className="col-span-2">
-                <Field label="Kode Pos">
-                  <input
-                    value={form.kode_pos}
-                    onChange={(e) => set("kode_pos", e.target.value)}
-                    className={INPUT}
-                    placeholder="12345"
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
-        </div>
+//           {activeSection === "alamat" && (
+//             <div className="grid grid-cols-2 gap-3">
+//               <div className="col-span-2">
+//                 <Field label="Alamat Jalan">
+//                   <textarea
+//                     value={form.alamat_jalan}
+//                     onChange={(e) => set("alamat_jalan", e.target.value)}
+//                     className={INPUT + " resize-none"}
+//                     rows={2}
+//                     placeholder="Nama jalan, nomor rumah"
+//                   />
+//                 </Field>
+//               </div>
+//               <Field label="RT">
+//                 <input
+//                   value={form.rt}
+//                   onChange={(e) => set("rt", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="001"
+//                 />
+//               </Field>
+//               <Field label="RW">
+//                 <input
+//                   value={form.rw}
+//                   onChange={(e) => set("rw", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="001"
+//                 />
+//               </Field>
+//               <Field label="Desa/Kelurahan">
+//                 <input
+//                   value={form.desa_kelurahan}
+//                   onChange={(e) => set("desa_kelurahan", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="Nama desa"
+//                 />
+//               </Field>
+//               <Field label="Kecamatan">
+//                 <input
+//                   value={form.kecamatan}
+//                   onChange={(e) => set("kecamatan", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="Nama kecamatan"
+//                 />
+//               </Field>
+//               <Field label="Kabupaten/Kota">
+//                 <input
+//                   value={form.kota_kabupaten}
+//                   onChange={(e) => set("kota_kabupaten", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="Nama kabupaten"
+//                 />
+//               </Field>
+//               <Field label="Provinsi">
+//                 <input
+//                   value={form.provinsi}
+//                   onChange={(e) => set("provinsi", e.target.value)}
+//                   className={INPUT}
+//                   placeholder="Nama provinsi"
+//                 />
+//               </Field>
+//               <div className="col-span-2">
+//                 <Field label="Kode Pos">
+//                   <input
+//                     value={form.kode_pos}
+//                     onChange={(e) => set("kode_pos", e.target.value)}
+//                     className={INPUT}
+//                     placeholder="12345"
+//                   />
+//                 </Field>
+//               </div>
+//             </div>
+//           )}
+//         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border-light">
-          <div className="flex gap-1">
-            {sections.map((s, i) => (
-              <div
-                key={s.id}
-                className={`w-2 h-2 rounded-full transition-colors ${activeSection === s.id ? "bg-primary" : "bg-border-light"}`}
-              />
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
-            >
-              Batal
-            </button>
-            {activeSection !== "alamat" ? (
-              <button
-                onClick={() =>
-                  setActiveSection(
-                    activeSection === "pribadi" ? "kepegawaian" : "alamat",
-                  )
-                }
-                className="px-4 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1.5"
-              >
-                Lanjut{" "}
-                <span className="material-symbols-outlined text-[16px]">
-                  arrow_forward
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => mutation.mutate(form)}
-                disabled={mutation.isPending}
-                className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-60 flex items-center gap-2"
-              >
-                {mutation.isPending ? (
-                  <>
-                    <span className="material-symbols-outlined text-[16px] animate-spin">
-                      progress_activity
-                    </span>
-                    Menyimpan...
-                  </>
-                ) : isEdit ? (
-                  "Perbarui"
-                ) : (
-                  "Simpan"
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+//         {/* Footer */}
+//         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border-light">
+//           <div className="flex gap-1">
+//             {sections.map((s, i) => (
+//               <div
+//                 key={s.id}
+//                 className={`w-2 h-2 rounded-full transition-colors ${activeSection === s.id ? "bg-primary" : "bg-border-light"}`}
+//               />
+//             ))}
+//           </div>
+//           <div className="flex gap-2">
+//             <button
+//               onClick={onClose}
+//               className="px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+//             >
+//               Batal
+//             </button>
+//             {activeSection !== "alamat" ? (
+//               <button
+//                 onClick={() =>
+//                   setActiveSection(
+//                     activeSection === "pribadi" ? "kepegawaian" : "alamat",
+//                   )
+//                 }
+//                 className="px-4 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+//               >
+//                 Lanjut{" "}
+//                 <span className="material-symbols-outlined text-[16px]">
+//                   arrow_forward
+//                 </span>
+//               </button>
+//             ) : (
+//               <button
+//                 onClick={() => mutation.mutate(form)}
+//                 disabled={mutation.isPending}
+//                 className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-60 flex items-center gap-2"
+//               >
+//                 {mutation.isPending ? (
+//                   <>
+//                     <span className="material-symbols-outlined text-[16px] animate-spin">
+//                       progress_activity
+//                     </span>
+//                     Menyimpan...
+//                   </>
+//                 ) : isEdit ? (
+//                   "Perbarui"
+//                 ) : (
+//                   "Simpan"
+//                 )}
+//               </button>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 // ── Skeleton Row ──────────────────────────────────────────────────────────────
 function SkeletonRow() {
@@ -633,7 +638,7 @@ export default function MasterGuru() {
           params: {
             search,
             jenis_ptk: jenis,
-            status_aktif: statusFilter,
+            status_keaktifan: statusFilter,
             per_page: 10,
             page,
           },
@@ -841,9 +846,11 @@ export default function MasterGuru() {
                     className="px-3 py-2 text-sm border border-border-light rounded-xl bg-white text-text-primary focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   >
                     <option value="">Status: Semua</option>
-                    <option value="aktif">Aktif</option>
-                    <option value="nonaktif">Nonaktif</option>
-                    <option value="cuti">Cuti</option>
+                    <option value="Aktif">Aktif</option>
+                    <option value="Cuti">Cuti</option>
+                    <option value="Pensiun">Pensiun</option>
+                    <option value="Mutasi">Mutasi</option>
+                    <option value="Keluar">Keluar</option>
                   </select>
                   <select
                     value={jenis}
@@ -1298,7 +1305,7 @@ export default function MasterGuru() {
       </div>
 
       {/* ── Modal ── */}
-      <ModalGuru
+      {/* <ModalGuru
         open={modalOpen}
         onClose={() => {
           setModalOpen(false);
@@ -1306,7 +1313,7 @@ export default function MasterGuru() {
         }}
         editData={editData}
         queryClient={queryClient}
-      />
+      /> */}
     </div>
   );
 }
