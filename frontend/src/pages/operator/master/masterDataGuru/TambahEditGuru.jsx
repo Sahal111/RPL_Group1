@@ -144,9 +144,13 @@ const defaultForm = {
   nama_bank: "",
   no_rekening: "",
   atas_nama: "",
+  cabang: "", // ← tambah
   npwp: "",
   no_bpjs_kesehatan: "",
   no_bpjs_ketenagakerjaan: "",
+  gaji_pokok: "", // ← tambah
+  tunjangan_fungsional: "", // ← tambah
+  tunjangan_profesi: "", // ← tambah
 };
 
 /* ─── Steps ─── */
@@ -418,7 +422,7 @@ const Step1 = ({
               placeholder="Nomor Kartu Pegawai (PNS)"
             />
           </div>
-          
+
           {/* Jenis Kelamin */}
           <div>
             <Label required>Jenis Kelamin</Label>
@@ -1088,6 +1092,17 @@ const Step5 = ({
           placeholder="Nama pemilik rekening"
         />
       </div>
+      <div>
+        <Label>Cabang Bank</Label>
+        <input
+          type="text"
+          maxLength={100}
+          value={form.cabang}
+          onChange={(e) => set("cabang", e.target.value)}
+          className={inputCls}
+          placeholder="Contoh: BRI Cabang Bogor Kota"
+        />
+      </div>
     </div>
 
     <Divider />
@@ -1127,7 +1142,59 @@ const Step5 = ({
         />
       </div>
     </div>
-
+    <Divider />
+    <SubSectionLabel>Gaji & Tunjangan</SubSectionLabel>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div>
+        <Label>Gaji Pokok</Label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-medium">
+            Rp
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={form.gaji_pokok}
+            onChange={(e) => set("gaji_pokok", e.target.value)}
+            className={`${inputCls} pl-10`}
+            placeholder="0"
+          />
+        </div>
+      </div>
+      <div>
+        <Label>Tunjangan Fungsional</Label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-medium">
+            Rp
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={form.tunjangan_fungsional}
+            onChange={(e) => set("tunjangan_fungsional", e.target.value)}
+            className={`${inputCls} pl-10`}
+            placeholder="0"
+          />
+        </div>
+      </div>
+      <div>
+        <Label>Tunjangan Profesi (Sertifikasi)</Label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-medium">
+            Rp
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={form.tunjangan_profesi}
+            onChange={(e) => set("tunjangan_profesi", e.target.value)}
+            className={`${inputCls} pl-10`}
+            placeholder="0"
+          />
+        </div>
+      </div>
+    </div>
+    
     <Divider />
     {/* Kontak Darurat */}
     <div className="flex items-center justify-between mb-4">
@@ -1415,9 +1482,13 @@ export default function TambahEditGuru() {
         nama_bank: toStr(rek.nama_bank),
         no_rekening: toStr(rek.no_rekening),
         atas_nama: toStr(rek.atas_nama),
+        cabang: toStr(rek.cabang),
         npwp: toStr(rek.npwp),
         no_bpjs_kesehatan: toStr(rek.no_bpjs_kesehatan),
         no_bpjs_ketenagakerjaan: toStr(rek.no_bpjs_ketenagakerjaan),
+        gaji_pokok: toStr(rek.gaji_pokok),
+        tunjangan_fungsional: toStr(rek.tunjangan_fungsional),
+        tunjangan_profesi: toStr(rek.tunjangan_profesi),
       });
       if (guruData.foto) setPreview(`${BASE_URL}/storage/${guruData.foto}`);
     }
@@ -1438,9 +1509,13 @@ export default function TambahEditGuru() {
         nama_bank,
         no_rekening,
         atas_nama,
+        cabang,
         npwp,
         no_bpjs_kesehatan,
         no_bpjs_ketenagakerjaan,
+        gaji_pokok,
+        tunjangan_fungsional,
+        tunjangan_profesi,
         ...rest
       } = data;
 
@@ -1484,9 +1559,13 @@ export default function TambahEditGuru() {
             nama_bank,
             no_rekening,
             atas_nama,
+            cabang,
             npwp,
             no_bpjs_kesehatan,
             no_bpjs_ketenagakerjaan,
+            gaji_pokok,
+            tunjangan_fungsional,
+            tunjangan_profesi,
             is_primary: 1,
           },
         );

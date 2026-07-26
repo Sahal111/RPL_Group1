@@ -136,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
             Route::patch('/guru/{nuptk}/verifikasi', [MasterDataGuruController::class, 'verifikasi']);
             Route::patch('/guru/{nuptk}/batal-verifikasi', [MasterDataGuruController::class, 'batalVerifikasi']);
+            Route::patch('/guru/{nuptk}/koreksi-nuptk', [MasterDataGuruController::class, 'koreksiNuptk']);
             
             // PKG
             Route::get('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'getPkg']);

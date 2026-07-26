@@ -645,11 +645,25 @@ class MasterDataGuruController extends Controller
             'npwp' => 'nullable|string|max:20',
             'no_bpjs_kesehatan' => 'nullable|string|max:30',
             'no_bpjs_ketenagakerjaan' => 'nullable|string|max:30',
+            'gaji_pokok' => 'nullable|numeric|min:0',
+            'tunjangan_fungsional' => 'nullable|numeric|min:0',
+            'tunjangan_profesi' => 'nullable|numeric|min:0',
         ]);
 
         $rekening = $guru->rekenings()->updateOrCreate(
             ['guru_id' => $guru->id, 'is_primary' => 1],
-            $request->only(['nama_bank', 'no_rekening', 'atas_nama', 'cabang', 'npwp', 'no_bpjs_kesehatan', 'no_bpjs_ketenagakerjaan'])
+            $request->only([
+                'nama_bank',
+                'no_rekening',
+                'atas_nama',
+                'cabang',
+                'npwp',
+                'no_bpjs_kesehatan',
+                'no_bpjs_ketenagakerjaan',
+                'gaji_pokok',
+                'tunjangan_fungsional',
+                'tunjangan_profesi',
+            ])
         );
 
         return response()->json(['success' => true, 'message' => 'Data administrasi diperbarui.', 'data' => $rekening]);
@@ -847,6 +861,40 @@ class MasterDataGuruController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Verifikasi data guru dibatalkan.',
+        ]);
+    }
+    public function koreksiNuptk(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $request->validate([
+            'nuptk_baru' => [
+                'required',
+                'string',
+                'size:16',
+                'regex:/^\d{16}$/',
+                \Illuminate\Validation\Rule::unique('gurus', 'nuptk')->ignore($guru->id),
+            ],
+            'alasan' => 'required|string|max:255',
+        ]);
+
+        $nuptk_lama = $guru->nuptk;
+        $guru->update(['nuptk' => $request->nuptk_baru]);
+
+        // Log perubahan
+        \App\Models\ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'koreksi_nuptk',
+            'module' => 'guru',
+            'subject_id' => $guru->id,
+            'keterangan' => "NUPTK dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}. Alasan: {$request->alasan}",
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "NUPTK berhasil dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}.",
+            'data' => ['nuptk_baru' => $request->nuptk_baru],
         ]);
     }
 }

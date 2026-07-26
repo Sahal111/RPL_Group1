@@ -865,6 +865,29 @@ export default function DetailGuru() {
       queryClient.invalidateQueries(["guru-detail", nuptk]);
     },
   });
+  const [showKoreksiNuptk, setShowKoreksiNuptk] = useState(false);
+  const [nuptkBaru, setNuptkBaru] = useState("");
+  const [alasanKoreksi, setAlasanKoreksi] = useState("");
+
+  const koreksiNuptk = useMutation({
+    mutationFn: () =>
+      api.patch(`/operator/master-data/guru/${nuptk}/koreksi-nuptk`, {
+        nuptk_baru: nuptkBaru,
+        alasan: alasanKoreksi,
+      }),
+    onSuccess: (res) => {
+      const nuptkBaru = res.data.data.nuptk_baru;
+      toast.success("NUPTK berhasil dikoreksi.");
+      setShowKoreksiNuptk(false);
+      setNuptkBaru("");
+      setAlasanKoreksi("");
+      queryClient.invalidateQueries(["guru-detail", nuptk]);
+      // Redirect ke URL baru karena NUPTK berubah
+      navigate(`/operator/master/guru/${nuptkBaru}`, { replace: true });
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message ?? "Gagal mengoreksi NUPTK."),
+  });
   /* ── Loading ── */
   if (isLoading) {
     return (
@@ -941,6 +964,18 @@ export default function DetailGuru() {
           >
             <span className="material-symbols-outlined text-[18px]">edit</span>
             Edit Profil
+          </button>
+          <button
+            onClick={() => {
+              setNuptkBaru(guru.nuptk);
+              setShowKoreksiNuptk(true);
+            }}
+            className="px-4 py-2 bg-surface text-warning border border-warning/30 hover:bg-warning/5 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              edit_note
+            </span>
+            Koreksi NUPTK
           </button>
           <button
             onClick={() => mutasiVerifikasi.mutate()}
@@ -1159,7 +1194,137 @@ export default function DetailGuru() {
           )}
         </div>
       </div>
+      {showKoreksiNuptk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md border border-border-light">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+              <div>
+                <h3 className="font-bold text-text-primary flex items-center gap-2">
+                  <span className="material-symbols-outlined text-warning text-[20px]">
+                    edit_note
+                  </span>
+                  Koreksi NUPTK
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Fitur ini hanya untuk memperbaiki kesalahan input NUPTK.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowKoreksiNuptk(false);
+                  setNuptkBaru("");
+                  setAlasanKoreksi("");
+                }}
+                className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  close
+                </span>
+              </button>
+            </div>
 
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Warning */}
+              <div className="flex gap-3 p-3 bg-warning/10 border border-warning/20 rounded-xl">
+                <span className="material-symbols-outlined text-warning text-[20px] flex-shrink-0 mt-0.5">
+                  warning
+                </span>
+                <p className="text-xs text-warning font-medium">
+                  Perubahan NUPTK akan tercatat di log aktivitas dan tidak dapat
+                  dibatalkan. Pastikan NUPTK baru sudah benar sebelum menyimpan.
+                </p>
+              </div>
+
+              {/* NUPTK lama (readonly) */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  NUPTK Saat Ini
+                </label>
+                <input
+                  type="text"
+                  value={guru.nuptk}
+                  readOnly
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container text-text-secondary font-mono text-sm outline-none"
+                />
+              </div>
+
+              {/* NUPTK baru */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  NUPTK Baru <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={16}
+                  value={nuptkBaru}
+                  onChange={(e) =>
+                    setNuptkBaru(e.target.value.replace(/\D/g, ""))
+                  }
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono text-sm"
+                  placeholder="16 digit NUPTK yang benar"
+                />
+                {nuptkBaru.length > 0 && nuptkBaru.length < 16 && (
+                  <p className="text-danger text-xs mt-1">
+                    {nuptkBaru.length}/16 digit
+                  </p>
+                )}
+              </div>
+
+              {/* Alasan */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Alasan Koreksi <span className="text-danger">*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  maxLength={255}
+                  value={alasanKoreksi}
+                  onChange={(e) => setAlasanKoreksi(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm resize-none"
+                  placeholder="Contoh: Salah input, seharusnya 1234567890123456"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 px-6 py-4 border-t border-border-light">
+              <button
+                onClick={() => {
+                  setShowKoreksiNuptk(false);
+                  setNuptkBaru("");
+                  setAlasanKoreksi("");
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  if (nuptkBaru.length !== 16) {
+                    toast.error("NUPTK harus 16 digit.");
+                    return;
+                  }
+                  if (!alasanKoreksi.trim()) {
+                    toast.error("Alasan koreksi wajib diisi.");
+                    return;
+                  }
+                  if (nuptkBaru === guru.nuptk) {
+                    toast.error("NUPTK baru sama dengan yang lama.");
+                    return;
+                  }
+                  koreksiNuptk.mutate();
+                }}
+                disabled={koreksiNuptk.isPending}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-warning text-white text-sm font-semibold hover:bg-warning/90 transition-colors disabled:opacity-60"
+              >
+                {koreksiNuptk.isPending ? "Menyimpan..." : "Simpan Koreksi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* scrollbar-hide CSS — inject sekali */}
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
