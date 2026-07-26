@@ -29,6 +29,12 @@ class MasterDataGuruController extends Controller
     public function index(Request $request)
     {
         $query = Guru::query()
+            ->with([
+                'waliKelas' => fn($q) => $q->where('is_active', 1)
+                    ->with('kelas:id,nama_kelas'),
+                'sertifikasis:id,guru_id',
+                'plotGuruMapels:id,guru_id,mapel_id',
+            ])
             ->when(
                 $request->search,
                 fn($q) =>

@@ -26,8 +26,8 @@ const agamaOptions = [
   "Kristen Katolik",
   "Hindu",
   "Buddha",
-  "Konghucu", 
-  "Lainnya", 
+  "Konghucu",
+  "Lainnya",
 ];
 const perkawinanOpts = [
   "Belum Menikah",
@@ -80,10 +80,10 @@ function statusColor(status) {
   if (!status)
     return "bg-surface-variant text-text-secondary border-outline-variant/30";
   const s = status.toLowerCase();
-  if (s === "aktif" || s === "pns" || s === "pppk")
-    return "bg-success/10 text-success border-success/20";
+  if (s === "aktif") return "bg-success/10 text-success border-success/20";
   if (s === "cuti") return "bg-warning/10 text-warning border-warning/20";
-  if (s === "nonaktif") return "bg-danger/10 text-danger border-danger/20";
+  if (s === "pensiun" || s === "mutasi" || s === "keluar")
+    return "bg-danger/10 text-danger border-danger/20";
   return "bg-surface-variant text-text-secondary border-outline-variant/30";
 }
 
@@ -672,7 +672,22 @@ export default function MasterGuru() {
 
   // Stats from loaded page (approximate)
   const totalGuru = total;
-  const guruAktif = gurus.filter((g) => !g.nonaktif).length;
+  const guruAktif = gurus.filter((g) => g.status_keaktifan === "Aktif").length;
+  const guruNonaktif = gurus.filter(
+    (g) => g.status_keaktifan !== "Aktif" && g.status_keaktifan,
+  ).length;
+  const guruWali = gurus.filter((g) =>
+    g.wali_kelas?.some((w) => w.is_active),
+  ).length;
+  const guruBersert = gurus.filter(
+    (g) => (g.sertifikasis?.length ?? 0) > 0,
+  ).length;
+  const jumlahMapel = [
+    ...new Set(
+      gurus.flatMap((g) => g.plot_guru_mapels?.map((p) => p.mapel_id) ?? []),
+    ),
+  ].length;
+  const guruTanpaNuptk = gurus.filter((g) => !g.nuptk).length;
 
   const toggleSelect = (nuptk) => {
     setSelected((prev) => {
@@ -784,32 +799,28 @@ export default function MasterGuru() {
             <StatCard
               icon="person_off"
               label="Guru Nonaktif"
-              value={
-                isLoading
-                  ? "—"
-                  : Math.max(0, gurus.filter((g) => g.nonaktif).length)
-              }
+              value={isLoading ? "—" : guruNonaktif}
               iconBg="bg-danger/10"
               iconColor="text-danger"
             />
             <StatCard
               icon="supervisor_account"
               label="Wali Kelas"
-              value={isLoading ? "—" : gurus.filter((g) => g.kelas_wali).length}
+              value={isLoading ? "—" : guruWali}
               iconBg="bg-accent-gold/10"
               iconColor="text-accent-gold"
             />
             <StatCard
               icon="workspace_premium"
               label="Bersertifikasi"
-              value={isLoading ? "—" : "—"}
+              value={isLoading ? "—" : guruBersert}
               iconBg="bg-info/10"
               iconColor="text-info"
             />
             <StatCard
               icon="menu_book"
               label="Mata Pelajaran"
-              value={isLoading ? "—" : "—"}
+              value={isLoading ? "—" : jumlahMapel}
               iconBg="bg-secondary/10"
               iconColor="text-secondary"
             />
@@ -958,8 +969,11 @@ export default function MasterGuru() {
                   ) : (
                     gurus.map((g) => {
                       const foto = fotoUrl(g.foto);
-                      const wali = g.kelas_wali ?? g.nama_wali_kelas;
+                      const wali =
+                        g.wali_kelas?.find((w) => w.is_active)?.kelas
+                          ?.nama_kelas ?? null;
                       const statusKepeg = g.status_kepegawaian ?? "";
+                      const statusAktif = g.status_keaktifan ?? "Aktif";
 
                       return (
                         <tr
@@ -1051,9 +1065,9 @@ export default function MasterGuru() {
                           {/* Status */}
                           <td className="px-6 py-4 hidden md:table-cell text-center">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(statusKepeg)}`}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColor(statusAktif)}`}
                             >
-                              {statusKepeg || "—"}
+                              {statusAktif}
                             </span>
                           </td>
 
@@ -1189,21 +1203,21 @@ export default function MasterGuru() {
             <ul className="space-y-2.5">
               {[
                 {
-                  label: "Belum Punya Jadwal",
-                  sub: "Membutuhkan plot mengajar",
-                  count: 4,
-                  color: "bg-danger text-white",
-                },
-                {
                   label: "NUPTK Kosong",
-                  sub: "Perlu diisi untuk sinkronisasi",
-                  count: 12,
+                  sub: "Perlu diisi untuk sinkronisasi Dapodik",
+                  count: guruTanpaNuptk,
                   color: "bg-warning text-white",
                 },
                 {
-                  label: "Sertifikasi Expired",
-                  sub: "Perlu pembaruan dokumen",
-                  count: 2,
+                  label: "Belum Bersertifikasi",
+                  sub: "Belum memiliki sertifikat pendidik",
+                  count: Math.max(0, gurus.length - guruBersert),
+                  color: "bg-danger text-white",
+                },
+                {
+                  label: "Tidak Aktif",
+                  sub: "Cuti, mutasi, pensiun, atau keluar",
+                  count: guruNonaktif,
                   color: "bg-info text-white",
                 },
               ].map((item) => (
