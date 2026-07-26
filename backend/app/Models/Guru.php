@@ -82,7 +82,35 @@ class Guru extends Model
         'tgl_sk_pengangkatan' => 'date',
         'verified_at' => 'datetime',
     ];
+    protected static function booted(): void
+    {
+        // Saat guru baru dibuat — isi created_by
+        static::creating(function (Guru $guru) {
+            if (empty($guru->created_by) && auth()->check()) {
+                $guru->created_by = auth()->id();
+            }
+            // is_verified default 0 sudah dari DB, tapi eksplisitkan
+            if (!isset($guru->is_verified)) {
+                $guru->is_verified = false;
+            }
+        });
 
+        // Saat data guru diupdate — isi updated_by
+        static::updating(function (Guru $guru) {
+            if (auth()->check()) {
+                $guru->updated_by = auth()->id();
+            }
+        });
+
+        // Saat guru di-soft delete — isi deleted_by
+        static::deleting(function (Guru $guru) {
+            if (auth()->check()) {
+                $guru->deleted_by = auth()->id();
+                $guru->saveQuietly(); // save deleted_by dulu sebelum soft delete
+            }
+        });
+    }
+    
     // ── Accessor ─────────────────────────────────────────────
 
     public function getNamaLengkapAttribute(): string

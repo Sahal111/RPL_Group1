@@ -90,6 +90,8 @@ const defaultForm = {
   // Identitas
   nuptk: "",
   nip: "",
+  nip_lama: "",
+  no_karis_karsu: "",
   nik: "",
   no_kk: "",
   no_karpeg: "",
@@ -356,6 +358,29 @@ const Step1 = ({
             <FieldError msg={errors.nip} />
           </div>
 
+          <div>
+            <Label>NIP Lama</Label>
+            <input
+              type="text"
+              maxLength={9}
+              value={form.nip_lama}
+              onChange={(e) => set("nip_lama", e.target.value)}
+              className={inputCls}
+              placeholder="9 digit NIP lama (sebelum 2004)"
+            />
+          </div>
+          <div>
+            <Label>No. Karis / Karsu</Label>
+            <input
+              type="text"
+              maxLength={20}
+              value={form.no_karis_karsu}
+              onChange={(e) => set("no_karis_karsu", e.target.value)}
+              className={inputCls}
+              placeholder="Kartu Istri/Suami PNS"
+            />
+          </div>
+
           {/* NIK */}
           <div>
             <Label>NIK</Label>
@@ -494,7 +519,7 @@ const Step1 = ({
 
         {/* Nama Ibu Kandung */}
         <div>
-          <Label required>Nama Ibu Kandung</Label>
+          <Label>Nama Ibu Kandung</Label>
           <input
             type="text"
             maxLength={100}
@@ -1192,8 +1217,8 @@ const validateStep = (step, form) => {
     if (!form.tempat_lahir?.trim())
       e.tempat_lahir = "Tempat lahir wajib diisi.";
     if (!form.tanggal_lahir) e.tanggal_lahir = "Tanggal lahir wajib diisi.";
-    if (!form.nama_ibu_kandung?.trim())
-      e.nama_ibu_kandung = "Nama ibu kandung wajib diisi.";
+    // if (!form.nama_ibu_kandung?.trim())
+    //   e.nama_ibu_kandung = "Nama ibu kandung wajib diisi.";
     if (!form.no_hp?.trim()) e.no_hp = "Nomor HP wajib diisi.";
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Format email tidak valid.";
@@ -1317,6 +1342,8 @@ export default function TambahEditGuru() {
         // Identitas
         nuptk: toStr(guruData.nuptk),
         nip: toStr(guruData.nip),
+        nip_lama: toStr(guruData.nip_lama),
+        no_karis_karsu: toStr(guruData.no_karis_karsu),
         nik: toStr(guruData.nik),
         no_kk: toStr(guruData.no_kk),
         no_karpeg: toStr(guruData.no_karpeg),
@@ -1455,7 +1482,14 @@ export default function TambahEditGuru() {
 
       // 5. Sync kontak darurat — simpan satu-satu jika ada yang baru
       for (const k of kontak_darurat ?? []) {
-        if (!k.id) {
+        if (k.id) {
+          // update yang sudah ada
+          await api.put(
+            `/operator/master-data/guru/${targetNuptk}/kontak-darurat/${k.id}`,
+            k,
+          );
+        } else {
+          // tambah yang baru
           await api.post(
             `/operator/master-data/guru/${targetNuptk}/kontak-darurat`,
             k,

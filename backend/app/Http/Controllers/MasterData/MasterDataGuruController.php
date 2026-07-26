@@ -93,7 +93,11 @@ class MasterDataGuruController extends Controller
             // Identitas wajib
             'nuptk' => 'required|string|max:16|unique:gurus,nuptk',
             'nip' => 'nullable|string|max:18|unique:gurus,nip',
+            'nip_lama' => 'nullable|string|max:9',
+            'no_karis_karsu' => 'nullable|string|max:20',
             'nik' => 'nullable|string|max:16|unique:gurus,nik',
+            'no_kk' => 'nullable|string|max:16',
+            'no_karpeg' => 'nullable|string|max:20',
             'nama' => 'required|string|max:100',
             'gelar_depan' => 'nullable|string|max:30',
             'gelar_belakang' => 'nullable|string|max:50',
@@ -106,7 +110,7 @@ class MasterDataGuruController extends Controller
             'nama_ibu_kandung' => 'nullable|string|max:100',
             'golongan_darah' => 'nullable|in:A,B,AB,O,A+,A-,B+,B-,AB+,AB-,O+,O-',
             // Kontak
-            'no_hp' => 'nullable|string|max:20',
+            'no_hp' => 'required|string|max:20',
             'no_wa' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100|unique:gurus,email',
             // Alamat
@@ -135,7 +139,11 @@ class MasterDataGuruController extends Controller
         $guru = Guru::create($request->only([
             'nuptk',
             'nip',
+            'nip_lama',
+            'no_karis_karsu',
             'nik',
+            'no_kk',
+            'no_karpeg',
             'nama',
             'gelar_depan',
             'gelar_belakang',
@@ -184,7 +192,11 @@ class MasterDataGuruController extends Controller
 
         $request->validate([
             'nip' => "nullable|string|max:18|unique:gurus,nip,{$guru->id}",
+            'nip_lama' => 'nullable|string|max:9',
+            'no_karis_karsu' => 'nullable|string|max:20',
             'nik' => "nullable|string|max:16|unique:gurus,nik,{$guru->id}",
+            'no_kk' => 'nullable|string|max:16',
+            'no_karpeg' => 'nullable|string|max:20',
             'email' => "nullable|email|max:100|unique:gurus,email,{$guru->id}",
             'nama' => 'required|string|max:100',
             'gelar_depan' => 'nullable|string|max:30',
@@ -197,7 +209,7 @@ class MasterDataGuruController extends Controller
             'status_hidup' => 'nullable|in:Aktif,Meninggal',
             'nama_ibu_kandung' => 'nullable|string|max:100',
             'golongan_darah' => 'nullable|in:A,B,AB,O,A+,A-,B+,B-,AB+,AB-,O+,O-',
-            'no_hp' => 'nullable|string|max:20',
+            'no_hp' => 'required|string|max:20',
             'no_wa' => 'nullable|string|max:20',
             'alamat_jalan' => 'nullable|string|max:255',
             'rt' => 'nullable|string|max:5',
@@ -222,7 +234,11 @@ class MasterDataGuruController extends Controller
 
         $guru->update($request->only([
             'nip',
+            'nip_lama',
+            'no_karis_karsu',
             'nik',
+            'no_kk',
+            'no_karpeg',
             'email',
             'nama',
             'gelar_depan',
@@ -800,5 +816,37 @@ class MasterDataGuruController extends Controller
         );
 
         return response()->json(['success' => true, 'message' => 'PKG berhasil disimpan.', 'data' => $pkg]);
+    }
+
+    public function verifikasi($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $guru->update([
+            'is_verified' => true,
+            'verified_at' => now(),
+            'verified_by' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data guru berhasil diverifikasi.',
+        ]);
+    }
+
+    public function batalVerifikasi($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $guru->update([
+            'is_verified' => false,
+            'verified_at' => null,
+            'verified_by' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verifikasi data guru dibatalkan.',
+        ]);
     }
 }

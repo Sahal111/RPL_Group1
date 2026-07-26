@@ -134,6 +134,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'storeMutasi']);
             Route::delete('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'destroyMutasi']);
 
+            Route::patch('/guru/{nuptk}/verifikasi', [MasterDataGuruController::class, 'verifikasi']);
+            Route::patch('/guru/{nuptk}/batal-verifikasi', [MasterDataGuruController::class, 'batalVerifikasi']);
+            
             // PKG
             Route::get('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'getPkg']);
             Route::post('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'storePkg']);
