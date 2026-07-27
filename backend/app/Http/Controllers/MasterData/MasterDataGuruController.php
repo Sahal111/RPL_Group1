@@ -75,6 +75,7 @@ class MasterDataGuruController extends Controller
             'sertifikasis',
             'jabatans',
             'jabatanAktif',
+            'inpassings',
             'dokumens',
             'rekenings',
             'kompetensi',

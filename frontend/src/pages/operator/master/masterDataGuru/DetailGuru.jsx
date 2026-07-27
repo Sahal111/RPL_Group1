@@ -313,7 +313,7 @@ function TabPendidikan({ nuptk, guru }) {
       api
         .get(`/operator/master-data/guru/${nuptk}/inpassing`)
         .then((r) => r.data.data),
-    initialData: guru.inpassings ?? [],
+    // tidak pakai initialData — biarkan fetch sendiri
   });
 
   /* ── Pendidikan mutations ── */
