@@ -313,7 +313,8 @@ function TabPendidikan({ nuptk, guru }) {
       api
         .get(`/operator/master-data/guru/${nuptk}/inpassing`)
         .then((r) => r.data.data),
-    // tidak pakai initialData — biarkan fetch sendiri
+    // tidak pakai initialData — biarkan fetch dari endpoint sendiri
+    // supaya data selalu fresh dan tidak terblokir oleh [] dari show()
   });
 
   /* ── Pendidikan mutations ── */
@@ -1547,80 +1548,159 @@ function TabRiwayat({ nuptk, guru }) {
         )}
       </div>
 
-      {/* ── SECTION 3: JABATAN ── */}
+      {/* ── SECTION 3: JABATAN & KEPANGKATAN (Opsi B+C) ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <SectionTitle icon="work_history" label="Riwayat Jabatan" />
+        <div className="flex items-center justify-between mb-6">
+          <SectionTitle
+            icon="work_history"
+            label="Riwayat Jabatan & Kepangkatan"
+            desc={`${jabatans.length} data tercatat`}
+          />
           <button
             onClick={() => setModalJabatan("add")}
-            className="flex items-center gap-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors"
+            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span className="material-symbols-outlined text-[18px]">add</span>
             Tambah
           </button>
         </div>
+
         {jabatans.length === 0 ? (
           <p className="text-sm text-text-secondary text-center py-8">
             Belum ada riwayat jabatan.
           </p>
         ) : (
-          <div className="space-y-3">
-            {jabatans.map((j) => (
-              <div
-                key={j.id}
-                className="p-4 bg-surface-container-low rounded-xl border border-border-light"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium text-sm">{j.jabatan}</p>
-                      {j.is_current && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                          AKTIF
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-text-secondary mt-1">
-                      {[j.pangkat, j.golongan].filter(Boolean).join(" · ")}
-                      {j.status_kepegawaian && ` · ${j.status_kepegawaian}`}
-                    </p>
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      TMT: {j.tmt_jabatan ? fmtDate(j.tmt_jabatan) : "—"}
-                      {j.tanggal_selesai &&
-                        ` s/d ${fmtDate(j.tanggal_selesai)}`}
-                    </p>
-                    {j.no_sk && (
-                      <p className="text-xs text-text-secondary mt-0.5">
-                        SK: {j.no_sk}
-                        {j.tanggal_sk && ` · ${fmtDate(j.tanggal_sk)}`}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <button
-                      onClick={() => setModalJabatan(j)}
-                      className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary hover:text-primary transition-colors"
+          <>
+            {/* ── Tabel Gabungan: Jabatan + Kepangkatan ── */}
+            <div className="overflow-x-auto rounded-xl border border-border-light">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-surface-container-low border-b border-border-light">
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      Jabatan
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      Pangkat
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      Golongan
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      TMT
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      Selesai
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      No. SK
+                    </th>
+                    <th className="text-center px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                      Status
+                    </th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-light">
+                  {jabatans.map((j) => (
+                    <tr
+                      key={j.id}
+                      className={`transition-colors hover:bg-surface-container-lowest ${j.is_current ? "bg-success/5" : ""}`}
                     >
-                      <span className="material-symbols-outlined text-[16px]">
-                        edit
-                      </span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        confirm("Hapus data jabatan ini?") &&
-                        deleteJabatan.mutate(j.id)
-                      }
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-text-secondary hover:text-red-600 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        delete
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                      {/* Jabatan */}
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-text-primary">
+                          {j.jabatan || "—"}
+                        </p>
+                        {j.status_kepegawaian && (
+                          <p className="text-xs text-text-secondary mt-0.5">
+                            {j.status_kepegawaian}
+                          </p>
+                        )}
+                      </td>
+                      {/* Pangkat */}
+                      <td className="px-4 py-3 text-sm text-text-secondary">
+                        {j.pangkat || "—"}
+                      </td>
+                      {/* Golongan */}
+                      <td className="px-4 py-3">
+                        {j.golongan ? (
+                          <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20 font-mono">
+                            {j.golongan}
+                          </span>
+                        ) : (
+                          <span className="text-text-secondary">—</span>
+                        )}
+                      </td>
+                      {/* TMT */}
+                      <td className="px-4 py-3 text-sm text-text-secondary whitespace-nowrap">
+                        {j.tmt_jabatan ? fmtDate(j.tmt_jabatan) : "—"}
+                      </td>
+                      {/* Selesai */}
+                      <td className="px-4 py-3 text-sm whitespace-nowrap">
+                        {j.tanggal_selesai ? (
+                          fmtDate(j.tanggal_selesai)
+                        ) : (
+                          <span className="text-success font-medium text-xs">
+                            Sekarang
+                          </span>
+                        )}
+                      </td>
+                      {/* No. SK */}
+                      <td className="px-4 py-3">
+                        <p className="text-xs font-mono text-text-secondary">
+                          {j.no_sk || "—"}
+                        </p>
+                        {j.tanggal_sk && (
+                          <p className="text-xs text-text-secondary mt-0.5">
+                            {fmtDate(j.tanggal_sk)}
+                          </p>
+                        )}
+                      </td>
+                      {/* Status badge */}
+                      <td className="px-4 py-3 text-center">
+                        {j.is_current ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success/10 text-success border border-success/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                            Aktif
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-text-secondary border border-border-light">
+                            Selesai
+                          </span>
+                        )}
+                      </td>
+                      {/* Aksi */}
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1 justify-end">
+                          <button
+                            onClick={() => setModalJabatan(j)}
+                            className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary hover:text-primary transition-colors"
+                            title="Edit"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              edit
+                            </span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              confirm("Hapus data jabatan ini?") &&
+                              deleteJabatan.mutate(j.id)
+                            }
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-text-secondary hover:text-red-600 transition-colors"
+                            title="Hapus"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              delete
+                            </span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
