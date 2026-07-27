@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-27 00:39:33 +0000
+# Generation Time: 2026-07-27 14:39:31 +0000
 # ************************************************************
 
 
@@ -499,6 +499,15 @@ CREATE TABLE `guru_diklats` (
   CONSTRAINT `fk_gurudiklat_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat diklat/pelatihan guru untuk PKB. Dilaporkan ke Dapodik';
 
+LOCK TABLES `guru_diklats` WRITE;
+/*!40000 ALTER TABLE `guru_diklats` DISABLE KEYS */;
+
+INSERT INTO `guru_diklats` (`id`, `guru_id`, `nama_diklat`, `penyelenggara`, `jenis`, `tingkat`, `tanggal_mulai`, `tanggal_selesai`, `jumlah_jam`, `no_sertifikat`, `peran`, `file_sertifikat`, `keterangan`, `created_at`, `updated_at`, `deleted_at`)
+VALUES
+	(1,5,'Pelatihan kurikulum guru','kemenag','diklat','Nasional','2026-07-05','2026-07-31',33,'0987654321','peserta','guru-dokumen/5/diklat/DXLyp7c2foJZFoBFgIY67sdTZWv89BQbsNXDNOOb.png','hvgfyfyufygghjhghjgguygyutyuttyuty','2026-07-27 07:50:02','2026-07-27 07:50:02',NULL);
+
+/*!40000 ALTER TABLE `guru_diklats` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table guru_dokumens
@@ -573,14 +582,17 @@ DROP TABLE IF EXISTS `guru_jabatans`;
 CREATE TABLE `guru_jabatans` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `guru_id` bigint unsigned NOT NULL COMMENT 'FK ke gurus.id. Jabatan ini milik guru siapa',
+  `jenis_jabatan` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `jabatan` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nama jabatan: Guru Kelas|Wali Kelas|Kepala Sekolah|Bendahara BOS|Kepala Perpustakaan|dll',
+  `unit_kerja` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `golongan` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Golongan kepangkatan PNS: I/A, II/A, III/A, III/B, III/C, III/D, IV/A, IV/B, IV/C, IV/D, IV/E',
   `pangkat` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nama pangkat: Pengatur, Penata Muda, Penata, Pembina, dll',
-  `status_kepegawaian` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Status saat menjabat: PNS|PPPK|GTY|GTT (bisa berbeda dengan status sekarang)',
+  `status_kepegawaian` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `no_sk` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nomor SK pengangkatan jabatan dari Kemenag/Dinas Pendidikan',
   `tanggal_sk` date DEFAULT NULL COMMENT 'Tanggal penerbitan SK',
   `tmt_jabatan` date DEFAULT NULL COMMENT 'Tanggal Mulai Tugas jabatan ini berlaku efektif',
   `tanggal_selesai` date DEFAULT NULL COMMENT 'Tanggal jabatan ini berakhir. NULL jika masih menjabat',
+  `uraian_tugas` text COLLATE utf8mb4_unicode_ci,
   `is_current` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1=Jabatan yang sedang aktif sekarang. Hanya satu per guru. Diupdate saat ada jabatan baru',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -597,6 +609,15 @@ CREATE TABLE `guru_jabatans` (
   CONSTRAINT `fk_gurujab_ub` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat jabatan dan golongan guru. is_current=1 menandai jabatan aktif';
 
+LOCK TABLES `guru_jabatans` WRITE;
+/*!40000 ALTER TABLE `guru_jabatans` DISABLE KEYS */;
+
+INSERT INTO `guru_jabatans` (`id`, `guru_id`, `jenis_jabatan`, `jabatan`, `unit_kerja`, `golongan`, `pangkat`, `status_kepegawaian`, `no_sk`, `tanggal_sk`, `tmt_jabatan`, `tanggal_selesai`, `uraian_tugas`, `is_current`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`)
+VALUES
+	(1,5,'Fungsional','guru','kemenag','III/A','Penata Muda','Honorer','1234567890','2026-07-08','2026-07-03','2026-07-04','ftyffytftgyggygyghggh',1,'2026-07-27 08:08:10','2026-07-27 21:38:28',NULL,1,1);
+
+/*!40000 ALTER TABLE `guru_jabatans` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table guru_keluargas
@@ -1583,7 +1604,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-27 07:39:11',NULL,'2026-07-20 21:48:50','2026-07-27 07:39:11');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-27 21:38:28',NULL,'2026-07-20 21:48:50','2026-07-27 21:38:28');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;

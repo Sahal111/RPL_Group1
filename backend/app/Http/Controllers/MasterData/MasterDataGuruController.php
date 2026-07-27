@@ -1049,19 +1049,24 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
+            'jenis_jabatan' => 'required|in:Struktural,Fungsional,Tambahan',
             'jabatan' => 'required|string|max:100',
+            'unit_kerja' => 'nullable|string|max:150',
             'golongan' => 'nullable|string|max:10',
             'pangkat' => 'nullable|string|max:60',
-            'status_kepegawaian' => 'nullable|in:PNS,PPPK,GTY,GTT',
+            'status_kepegawaian' => 'nullable|in:CPNS,PNS,PPPK,GTY,GTT,Honorer,Kontrak',
             'no_sk' => 'nullable|string|max:80',
             'tanggal_sk' => 'nullable|date',
             'tmt_jabatan' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tmt_jabatan',
+            'uraian_tugas' => 'nullable|string|max:500',
             'is_current' => 'boolean',
         ]);
 
         $data = $request->only([
+            'jenis_jabatan',
             'jabatan',
+            'unit_kerja',
             'golongan',
             'pangkat',
             'status_kepegawaian',
@@ -1069,6 +1074,7 @@ class MasterDataGuruController extends Controller
             'tanggal_sk',
             'tmt_jabatan',
             'tanggal_selesai',
+            'uraian_tugas',
             'is_current',
         ]);
 
@@ -1091,19 +1097,24 @@ class MasterDataGuruController extends Controller
         $jabatan = $guru->jabatans()->findOrFail($id);
 
         $request->validate([
+            'jenis_jabatan' => 'required|in:Struktural,Fungsional,Tambahan',
             'jabatan' => 'required|string|max:100',
+            'unit_kerja' => 'nullable|string|max:150',
             'golongan' => 'nullable|string|max:10',
             'pangkat' => 'nullable|string|max:60',
-            'status_kepegawaian' => 'nullable|in:PNS,PPPK,GTY,GTT',
+            'status_kepegawaian' => 'nullable|in:CPNS,PNS,PPPK,GTY,GTT,Honorer,Kontrak',
             'no_sk' => 'nullable|string|max:80',
             'tanggal_sk' => 'nullable|date',
             'tmt_jabatan' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tmt_jabatan',
+            'uraian_tugas' => 'nullable|string|max:500',
             'is_current' => 'boolean',
         ]);
 
         $data = $request->only([
+            'jenis_jabatan',
             'jabatan',
+            'unit_kerja',
             'golongan',
             'pangkat',
             'status_kepegawaian',
@@ -1111,6 +1122,7 @@ class MasterDataGuruController extends Controller
             'tanggal_sk',
             'tmt_jabatan',
             'tanggal_selesai',
+            'uraian_tugas',
             'is_current',
         ]);
 

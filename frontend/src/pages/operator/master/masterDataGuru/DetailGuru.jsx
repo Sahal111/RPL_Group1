@@ -1375,7 +1375,9 @@ function TabRiwayat({ nuptk, guru }) {
     saveJabatan.mutate({
       id: modalJabatan?.id,
       data: {
+        jenis_jabatan: f.jenis_jabatan.value,
         jabatan: f.jabatan.value,
+        unit_kerja: f.unit_kerja.value,
         golongan: f.golongan.value,
         pangkat: f.pangkat.value,
         status_kepegawaian: f.status_kepegawaian.value,
@@ -1383,6 +1385,7 @@ function TabRiwayat({ nuptk, guru }) {
         tanggal_sk: f.tanggal_sk.value,
         tmt_jabatan: f.tmt_jabatan.value,
         tanggal_selesai: f.tanggal_selesai.value,
+        uraian_tugas: f.uraian_tugas.value,
         is_current: f.is_current.checked ? 1 : 0,
       },
     });
@@ -1580,10 +1583,10 @@ function TabRiwayat({ nuptk, guru }) {
                       Jabatan
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
-                      Pangkat
+                      Jenis
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
-                      Golongan
+                      Gol / Pangkat
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
                       TMT
@@ -1611,17 +1614,23 @@ function TabRiwayat({ nuptk, guru }) {
                         <p className="font-semibold text-text-primary">
                           {j.jabatan || "—"}
                         </p>
-                        {j.status_kepegawaian && (
+                        {j.unit_kerja && (
                           <p className="text-xs text-text-secondary mt-0.5">
-                            {j.status_kepegawaian}
+                            {j.unit_kerja}
                           </p>
                         )}
                       </td>
-                      {/* Pangkat */}
-                      <td className="px-4 py-3 text-sm text-text-secondary">
-                        {j.pangkat || "—"}
+                      {/* Jenis */}
+                      <td className="px-4 py-3">
+                        {j.jenis_jabatan ? (
+                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-surface-container text-text-secondary border border-border-light">
+                            {j.jenis_jabatan}
+                          </span>
+                        ) : (
+                          <span className="text-text-secondary">—</span>
+                        )}
                       </td>
-                      {/* Golongan */}
+                      {/* Gol / Pangkat */}
                       <td className="px-4 py-3">
                         {j.golongan ? (
                           <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20 font-mono">
@@ -1629,6 +1638,11 @@ function TabRiwayat({ nuptk, guru }) {
                           </span>
                         ) : (
                           <span className="text-text-secondary">—</span>
+                        )}
+                        {j.pangkat && (
+                          <p className="text-xs text-text-secondary mt-0.5">
+                            {j.pangkat}
+                          </p>
                         )}
                       </td>
                       {/* TMT */}
@@ -1707,21 +1721,66 @@ function TabRiwayat({ nuptk, guru }) {
       {/* ══ MODAL: JABATAN ══ */}
       {modalJabatan && (
         <Modal
-          title={modalJabatan === "add" ? "Tambah Jabatan" : "Edit Jabatan"}
+          title={
+            modalJabatan === "add"
+              ? "Tambah Riwayat Jabatan"
+              : "Edit Riwayat Jabatan"
+          }
           onClose={() => setModalJabatan(null)}
         >
           <form onSubmit={handleJabatanSubmit} className="space-y-4">
+            {/* Jenis & Nama Jabatan */}
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Jenis Jabatan" required>
+                <select
+                  name="jenis_jabatan"
+                  defaultValue={modalJabatan?.jenis_jabatan ?? ""}
+                  required
+                  className={inputCls}
+                >
+                  <option value="">Pilih jenis</option>
+                  <option value="Struktural">Struktural</option>
+                  <option value="Fungsional">Fungsional</option>
+                  <option value="Tambahan">Tambahan</option>
+                </select>
+              </Field>
+              <Field label="Status Kepegawaian saat Menjabat">
+                <select
+                  name="status_kepegawaian"
+                  defaultValue={modalJabatan?.status_kepegawaian ?? ""}
+                  className={inputCls}
+                >
+                  <option value="">Pilih status</option>
+                  <option value="CPNS">CPNS</option>
+                  <option value="PNS">PNS</option>
+                  <option value="PPPK">PPPK</option>
+                  <option value="GTY">GTY</option>
+                  <option value="GTT">GTT</option>
+                  <option value="Honorer">Honorer</option>
+                  <option value="Kontrak">Kontrak</option>
+                </select>
+              </Field>
+            </div>
             <Field label="Nama Jabatan" required>
               <input
                 name="jabatan"
                 defaultValue={modalJabatan?.jabatan ?? ""}
                 required
                 className={inputCls}
-                placeholder="Contoh: Guru Kelas, Wali Kelas, Kepala Sekolah"
+                placeholder="Contoh: Wali Kelas, Kepala Sekolah, Bendahara BOS"
               />
             </Field>
+            <Field label="Unit Kerja / Instansi">
+              <input
+                name="unit_kerja"
+                defaultValue={modalJabatan?.unit_kerja ?? ""}
+                className={inputCls}
+                placeholder="Contoh: MI Nurul Huda 3, Kemenag Kab. Bogor"
+              />
+            </Field>
+            {/* Kepangkatan */}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Golongan">
+              <Field label="Golongan / Ruang">
                 <input
                   name="golongan"
                   defaultValue={modalJabatan?.golongan ?? ""}
@@ -1738,25 +1797,14 @@ function TabRiwayat({ nuptk, guru }) {
                 />
               </Field>
             </div>
-            <Field label="Status Kepegawaian">
-              <select
-                name="status_kepegawaian"
-                defaultValue={modalJabatan?.status_kepegawaian ?? ""}
-                className={inputCls}
-              >
-                <option value="">Pilih status</option>
-                <option value="PNS">PNS</option>
-                <option value="PPPK">PPPK</option>
-                <option value="GTY">GTY</option>
-                <option value="GTT">GTT</option>
-              </select>
-            </Field>
+            {/* SK */}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="No. SK">
+              <Field label="No. SK Pengangkatan">
                 <input
                   name="no_sk"
                   defaultValue={modalJabatan?.no_sk ?? ""}
                   className={inputCls}
+                  placeholder="Nomor surat keputusan"
                 />
               </Field>
               <Field label="Tanggal SK">
@@ -1768,6 +1816,7 @@ function TabRiwayat({ nuptk, guru }) {
                 />
               </Field>
             </div>
+            {/* Periode */}
             <div className="grid grid-cols-2 gap-4">
               <Field label="TMT Jabatan">
                 <input
@@ -1788,6 +1837,15 @@ function TabRiwayat({ nuptk, guru }) {
                 />
               </Field>
             </div>
+            <Field label="Uraian Tugas / Keterangan">
+              <textarea
+                name="uraian_tugas"
+                defaultValue={modalJabatan?.uraian_tugas ?? ""}
+                rows={2}
+                className={inputCls}
+                placeholder="Opsional — deskripsi singkat tugas jabatan"
+              />
+            </Field>
             <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
               <input
                 name="is_current"

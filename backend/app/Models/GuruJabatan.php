@@ -11,7 +11,9 @@ class GuruJabatan extends Model
     protected $table = 'guru_jabatans';
     protected $fillable = [
         'guru_id',
+        'jenis_jabatan',
         'jabatan',
+        'unit_kerja',
         'golongan',
         'pangkat',
         'status_kepegawaian',
@@ -19,10 +21,12 @@ class GuruJabatan extends Model
         'tanggal_sk',
         'tmt_jabatan',
         'tanggal_selesai',
+        'uraian_tugas',
         'is_current',
         'created_by',
         'updated_by',
     ];
+    
     protected $casts = [
         'is_current' => 'boolean',
         'tanggal_sk' => 'date',
