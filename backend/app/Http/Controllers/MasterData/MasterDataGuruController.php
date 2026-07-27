@@ -819,13 +819,13 @@ class MasterDataGuruController extends Controller
         $request->validate([
             'nama_diklat' => 'required|string|max:200',
             'penyelenggara' => 'nullable|string|max:200',
-            'jenis' => 'nullable|string|max:100',
-            'tingkat' => 'nullable|in:Nasional,Provinsi,Kabupaten/Kota,Kecamatan,Sekolah',
+            'jenis' => 'nullable|in:diklat,bimtek,workshop,seminar,pelatihan,kursus',
+            'tingkat' => 'nullable|in:Kecamatan,Kabupaten/Kota,Provinsi,Nasional,Internasional',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'jumlah_jam' => 'nullable|integer|min:1',
-            'peran' => 'nullable|in:Peserta,Narasumber,Panitia',
-            'no_sertifikat' => 'nullable|string|max:80',
+            'peran' => 'nullable|in:peserta,narasumber,panitia,moderator',
+            'no_sertifikat' => 'nullable|string|max:100',
             'keterangan' => 'nullable|string|max:500',
             'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
@@ -849,13 +849,13 @@ class MasterDataGuruController extends Controller
         $request->validate([
             'nama_diklat' => 'required|string|max:200',
             'penyelenggara' => 'nullable|string|max:200',
-            'jenis' => 'nullable|string|max:100',
-            'tingkat' => 'nullable|in:Nasional,Provinsi,Kabupaten/Kota,Kecamatan,Sekolah',
+            'jenis' => 'nullable|in:diklat,bimtek,workshop,seminar,pelatihan,kursus',
+            'tingkat' => 'nullable|in:Kecamatan,Kabupaten/Kota,Provinsi,Nasional,Internasional',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'jumlah_jam' => 'nullable|integer|min:1',
-            'peran' => 'nullable|in:Peserta,Narasumber,Panitia',
-            'no_sertifikat' => 'nullable|string|max:80',
+            'peran' => 'nullable|in:peserta,narasumber,panitia,moderator',
+            'no_sertifikat' => 'nullable|string|max:100',
             'keterangan' => 'nullable|string|max:500',
             'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
@@ -1031,5 +1031,105 @@ class MasterDataGuruController extends Controller
             'message' => "NUPTK berhasil dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}.",
             'data' => ['nuptk_baru' => $request->nuptk_baru],
         ]);
+    }
+
+    // ────────────────────────────────────────────────────────
+    // SECTION: JABATAN
+    // ────────────────────────────────────────────────────────
+
+    public function getJabatan($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        return response()->json(['success' => true, 'data' => $guru->jabatans]);
+    }
+
+    public function storeJabatan(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $request->validate([
+            'jabatan' => 'required|string|max:100',
+            'golongan' => 'nullable|string|max:10',
+            'pangkat' => 'nullable|string|max:60',
+            'status_kepegawaian' => 'nullable|in:PNS,PPPK,GTY,GTT',
+            'no_sk' => 'nullable|string|max:80',
+            'tanggal_sk' => 'nullable|date',
+            'tmt_jabatan' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date|after_or_equal:tmt_jabatan',
+            'is_current' => 'boolean',
+        ]);
+
+        $data = $request->only([
+            'jabatan',
+            'golongan',
+            'pangkat',
+            'status_kepegawaian',
+            'no_sk',
+            'tanggal_sk',
+            'tmt_jabatan',
+            'tanggal_selesai',
+            'is_current',
+        ]);
+
+        $data['created_by'] = auth()->id();
+        $data['updated_by'] = auth()->id();
+
+        // Kalau is_current=true, reset yang lama dulu
+        if (!empty($data['is_current'])) {
+            $guru->jabatans()->update(['is_current' => false]);
+        }
+
+        $jabatan = $guru->jabatans()->create($data);
+
+        return response()->json(['success' => true, 'message' => 'Riwayat jabatan ditambahkan.', 'data' => $jabatan], 201);
+    }
+
+    public function updateJabatan(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $jabatan = $guru->jabatans()->findOrFail($id);
+
+        $request->validate([
+            'jabatan' => 'required|string|max:100',
+            'golongan' => 'nullable|string|max:10',
+            'pangkat' => 'nullable|string|max:60',
+            'status_kepegawaian' => 'nullable|in:PNS,PPPK,GTY,GTT',
+            'no_sk' => 'nullable|string|max:80',
+            'tanggal_sk' => 'nullable|date',
+            'tmt_jabatan' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date|after_or_equal:tmt_jabatan',
+            'is_current' => 'boolean',
+        ]);
+
+        $data = $request->only([
+            'jabatan',
+            'golongan',
+            'pangkat',
+            'status_kepegawaian',
+            'no_sk',
+            'tanggal_sk',
+            'tmt_jabatan',
+            'tanggal_selesai',
+            'is_current',
+        ]);
+
+        $data['updated_by'] = auth()->id();
+
+        // Kalau is_current di-set true, reset yang lain dulu
+        if (!empty($data['is_current'])) {
+            $guru->jabatans()->where('id', '!=', $id)->update(['is_current' => false]);
+        }
+
+        $jabatan->update($data);
+
+        return response()->json(['success' => true, 'message' => 'Riwayat jabatan diperbarui.', 'data' => $jabatan]);
+    }
+
+    public function destroyJabatan($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $jabatan = $guru->jabatans()->findOrFail($id);
+        $jabatan->delete(); // soft delete
+        return response()->json(['success' => true, 'message' => 'Riwayat jabatan dihapus.']);
     }
 }

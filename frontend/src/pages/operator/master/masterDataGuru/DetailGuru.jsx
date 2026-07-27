@@ -1263,6 +1263,7 @@ function TabDokumen({ guru }) {
 function TabRiwayat({ nuptk, guru }) {
   const queryClient = useQueryClient();
   const [modalDiklat, setModalDiklat] = useState(null); // null | 'add' | object
+  const [modalJabatan, setModalJabatan] = useState(null); // null | 'add' | object
 
   const { data: diklats = [] } = useQuery({
     queryKey: ["guru-diklat", nuptk],
@@ -1331,16 +1332,74 @@ function TabRiwayat({ nuptk, guru }) {
   };
 
   const mutasis = guru.mutasis ?? [];
-  const jabatans = guru.jabatans ?? [];
+
+  /* ── Jabatan query & mutations ── */
+  const { data: jabatans = [] } = useQuery({
+    queryKey: ["guru-jabatan", nuptk],
+    queryFn: () =>
+      api
+        .get(`/operator/master-data/guru/${nuptk}/jabatan`)
+        .then((r) => r.data.data),
+    initialData: guru.jabatans ?? [],
+  });
+
+  const saveJabatan = useMutation({
+    mutationFn: ({ data, id }) =>
+      id
+        ? api.put(`/operator/master-data/guru/${nuptk}/jabatan/${id}`, data)
+        : api.post(`/operator/master-data/guru/${nuptk}/jabatan`, data),
+    onSuccess: () => {
+      toast.success("Jabatan disimpan.");
+      queryClient.invalidateQueries(["guru-jabatan", nuptk]);
+      setModalJabatan(null);
+    },
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menyimpan."),
+  });
+
+  const deleteJabatan = useMutation({
+    mutationFn: (id) =>
+      api.delete(`/operator/master-data/guru/${nuptk}/jabatan/${id}`),
+    onSuccess: () => {
+      toast.success("Jabatan dihapus.");
+      queryClient.invalidateQueries(["guru-jabatan", nuptk]);
+    },
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menghapus."),
+  });
+
+  const handleJabatanSubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    saveJabatan.mutate({
+      id: modalJabatan?.id,
+      data: {
+        jabatan: f.jabatan.value,
+        golongan: f.golongan.value,
+        pangkat: f.pangkat.value,
+        status_kepegawaian: f.status_kepegawaian.value,
+        no_sk: f.no_sk.value,
+        tanggal_sk: f.tanggal_sk.value,
+        tmt_jabatan: f.tmt_jabatan.value,
+        tanggal_selesai: f.tanggal_selesai.value,
+        is_current: f.is_current.checked ? 1 : 0,
+      },
+    });
+  };
 
   const TINGKAT_OPTS = [
-    "Nasional",
-    "Provinsi",
-    "Kabupaten/Kota",
     "Kecamatan",
-    "Sekolah",
+    "Kabupaten/Kota",
+    "Provinsi",
+    "Nasional",
+    "Internasional",
   ];
-  const PERAN_OPTS = ["Peserta", "Narasumber", "Panitia"];
+  const PERAN_OPTS = [
+    { value: "peserta", label: "Peserta" },
+    { value: "narasumber", label: "Narasumber" },
+    { value: "panitia", label: "Panitia" },
+    { value: "moderator", label: "Moderator" },
+  ];
 
   /* ── badge warna tingkat ── */
   const tingkatColor = {
@@ -1488,29 +1547,195 @@ function TabRiwayat({ nuptk, guru }) {
         )}
       </div>
 
-      {/* ── SECTION 3: JABATAN (read-only) ── */}
+      {/* ── SECTION 3: JABATAN ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-        <SectionTitle icon="work_history" label="Riwayat Jabatan" />
+        <div className="flex items-center justify-between mb-4">
+          <SectionTitle icon="work_history" label="Riwayat Jabatan" />
+          <button
+            onClick={() => setModalJabatan("add")}
+            className="flex items-center gap-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            Tambah
+          </button>
+        </div>
         {jabatans.length === 0 ? (
           <p className="text-sm text-text-secondary text-center py-8">
             Belum ada riwayat jabatan.
           </p>
         ) : (
           <div className="space-y-3">
-            {jabatans.map((j, i) => (
+            {jabatans.map((j) => (
               <div
-                key={i}
+                key={j.id}
                 className="p-4 bg-surface-container-low rounded-xl border border-border-light"
               >
-                <p className="font-medium text-sm">{j.nama_jabatan}</p>
-                <p className="text-xs text-text-secondary mt-1">
-                  {fmtDate(j.tmt)}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm">{j.jabatan}</p>
+                      {j.is_current && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                          AKTIF
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-secondary mt-1">
+                      {[j.pangkat, j.golongan].filter(Boolean).join(" · ")}
+                      {j.status_kepegawaian && ` · ${j.status_kepegawaian}`}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      TMT: {j.tmt_jabatan ? fmtDate(j.tmt_jabatan) : "—"}
+                      {j.tanggal_selesai &&
+                        ` s/d ${fmtDate(j.tanggal_selesai)}`}
+                    </p>
+                    {j.no_sk && (
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        SK: {j.no_sk}
+                        {j.tanggal_sk && ` · ${fmtDate(j.tanggal_sk)}`}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => setModalJabatan(j)}
+                      className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary hover:text-primary transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        edit
+                      </span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        confirm("Hapus data jabatan ini?") &&
+                        deleteJabatan.mutate(j.id)
+                      }
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-text-secondary hover:text-red-600 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        delete
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* ══ MODAL: JABATAN ══ */}
+      {modalJabatan && (
+        <Modal
+          title={modalJabatan === "add" ? "Tambah Jabatan" : "Edit Jabatan"}
+          onClose={() => setModalJabatan(null)}
+        >
+          <form onSubmit={handleJabatanSubmit} className="space-y-4">
+            <Field label="Nama Jabatan" required>
+              <input
+                name="jabatan"
+                defaultValue={modalJabatan?.jabatan ?? ""}
+                required
+                className={inputCls}
+                placeholder="Contoh: Guru Kelas, Wali Kelas, Kepala Sekolah"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Golongan">
+                <input
+                  name="golongan"
+                  defaultValue={modalJabatan?.golongan ?? ""}
+                  className={inputCls}
+                  placeholder="Contoh: III/A"
+                />
+              </Field>
+              <Field label="Pangkat">
+                <input
+                  name="pangkat"
+                  defaultValue={modalJabatan?.pangkat ?? ""}
+                  className={inputCls}
+                  placeholder="Contoh: Penata Muda"
+                />
+              </Field>
+            </div>
+            <Field label="Status Kepegawaian">
+              <select
+                name="status_kepegawaian"
+                defaultValue={modalJabatan?.status_kepegawaian ?? ""}
+                className={inputCls}
+              >
+                <option value="">Pilih status</option>
+                <option value="PNS">PNS</option>
+                <option value="PPPK">PPPK</option>
+                <option value="GTY">GTY</option>
+                <option value="GTT">GTT</option>
+              </select>
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="No. SK">
+                <input
+                  name="no_sk"
+                  defaultValue={modalJabatan?.no_sk ?? ""}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Tanggal SK">
+                <input
+                  name="tanggal_sk"
+                  type="date"
+                  defaultValue={modalJabatan?.tanggal_sk?.slice(0, 10) ?? ""}
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="TMT Jabatan">
+                <input
+                  name="tmt_jabatan"
+                  type="date"
+                  defaultValue={modalJabatan?.tmt_jabatan?.slice(0, 10) ?? ""}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Tanggal Selesai">
+                <input
+                  name="tanggal_selesai"
+                  type="date"
+                  defaultValue={
+                    modalJabatan?.tanggal_selesai?.slice(0, 10) ?? ""
+                  }
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input
+                name="is_current"
+                type="checkbox"
+                defaultChecked={!!modalJabatan?.is_current}
+                className="w-4 h-4 accent-primary"
+              />
+              <span>Tandai sebagai jabatan aktif saat ini</span>
+            </label>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalJabatan(null)}
+                className="px-4 py-2 text-sm rounded-lg border border-border-light hover:bg-surface-container transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={saveJabatan.isPending}
+                className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-60 transition-colors"
+              >
+                {saveJabatan.isPending ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* ══ MODAL: DIKLAT ══ */}
       {modalDiklat && (
@@ -1542,12 +1767,19 @@ function TabRiwayat({ nuptk, guru }) {
             </Field>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Jenis">
-                <input
+                <select
                   name="jenis"
                   defaultValue={modalDiklat?.jenis ?? ""}
                   className={inputCls}
-                  placeholder="Contoh: Teknis, Fungsional"
-                />
+                >
+                  <option value="">Pilih jenis</option>
+                  <option value="diklat">Diklat</option>
+                  <option value="bimtek">Bimtek</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="seminar">Seminar</option>
+                  <option value="pelatihan">Pelatihan</option>
+                  <option value="kursus">Kursus</option>
+                </select>
               </Field>
               <Field label="Tingkat">
                 <select
@@ -1603,8 +1835,8 @@ function TabRiwayat({ nuptk, guru }) {
                 >
                   <option value="">Pilih peran</option>
                   {PERAN_OPTS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
+                    <option key={p.value} value={p.value}>
+                      {p.label}
                     </option>
                   ))}
                 </select>

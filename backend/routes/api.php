@@ -142,6 +142,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'storeMutasi']);
             Route::delete('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'destroyMutasi']);
 
+            // Jabatan
+            Route::get('/guru/{nuptk}/jabatan', [MasterDataGuruController::class, 'getJabatan']);
+            Route::post('/guru/{nuptk}/jabatan', [MasterDataGuruController::class, 'storeJabatan']);
+            Route::put('/guru/{nuptk}/jabatan/{id}', [MasterDataGuruController::class, 'updateJabatan']);
+            Route::delete('/guru/{nuptk}/jabatan/{id}', [MasterDataGuruController::class, 'destroyJabatan']);
+            
             Route::patch('/guru/{nuptk}/verifikasi', [MasterDataGuruController::class, 'verifikasi']);
             Route::patch('/guru/{nuptk}/batal-verifikasi', [MasterDataGuruController::class, 'batalVerifikasi']);
             Route::patch('/guru/{nuptk}/koreksi-nuptk', [MasterDataGuruController::class, 'koreksiNuptk']);
