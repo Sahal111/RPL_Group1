@@ -108,7 +108,14 @@ Route::middleware('auth:sanctum')->group(function () {
             // Sertifikasi
             Route::get('/guru/{nuptk}/sertifikasi', [MasterDataGuruController::class, 'getSertifikasi']);
             Route::post('/guru/{nuptk}/sertifikasi', [MasterDataGuruController::class, 'storeSertifikasi']);
+            Route::put('/guru/{nuptk}/sertifikasi/{id}', [MasterDataGuruController::class, 'updateSertifikasi']);
             Route::delete('/guru/{nuptk}/sertifikasi/{id}', [MasterDataGuruController::class, 'destroySertifikasi']);
+
+            // Inpassing
+            Route::get('/guru/{nuptk}/inpassing', [MasterDataGuruController::class, 'getInpassing']);
+            Route::post('/guru/{nuptk}/inpassing', [MasterDataGuruController::class, 'storeInpassing']);
+            Route::put('/guru/{nuptk}/inpassing/{id}', [MasterDataGuruController::class, 'updateInpassing']);
+            Route::delete('/guru/{nuptk}/inpassing/{id}', [MasterDataGuruController::class, 'destroyInpassing']);
 
             // Dokumen upload
             Route::get('/guru/{nuptk}/dokumen', [MasterDataGuruController::class, 'getDokumen']);
@@ -137,7 +144,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch('/guru/{nuptk}/verifikasi', [MasterDataGuruController::class, 'verifikasi']);
             Route::patch('/guru/{nuptk}/batal-verifikasi', [MasterDataGuruController::class, 'batalVerifikasi']);
             Route::patch('/guru/{nuptk}/koreksi-nuptk', [MasterDataGuruController::class, 'koreksiNuptk']);
-            
+
             // PKG
             Route::get('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'getPkg']);
             Route::post('/guru/{nuptk}/pkg', [MasterDataGuruController::class, 'storePkg']);

@@ -575,6 +575,106 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Sertifikasi dihapus.']);
     }
 
+    public function updateSertifikasi(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $sert = $guru->sertifikasis()->findOrFail($id);
+
+        $request->validate([
+            'jenis_sertifikasi' => 'required|string|max:100',
+            'no_sertifikat' => 'nullable|string|max:80',
+            'nrg' => 'nullable|string|max:20',
+            'tahun_sertifikasi' => 'nullable|integer|min:1990|max:' . date('Y'),
+            'lptk' => 'nullable|string|max:200',
+            'bidang_studi' => 'nullable|string|max:100',
+            'tanggal_terbit' => 'nullable|date',
+            'expired_at' => 'nullable|date|after:tanggal_terbit',
+            'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $data = $request->only(['jenis_sertifikasi', 'no_sertifikat', 'nrg', 'tahun_sertifikasi', 'lptk', 'bidang_studi', 'tanggal_terbit', 'expired_at']);
+
+        if ($request->hasFile('file_sertifikat')) {
+            if ($sert->file_sertifikat)
+                Storage::disk('public')->delete($sert->file_sertifikat);
+            $data['file_sertifikat'] = $request->file('file_sertifikat')->store("guru-dokumen/{$guru->id}/sertifikasi", 'public');
+        }
+
+        $sert->update($data);
+        return response()->json(['success' => true, 'message' => 'Sertifikasi diperbarui.', 'data' => $sert]);
+    }
+
+    // ────────────────────────────────────────────────────────
+    // SECTION: INPASSING
+    // ────────────────────────────────────────────────────────
+
+    public function getInpassing($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        return response()->json(['success' => true, 'data' => $guru->inpassings]);
+    }
+
+    public function storeInpassing(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $request->validate([
+            'no_sk' => 'required|string|max:100',
+            'tanggal_sk' => 'required|date',
+            'tmt_inpassing' => 'required|date',
+            'golongan_sesudah' => 'nullable|string|max:10',
+            'jabatan_fungsional' => 'nullable|string|max:100',
+            'angka_kredit' => 'nullable|numeric|min:0',
+            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $data = $request->only(['no_sk', 'tanggal_sk', 'tmt_inpassing', 'golongan_sesudah', 'jabatan_fungsional', 'angka_kredit']);
+
+        if ($request->hasFile('file_sk')) {
+            $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/inpassing", 'public');
+        }
+
+        $inpassing = $guru->inpassings()->create($data);
+        return response()->json(['success' => true, 'message' => 'Data inpassing ditambahkan.', 'data' => $inpassing], 201);
+    }
+
+    public function updateInpassing(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $inpassing = $guru->inpassings()->findOrFail($id);
+
+        $request->validate([
+            'no_sk' => 'required|string|max:100',
+            'tanggal_sk' => 'required|date',
+            'tmt_inpassing' => 'required|date',
+            'golongan_sesudah' => 'nullable|string|max:10',
+            'jabatan_fungsional' => 'nullable|string|max:100',
+            'angka_kredit' => 'nullable|numeric|min:0',
+            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $data = $request->only(['no_sk', 'tanggal_sk', 'tmt_inpassing', 'golongan_sesudah', 'jabatan_fungsional', 'angka_kredit']);
+
+        if ($request->hasFile('file_sk')) {
+            if ($inpassing->file_sk)
+                Storage::disk('public')->delete($inpassing->file_sk);
+            $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/inpassing", 'public');
+        }
+
+        $inpassing->update($data);
+        return response()->json(['success' => true, 'message' => 'Data inpassing diperbarui.', 'data' => $inpassing]);
+    }
+
+    public function destroyInpassing($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $inpassing = $guru->inpassings()->findOrFail($id);
+        if ($inpassing->file_sk)
+            Storage::disk('public')->delete($inpassing->file_sk);
+        $inpassing->delete();
+        return response()->json(['success' => true, 'message' => 'Data inpassing dihapus.']);
+    }
+
     // ────────────────────────────────────────────────────────
     // SECTION 6: DOKUMEN UPLOAD
     // ────────────────────────────────────────────────────────
