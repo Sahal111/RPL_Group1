@@ -819,14 +819,18 @@ class MasterDataGuruController extends Controller
         $request->validate([
             'nama_diklat' => 'required|string|max:200',
             'penyelenggara' => 'nullable|string|max:200',
+            'jenis' => 'nullable|string|max:100',
+            'tingkat' => 'nullable|in:Nasional,Provinsi,Kabupaten/Kota,Kecamatan,Sekolah',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'jumlah_jam' => 'nullable|integer|min:1',
+            'peran' => 'nullable|in:Peserta,Narasumber,Panitia',
             'no_sertifikat' => 'nullable|string|max:80',
+            'keterangan' => 'nullable|string|max:500',
             'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $data = $request->only(['nama_diklat', 'penyelenggara', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_jam', 'no_sertifikat']);
+        $data = $request->only(['nama_diklat', 'penyelenggara', 'jenis', 'tingkat', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_jam', 'peran', 'no_sertifikat', 'keterangan']);
 
         if ($request->hasFile('file_sertifikat')) {
             $data['file_sertifikat'] = $request->file('file_sertifikat')->store("guru-dokumen/{$guru->id}/diklat", 'public');
@@ -835,6 +839,37 @@ class MasterDataGuruController extends Controller
         $diklat = $guru->diklats()->create($data);
 
         return response()->json(['success' => true, 'message' => 'Riwayat pelatihan ditambahkan.', 'data' => $diklat], 201);
+    }
+
+    public function updateDiklat(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $diklat = $guru->diklats()->findOrFail($id);
+
+        $request->validate([
+            'nama_diklat' => 'required|string|max:200',
+            'penyelenggara' => 'nullable|string|max:200',
+            'jenis' => 'nullable|string|max:100',
+            'tingkat' => 'nullable|in:Nasional,Provinsi,Kabupaten/Kota,Kecamatan,Sekolah',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
+            'jumlah_jam' => 'nullable|integer|min:1',
+            'peran' => 'nullable|in:Peserta,Narasumber,Panitia',
+            'no_sertifikat' => 'nullable|string|max:80',
+            'keterangan' => 'nullable|string|max:500',
+            'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $data = $request->only(['nama_diklat', 'penyelenggara', 'jenis', 'tingkat', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_jam', 'peran', 'no_sertifikat', 'keterangan']);
+
+        if ($request->hasFile('file_sertifikat')) {
+            if ($diklat->file_sertifikat)
+                Storage::disk('public')->delete($diklat->file_sertifikat);
+            $data['file_sertifikat'] = $request->file('file_sertifikat')->store("guru-dokumen/{$guru->id}/diklat", 'public');
+        }
+
+        $diklat->update($data);
+        return response()->json(['success' => true, 'message' => 'Riwayat pelatihan diperbarui.', 'data' => $diklat]);
     }
 
     public function destroyDiklat($nuptk, $id)

@@ -134,6 +134,7 @@ Route::middleware('auth:sanctum')->group(function () {
             // Diklat / pelatihan
             Route::get('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'getDiklat']);
             Route::post('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'storeDiklat']);
+            Route::put('/guru/{nuptk}/diklat/{id}', [MasterDataGuruController::class, 'updateDiklat']);
             Route::delete('/guru/{nuptk}/diklat/{id}', [MasterDataGuruController::class, 'destroyDiklat']);
 
             // Mutasi
