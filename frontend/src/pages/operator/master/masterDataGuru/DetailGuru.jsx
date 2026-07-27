@@ -1619,6 +1619,14 @@ function TabRiwayat({ nuptk, guru }) {
                             {j.unit_kerja}
                           </p>
                         )}
+                        {j.uraian_tugas && (
+                          <p
+                            className="text-xs text-text-secondary italic mt-0.5 max-w-[220px] truncate"
+                            title={j.uraian_tugas}
+                          >
+                            {j.uraian_tugas}
+                          </p>
+                        )}
                       </td>
                       {/* Jenis */}
                       <td className="px-4 py-3">
