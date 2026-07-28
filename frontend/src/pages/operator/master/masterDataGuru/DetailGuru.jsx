@@ -172,6 +172,37 @@ function TabIdentitas({ guru }) {
             />
           </div>
         </div>
+
+        {/* Golongan & Pangkat dari jabatan aktif */}
+        {(guru.jabatan_aktif || guru.jabatanAktif) && (
+          <>
+            <SubLabel>Kepangkatan Aktif</SubLabel>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3">
+              <InfoRow
+                label="Golongan / Ruang"
+                value={
+                  (guru.jabatan_aktif?.golongan ??
+                    guru.jabatanAktif?.golongan) ||
+                  "-"
+                }
+                mono
+              />
+              <InfoRow
+                label="Pangkat"
+                value={
+                  guru.jabatan_aktif?.pangkat ?? guru.jabatanAktif?.pangkat
+                }
+              />
+              <InfoRow
+                label="Jabatan Aktif"
+                value={
+                  guru.jabatan_aktif?.jabatan ?? guru.jabatanAktif?.jabatan
+                }
+              />
+            </div>
+          </>
+        )}
+
         <SubLabel>SK Pengangkatan</SubLabel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3">
           <InfoRow label="No. SK" value={guru.no_sk_pengangkatan} />
@@ -246,10 +277,12 @@ function TabPenugasan({ guru }) {
    TAB 3 — Pendidikan & Sertifikasi
    ══════════════════════════════════════════════════════════ */
 /* ── Modal wrapper ── */
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, wide = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg border border-border-light max-h-[90vh] flex flex-col">
+      <div
+        className={`bg-surface rounded-2xl shadow-2xl w-full border border-border-light max-h-[90vh] flex flex-col ${wide ? "max-w-2xl" : "max-w-lg"}`}
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-light flex-shrink-0">
           <h3 className="font-bold text-text-primary">{title}</h3>
           <button
@@ -1344,6 +1377,34 @@ function TabRiwayat({ nuptk, guru }) {
     initialData: guru.jabatans ?? [],
   });
 
+  // Baris sintetis dari data kepegawaian guru (jika belum ada entry jabatan aktif)
+  const jabatanAktifFromGuru =
+    jabatans.length === 0 &&
+    (guru.status_kepegawaian || guru.jabatan_aktif || guru.jabatanAktif)
+      ? [
+          {
+            id: "__from_guru__",
+            jabatan: guru.jenis_ptk || "Guru",
+            jenis_jabatan: "Fungsional",
+            unit_kerja: guru.instansi_pengangkat || "",
+            golongan:
+              guru.jabatan_aktif?.golongan ?? guru.jabatanAktif?.golongan ?? "",
+            pangkat:
+              guru.jabatan_aktif?.pangkat ?? guru.jabatanAktif?.pangkat ?? "",
+            status_kepegawaian: guru.status_kepegawaian || "",
+            no_sk: guru.no_sk_pengangkatan || "",
+            tanggal_sk: guru.tgl_sk_pengangkatan || "",
+            tmt_jabatan:
+              guru.tmt_pns || guru.tmt_gty || guru.tanggal_bergabung || "",
+            tanggal_selesai: null,
+            is_current: true,
+            _readOnly: true,
+          },
+        ]
+      : [];
+
+  const jabatanRows = jabatans.length > 0 ? jabatans : jabatanAktifFromGuru;
+
   const saveJabatan = useMutation({
     mutationFn: ({ data, id }) =>
       id
@@ -1551,7 +1612,7 @@ function TabRiwayat({ nuptk, guru }) {
         )}
       </div>
 
-      {/* ── SECTION 3: JABATAN & KEPANGKATAN (Opsi B+C) ── */}
+      {/* ── SECTION 3: JABATAN & KEPANGKATAN ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <SectionTitle
@@ -1568,48 +1629,74 @@ function TabRiwayat({ nuptk, guru }) {
           </button>
         </div>
 
-        {jabatans.length === 0 ? (
-          <p className="text-sm text-text-secondary text-center py-8">
-            Belum ada riwayat jabatan.
-          </p>
+        {jabatanRows.length === 0 ? (
+          <div className="text-center py-10">
+            <span className="material-symbols-outlined text-[40px] text-text-secondary/40 block mb-2">
+              work_history
+            </span>
+            <p className="text-sm text-text-secondary">
+              Belum ada riwayat jabatan.
+            </p>
+            <p className="text-xs text-text-secondary mt-1">
+              Klik <strong>Tambah</strong> untuk menambahkan, atau lengkapi data
+              kepegawaian di form Edit Profil.
+            </p>
+          </div>
         ) : (
           <>
+            {/* Info hint jika data berasal dari data kepegawaian guru */}
+            {jabatanAktifFromGuru.length > 0 && (
+              <div className="mb-4 flex items-start gap-2 p-3 bg-primary/5 border border-primary/15 rounded-xl text-xs text-primary">
+                <span className="material-symbols-outlined text-[16px] flex-shrink-0 mt-0.5">
+                  info
+                </span>
+                <span>
+                  Data di bawah diambil otomatis dari informasi kepegawaian
+                  guru. Tambahkan riwayat jabatan manual untuk data yang lebih
+                  lengkap.
+                </span>
+              </div>
+            )}
+
             {/* ── Tabel Gabungan: Jabatan + Kepangkatan ── */}
             <div className="overflow-x-auto rounded-xl border border-border-light">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-surface-container-low border-b border-border-light">
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
-                      Jabatan
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
+                      Jabatan / Unit Kerja
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
                       Jenis
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
+                      Status Kepegawaian
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
                       Gol / Pangkat
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
                       TMT
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
                       Selesai
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
                       No. SK
                     </th>
-                    <th className="text-center px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide">
+                    <th className="text-center px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
                       Status
                     </th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-light">
-                  {jabatans.map((j) => (
+                  {jabatanRows.map((j) => (
                     <tr
                       key={j.id}
                       className={`transition-colors hover:bg-surface-container-lowest ${j.is_current ? "bg-success/5" : ""}`}
                     >
-                      {/* Jabatan */}
+                      {/* Jabatan / Unit Kerja */}
                       <td className="px-4 py-3">
                         <p className="font-semibold text-text-primary">
                           {j.jabatan || "—"}
@@ -1621,7 +1708,7 @@ function TabRiwayat({ nuptk, guru }) {
                         )}
                         {j.uraian_tugas && (
                           <p
-                            className="text-xs text-text-secondary italic mt-0.5 max-w-[220px] truncate"
+                            className="text-xs text-text-secondary italic mt-0.5 max-w-[200px] truncate"
                             title={j.uraian_tugas}
                           >
                             {j.uraian_tugas}
@@ -1629,13 +1716,23 @@ function TabRiwayat({ nuptk, guru }) {
                         )}
                       </td>
                       {/* Jenis */}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {j.jenis_jabatan ? (
                           <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-surface-container text-text-secondary border border-border-light">
                             {j.jenis_jabatan}
                           </span>
                         ) : (
                           <span className="text-text-secondary">—</span>
+                        )}
+                      </td>
+                      {/* Status Kepegawaian */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {j.status_kepegawaian ? (
+                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
+                            {j.status_kepegawaian}
+                          </span>
+                        ) : (
+                          <span className="text-text-secondary text-xs">—</span>
                         )}
                       </td>
                       {/* Gol / Pangkat */}
@@ -1645,35 +1742,37 @@ function TabRiwayat({ nuptk, guru }) {
                             {j.golongan}
                           </span>
                         ) : (
-                          <span className="text-text-secondary">—</span>
+                          <span className="text-text-secondary text-xs">—</span>
                         )}
                         {j.pangkat && (
-                          <p className="text-xs text-text-secondary mt-0.5">
+                          <p className="text-xs text-text-secondary mt-0.5 whitespace-nowrap">
                             {j.pangkat}
                           </p>
                         )}
                       </td>
                       {/* TMT */}
-                      <td className="px-4 py-3 text-sm text-text-secondary whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-text-secondary whitespace-nowrap">
                         {j.tmt_jabatan ? fmtDate(j.tmt_jabatan) : "—"}
                       </td>
                       {/* Selesai */}
-                      <td className="px-4 py-3 text-sm whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs whitespace-nowrap">
                         {j.tanggal_selesai ? (
-                          fmtDate(j.tanggal_selesai)
+                          <span className="text-text-secondary">
+                            {fmtDate(j.tanggal_selesai)}
+                          </span>
                         ) : (
-                          <span className="text-success font-medium text-xs">
+                          <span className="text-success font-medium">
                             Sekarang
                           </span>
                         )}
                       </td>
                       {/* No. SK */}
                       <td className="px-4 py-3">
-                        <p className="text-xs font-mono text-text-secondary">
+                        <p className="text-xs font-mono text-text-secondary whitespace-nowrap">
                           {j.no_sk || "—"}
                         </p>
                         {j.tanggal_sk && (
-                          <p className="text-xs text-text-secondary mt-0.5">
+                          <p className="text-xs text-text-secondary mt-0.5 whitespace-nowrap">
                             {fmtDate(j.tanggal_sk)}
                           </p>
                         )}
@@ -1681,8 +1780,8 @@ function TabRiwayat({ nuptk, guru }) {
                       {/* Status badge */}
                       <td className="px-4 py-3 text-center">
                         {j.is_current ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success/10 text-success border border-success/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success/10 text-success border border-success/20 whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                             Aktif
                           </span>
                         ) : (
@@ -1691,31 +1790,40 @@ function TabRiwayat({ nuptk, guru }) {
                           </span>
                         )}
                       </td>
-                      {/* Aksi */}
+                      {/* Aksi — sembunyikan untuk baris sintetis dari guru */}
                       <td className="px-4 py-3">
-                        <div className="flex gap-1 justify-end">
-                          <button
-                            onClick={() => setModalJabatan(j)}
-                            className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary hover:text-primary transition-colors"
-                            title="Edit"
+                        {j._readOnly ? (
+                          <span
+                            className="text-xs text-text-secondary italic"
+                            title="Edit melalui form Edit Profil guru"
                           >
-                            <span className="material-symbols-outlined text-[16px]">
-                              edit
-                            </span>
-                          </button>
-                          <button
-                            onClick={() =>
-                              confirm("Hapus data jabatan ini?") &&
-                              deleteJabatan.mutate(j.id)
-                            }
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-text-secondary hover:text-red-600 transition-colors"
-                            title="Hapus"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              delete
-                            </span>
-                          </button>
-                        </div>
+                            —
+                          </span>
+                        ) : (
+                          <div className="flex gap-1 justify-end">
+                            <button
+                              onClick={() => setModalJabatan(j)}
+                              className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary hover:text-primary transition-colors"
+                              title="Edit"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                edit
+                              </span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                confirm("Hapus data jabatan ini?") &&
+                                deleteJabatan.mutate(j.id)
+                              }
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-text-secondary hover:text-red-600 transition-colors"
+                              title="Hapus"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                delete
+                              </span>
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1731,13 +1839,14 @@ function TabRiwayat({ nuptk, guru }) {
         <Modal
           title={
             modalJabatan === "add"
-              ? "Tambah Riwayat Jabatan"
-              : "Edit Riwayat Jabatan"
+              ? "Tambah Riwayat Jabatan & Kepangkatan"
+              : "Edit Riwayat Jabatan & Kepangkatan"
           }
           onClose={() => setModalJabatan(null)}
+          wide
         >
           <form onSubmit={handleJabatanSubmit} className="space-y-4">
-            {/* Jenis & Nama Jabatan */}
+            {/* Jenis & Status Kepegawaian */}
             <div className="grid grid-cols-2 gap-4">
               <Field label="Jenis Jabatan" required>
                 <select
@@ -1769,6 +1878,8 @@ function TabRiwayat({ nuptk, guru }) {
                 </select>
               </Field>
             </div>
+
+            {/* Nama Jabatan & Unit Kerja */}
             <Field label="Nama Jabatan" required>
               <input
                 name="jabatan"
@@ -1786,25 +1897,56 @@ function TabRiwayat({ nuptk, guru }) {
                 placeholder="Contoh: MI Nurul Huda 3, Kemenag Kab. Bogor"
               />
             </Field>
-            {/* Kepangkatan */}
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Golongan / Ruang">
-                <input
-                  name="golongan"
-                  defaultValue={modalJabatan?.golongan ?? ""}
-                  className={inputCls}
-                  placeholder="Contoh: III/A"
-                />
-              </Field>
-              <Field label="Pangkat">
-                <input
-                  name="pangkat"
-                  defaultValue={modalJabatan?.pangkat ?? ""}
-                  className={inputCls}
-                  placeholder="Contoh: Penata Muda"
-                />
-              </Field>
+
+            {/* Kepangkatan — sama persis Step 2 TambahEditGuru */}
+            <div className="p-4 rounded-xl border border-primary/15 bg-primary/5 space-y-4">
+              <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                Kepangkatan
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Golongan / Ruang">
+                  <select
+                    name="golongan"
+                    defaultValue={modalJabatan?.golongan ?? ""}
+                    className={inputCls}
+                  >
+                    <option value="">-- Pilih --</option>
+                    {[
+                      "I/a",
+                      "I/b",
+                      "I/c",
+                      "I/d",
+                      "II/a",
+                      "II/b",
+                      "II/c",
+                      "II/d",
+                      "III/a",
+                      "III/b",
+                      "III/c",
+                      "III/d",
+                      "IV/a",
+                      "IV/b",
+                      "IV/c",
+                      "IV/d",
+                      "IV/e",
+                    ].map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Pangkat">
+                  <input
+                    name="pangkat"
+                    defaultValue={modalJabatan?.pangkat ?? ""}
+                    className={inputCls}
+                    placeholder="Contoh: Penata Muda, Guru Pertama"
+                  />
+                </Field>
+              </div>
             </div>
+
             {/* SK */}
             <div className="grid grid-cols-2 gap-4">
               <Field label="No. SK Pengangkatan">
@@ -1824,6 +1966,7 @@ function TabRiwayat({ nuptk, guru }) {
                 />
               </Field>
             </div>
+
             {/* Periode */}
             <div className="grid grid-cols-2 gap-4">
               <Field label="TMT Jabatan">
@@ -1845,6 +1988,7 @@ function TabRiwayat({ nuptk, guru }) {
                 />
               </Field>
             </div>
+
             <Field label="Uraian Tugas / Keterangan">
               <textarea
                 name="uraian_tugas"
@@ -1854,15 +1998,22 @@ function TabRiwayat({ nuptk, guru }) {
                 placeholder="Opsional — deskripsi singkat tugas jabatan"
               />
             </Field>
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none p-3 rounded-xl border border-success/20 bg-success/5">
               <input
                 name="is_current"
                 type="checkbox"
                 defaultChecked={!!modalJabatan?.is_current}
                 className="w-4 h-4 accent-primary"
               />
-              <span>Tandai sebagai jabatan aktif saat ini</span>
+              <span className="font-medium text-text-primary">
+                Tandai sebagai jabatan <strong>aktif</strong> saat ini
+              </span>
+              <span className="ml-auto text-xs text-text-secondary italic">
+                (akan menonaktifkan jabatan aktif lain)
+              </span>
             </label>
+
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -2565,6 +2716,17 @@ export default function DetailGuru() {
   const riwayatBadge =
     (guru.mutasis?.length ?? 0) + (guru.jabatans?.length ?? 0) || null;
 
+  // jabatanAktifFromGuru & jabatanRows dibutuhkan di luar TabRiwayat untuk badge
+  // (computed di TabRiwayat, tapi juga kita hitung disini untuk badge)
+  const _jabatanRows =
+    (guru.jabatans ?? []).length > 0
+      ? guru.jabatans
+      : guru.status_kepegawaian
+        ? [{}]
+        : [];
+  const riwayatBadgeFinal =
+    (guru.mutasis?.length ?? 0) + _jabatanRows.length || null;
+
   /* ══════════════════════════════════════════════════════════
      RENDER — struktur 1:1 dengan template HTML
      ══════════════════════════════════════════════════════════ */
@@ -2814,7 +2976,7 @@ export default function DetailGuru() {
               key={t.id}
               active={activeTab === t.id}
               onClick={() => setActiveTab(t.id)}
-              badge={t.id === "riwayat" ? riwayatBadge : undefined}
+              badge={t.id === "riwayat" ? riwayatBadgeFinal : undefined}
             >
               {t.label}
             </TabBtn>
