@@ -1437,15 +1437,21 @@ function TabRiwayat({ nuptk, guru }) {
       id: modalJabatan?.id,
       data: {
         jenis_jabatan: f.jenis_jabatan.value,
+        jenis_pengangkatan: f.jenis_pengangkatan.value,
         jabatan: f.jabatan.value,
         unit_kerja: f.unit_kerja.value,
+        instansi_pengangkat: f.instansi_pengangkat.value,
         golongan: f.golongan.value,
         pangkat: f.pangkat.value,
         status_kepegawaian: f.status_kepegawaian.value,
         no_sk: f.no_sk.value,
         tanggal_sk: f.tanggal_sk.value,
+        pejabat_penandatangan: f.pejabat_penandatangan.value,
         tmt_jabatan: f.tmt_jabatan.value,
         tanggal_selesai: f.tanggal_selesai.value,
+        masa_berlaku: f.masa_berlaku.value,
+        alasan_berakhir: f.alasan_berakhir.value,
+        status_jabatan: f.status_jabatan.value,
         uraian_tugas: f.uraian_tugas.value,
         is_current: f.is_current.checked ? 1 : 0,
       },
@@ -1612,17 +1618,112 @@ function TabRiwayat({ nuptk, guru }) {
         )}
       </div>
 
-      {/* ── SECTION 3: JABATAN & KEPANGKATAN ── */}
+      {/* ── SECTION 3a: CARD JABATAN AKTIF ── */}
+      {(() => {
+        const aktif = jabatanRows.find((j) => j.is_current);
+        if (!aktif) return null;
+        const durasi = (() => {
+          if (!aktif.tmt_jabatan) return null;
+          const start = new Date(aktif.tmt_jabatan);
+          const now = new Date();
+          let y = now.getFullYear() - start.getFullYear();
+          let m = now.getMonth() - start.getMonth();
+          if (m < 0) {
+            y--;
+            m += 12;
+          }
+          const parts = [];
+          if (y > 0) parts.push(`${y} Tahun`);
+          if (m > 0) parts.push(`${m} Bulan`);
+          return parts.length ? parts.join(" ") : "< 1 Bulan";
+        })();
+        return (
+          <div className="bg-gradient-to-r from-primary/8 to-primary/4 rounded-[16px] border border-primary/20 p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-primary text-[22px]">
+                  badge
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-primary uppercase tracking-widest">
+                    Jabatan Aktif
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-success/15 text-success border border-success/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    Aktif
+                  </span>
+                </div>
+                <p className="font-bold text-text-primary text-lg leading-tight">
+                  {aktif.jabatan}
+                </p>
+                {aktif.unit_kerja && (
+                  <p className="text-sm text-text-secondary mt-0.5">
+                    {aktif.unit_kerja}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2">
+                  {aktif.tmt_jabatan && (
+                    <span className="text-xs text-text-secondary">
+                      Sejak{" "}
+                      <strong className="text-text-primary">
+                        {fmtDate(aktif.tmt_jabatan)}
+                      </strong>
+                      {durasi && (
+                        <span className="ml-1 text-primary font-semibold">
+                          ({durasi})
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  {(aktif.golongan || aktif.pangkat) && (
+                    <span className="text-xs text-text-secondary">
+                      Gol{" "}
+                      <strong className="font-mono text-primary">
+                        {aktif.golongan || "—"}
+                      </strong>
+                      {aktif.pangkat && (
+                        <span className="ml-1">· {aktif.pangkat}</span>
+                      )}
+                    </span>
+                  )}
+                  {aktif.status_kepegawaian && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20">
+                      {aktif.status_kepegawaian}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setModalJabatan(aktif._readOnly ? "add" : aktif)}
+                className="flex-shrink-0 p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                title={
+                  aktif._readOnly
+                    ? "Tambah jabatan manual"
+                    : "Edit jabatan aktif"
+                }
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {aktif._readOnly ? "add" : "edit"}
+                </span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── SECTION 3b: RIWAYAT JABATAN ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <SectionTitle
             icon="work_history"
-            label="Riwayat Jabatan & Kepangkatan"
-            desc={`${jabatans.length} data tercatat`}
+            label="Riwayat Jabatan"
+            desc={`${jabatanRows.length} data`}
           />
           <button
             onClick={() => setModalJabatan("add")}
-            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
+            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             Tambah
@@ -1638,169 +1739,182 @@ function TabRiwayat({ nuptk, guru }) {
               Belum ada riwayat jabatan.
             </p>
             <p className="text-xs text-text-secondary mt-1">
-              Klik <strong>Tambah</strong> untuk menambahkan, atau lengkapi data
-              kepegawaian di form Edit Profil.
+              Klik <strong>Tambah</strong> atau lengkapi data kepegawaian di
+              form Edit Profil.
             </p>
           </div>
         ) : (
           <>
-            {/* Info hint jika data berasal dari data kepegawaian guru */}
             {jabatanAktifFromGuru.length > 0 && (
               <div className="mb-4 flex items-start gap-2 p-3 bg-primary/5 border border-primary/15 rounded-xl text-xs text-primary">
                 <span className="material-symbols-outlined text-[16px] flex-shrink-0 mt-0.5">
                   info
                 </span>
                 <span>
-                  Data di bawah diambil otomatis dari informasi kepegawaian
-                  guru. Tambahkan riwayat jabatan manual untuk data yang lebih
-                  lengkap.
+                  Data diambil otomatis dari informasi kepegawaian guru.
+                  Tambahkan riwayat jabatan manual untuk data lebih lengkap.
                 </span>
               </div>
             )}
-
-            {/* ── Tabel Gabungan: Jabatan + Kepangkatan ── */}
-            <div className="overflow-x-auto rounded-xl border border-border-light">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-surface-container-low border-b border-border-light">
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      Jabatan / Unit Kerja
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      Jenis
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      Status Kepegawaian
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      Gol / Pangkat
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      TMT
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      Selesai
-                    </th>
-                    <th className="text-left px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      No. SK
-                    </th>
-                    <th className="text-center px-4 py-3 text-xs font-bold text-text-secondary uppercase tracking-wide whitespace-nowrap">
-                      Status
-                    </th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-light">
-                  {jabatanRows.map((j) => (
-                    <tr
-                      key={j.id}
-                      className={`transition-colors hover:bg-surface-container-lowest ${j.is_current ? "bg-success/5" : ""}`}
+            {/* Timeline + Tabel */}
+            <div className="space-y-3">
+              {jabatanRows.map((j, idx) => {
+                const durasi = (() => {
+                  if (!j.tmt_jabatan) return null;
+                  const s = new Date(j.tmt_jabatan);
+                  const e2 = j.tanggal_selesai
+                    ? new Date(j.tanggal_selesai)
+                    : new Date();
+                  let y = e2.getFullYear() - s.getFullYear();
+                  let m = e2.getMonth() - s.getMonth();
+                  if (m < 0) {
+                    y--;
+                    m += 12;
+                  }
+                  const p = [];
+                  if (y > 0) p.push(`${y} Thn`);
+                  if (m > 0) p.push(`${m} Bln`);
+                  return p.length ? p.join(" ") : "< 1 Bln";
+                })();
+                const statusColor =
+                  {
+                    Aktif: "bg-success/10 text-success border-success/20",
+                    Berakhir:
+                      "bg-surface-container text-text-secondary border-border-light",
+                    Nonaktif: "bg-red-50 text-red-600 border-red-200",
+                    Mutasi: "bg-blue-50 text-blue-600 border-blue-200",
+                    Pensiun: "bg-amber-50 text-amber-700 border-amber-200",
+                  }[
+                    j.status_jabatan || (j.is_current ? "Aktif" : "Berakhir")
+                  ] ??
+                  "bg-surface-container text-text-secondary border-border-light";
+                return (
+                  <div
+                    key={j.id}
+                    className={`flex gap-3 group ${idx < jabatanRows.length - 1 ? "" : ""}`}
+                  >
+                    {/* Timeline dot */}
+                    <div className="flex flex-col items-center flex-shrink-0 pt-1">
+                      <div
+                        className={`w-3 h-3 rounded-full border-2 ${j.is_current ? "bg-success border-success" : "bg-border-light border-border-light"}`}
+                      />
+                      {idx < jabatanRows.length - 1 && (
+                        <div className="w-0.5 bg-border-light flex-1 mt-1 min-h-[24px]" />
+                      )}
+                    </div>
+                    {/* Card */}
+                    <div
+                      className={`flex-1 mb-3 rounded-xl border p-4 transition-all ${j.is_current ? "border-success/25 bg-success/3" : "border-border-light bg-surface-container-lowest"}`}
                     >
-                      {/* Jabatan / Unit Kerja */}
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-text-primary">
-                          {j.jabatan || "—"}
-                        </p>
-                        {j.unit_kerja && (
-                          <p className="text-xs text-text-secondary mt-0.5">
-                            {j.unit_kerja}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold border ${statusColor}`}
+                            >
+                              {j.status_jabatan ||
+                                (j.is_current ? "● Aktif" : "Berakhir")}
+                            </span>
+                            {j.jenis_jabatan && (
+                              <span className="text-[11px] text-text-secondary bg-surface-container rounded px-1.5 py-0.5 border border-border-light">
+                                {j.jenis_jabatan}
+                              </span>
+                            )}
+                            {j.jenis_pengangkatan && (
+                              <span className="text-[11px] text-primary bg-primary/8 rounded px-1.5 py-0.5 border border-primary/15">
+                                {j.jenis_pengangkatan}
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-semibold text-text-primary">
+                            {j.jabatan || "—"}
                           </p>
-                        )}
-                        {j.uraian_tugas && (
-                          <p
-                            className="text-xs text-text-secondary italic mt-0.5 max-w-[200px] truncate"
-                            title={j.uraian_tugas}
-                          >
-                            {j.uraian_tugas}
-                          </p>
-                        )}
-                      </td>
-                      {/* Jenis */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {j.jenis_jabatan ? (
-                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-surface-container text-text-secondary border border-border-light">
-                            {j.jenis_jabatan}
-                          </span>
-                        ) : (
-                          <span className="text-text-secondary">—</span>
-                        )}
-                      </td>
-                      {/* Status Kepegawaian */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {j.status_kepegawaian ? (
-                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
-                            {j.status_kepegawaian}
-                          </span>
-                        ) : (
-                          <span className="text-text-secondary text-xs">—</span>
-                        )}
-                      </td>
-                      {/* Gol / Pangkat */}
-                      <td className="px-4 py-3">
-                        {j.golongan ? (
-                          <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20 font-mono">
-                            {j.golongan}
-                          </span>
-                        ) : (
-                          <span className="text-text-secondary text-xs">—</span>
-                        )}
-                        {j.pangkat && (
-                          <p className="text-xs text-text-secondary mt-0.5 whitespace-nowrap">
-                            {j.pangkat}
-                          </p>
-                        )}
-                      </td>
-                      {/* TMT */}
-                      <td className="px-4 py-3 text-xs text-text-secondary whitespace-nowrap">
-                        {j.tmt_jabatan ? fmtDate(j.tmt_jabatan) : "—"}
-                      </td>
-                      {/* Selesai */}
-                      <td className="px-4 py-3 text-xs whitespace-nowrap">
-                        {j.tanggal_selesai ? (
-                          <span className="text-text-secondary">
-                            {fmtDate(j.tanggal_selesai)}
-                          </span>
-                        ) : (
-                          <span className="text-success font-medium">
-                            Sekarang
-                          </span>
-                        )}
-                      </td>
-                      {/* No. SK */}
-                      <td className="px-4 py-3">
-                        <p className="text-xs font-mono text-text-secondary whitespace-nowrap">
-                          {j.no_sk || "—"}
-                        </p>
-                        {j.tanggal_sk && (
-                          <p className="text-xs text-text-secondary mt-0.5 whitespace-nowrap">
-                            {fmtDate(j.tanggal_sk)}
-                          </p>
-                        )}
-                      </td>
-                      {/* Status badge */}
-                      <td className="px-4 py-3 text-center">
-                        {j.is_current ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-success/10 text-success border border-success/20 whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                            Aktif
-                          </span>
-                        ) : (
-                          <span className="inline-flex px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-container text-text-secondary border border-border-light">
-                            Selesai
-                          </span>
-                        )}
-                      </td>
-                      {/* Aksi — sembunyikan untuk baris sintetis dari guru */}
-                      <td className="px-4 py-3">
-                        {j._readOnly ? (
-                          <span
-                            className="text-xs text-text-secondary italic"
-                            title="Edit melalui form Edit Profil guru"
-                          >
-                            —
-                          </span>
-                        ) : (
-                          <div className="flex gap-1 justify-end">
+                          {j.unit_kerja && (
+                            <p className="text-xs text-text-secondary mt-0.5">
+                              {j.unit_kerja}
+                            </p>
+                          )}
+                          {j.instansi_pengangkat &&
+                            j.instansi_pengangkat !== j.unit_kerja && (
+                              <p className="text-xs text-text-secondary italic mt-0.5">
+                                Pengangkat: {j.instansi_pengangkat}
+                              </p>
+                            )}
+                          {/* Kepangkatan inline */}
+                          {(j.golongan ||
+                            j.pangkat ||
+                            j.status_kepegawaian) && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {j.status_kepegawaian && (
+                                <span className="text-xs px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 font-medium">
+                                  {j.status_kepegawaian}
+                                </span>
+                              )}
+                              {j.golongan && (
+                                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                                  {j.golongan}
+                                </span>
+                              )}
+                              {j.pangkat && (
+                                <span className="text-xs text-text-secondary">
+                                  {j.pangkat}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {/* Periode */}
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-2 text-xs text-text-secondary">
+                            {j.tmt_jabatan && (
+                              <span>
+                                {fmtDate(j.tmt_jabatan)} →{" "}
+                                {j.tanggal_selesai ? (
+                                  <span>{fmtDate(j.tanggal_selesai)}</span>
+                                ) : (
+                                  <span className="text-success font-semibold">
+                                    Sekarang
+                                  </span>
+                                )}
+                                {durasi && (
+                                  <span className="ml-1 font-semibold text-primary">
+                                    ({durasi})
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                            {j.masa_berlaku && (
+                              <span>
+                                Berlaku s/d:{" "}
+                                <strong>{fmtDate(j.masa_berlaku)}</strong>
+                              </span>
+                            )}
+                          </div>
+                          {/* SK */}
+                          {(j.no_sk || j.pejabat_penandatangan) && (
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-xs text-text-secondary">
+                              {j.no_sk && (
+                                <span className="font-mono">
+                                  SK: {j.no_sk}
+                                  {j.tanggal_sk &&
+                                    ` · ${fmtDate(j.tanggal_sk)}`}
+                                </span>
+                              )}
+                              {j.pejabat_penandatangan && (
+                                <span>TTD: {j.pejabat_penandatangan}</span>
+                              )}
+                            </div>
+                          )}
+                          {j.alasan_berakhir && (
+                            <p className="text-xs text-text-secondary mt-1">
+                              Berakhir:{" "}
+                              <span className="font-medium">
+                                {j.alasan_berakhir}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                        {/* Aksi */}
+                        {!j._readOnly && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                             <button
                               onClick={() => setModalJabatan(j)}
                               className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary hover:text-primary transition-colors"
@@ -1824,30 +1938,85 @@ function TabRiwayat({ nuptk, guru }) {
                             </button>
                           </div>
                         )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
       </div>
+
+      {/* ── SECTION 3c: RIWAYAT KEPANGKATAN (terpisah) ── */}
+      {(() => {
+        const kepangkatanRows = jabatanRows.filter(
+          (j) => j.golongan || j.pangkat,
+        );
+        if (kepangkatanRows.length === 0) return null;
+        return (
+          <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+            <SectionTitle
+              icon="military_tech"
+              label="Riwayat Kepangkatan"
+              desc={`${kepangkatanRows.length} entri`}
+            />
+            <div className="mt-4 flex items-start gap-2 overflow-x-auto pb-2">
+              {kepangkatanRows.map((j, idx) => (
+                <div
+                  key={j.id}
+                  className="flex items-center gap-2 flex-shrink-0"
+                >
+                  <div
+                    className={`text-center px-4 py-3 rounded-xl border min-w-[100px] ${j.is_current ? "bg-primary/8 border-primary/25" : "bg-surface-container-low border-border-light"}`}
+                  >
+                    <p
+                      className={`text-lg font-black font-mono ${j.is_current ? "text-primary" : "text-text-primary"}`}
+                    >
+                      {j.golongan || "—"}
+                    </p>
+                    {j.pangkat && (
+                      <p className="text-[11px] text-text-secondary mt-0.5 leading-tight">
+                        {j.pangkat}
+                      </p>
+                    )}
+                    {j.tmt_jabatan && (
+                      <p className="text-[10px] text-text-secondary mt-1">
+                        {fmtDate(j.tmt_jabatan)}
+                      </p>
+                    )}
+                    {j.is_current && (
+                      <p className="text-[10px] text-success font-bold mt-0.5">
+                        ● Saat ini
+                      </p>
+                    )}
+                  </div>
+                  {idx < kepangkatanRows.length - 1 && (
+                    <span className="material-symbols-outlined text-text-secondary/40 text-[18px]">
+                      arrow_forward
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══ MODAL: JABATAN ══ */}
       {modalJabatan && (
         <Modal
           title={
             modalJabatan === "add"
-              ? "Tambah Riwayat Jabatan & Kepangkatan"
-              : "Edit Riwayat Jabatan & Kepangkatan"
+              ? "Tambah Riwayat Jabatan"
+              : "Edit Riwayat Jabatan"
           }
           onClose={() => setModalJabatan(null)}
           wide
         >
           <form onSubmit={handleJabatanSubmit} className="space-y-4">
-            {/* Jenis & Status Kepegawaian */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* ── Baris 1: Jenis + Jenis Pengangkatan + Status Kepegawaian ── */}
+            <div className="grid grid-cols-3 gap-3">
               <Field label="Jenis Jabatan" required>
                 <select
                   name="jenis_jabatan"
@@ -1855,62 +2024,91 @@ function TabRiwayat({ nuptk, guru }) {
                   required
                   className={inputCls}
                 >
-                  <option value="">Pilih jenis</option>
+                  <option value="">Pilih</option>
                   <option value="Struktural">Struktural</option>
                   <option value="Fungsional">Fungsional</option>
                   <option value="Tambahan">Tambahan</option>
                 </select>
               </Field>
-              <Field label="Status Kepegawaian saat Menjabat">
+              <Field label="Jenis Pengangkatan">
+                <select
+                  name="jenis_pengangkatan"
+                  defaultValue={modalJabatan?.jenis_pengangkatan ?? ""}
+                  className={inputCls}
+                >
+                  <option value="">— Pilih —</option>
+                  <option>Pengangkatan Baru</option>
+                  <option>Promosi</option>
+                  <option>Mutasi</option>
+                  <option>Rotasi</option>
+                  <option>Perpanjangan</option>
+                  <option>Pelaksana Tugas (Plt)</option>
+                </select>
+              </Field>
+              <Field label="Status Kepegawaian">
                 <select
                   name="status_kepegawaian"
                   defaultValue={modalJabatan?.status_kepegawaian ?? ""}
                   className={inputCls}
                 >
-                  <option value="">Pilih status</option>
-                  <option value="CPNS">CPNS</option>
-                  <option value="PNS">PNS</option>
-                  <option value="PPPK">PPPK</option>
-                  <option value="GTY">GTY</option>
-                  <option value="GTT">GTT</option>
-                  <option value="Honorer">Honorer</option>
-                  <option value="Kontrak">Kontrak</option>
+                  <option value="">— Pilih —</option>
+                  {[
+                    "CPNS",
+                    "PNS",
+                    "PPPK",
+                    "GTY",
+                    "GTT",
+                    "Honorer",
+                    "Kontrak",
+                  ].map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
                 </select>
               </Field>
             </div>
 
-            {/* Nama Jabatan & Unit Kerja */}
-            <Field label="Nama Jabatan" required>
+            {/* ── Baris 2: Nama Jabatan + Unit Kerja ── */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nama Jabatan" required>
+                <input
+                  name="jabatan"
+                  defaultValue={modalJabatan?.jabatan ?? ""}
+                  required
+                  className={inputCls}
+                  placeholder="Wali Kelas, Bendahara BOS, Waka Kurikulum…"
+                />
+              </Field>
+              <Field label="Unit Kerja">
+                <input
+                  name="unit_kerja"
+                  defaultValue={modalJabatan?.unit_kerja ?? ""}
+                  className={inputCls}
+                  placeholder="MI Nurul Huda 3"
+                />
+              </Field>
+            </div>
+            <Field label="Instansi Pengangkat">
               <input
-                name="jabatan"
-                defaultValue={modalJabatan?.jabatan ?? ""}
-                required
+                name="instansi_pengangkat"
+                defaultValue={modalJabatan?.instansi_pengangkat ?? ""}
                 className={inputCls}
-                placeholder="Contoh: Wali Kelas, Kepala Sekolah, Bendahara BOS"
-              />
-            </Field>
-            <Field label="Unit Kerja / Instansi">
-              <input
-                name="unit_kerja"
-                defaultValue={modalJabatan?.unit_kerja ?? ""}
-                className={inputCls}
-                placeholder="Contoh: MI Nurul Huda 3, Kemenag Kab. Bogor"
+                placeholder="Yayasan Nurul Huda, Kemenag Kab. Bogor, Pemda…"
               />
             </Field>
 
-            {/* Kepangkatan — sama persis Step 2 TambahEditGuru */}
-            <div className="p-4 rounded-xl border border-primary/15 bg-primary/5 space-y-4">
+            {/* ── Kepangkatan ── */}
+            <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 space-y-3">
               <p className="text-xs font-bold text-primary uppercase tracking-widest">
                 Kepangkatan
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="Golongan / Ruang">
                   <select
                     name="golongan"
                     defaultValue={modalJabatan?.golongan ?? ""}
                     className={inputCls}
                   >
-                    <option value="">-- Pilih --</option>
+                    <option value="">— Pilih —</option>
                     {[
                       "I/a",
                       "I/b",
@@ -1941,39 +2139,60 @@ function TabRiwayat({ nuptk, guru }) {
                     name="pangkat"
                     defaultValue={modalJabatan?.pangkat ?? ""}
                     className={inputCls}
-                    placeholder="Contoh: Penata Muda, Guru Pertama"
+                    placeholder="Penata Muda, Guru Pertama…"
                   />
                 </Field>
               </div>
             </div>
 
-            {/* SK */}
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="No. SK Pengangkatan">
+            {/* ── SK ── */}
+            <div className="rounded-xl border border-border-light bg-surface-container-lowest p-4 space-y-3">
+              <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">
+                Surat Keputusan
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="No. SK">
+                  <input
+                    name="no_sk"
+                    defaultValue={modalJabatan?.no_sk ?? ""}
+                    className={inputCls}
+                    placeholder="Nomor SK"
+                  />
+                </Field>
+                <Field label="Tanggal SK">
+                  <input
+                    name="tanggal_sk"
+                    type="date"
+                    defaultValue={modalJabatan?.tanggal_sk?.slice(0, 10) ?? ""}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+              <Field label="Pejabat Penandatangan">
                 <input
-                  name="no_sk"
-                  defaultValue={modalJabatan?.no_sk ?? ""}
+                  name="pejabat_penandatangan"
+                  defaultValue={modalJabatan?.pejabat_penandatangan ?? ""}
                   className={inputCls}
-                  placeholder="Nomor surat keputusan"
-                />
-              </Field>
-              <Field label="Tanggal SK">
-                <input
-                  name="tanggal_sk"
-                  type="date"
-                  defaultValue={modalJabatan?.tanggal_sk?.slice(0, 10) ?? ""}
-                  className={inputCls}
+                  placeholder="Kepala Yayasan, Kepala Madrasah, Kemenag Kab…"
                 />
               </Field>
             </div>
 
-            {/* Periode */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* ── Periode ── */}
+            <div className="grid grid-cols-2 gap-3">
               <Field label="TMT Jabatan">
                 <input
                   name="tmt_jabatan"
                   type="date"
                   defaultValue={modalJabatan?.tmt_jabatan?.slice(0, 10) ?? ""}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Masa Berlaku (opsional)">
+                <input
+                  name="masa_berlaku"
+                  type="date"
+                  defaultValue={modalJabatan?.masa_berlaku?.slice(0, 10) ?? ""}
                   className={inputCls}
                 />
               </Field>
@@ -1987,7 +2206,44 @@ function TabRiwayat({ nuptk, guru }) {
                   className={inputCls}
                 />
               </Field>
+              <Field label="Alasan Berakhir">
+                <select
+                  name="alasan_berakhir"
+                  defaultValue={modalJabatan?.alasan_berakhir ?? ""}
+                  className={inputCls}
+                >
+                  <option value="">— Pilih —</option>
+                  {[
+                    "Mutasi",
+                    "Promosi",
+                    "Habis Masa Jabatan",
+                    "Mengundurkan Diri",
+                    "Pensiun",
+                    "Lainnya",
+                  ].map((a) => (
+                    <option key={a}>{a}</option>
+                  ))}
+                </select>
+              </Field>
             </div>
+
+            {/* ── Status Jabatan ── */}
+            <Field label="Status Jabatan">
+              <select
+                name="status_jabatan"
+                defaultValue={
+                  modalJabatan?.status_jabatan ??
+                  (modalJabatan === "add" ? "Aktif" : "")
+                }
+                className={inputCls}
+              >
+                <option value="Aktif">Aktif</option>
+                <option value="Berakhir">Berakhir</option>
+                <option value="Nonaktif">Nonaktif</option>
+                <option value="Mutasi">Mutasi</option>
+                <option value="Pensiun">Pensiun</option>
+              </select>
+            </Field>
 
             <Field label="Uraian Tugas / Keterangan">
               <textarea
@@ -1995,7 +2251,7 @@ function TabRiwayat({ nuptk, guru }) {
                 defaultValue={modalJabatan?.uraian_tugas ?? ""}
                 rows={2}
                 className={inputCls}
-                placeholder="Opsional — deskripsi singkat tugas jabatan"
+                placeholder="Deskripsi singkat tugas (opsional)"
               />
             </Field>
 
@@ -2003,18 +2259,20 @@ function TabRiwayat({ nuptk, guru }) {
               <input
                 name="is_current"
                 type="checkbox"
-                defaultChecked={!!modalJabatan?.is_current}
+                defaultChecked={
+                  !!modalJabatan?.is_current || modalJabatan === "add"
+                }
                 className="w-4 h-4 accent-primary"
               />
               <span className="font-medium text-text-primary">
                 Tandai sebagai jabatan <strong>aktif</strong> saat ini
               </span>
               <span className="ml-auto text-xs text-text-secondary italic">
-                (akan menonaktifkan jabatan aktif lain)
+                (menonaktifkan jabatan lain)
               </span>
             </label>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex justify-end gap-3 pt-2 border-t border-border-light">
               <button
                 type="button"
                 onClick={() => setModalJabatan(null)}
@@ -2027,7 +2285,7 @@ function TabRiwayat({ nuptk, guru }) {
                 disabled={saveJabatan.isPending}
                 className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-60 transition-colors"
               >
-                {saveJabatan.isPending ? "Menyimpan..." : "Simpan"}
+                {saveJabatan.isPending ? "Menyimpan…" : "Simpan"}
               </button>
             </div>
           </form>

@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-27 14:39:31 +0000
+# Generation Time: 2026-07-29 06:59:49 +0000
 # ************************************************************
 
 
@@ -465,8 +465,8 @@ LOCK TABLES `guru_anaks` WRITE;
 
 INSERT INTO `guru_anaks` (`id`, `guru_id`, `nama`, `jenis_kelamin`, `tanggal_lahir`, `urutan`, `keterangan`, `created_at`, `updated_at`)
 VALUES
-	(7,5,'contoh anak ke 1','L','2026-07-02',1,NULL,'2026-07-26 22:37:26','2026-07-26 22:37:26'),
-	(8,5,'contoh anak ke 2','P','2027-01-25',2,NULL,'2026-07-26 22:37:26','2026-07-26 22:37:26');
+	(9,5,'contoh anak ke 1','L','2026-07-01',1,NULL,'2026-07-29 06:24:53','2026-07-29 06:24:53'),
+	(10,5,'contoh anak ke 2','P','2027-01-24',2,NULL,'2026-07-29 06:24:53','2026-07-29 06:24:53');
 
 /*!40000 ALTER TABLE `guru_anaks` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -583,17 +583,23 @@ CREATE TABLE `guru_jabatans` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `guru_id` bigint unsigned NOT NULL COMMENT 'FK ke gurus.id. Jabatan ini milik guru siapa',
   `jenis_jabatan` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `jenis_pengangkatan` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `jabatan` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nama jabatan: Guru Kelas|Wali Kelas|Kepala Sekolah|Bendahara BOS|Kepala Perpustakaan|dll',
   `unit_kerja` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `instansi_pengangkat` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `golongan` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Golongan kepangkatan PNS: I/A, II/A, III/A, III/B, III/C, III/D, IV/A, IV/B, IV/C, IV/D, IV/E',
   `pangkat` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nama pangkat: Pengatur, Penata Muda, Penata, Pembina, dll',
   `status_kepegawaian` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `no_sk` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nomor SK pengangkatan jabatan dari Kemenag/Dinas Pendidikan',
+  `pejabat_penandatangan` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `tanggal_sk` date DEFAULT NULL COMMENT 'Tanggal penerbitan SK',
   `tmt_jabatan` date DEFAULT NULL COMMENT 'Tanggal Mulai Tugas jabatan ini berlaku efektif',
   `tanggal_selesai` date DEFAULT NULL COMMENT 'Tanggal jabatan ini berakhir. NULL jika masih menjabat',
+  `masa_berlaku` date DEFAULT NULL,
+  `alasan_berakhir` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `uraian_tugas` text COLLATE utf8mb4_unicode_ci,
   `is_current` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1=Jabatan yang sedang aktif sekarang. Hanya satu per guru. Diupdate saat ada jabatan baru',
+  `status_jabatan` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL COMMENT 'Soft delete. Riwayat jabatan tidak boleh dihapus permanen',
@@ -612,9 +618,13 @@ CREATE TABLE `guru_jabatans` (
 LOCK TABLES `guru_jabatans` WRITE;
 /*!40000 ALTER TABLE `guru_jabatans` DISABLE KEYS */;
 
-INSERT INTO `guru_jabatans` (`id`, `guru_id`, `jenis_jabatan`, `jabatan`, `unit_kerja`, `golongan`, `pangkat`, `status_kepegawaian`, `no_sk`, `tanggal_sk`, `tmt_jabatan`, `tanggal_selesai`, `uraian_tugas`, `is_current`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`)
+INSERT INTO `guru_jabatans` (`id`, `guru_id`, `jenis_jabatan`, `jenis_pengangkatan`, `jabatan`, `unit_kerja`, `instansi_pengangkat`, `golongan`, `pangkat`, `status_kepegawaian`, `no_sk`, `pejabat_penandatangan`, `tanggal_sk`, `tmt_jabatan`, `tanggal_selesai`, `masa_berlaku`, `alasan_berakhir`, `uraian_tugas`, `is_current`, `status_jabatan`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`)
 VALUES
-	(1,5,'Fungsional','guru','kemenag','III/A','Penata Muda','Honorer','1234567890','2026-07-08','2026-07-03','2026-07-04','ftyffytftgyggygyghggh',1,'2026-07-27 08:08:10','2026-07-27 21:38:28',NULL,1,1);
+	(1,5,'Fungsional',NULL,'guru','kemenag',NULL,'III/A','Penata Muda','Honorer','1234567890',NULL,'2026-07-08','2026-07-03','2026-07-04',NULL,NULL,'ftyffytftgyggygyghggh',1,NULL,'2026-07-27 08:08:10','2026-07-28 20:29:12','2026-07-28 20:29:12',1,1),
+	(2,5,'Fungsional',NULL,'Guru Kelas','yayasan Nurul Huda',NULL,NULL,NULL,'PNS','45755678606776',NULL,'2026-06-30','2026-06-25','2026-07-30',NULL,NULL,NULL,1,NULL,'2026-07-28 20:48:48','2026-07-28 20:53:04','2026-07-28 20:53:04',1,1),
+	(3,5,'Struktural',NULL,'bendahara','kemenag',NULL,'III/A','Penata muda','CPNS','234567890',NULL,'2026-07-05','2026-07-12','2026-07-31',NULL,NULL,'rtdytfuyghbkmnhyjthfgvnbm',0,NULL,'2026-07-29 06:23:49','2026-07-29 06:24:21','2026-07-29 06:24:21',1,1),
+	(4,5,'Fungsional','Pelaksana Tugas (Plt)','Guru Kelas','yayasan Nurul Huda',NULL,'III/c','penata muda','PNS','45755678606776','Kepala Madrasah','2026-06-26','2026-06-21','2026-07-22','2026-07-04','Lainnya','ftegudcshbjxkncdc',1,'Aktif','2026-07-29 06:24:53','2026-07-29 13:33:59',NULL,1,1),
+	(5,5,'Fungsional',NULL,'refvgbgg','rrfgtrgfv',NULL,'III/A','dsyrufhbj','GTT','1234567890',NULL,'2026-07-26','2026-07-19','2026-07-31',NULL,NULL,'feyvghdbjd ,m',0,NULL,'2026-07-29 06:27:13','2026-07-29 06:27:36','2026-07-29 06:27:36',1,1);
 
 /*!40000 ALTER TABLE `guru_jabatans` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -959,7 +969,7 @@ VALUES
 	(2,3,'2222222222222222',NULL,NULL,NULL,NULL,NULL,NULL,'Guru Pengajar Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-26 21:08:14','2026-07-26 21:08:14',NULL,NULL,NULL),
 	(3,4,'3333333333333333',NULL,NULL,NULL,NULL,NULL,NULL,'Wali Kelas Test',NULL,NULL,'L',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL,NULL,NULL,NULL),
 	(4,5,'4444444444444444',NULL,NULL,NULL,NULL,NULL,NULL,'Bendahara Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-26 16:20:56','2026-07-26 16:20:56',NULL,NULL,NULL),
-	(5,NULL,'0987654321123456','780935466789356423','123456789','1234567897','23456798','1243708945236789','0798634513428756','Muhammad Sahal Anwar Hadi','Dr.','S.Kom','L','Bogor','2006-11-13','A','Islam','Yusroh','jl kencana rt 01 rw 02 kel kencana kec. tanah sareal kota bogor','001','002','kencana','kencana','tanah sareal','kota bogor','jawa barat','12345','085811723878','085811723878','sahalanwarhadi25@gmail.com','WNI','Aktif','Guru Kelas','PNS',1,'Aktif','2026-06-23','2026-06-25','2026-07-19','45755678606776','2026-06-30','yayasan Nurul Huda',10,'foto-guru/yxooIiTH0phZlSoEQI5krHQUAwdQYPgppISVXaSP.jpg',1,'2026-07-26 22:23:20',1,'2026-07-26 14:09:36','2026-07-26 22:37:26',NULL,NULL,1,NULL);
+	(5,NULL,'0987654321123456','780935466789356423','123456789','1234567897','23456798','1243708945236789','0798634513428756','Muhammad Sahal Anwar Hadi','Dr.','S.Kom','L','Bogor','2006-11-12','A','Islam','Yusroh','jl kencana rt 01 rw 02 kel kencana kec. tanah sareal kota bogor','001','002','kencana','kencana','tanah sareal','kota bogor','jawa barat','12345','085811723878','085811723878','sahalanwarhadi25@gmail.com','WNI','Aktif','Guru Kelas','PNS',1,'Aktif','2026-06-22','2026-06-24','2026-07-18','45755678606776','2026-06-29','yayasan Nurul Huda',10,'foto-guru/yxooIiTH0phZlSoEQI5krHQUAwdQYPgppISVXaSP.jpg',1,'2026-07-26 22:23:20',1,'2026-07-26 14:09:36','2026-07-29 06:24:53',NULL,NULL,1,NULL);
 
 /*!40000 ALTER TABLE `gurus` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1604,7 +1614,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-27 21:38:28',NULL,'2026-07-20 21:48:50','2026-07-27 21:38:28');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-29 13:57:55',NULL,'2026-07-20 21:48:50','2026-07-29 13:57:55');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
