@@ -127,12 +127,12 @@ const defaultForm = {
   tanggal_bergabung: "",
   tmt_pns: "",
   tmt_gty: "",
-  no_sk_pengangkatan: "",
-  tgl_sk_pengangkatan: "",
-  instansi_pengangkat: "",
+  // no_sk_pengangkatan: "",
+  // tgl_sk_pengangkatan: "",
+  // instansi_pengangkat: "",
   masa_kerja_tahun: "",
-  golongan: "",
-  pangkat: "",
+  // golongan: "",
+  // pangkat: "",
   // Keluarga
   status_perkawinan: "",
   nama_pasangan: "",
@@ -738,7 +738,7 @@ const Step2 = ({ form, set, errors }) => (
           placeholder="Contoh: 5"
         />
       </div>
-      <div>
+      {/* <div>
         <Label>Golongan / Ruang</Label>
         <SelectField
           value={form.golongan}
@@ -780,10 +780,10 @@ const Step2 = ({ form, set, errors }) => (
           className={inputCls}
           placeholder="Contoh: Penata Muda, Guru Pertama"
         />
-      </div>
+      </div> */}
     </div>
 
-    <Divider />
+    {/* <Divider />
     <SubSectionLabel>SK Pengangkatan</SubSectionLabel>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div className="md:col-span-2">
@@ -817,6 +817,20 @@ const Step2 = ({ form, set, errors }) => (
           placeholder="Contoh: Kementerian Agama Kab. Bogor, Yayasan Nurul Huda"
         />
       </div>
+    </div> */}
+    <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/15 rounded-xl mt-2">
+      <span className="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">
+        info
+      </span>
+      <p className="text-sm text-text-secondary">
+        Detail{" "}
+        <strong className="text-on-surface">
+          kepangkatan, golongan, dan riwayat SK jabatan
+        </strong>{" "}
+        dikelola di tab{" "}
+        <strong className="text-primary">Riwayat → Riwayat Jabatan</strong>{" "}
+        setelah data guru disimpan.
+      </p>
     </div>
   </div>
 );
@@ -1568,8 +1582,8 @@ export default function TambahEditGuru() {
         gaji_pokok,
         tunjangan_fungsional,
         tunjangan_profesi,
-        golongan,
-        pangkat,
+        // golongan,
+        // pangkat,
         ...rest
       } = data;
 
@@ -1642,56 +1656,56 @@ export default function TambahEditGuru() {
         }
       }
 
-      // 6. Sync jabatan aktif dari data kepegawaian Step 2
-      // Hanya buat/update jika ada data bermakna (minimal status_kepegawaian)
-      if (rest.status_kepegawaian || golongan || pangkat) {
-        try {
-          // Ambil daftar jabatan yang ada
-          const jabatanRes = await api.get(
-            `/operator/master-data/guru/${targetNuptk}/jabatan`,
-          );
-          const jabatanList = jabatanRes.data?.data ?? [];
-          const jabatanAktif = jabatanList.find((j) => j.is_current);
+      // // 6. Sync jabatan aktif dari data kepegawaian Step 2
+      // // Hanya buat/update jika ada data bermakna (minimal status_kepegawaian)
+      // if (rest.status_kepegawaian || golongan || pangkat) {
+      //   try {
+      //     // Ambil daftar jabatan yang ada
+      //     const jabatanRes = await api.get(
+      //       `/operator/master-data/guru/${targetNuptk}/jabatan`,
+      //     );
+      //     const jabatanList = jabatanRes.data?.data ?? [];
+      //     const jabatanAktif = jabatanList.find((j) => j.is_current);
 
-          const jabatanPayload = {
-            jenis_jabatan: jabatanAktif?.jenis_jabatan || "Fungsional",
-            jabatan: jabatanAktif?.jabatan || rest.jenis_ptk || "Guru",
-            unit_kerja:
-              jabatanAktif?.unit_kerja || rest.instansi_pengangkat || "",
-            golongan: golongan || jabatanAktif?.golongan || "",
-            pangkat: pangkat || jabatanAktif?.pangkat || "",
-            status_kepegawaian: rest.status_kepegawaian || "",
-            no_sk: jabatanAktif?.no_sk || rest.no_sk_pengangkatan || "",
-            tanggal_sk:
-              jabatanAktif?.tanggal_sk || rest.tgl_sk_pengangkatan || "",
-            tmt_jabatan:
-              jabatanAktif?.tmt_jabatan ||
-              rest.tmt_pns ||
-              rest.tmt_gty ||
-              rest.tanggal_bergabung ||
-              "",
-            tanggal_selesai: "",
-            uraian_tugas: jabatanAktif?.uraian_tugas || "",
-            is_current: 1,
-          };
+      //     const jabatanPayload = {
+      //       jenis_jabatan: jabatanAktif?.jenis_jabatan || "Fungsional",
+      //       jabatan: jabatanAktif?.jabatan || rest.jenis_ptk || "Guru",
+      //       unit_kerja:
+      //         jabatanAktif?.unit_kerja || rest.instansi_pengangkat || "",
+      //       golongan: golongan || jabatanAktif?.golongan || "",
+      //       pangkat: pangkat || jabatanAktif?.pangkat || "",
+      //       status_kepegawaian: rest.status_kepegawaian || "",
+      //       no_sk: jabatanAktif?.no_sk || rest.no_sk_pengangkatan || "",
+      //       tanggal_sk:
+      //         jabatanAktif?.tanggal_sk || rest.tgl_sk_pengangkatan || "",
+      //       tmt_jabatan:
+      //         jabatanAktif?.tmt_jabatan ||
+      //         rest.tmt_pns ||
+      //         rest.tmt_gty ||
+      //         rest.tanggal_bergabung ||
+      //         "",
+      //       tanggal_selesai: "",
+      //       uraian_tugas: jabatanAktif?.uraian_tugas || "",
+      //       is_current: 1,
+      //     };
 
-          if (jabatanAktif) {
-            // Update jabatan aktif yang sudah ada
-            await api.put(
-              `/operator/master-data/guru/${targetNuptk}/jabatan/${jabatanAktif.id}`,
-              jabatanPayload,
-            );
-          } else {
-            // Buat jabatan aktif baru
-            await api.post(
-              `/operator/master-data/guru/${targetNuptk}/jabatan`,
-              jabatanPayload,
-            );
-          }
-        } catch (_) {
-          // Jangan gagalkan seluruh proses jika sync jabatan error
-        }
-      }
+      //     if (jabatanAktif) {
+      //       // Update jabatan aktif yang sudah ada
+      //       await api.put(
+      //         `/operator/master-data/guru/${targetNuptk}/jabatan/${jabatanAktif.id}`,
+      //         jabatanPayload,
+      //       );
+      //     } else {
+      //       // Buat jabatan aktif baru
+      //       await api.post(
+      //         `/operator/master-data/guru/${targetNuptk}/jabatan`,
+      //         jabatanPayload,
+      //       );
+      //     }
+      //   } catch (_) {
+      //     // Jangan gagalkan seluruh proses jika sync jabatan error
+      //   }
+      // }
 
       return res;
     },

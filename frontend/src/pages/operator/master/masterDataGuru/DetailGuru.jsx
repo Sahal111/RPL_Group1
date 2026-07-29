@@ -1377,34 +1377,36 @@ function TabRiwayat({ nuptk, guru }) {
     initialData: guru.jabatans ?? [],
   });
 
-  // Baris sintetis dari data kepegawaian guru (jika belum ada entry jabatan aktif)
-  const jabatanAktifFromGuru =
-    jabatans.length === 0 &&
-    (guru.status_kepegawaian || guru.jabatan_aktif || guru.jabatanAktif)
-      ? [
-          {
-            id: "__from_guru__",
-            jabatan: guru.jenis_ptk || "Guru",
-            jenis_jabatan: "Fungsional",
-            unit_kerja: guru.instansi_pengangkat || "",
-            golongan:
-              guru.jabatan_aktif?.golongan ?? guru.jabatanAktif?.golongan ?? "",
-            pangkat:
-              guru.jabatan_aktif?.pangkat ?? guru.jabatanAktif?.pangkat ?? "",
-            status_kepegawaian: guru.status_kepegawaian || "",
-            no_sk: guru.no_sk_pengangkatan || "",
-            tanggal_sk: guru.tgl_sk_pengangkatan || "",
-            tmt_jabatan:
-              guru.tmt_pns || guru.tmt_gty || guru.tanggal_bergabung || "",
-            tanggal_selesai: null,
-            is_current: true,
-            _readOnly: true,
-          },
-        ]
-      : [];
+  // // Baris sintetis dari data kepegawaian guru (jika belum ada entry jabatan aktif)
+  // const jabatanAktifFromGuru =
+  //   jabatans.length === 0 &&
+  //   (guru.status_kepegawaian || guru.jabatan_aktif || guru.jabatanAktif)
+  //     ? [
+  //         {
+  //           id: "__from_guru__",
+  //           jabatan: guru.jenis_ptk || "Guru",
+  //           jenis_jabatan: "Fungsional",
+  //           unit_kerja: guru.instansi_pengangkat || "",
+  //           golongan:
+  //             guru.jabatan_aktif?.golongan ?? guru.jabatanAktif?.golongan ?? "",
+  //           pangkat:
+  //             guru.jabatan_aktif?.pangkat ?? guru.jabatanAktif?.pangkat ?? "",
+  //           status_kepegawaian: guru.status_kepegawaian || "",
+  //           no_sk: guru.no_sk_pengangkatan || "",
+  //           tanggal_sk: guru.tgl_sk_pengangkatan || "",
+  //           tmt_jabatan:
+  //             guru.tmt_pns || guru.tmt_gty || guru.tanggal_bergabung || "",
+  //           tanggal_selesai: null,
+  //           is_current: true,
+  //           _readOnly: true,
+  //         },
+  //       ]
+  //     : [];
 
-  const jabatanRows = jabatans.length > 0 ? jabatans : jabatanAktifFromGuru;
-
+  // const jabatanRows = jabatans.length > 0 ? jabatans : jabatanAktifFromGuru;
+  
+  const jabatanRows = jabatans;
+  
   const saveJabatan = useMutation({
     mutationFn: ({ data, id }) =>
       id
@@ -1696,16 +1698,12 @@ function TabRiwayat({ nuptk, guru }) {
                 </div>
               </div>
               <button
-                onClick={() => setModalJabatan(aktif._readOnly ? "add" : aktif)}
+                onClick={() => setModalJabatan(aktif)}
                 className="flex-shrink-0 p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                title={
-                  aktif._readOnly
-                    ? "Tambah jabatan manual"
-                    : "Edit jabatan aktif"
-                }
+                title="Edit jabatan aktif"
               >
                 <span className="material-symbols-outlined text-[18px]">
-                  {aktif._readOnly ? "add" : "edit"}
+                  edit
                 </span>
               </button>
             </div>
@@ -1745,7 +1743,7 @@ function TabRiwayat({ nuptk, guru }) {
           </div>
         ) : (
           <>
-            {jabatanAktifFromGuru.length > 0 && (
+            {/* {jabatanAktifFromGuru.length > 0 && (
               <div className="mb-4 flex items-start gap-2 p-3 bg-primary/5 border border-primary/15 rounded-xl text-xs text-primary">
                 <span className="material-symbols-outlined text-[16px] flex-shrink-0 mt-0.5">
                   info
@@ -1755,7 +1753,7 @@ function TabRiwayat({ nuptk, guru }) {
                   Tambahkan riwayat jabatan manual untuk data lebih lengkap.
                 </span>
               </div>
-            )}
+            )} */}
             {/* Timeline + Tabel */}
             <div className="space-y-3">
               {jabatanRows.map((j, idx) => {
