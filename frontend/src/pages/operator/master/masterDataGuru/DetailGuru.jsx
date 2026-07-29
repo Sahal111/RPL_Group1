@@ -107,7 +107,7 @@ function MetricCard({ icon, iconBg, iconColor, label, value, sub, subColor }) {
 /* ══════════════════════════════════════════════════════════
    TAB 1 — Identitas & Kepegawaian
    ══════════════════════════════════════════════════════════ */
-function TabIdentitas({ guru }) {
+function TabIdentitas({ guru, onGoToRiwayat }) {
   return (
     <div className="space-y-6">
       {/* Identitas Pribadi */}
@@ -173,7 +173,7 @@ function TabIdentitas({ guru }) {
           </div>
         </div>
 
-        {/* Golongan & Pangkat dari jabatan aktif */}
+        {/* Golongan & Pangkat dari jabatan aktif
         {(guru.jabatan_aktif || guru.jabatanAktif) && (
           <>
             <SubLabel>Kepangkatan Aktif</SubLabel>
@@ -201,9 +201,9 @@ function TabIdentitas({ guru }) {
               />
             </div>
           </>
-        )}
+        )} */}
 
-        <SubLabel>SK Pengangkatan</SubLabel>
+        {/* <SubLabel>SK Pengangkatan</SubLabel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3">
           <InfoRow label="No. SK" value={guru.no_sk_pengangkatan} />
           <InfoRow
@@ -214,7 +214,47 @@ function TabIdentitas({ guru }) {
             label="Instansi Pengangkat"
             value={guru.instansi_pengangkat}
           />
-        </div>
+        </div> */}
+        {/* Jabatan aktif — ringkasan, detail ada di Tab Riwayat */}
+        {(guru.jabatan_aktif || guru.jabatanAktif) && (
+          <>
+            <SubLabel>Jabatan Aktif</SubLabel>
+            <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/15 rounded-xl">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary text-[20px]">
+                  badge
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">
+                    {guru.jabatan_aktif?.jabatan ??
+                      guru.jabatanAktif?.jabatan ??
+                      "-"}
+                  </p>
+                  {(guru.jabatan_aktif?.golongan ??
+                    guru.jabatanAktif?.golongan) && (
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Gol.{" "}
+                      {guru.jabatan_aktif?.golongan ??
+                        guru.jabatanAktif?.golongan}
+                      {(guru.jabatan_aktif?.pangkat ??
+                        guru.jabatanAktif?.pangkat) &&
+                        ` · ${guru.jabatan_aktif?.pangkat ?? guru.jabatanAktif?.pangkat}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={onGoToRiwayat}
+                className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline"
+              >
+                Lihat riwayat
+                <span className="material-symbols-outlined text-[14px]">
+                  arrow_forward
+                </span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Alamat */}
@@ -370,8 +410,16 @@ function TabPendidikan({ nuptk, guru }) {
       queryClient.invalidateQueries(["guru-pendidikan", nuptk]);
       setModalPend(null);
     },
-    onError: (e) =>
-      toast.error(e.response?.data?.message ?? "Gagal menyimpan."),
+    onError: (e) => {
+      const errors = e.response?.data?.errors;
+      if (errors) {
+        Object.values(errors)
+          .flat()
+          .forEach((msg) => toast.error(msg));
+      } else {
+        toast.error(e.response?.data?.message ?? "Gagal menyimpan.");
+      }
+    },
   });
   const deletePendidikan = useMutation({
     mutationFn: (id) =>
@@ -1404,9 +1452,9 @@ function TabRiwayat({ nuptk, guru }) {
   //     : [];
 
   // const jabatanRows = jabatans.length > 0 ? jabatans : jabatanAktifFromGuru;
-  
+
   const jabatanRows = jabatans;
-  
+
   const saveJabatan = useMutation({
     mutationFn: ({ data, id }) =>
       id
@@ -1435,6 +1483,13 @@ function TabRiwayat({ nuptk, guru }) {
   const handleJabatanSubmit = (e) => {
     e.preventDefault();
     const f = e.target;
+    const tmt = f.tmt_jabatan.value;
+    const selesai = f.tanggal_selesai.value;
+    if (tmt && selesai && selesai < tmt) {
+      toast.error("Tanggal selesai tidak boleh lebih awal dari TMT jabatan.");
+      return;
+    }
+
     saveJabatan.mutate({
       id: modalJabatan?.id,
       data: {
@@ -3241,7 +3296,12 @@ export default function DetailGuru() {
 
         {/* Tab Content — p-8 di desktop, dikurangi di mobile */}
         <div className="p-4 sm:p-6 md:p-8">
-          {activeTab === "identitas" && <TabIdentitas guru={guru} />}
+          {activeTab === "identitas" && (
+            <TabIdentitas
+              guru={guru}
+              onGoToRiwayat={() => setActiveTab("riwayat")}
+            />
+          )}
           {activeTab === "penugasan" && <TabPenugasan guru={guru} />}
           {activeTab === "pendidikan" && (
             <TabPendidikan nuptk={nuptk} guru={guru} />
