@@ -7,7 +7,31 @@ import toast from "react-hot-toast";
 const BASE_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
-/* ─── Helper ─── */
+// Universal file downloader — pakai di semua tab
+function useFileDownload(nuptk) {
+  const download = async (filePath, namaFile = "dokumen") => {
+    try {
+      const res = await api.get(
+        `/operator/master-data/guru/${nuptk}/file-download`,
+        {
+          params: { path: filePath, nama: namaFile },
+          responseType: "blob",
+        }
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = namaFile;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mendownload file.");
+    }
+  };
+  return download;
+}
+
+  /* ─── Helper ─── */
 function fmtDate(val) {
   if (!val) return "-";
   try {
@@ -356,6 +380,7 @@ const inputCls =
    TAB 3 — Pendidikan, Sertifikasi & Inpassing
    ══════════════════════════════════════════════════════════ */
 function TabPendidikan({ nuptk, guru }) {
+  const downloadFile = useFileDownload(nuptk);
   const queryClient = useQueryClient();
 
   /* ── state modal ── */
@@ -624,17 +649,20 @@ function TabPendidikan({ nuptk, guru }) {
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     {p.file_ijazah && (
-                      <a
-                        href={`${BASE_URL}/storage/${p.file_ijazah}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() =>
+                          downloadFile(
+                            p.file_ijazah,
+                            `Ijazah_${p.nama_sekolah}`,
+                          )
+                        }
                         className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Lihat ijazah"
+                        title="Download ijazah"
                       >
                         <span className="material-symbols-outlined text-[18px]">
-                          description
+                          download
                         </span>
-                      </a>
+                      </button>
                     )}
                     <button
                       onClick={() => setModalPend(p)}
@@ -722,17 +750,20 @@ function TabPendidikan({ nuptk, guru }) {
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     {s.file_sertifikat && (
-                      <a
-                        href={`${BASE_URL}/storage/${s.file_sertifikat}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() =>
+                          downloadFile(
+                            s.file_sertifikat,
+                            `Sertifikasi_${s.jenis_sertifikasi}`,
+                          )
+                        }
                         className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Lihat sertifikat"
+                        title="Download sertifikat"
                       >
                         <span className="material-symbols-outlined text-[18px]">
-                          description
+                          download
                         </span>
-                      </a>
+                      </button>
                     )}
                     <button
                       onClick={() => setModalSert(s)}
@@ -807,17 +838,17 @@ function TabPendidikan({ nuptk, guru }) {
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     {inp.file_sk && (
-                      <a
-                        href={`${BASE_URL}/storage/${inp.file_sk}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() =>
+                          downloadFile(inp.file_sk, `SK_Inpassing_${inp.no_sk}`)
+                        }
                         className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Lihat SK"
+                        title="Download SK Inpassing"
                       >
                         <span className="material-symbols-outlined text-[18px]">
-                          description
+                          download
                         </span>
-                      </a>
+                      </button>
                     )}
                     <button
                       onClick={() => setModalInp(inp)}
@@ -1292,49 +1323,300 @@ function TabKeluarga({ guru }) {
 /* ══════════════════════════════════════════════════════════
    TAB 5 — Dokumen
    ══════════════════════════════════════════════════════════ */
-function TabDokumen({ guru }) {
-  const dokumens = guru.dokumens ?? [];
+function TabDokumen({ nuptk }) {
+  const queryClient = useQueryClient();
+  const [modalUpload, setModalUpload] = useState(false);
+  const fileRef = useRef();
+
+  const KATEGORI_OPTS = [
+    { value: "identitas", label: "Identitas (KTP, KK, Paspor)" },
+    { value: "kepegawaian", label: "Kepegawaian (SK, Kontrak)" },
+    { value: "pendidikan", label: "Pendidikan (Ijazah, Transkrip)" },
+    { value: "sertifikasi", label: "Sertifikasi & Pelatihan" },
+    { value: "penghargaan", label: "Penghargaan" },
+    { value: "lainnya", label: "Lainnya" },
+  ];
+
+  const { data: dokumens = [], isLoading } = useQuery({
+    queryKey: ["guru-dokumen", nuptk],
+    queryFn: () =>
+      api
+        .get(`/operator/master-data/guru/${nuptk}/dokumen`)
+        .then((r) => r.data.data),
+  });
+
+  const uploadDokumen = useMutation({
+    mutationFn: (fd) =>
+      api.post(`/operator/master-data/guru/${nuptk}/dokumen`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+    onSuccess: () => {
+      toast.success("Dokumen berhasil diupload.");
+      queryClient.invalidateQueries(["guru-dokumen", nuptk]);
+      setModalUpload(false);
+    },
+    onError: (e) => {
+      const errors = e.response?.data?.errors;
+      if (errors) {
+        Object.values(errors)
+          .flat()
+          .forEach((msg) => toast.error(msg));
+      } else {
+        toast.error(e.response?.data?.message ?? "Gagal mengupload dokumen.");
+      }
+    },
+  });
+
+  const deleteDokumen = useMutation({
+    mutationFn: (id) =>
+      api.delete(`/operator/master-data/guru/${nuptk}/dokumen/${id}`),
+    onSuccess: () => {
+      toast.success("Dokumen dihapus.");
+      queryClient.invalidateQueries(["guru-dokumen", nuptk]);
+    },
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menghapus."),
+  });
+
+  const handleUploadSubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const fd = new FormData();
+    fd.append("kategori", f.kategori.value);
+    fd.append("nama_dokumen", f.nama_dokumen.value);
+    fd.append("nomor_dokumen", f.nomor_dokumen.value);
+    fd.append("tanggal_dokumen", f.tanggal_dokumen.value);
+    fd.append("penerbit", f.penerbit.value);
+    if (f.file.files[0]) fd.append("file", f.file.files[0]);
+    uploadDokumen.mutate(fd);
+  };
+
+  const fmtSize = (bytes) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const iconByKategori = (kategori) => {
+    const icons = {
+      identitas: "badge",
+      kepegawaian: "gavel",
+      pendidikan: "school",
+      sertifikasi: "workspace_premium",
+      penghargaan: "emoji_events",
+      lainnya: "description",
+    };
+    return icons[kategori] ?? "description";
+  };
+
+  const handleDownload = async (dokumenId, namaFile) => {
+    try {
+      const res = await api.get(
+        `/operator/master-data/guru/${nuptk}/dokumen/${dokumenId}/download`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = namaFile ?? "dokumen";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mendownload file.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-        <SectionTitle icon="folder_open" label="Dokumen Guru" />
-        {dokumens.length === 0 ? (
-          <p className="text-sm text-text-secondary text-center py-8">
-            Belum ada dokumen yang diunggah.
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <SectionTitle
+            icon="folder_open"
+            label="Dokumen Guru"
+            desc={`${dokumens.length} dokumen tersimpan`}
+          />
+          <button
+            onClick={() => setModalUpload(true)}
+            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              upload_file
+            </span>
+            Upload Dokumen
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <span className="material-symbols-outlined text-[36px] text-primary animate-spin">
+              progress_activity
+            </span>
+          </div>
+        ) : dokumens.length === 0 ? (
+          <div className="text-center py-12">
+            <span className="material-symbols-outlined text-[48px] text-text-secondary/30 block mb-3">
+              folder_open
+            </span>
+            <p className="text-sm text-text-secondary font-medium">
+              Belum ada dokumen yang diunggah.
+            </p>
+            <p className="text-xs text-text-secondary mt-1">
+              Klik <strong>Upload Dokumen</strong> untuk menambahkan.
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {dokumens.map((d, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {dokumens.map((d) => (
               <div
-                key={i}
-                className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light"
+                key={d.id}
+                className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
               >
-                <span className="material-symbols-outlined text-primary text-[28px]">
-                  description
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">
-                    {d.nama_dokumen ?? d.jenis_dokumen}
-                  </p>
-                  <p className="text-xs text-text-secondary">
-                    {fmtDate(d.created_at)}
-                  </p>
-                </div>
-                <a
-                  href={`${BASE_URL}/storage/${d.path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[20px]">
-                    download
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[22px]">
+                    {iconByKategori(d.kategori)}
                   </span>
-                </a>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-text-primary truncate">
+                    {d.nama_dokumen ?? d.kategori}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {d.kategori && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-medium">
+                        {d.kategori}
+                      </span>
+                    )}
+                    {d.file_size && (
+                      <span className="text-xs text-text-secondary">
+                        {fmtSize(d.file_size)}
+                      </span>
+                    )}
+                    <span className="text-xs text-text-secondary">
+                      {fmtDate(d.created_at)}
+                    </span>
+                  </div>
+                  {d.nomor_dokumen && (
+                    <p className="text-xs text-text-secondary font-mono mt-0.5">
+                      No: {d.nomor_dokumen}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <a
+                    href={`${BASE_URL}/storage/${d.file_path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                    title="Buka di tab baru"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      open_in_new
+                    </span>
+                  </a>
+                  <button
+                    onClick={() =>
+                      handleDownload(d.id, d.nama_dokumen ?? d.kategori)
+                    }
+                    className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                    title="Download"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      download
+                    </span>
+                  </button>
+                  <button
+                    onClick={() =>
+                      confirm("Hapus dokumen ini?") &&
+                      deleteDokumen.mutate(d.id)
+                    }
+                    className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
+                    title="Hapus"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      delete
+                    </span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal Upload */}
+      {modalUpload && (
+        <Modal title="Upload Dokumen" onClose={() => setModalUpload(false)}>
+          <form onSubmit={handleUploadSubmit} className="space-y-4">
+            <Field label="Kategori Dokumen" required>
+              <select name="kategori" required className={inputCls}>
+                <option value="">-- Pilih kategori --</option>
+                {KATEGORI_OPTS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Nama Dokumen">
+              <input
+                name="nama_dokumen"
+                className={inputCls}
+                placeholder="Kosongkan untuk pakai nama kategori"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Nomor Dokumen">
+                <input
+                  name="nomor_dokumen"
+                  className={inputCls}
+                  placeholder="No. seri / nomor dokumen"
+                />
+              </Field>
+              <Field label="Tanggal Dokumen">
+                <input
+                  name="tanggal_dokumen"
+                  type="date"
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <Field label="Penerbit / Instansi">
+              <input
+                name="penerbit"
+                className={inputCls}
+                placeholder="Contoh: Dukcapil, Kemenag, dll."
+              />
+            </Field>
+            <Field label="File (PDF/JPG/PNG, maks 10MB)" required>
+              <input
+                ref={fileRef}
+                name="file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+                className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+              />
+            </Field>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalUpload(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={uploadDokumen.isPending}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                {uploadDokumen.isPending ? "Mengupload..." : "Upload"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -1343,6 +1625,7 @@ function TabDokumen({ guru }) {
    TAB 6 — Riwayat
    ══════════════════════════════════════════════════════════ */
 function TabRiwayat({ nuptk, guru }) {
+  const downloadFile = useFileDownload(nuptk);
   const queryClient = useQueryClient();
   const [modalDiklat, setModalDiklat] = useState(null); // null | 'add' | object
   const [modalJabatan, setModalJabatan] = useState(null); // null | 'add' | object
@@ -1610,17 +1893,20 @@ function TabRiwayat({ nuptk, guru }) {
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
                     {d.file_sertifikat && (
-                      <a
-                        href={`${BASE_URL}/storage/${d.file_sertifikat}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() =>
+                          downloadFile(
+                            d.file_sertifikat,
+                            `Diklat_${d.nama_diklat}`,
+                          )
+                        }
                         className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Lihat sertifikat"
+                        title="Download sertifikat diklat"
                       >
                         <span className="material-symbols-outlined text-[18px]">
-                          description
+                          download
                         </span>
-                      </a>
+                      </button>
                     )}
                     <button
                       onClick={() => setModalDiklat(d)}
@@ -3307,7 +3593,7 @@ export default function DetailGuru() {
             <TabPendidikan nuptk={nuptk} guru={guru} />
           )}
           {activeTab === "keluarga" && <TabKeluarga guru={guru} />}
-          {activeTab === "dokumen" && <TabDokumen guru={guru} />}
+          {activeTab === "dokumen" && <TabDokumen nuptk={nuptk} />}
           {activeTab === "riwayat" && <TabRiwayat nuptk={nuptk} guru={guru} />}
           {activeTab === "administrasi" && <TabAdministrasi guru={guru} />}
           {activeTab === "akun" && (

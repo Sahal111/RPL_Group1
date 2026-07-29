@@ -691,7 +691,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
-            'kategori' => 'required|in:KTP,KK,NPWP,Ijazah,Transkrip,SK Pengangkatan,SK Berkala,Sertifikat Pendidik,Sertifikat Pelatihan,Pakta Integritas,CV,Buku Rekening,Lainnya',
+            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,penghargaan,lainnya',
             'nama_dokumen' => 'nullable|string|max:150',
             'nomor_dokumen' => 'nullable|string|max:80',
             'tanggal_dokumen' => 'nullable|date',
@@ -1168,5 +1168,44 @@ class MasterDataGuruController extends Controller
         $jabatan = $guru->jabatans()->findOrFail($id);
         $jabatan->delete(); // soft delete
         return response()->json(['success' => true, 'message' => 'Riwayat jabatan dihapus.']);
+    }
+
+    public function downloadDokumen($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        $path = storage_path('app/public/' . $dokumen->file_path);
+
+        if (!file_exists($path)) {
+            return response()->json(['message' => 'File tidak ditemukan.'], 404);
+        }
+
+        return response()->download(
+            $path,
+            $dokumen->nama_dokumen . '.' . pathinfo($path, PATHINFO_EXTENSION)
+        );
+    }
+
+    public function downloadFile(Request $request, $nuptk)
+    {
+        Guru::where('nuptk', $nuptk)->firstOrFail(); // pastikan guru exist
+
+        $filePath = $request->query('path');
+        $namaFile = $request->query('nama', 'dokumen');
+
+        if (!$filePath) {
+            return response()->json(['message' => 'Path tidak ditemukan.'], 400);
+        }
+
+        $fullPath = storage_path('app/public/' . $filePath);
+
+        if (!file_exists($fullPath)) {
+            return response()->json(['message' => 'File tidak ditemukan.'], 404);
+        }
+
+        $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+
+        return response()->download($fullPath, $namaFile . '.' . $ext);
     }
 }

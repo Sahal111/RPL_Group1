@@ -166,6 +166,9 @@ Route::middleware('auth:sanctum')->group(function () {
                 return response()->json(['success' => true, 'data' => ['id' => $u->id, 'username' => $u->username ?? $u->email, 'email' => $u->email, 'role' => $u->roles->pluck('name'), 'is_active' => $u->is_active, 'last_login_at' => $u->last_login_at]]);
             });
 
+            Route::get('/guru/{nuptk}/dokumen/{id}/download', [MasterDataGuruController::class, 'downloadDokumen']);
+            Route::get('/guru/{nuptk}/file-download', [MasterDataGuruController::class, 'downloadFile']);
+            
             // Siswa
             Route::get('/siswa', [MasterDataSiswaController::class, 'index']);
             Route::post('/siswa', [MasterDataSiswaController::class, 'store']);
