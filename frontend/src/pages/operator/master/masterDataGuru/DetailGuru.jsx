@@ -16,7 +16,7 @@ function useFileDownload(nuptk) {
         {
           params: { path: filePath, nama: namaFile },
           responseType: "blob",
-        }
+        },
       );
       const url = URL.createObjectURL(res.data);
       const a = document.createElement("a");
@@ -31,7 +31,7 @@ function useFileDownload(nuptk) {
   return download;
 }
 
-  /* ─── Helper ─── */
+/* ─── Helper ─── */
 function fmtDate(val) {
   if (!val) return "-";
   try {
@@ -1326,6 +1326,7 @@ function TabKeluarga({ guru }) {
 function TabDokumen({ nuptk }) {
   const queryClient = useQueryClient();
   const [modalUpload, setModalUpload] = useState(false);
+  const [modalEdit, setModalEdit] = useState(null); // null | object dokumen
   const fileRef = useRef();
 
   const KATEGORI_OPTS = [
@@ -1378,6 +1379,32 @@ function TabDokumen({ nuptk }) {
       toast.error(e.response?.data?.message ?? "Gagal menghapus."),
   });
 
+  const editDokumen = useMutation({
+    mutationFn: ({ id, fd }) =>
+      api.post(
+        `/operator/master-data/guru/${nuptk}/dokumen/${id}?_method=PUT`,
+        fd,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      ),
+    onSuccess: () => {
+      toast.success("Dokumen berhasil diperbarui.");
+      queryClient.invalidateQueries(["guru-dokumen", nuptk]);
+      setModalEdit(null);
+    },
+    onError: (e) => {
+      const errors = e.response?.data?.errors;
+      if (errors) {
+        Object.values(errors)
+          .flat()
+          .forEach((msg) => toast.error(msg));
+      } else {
+        toast.error(e.response?.data?.message ?? "Gagal memperbarui dokumen.");
+      }
+    },
+  });
+
   const handleUploadSubmit = (e) => {
     e.preventDefault();
     const f = e.target;
@@ -1389,6 +1416,19 @@ function TabDokumen({ nuptk }) {
     fd.append("penerbit", f.penerbit.value);
     if (f.file.files[0]) fd.append("file", f.file.files[0]);
     uploadDokumen.mutate(fd);
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const fd = new FormData();
+    fd.append("kategori", f.kategori.value);
+    fd.append("nama_dokumen", f.nama_dokumen.value);
+    fd.append("nomor_dokumen", f.nomor_dokumen.value);
+    fd.append("tanggal_dokumen", f.tanggal_dokumen.value);
+    fd.append("penerbit", f.penerbit.value);
+    if (f.file.files[0]) fd.append("file", f.file.files[0]);
+    editDokumen.mutate({ id: modalEdit.id, fd });
   };
 
   const fmtSize = (bytes) => {
@@ -1503,17 +1543,15 @@ function TabDokumen({ nuptk }) {
                   )}
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <a
-                    href={`${BASE_URL}/storage/${d.file_path}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                    title="Buka di tab baru"
+                  <button
+                    onClick={() => setModalEdit(d)}
+                    className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
+                    title="Edit dokumen"
                   >
                     <span className="material-symbols-outlined text-[18px]">
-                      open_in_new
+                      edit
                     </span>
-                  </a>
+                  </button>
                   <button
                     onClick={() =>
                       handleDownload(d.id, d.nama_dokumen ?? d.kategori)
@@ -1617,6 +1655,96 @@ function TabDokumen({ nuptk }) {
           </form>
         </Modal>
       )}
+
+      {modalEdit && (
+        <Modal title="Edit Dokumen" onClose={() => setModalEdit(null)}>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <Field label="Kategori Dokumen" required>
+              <select
+                name="kategori"
+                required
+                defaultValue={modalEdit.kategori}
+                className={inputCls}
+              >
+                <option value="">-- Pilih kategori --</option>
+                {KATEGORI_OPTS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Nama Dokumen">
+              <input
+                name="nama_dokumen"
+                defaultValue={modalEdit.nama_dokumen ?? ""}
+                className={inputCls}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Nomor Dokumen">
+                <input
+                  name="nomor_dokumen"
+                  defaultValue={modalEdit.nomor_dokumen ?? ""}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Tanggal Dokumen">
+                <input
+                  name="tanggal_dokumen"
+                  type="date"
+                  defaultValue={modalEdit.tanggal_dokumen?.slice(0, 10) ?? ""}
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <Field label="Penerbit / Instansi">
+              <input
+                name="penerbit"
+                defaultValue={modalEdit.penerbit ?? ""}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Ganti File (opsional)">
+              <input
+                name="file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+              />
+              {modalEdit.file_path && (
+                <p className="text-xs text-text-secondary mt-1">
+                  File saat ini:{" "}
+                  <a
+                    href={`${BASE_URL}/storage/${modalEdit.file_path}`}
+                    target="_blank"
+                    className="text-primary underline"
+                  >
+                    lihat
+                  </a>
+                </p>
+              )}
+            </Field>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalEdit(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={editDokumen.isPending}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                {editDokumen.isPending ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      
     </div>
   );
 }

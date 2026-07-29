@@ -1206,6 +1206,9 @@ class MasterDataGuruController extends Controller
 
         $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
 
-        return response()->download($fullPath, $namaFile . '.' . $ext);
+        // Sanitasi nama file — hapus karakter yang tidak valid
+        $safeName = preg_replace('/[\/\\\\:*?"<>|]/', '_', $namaFile);
+
+        return response()->download($fullPath, $safeName . '.' . $ext);
     }
 }
