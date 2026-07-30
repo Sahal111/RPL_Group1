@@ -56,8 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
-
-
     // Operator only
     Route::middleware('role:operator')->prefix('operator')->group(function () {
         Route::get('/pengaturan/kode-registrasi', [OperatorController::class, 'getKodeRegistrasi']);
@@ -83,6 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/guru', [MasterDataGuruController::class, 'index']);
             Route::get('/guru/stats', [MasterDataGuruController::class, 'stats']);
             Route::get('/guru/perhatian-detail', [MasterDataGuruController::class, 'perhatianDetail']);
+            Route::get('/guru/tanpa-penugasan', [MasterDataGuruController::class, 'tanpaPenugasan']);
+            Route::get('/guru/aktivitas-terkini', [MasterDataGuruController::class, 'aktivitasTerkini']);
             Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
             // Import / Export / Backup (harus sebelum /{nuptk})
             Route::get('/guru/template', [MasterDataGuruController::class, 'downloadTemplate']);

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
@@ -658,6 +659,24 @@ export default function MasterGuru() {
     staleTime: 30_000,
   });
 
+  const { data: guruTanpaPenugasan = [] } = useQuery({
+    queryKey: ["guru-tanpa-penugasan"],
+    queryFn: () =>
+      api
+        .get("/operator/master-data/guru/tanpa-penugasan")
+        .then((r) => r.data.data),
+    staleTime: 60_000,
+  });
+
+  const { data: aktivitasTerkini = [] } = useQuery({
+    queryKey: ["guru-aktivitas-terkini"],
+    queryFn: () =>
+      api
+        .get("/operator/master-data/guru/aktivitas-terkini")
+        .then((r) => r.data.data),
+    staleTime: 30_000,
+  });
+
   const hapus = useMutation({
     mutationFn: (nuptk) => api.delete(`/operator/master-data/guru/${nuptk}`),
     onSuccess: () => {
@@ -1243,74 +1262,139 @@ export default function MasterGuru() {
             </button>
           </div>
 
-          {/* Guru Baru Widget */}
+          {/* Guru Tanpa Penugasan */}
           <div className="bg-surface/90 backdrop-blur-md border border-outline-variant/30 shadow-sm rounded-[20px] p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="material-symbols-outlined text-danger text-[18px]">
+                person_off
+              </span>
               <h3
                 className="font-semibold text-text-primary text-sm"
                 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
               >
-                Guru Baru
+                Belum Ada Penugasan
               </h3>
-              <button className="text-xs text-primary hover:underline">
-                Lihat Semua
-              </button>
             </div>
-            <div className="space-y-3">
-              {isLoading
-                ? [...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-surface-container-high animate-pulse shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3.5 bg-surface-container-high rounded animate-pulse w-4/5" />
-                        <div className="h-3 bg-surface-container-high rounded animate-pulse w-3/5" />
+            <p className="text-xs text-text-secondary mb-3">
+              Guru aktif yang belum di-assign mata pelajaran semester ini
+            </p>
+
+            {guruTanpaPenugasan.length === 0 ? (
+              <p className="text-xs text-text-secondary text-center py-3">
+                Semua guru sudah memiliki penugasan ✓
+              </p>
+            ) : (
+              <ul className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                {guruTanpaPenugasan.map((g) => {
+                  const foto = fotoUrl(g.foto);
+                  return (
+                    <li key={g.nuptk} className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-bold border border-border-light shrink-0 text-xs">
+                        {foto ? (
+                          <img
+                            src={foto}
+                            alt={g.nama_lengkap}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          initials(g.nama_lengkap)
+                        )}
                       </div>
-                    </div>
-                  ))
-                : gurus.slice(0, 3).map((g) => {
-                    const foto = fotoUrl(g.foto);
-                    return (
-                      <div key={g.nuptk} className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-bold border border-border-light flex-shrink-0">
-                          {foto ? (
-                            <img
-                              src={foto}
-                              alt={g.nama_lengkap}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span
-                              className="text-sm"
-                              style={{
-                                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                              }}
-                            >
-                              {initials(g.nama_lengkap)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-text-primary truncate">
-                            {g.nama_lengkap}
-                          </p>
-                          <p className="text-xs text-text-secondary truncate">
-                            {g.jenis_ptk}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() =>
-                            navigate(`/operator/master/guru/${g.nuptk}`)
-                          }
-                          className="shrink-0 text-text-secondary hover:text-primary transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            arrow_forward
-                          </span>
-                        </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">
+                          {g.nama_lengkap}
+                        </p>
+                        <p className="text-xs text-text-secondary truncate">
+                          {g.jenis_ptk ?? "—"}
+                        </p>
                       </div>
-                    );
-                  })}
+                      <button
+                        onClick={() =>
+                          navigate(`/operator/master/guru/${g.nuptk}`)
+                        }
+                        className="shrink-0 text-text-secondary hover:text-primary transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          arrow_forward
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Aktivitas Terkini */}
+          <div className="bg-surface/90 backdrop-blur-md border border-outline-variant/30 shadow-sm rounded-[20px] p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                history
+              </span>
+              <h3
+                className="font-semibold text-text-primary text-sm"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              >
+                Aktivitas Terkini
+              </h3>
             </div>
+            <p className="text-xs text-text-secondary mb-3">
+              Data guru yang terakhir diubah
+            </p>
+
+            {aktivitasTerkini.length === 0 ? (
+              <p className="text-xs text-text-secondary text-center py-3">
+                Belum ada aktivitas tercatat
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {aktivitasTerkini.map((g) => {
+                  const foto = fotoUrl(g.foto);
+                  const waktu = g.updated_at
+                    ? new Date(g.updated_at).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "—";
+                  return (
+                    <li key={g.nuptk} className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-bold border border-border-light shrink-0 text-xs">
+                        {foto ? (
+                          <img
+                            src={foto}
+                            alt={g.nama_lengkap}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          initials(g.nama_lengkap)
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">
+                          {g.nama_lengkap}
+                        </p>
+                        <p className="text-xs text-text-secondary truncate">
+                          {waktu}
+                          {g.updated_by_nama ? ` · ${g.updated_by_nama}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          navigate(`/operator/master/guru/${g.nuptk}`)
+                        }
+                        className="shrink-0 text-text-secondary hover:text-primary transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          arrow_forward
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
       </div>
@@ -1829,7 +1913,13 @@ function ModalExport({ open, onClose, filters, selected }) {
 }
 
 // ── Modal Perhatian Data ──────────────────────────────────────────────────────
-function ModalPerhatianData({ open, onClose, filterField, perhatianItems, navigate }) {
+function ModalPerhatianData({
+  open,
+  onClose,
+  filterField,
+  perhatianItems,
+  navigate,
+}) {
   const defaultField = filterField ?? perhatianItems[0]?.field ?? null;
   const [activeField, setActiveField] = useState(defaultField);
 
@@ -1849,9 +1939,10 @@ function ModalPerhatianData({ open, onClose, filterField, perhatianItems, naviga
 
   if (!open) return null;
 
-  const activeItem = perhatianItems.find((i) => i.field === activeField) ?? perhatianItems[0];
+  const activeItem =
+    perhatianItems.find((i) => i.field === activeField) ?? perhatianItems[0];
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 transition-all duration-200"
       onClick={onClose}
@@ -1962,6 +2053,7 @@ function ModalPerhatianData({ open, onClose, filterField, perhatianItems, naviga
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

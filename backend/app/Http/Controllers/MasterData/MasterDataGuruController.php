@@ -365,7 +365,43 @@ class MasterDataGuruController extends Controller
 
         return response()->json(['success' => true, 'data' => $query->get()->append('nama_lengkap')]);
     }
-    
+
+    public function tanpaPenugasan()
+    {
+        $tahunAktif = \App\Models\TahunAjaran::where('is_active', 1)->first();
+        $semesterAktif = \App\Models\Semester::where('is_active', 1)->first();
+
+        $gurus = Guru::select('id', 'nuptk', 'nama', 'gelar_depan', 'gelar_belakang', 'jenis_ptk', 'foto')
+            ->where('status_keaktifan', 'Aktif')
+            ->whereDoesntHave('plotGuruMapels', function ($q) use ($tahunAktif, $semesterAktif) {
+                $q->where('is_active', 1)
+                    ->when($tahunAktif, fn($q) => $q->where('tahun_ajaran_id', $tahunAktif->id))
+                    ->when($semesterAktif, fn($q) => $q->where('semester_id', $semesterAktif->id));
+            })
+            ->get()
+            ->append('nama_lengkap');
+
+        return response()->json(['success' => true, 'data' => $gurus]);
+    }
+
+    public function aktivitasTerkini()
+    {
+        $aktivitas = Guru::select('id', 'nuptk', 'nama', 'gelar_depan', 'gelar_belakang', 'jenis_ptk', 'foto', 'updated_at', 'updated_by')
+            ->whereNotNull('updated_at')
+            ->orderByDesc('updated_at')
+            ->limit(5)
+            ->get()
+            ->append('nama_lengkap')
+            ->map(function ($g) {
+                $g->updated_by_nama = $g->updated_by
+                    ? optional(\App\Models\User::find($g->updated_by))->name
+                    : null;
+                return $g;
+            });
+
+        return response()->json(['success' => true, 'data' => $aktivitas]);
+    }
+
     public function uploadFoto(Request $request, $nuptk)
     {
         $request->validate(['foto' => 'required|image|mimes:jpg,jpeg,png|max:2048']);
@@ -1281,9 +1317,14 @@ class MasterDataGuruController extends Controller
     public function downloadTemplate()
     {
         $headers = [
+            // Identitas
             'nuptk',
             'nip',
+            'nip_lama',
+            'no_karis_karsu',
             'nik',
+            'no_kk',
+            'no_karpeg',
             'nama',
             'gelar_depan',
             'gelar_belakang',
@@ -1291,30 +1332,68 @@ class MasterDataGuruController extends Controller
             'tempat_lahir',
             'tanggal_lahir (YYYY-MM-DD)',
             'agama',
-            'status_perkawinan',
+            'golongan_darah',
+            'kewarganegaraan',
+            'status_hidup',
             'nama_ibu_kandung',
+            // Kontak
             'no_hp',
             'no_wa',
             'email',
-            'jenis_ptk',
-            'status_kepegawaian',
-            'status_keaktifan',
-            'tanggal_bergabung (YYYY-MM-DD)',
-            'tmt_pns (YYYY-MM-DD)',
+            // Alamat
             'alamat_jalan',
             'rt',
             'rw',
+            'dusun',
             'desa_kelurahan',
             'kecamatan',
             'kota_kabupaten',
             'provinsi',
             'kode_pos',
+            // Kepegawaian
+            'jenis_ptk',
+            'status_kepegawaian',
+            'status_keaktifan',
+            'tanggal_bergabung (YYYY-MM-DD)',
+            'tmt_pns (YYYY-MM-DD)',
+            'tmt_gty (YYYY-MM-DD)',
+            'masa_kerja_tahun',
+            // // Keluarga
+            // 'status_perkawinan',
+            // 'nama_pasangan',
+            // 'nik_pasangan',
+            // 'pekerjaan_pasangan',
+            // 'jumlah_anak',
+            // // Administrasi
+            // 'nama_bank',
+            // 'no_rekening',
+            // 'atas_nama',
+            // 'cabang',
+            // 'npwp',
+            // 'no_bpjs_kesehatan',
+            // 'no_bpjs_ketenagakerjaan',
+            // 'gaji_pokok',
+            // 'tunjangan_fungsional',
+            // 'tunjangan_profesi',
+            // Kolom-kolom di bawah ini HANYA sebagai referensi — tidak diimport otomatis
+            // (data keluarga & rekening diisi manual di halaman detail guru)
+            '[INFO] status_perkawinan',
+            '[INFO] nama_pasangan',
+            '[INFO] nik_pasangan',
+            '[INFO] nama_bank',
+            '[INFO] no_rekening',
+            '[INFO] npwp',
         ];
         $examples = [
             [
+                // Identitas
                 '1234567890123456',
                 '199001012015011001',
+                '123456789',
+                '',
                 '3201010101900001',
+                '',
+                '',
                 'Ahmad Fauzi',
                 'Drs.',
                 'M.Pd',
@@ -1322,29 +1401,59 @@ class MasterDataGuruController extends Controller
                 'Bogor',
                 '1990-01-01',
                 'Islam',
-                'Menikah',
-                'Siti Aminah',
-                '08123456789',
-                '08123456789',
-                'ahmad@email.com',
-                'Guru Kelas',
-                'PNS',
+                'A',
+                'WNI',
                 'Aktif',
-                '2015-01-01',
-                '2015-01-01',
-                'Jl. Raya No. 10',
+                'Siti Aminah',
+                // Kontak
+                '08123456789',
+                '08123456789',
+                'ahmad.fauzi@email.com',
+                // Alamat
+                'Jl. Raya Bogor No. 10',
                 '001',
                 '002',
+                'Bojong',
                 'Cibuluh',
                 'Bogor Utara',
                 'Kota Bogor',
                 'Jawa Barat',
                 '16152',
+                // Kepegawaian
+                'Guru Kelas',
+                'PNS',
+                'Aktif',
+                '2015-01-01',
+                '2015-01-01',
+                '',
+                '9',
+                // Keluarga
+                'Menikah',
+                'Dewi Rahayu',
+                '3201019001010001',
+                'Karyawan Swasta',
+                '2',
+                // Administrasi
+                'BRI',
+                '1234567890',
+                'Ahmad Fauzi',
+                'BRI Cabang Bogor',
+                '12.345.678.9-012.000',
+                '',
+                '',
+                '',
+                '',
+                '',
             ],
             [
+                // Identitas
                 '9876543210987654',
                 '',
+                '',
+                '',
                 '3201020202910002',
+                '',
+                '',
                 'Siti Rahayu',
                 '',
                 'S.Pd',
@@ -1352,24 +1461,49 @@ class MasterDataGuruController extends Controller
                 'Depok',
                 '1991-02-02',
                 'Islam',
-                'Menikah',
-                'Rahayu',
-                '08987654321',
-                '08987654321',
-                'siti@email.com',
-                'Guru Mapel',
-                'GTT',
+                'B',
+                'WNI',
                 'Aktif',
-                '2018-07-01',
-                '',
+                'Rahayu',
+                // Kontak
+                '08987654321',
+                '08987654321',
+                'siti.rahayu@email.com',
+                // Alamat
                 'Jl. Margonda No. 5',
                 '003',
                 '001',
+                '',
                 'Beji',
                 'Beji',
                 'Kota Depok',
                 'Jawa Barat',
                 '16424',
+                // Kepegawaian
+                'Guru Mapel',
+                'GTT',
+                'Aktif',
+                '2018-07-01',
+                '',
+                '',
+                '6',
+                // Keluarga
+                'Menikah',
+                'Budi Santoso',
+                '3201011001910002',
+                'Wiraswasta',
+                '1',
+                // Administrasi
+                'BCA',
+                '9876543210',
+                'Siti Rahayu',
+                'BCA KCP Depok',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
             ],
         ];
 
@@ -1427,9 +1561,14 @@ class MasterDataGuruController extends Controller
             }
 
             $payload = [
+                // Identitas
                 'nuptk' => $nuptk,
                 'nip' => $get($row, 'nip'),
+                'nip_lama' => $get($row, 'nip_lama'),
+                'no_karis_karsu' => $get($row, 'no_karis_karsu'),
                 'nik' => $get($row, 'nik'),
+                'no_kk' => $get($row, 'no_kk'),
+                'no_karpeg' => $get($row, 'no_karpeg'),
                 'nama' => $nama,
                 'gelar_depan' => $get($row, 'gelar_depan'),
                 'gelar_belakang' => $get($row, 'gelar_belakang'),
@@ -1437,24 +1576,49 @@ class MasterDataGuruController extends Controller
                 'tempat_lahir' => $get($row, 'tempat_lahir'),
                 'tanggal_lahir' => $get($row, 'tanggal_lahir (YYYY-MM-DD)'),
                 'agama' => $get($row, 'agama') ?? 'Islam',
-                'status_perkawinan' => $get($row, 'status_perkawinan'),
+                'golongan_darah' => $get($row, 'golongan_darah'),
+                'kewarganegaraan' => $get($row, 'kewarganegaraan') ?? 'WNI',
+                'status_hidup' => $get($row, 'status_hidup') ?? 'Aktif',
                 'nama_ibu_kandung' => $get($row, 'nama_ibu_kandung'),
+                // Kontak
                 'no_hp' => $get($row, 'no_hp') ?? '-',
                 'no_wa' => $get($row, 'no_wa'),
                 'email' => $get($row, 'email'),
-                'jenis_ptk' => $get($row, 'jenis_ptk') ?? 'Guru Kelas',
-                'status_kepegawaian' => $get($row, 'status_kepegawaian') ?? 'GTT',
-                'status_keaktifan' => $get($row, 'status_keaktifan') ?? 'Aktif',
-                'tanggal_bergabung' => $get($row, 'tanggal_bergabung (YYYY-MM-DD)'),
-                'tmt_pns' => $get($row, 'tmt_pns (YYYY-MM-DD)'),
+                // Alamat
                 'alamat_jalan' => $get($row, 'alamat_jalan'),
                 'rt' => $get($row, 'rt'),
                 'rw' => $get($row, 'rw'),
+                'dusun' => $get($row, 'dusun'),
                 'desa_kelurahan' => $get($row, 'desa_kelurahan'),
                 'kecamatan' => $get($row, 'kecamatan'),
                 'kota_kabupaten' => $get($row, 'kota_kabupaten'),
                 'provinsi' => $get($row, 'provinsi'),
                 'kode_pos' => $get($row, 'kode_pos'),
+                // Kepegawaian
+                'jenis_ptk' => $get($row, 'jenis_ptk') ?? 'Guru Kelas',
+                'status_kepegawaian' => $get($row, 'status_kepegawaian') ?? 'GTT',
+                'status_keaktifan' => $get($row, 'status_keaktifan') ?? 'Aktif',
+                'tanggal_bergabung' => $get($row, 'tanggal_bergabung (YYYY-MM-DD)'),
+                'tmt_pns' => $get($row, 'tmt_pns (YYYY-MM-DD)'),
+                'tmt_gty' => $get($row, 'tmt_gty (YYYY-MM-DD)'),
+                'masa_kerja_tahun' => $get($row, 'masa_kerja_tahun'),
+                // // Keluarga
+                // 'status_perkawinan' => $get($row, 'status_perkawinan'),
+                // 'nama_pasangan' => $get($row, 'nama_pasangan'),
+                // 'nik_pasangan' => $get($row, 'nik_pasangan'),
+                // 'pekerjaan_pasangan' => $get($row, 'pekerjaan_pasangan'),
+                // 'jumlah_anak' => $get($row, 'jumlah_anak'),
+                // // Administrasi
+                // 'nama_bank' => $get($row, 'nama_bank'),
+                // 'no_rekening' => $get($row, 'no_rekening'),
+                // 'atas_nama' => $get($row, 'atas_nama'),
+                // 'cabang' => $get($row, 'cabang'),
+                // 'npwp' => $get($row, 'npwp'),
+                // 'no_bpjs_kesehatan' => $get($row, 'no_bpjs_kesehatan'),
+                // 'no_bpjs_ketenagakerjaan' => $get($row, 'no_bpjs_ketenagakerjaan'),
+                // 'gaji_pokok' => $get($row, 'gaji_pokok'),
+                // 'tunjangan_fungsional' => $get($row, 'tunjangan_fungsional'),
+                // 'tunjangan_profesi' => $get($row, 'tunjangan_profesi'),
             ];
 
             try {
