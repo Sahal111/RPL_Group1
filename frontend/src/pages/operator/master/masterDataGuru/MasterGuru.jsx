@@ -1681,6 +1681,45 @@ function ModalImport({ open, onClose, queryClient }) {
               >
                 {result.message}
               </p>
+
+              {/* Ringkasan per-tabel */}
+              {result.success && result.data && (
+                <div className="mt-3 grid grid-cols-2 gap-1.5">
+                  {[
+                    ["Guru", result.data.guru],
+                    ["Keluarga", result.data.keluarga],
+                    ["Anak", result.data.anak],
+                    ["Kontak Darurat", result.data.kontak_darurat],
+                    ["Pendidikan", result.data.pendidikan],
+                    ["Sertifikasi", result.data.sertifikasi],
+                    ["Jabatan", result.data.jabatan],
+                    ["Rekening", result.data.rekening],
+                    ["Kompetensi", result.data.kompetensi],
+                    ["Diklat", result.data.diklat],
+                  ]
+                    .filter(
+                      ([, v]) => v && (v.berhasil || v.diperbarui || v.gagal),
+                    )
+                    .map(([label, v]) => (
+                      <div
+                        key={label}
+                        className="bg-surface-container rounded-lg px-2.5 py-1.5"
+                      >
+                        <p className="text-[11px] font-semibold text-text-primary">
+                          {label}
+                        </p>
+                        <p className="text-[10px] text-text-secondary">
+                          {v.berhasil != null && `+${v.berhasil} `}
+                          {v.diperbarui != null && `~${v.diperbarui} `}
+                          {v.gagal > 0 && (
+                            <span className="text-danger">✗{v.gagal}</span>
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              )}
+
               {result.data?.errors?.length > 0 && (
                 <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto">
                   {result.data.errors.map((e, i) => (
