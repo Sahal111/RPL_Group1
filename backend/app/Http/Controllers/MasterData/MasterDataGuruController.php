@@ -293,9 +293,48 @@ class MasterDataGuruController extends Controller
             ], 422);
         }
 
-        $guru->delete();
+        $guru->delete(); // Soft delete — masuk recycle bin
 
-        return response()->json(['success' => true, 'message' => 'Data guru berhasil dihapus.']);
+        return response()->json(['success' => true, 'message' => 'Data guru dipindahkan ke recycle bin.']);
+    }
+
+    // ── Recycle Bin: daftar guru yang di-soft-delete ──────────────────────────
+    public function trash(Request $request)
+    {
+        $data = Guru::onlyTrashed()
+            ->when(
+                $request->search,
+                fn($q) => $q->where('nama', 'like', "%{$request->search}%")
+                    ->orWhere('nuptk', 'like', "%{$request->search}%")
+            )
+            ->orderByDesc('deleted_at')
+            ->paginate($request->per_page ?? 10);
+
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    // ── Recycle Bin: pulihkan guru ────────────────────────────────────────────
+    public function restore($nuptk)
+    {
+        $guru = Guru::onlyTrashed()->where('nuptk', $nuptk)->firstOrFail();
+        $guru->restore();
+
+        return response()->json(['success' => true, 'message' => 'Data guru berhasil dipulihkan.']);
+    }
+
+    // ── Recycle Bin: hapus permanen ───────────────────────────────────────────
+    public function forceDelete($nuptk)
+    {
+        $guru = Guru::onlyTrashed()->where('nuptk', $nuptk)->firstOrFail();
+
+        // Hapus foto dari storage jika ada
+        if ($guru->foto) {
+            Storage::disk('public')->delete($guru->foto);
+        }
+
+        $guru->forceDelete();
+
+        return response()->json(['success' => true, 'message' => 'Data guru dihapus permanen.']);
     }
 
     public function dropdown()

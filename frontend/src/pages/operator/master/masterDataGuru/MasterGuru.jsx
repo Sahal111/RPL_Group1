@@ -633,7 +633,8 @@ export default function MasterGuru() {
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [perhatianOpen, setPerhatianOpen] = useState(false);
-  const [perhatianFilter, setPerhatianFilter] = useState(null); // field yang dipilih
+  const [perhatianFilter, setPerhatianFilter] = useState(null);
+  const [trashOpen, setTrashOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["master-guru", search, jenis, statusFilter, page],
@@ -756,6 +757,16 @@ export default function MasterGuru() {
               refresh
             </span>
             <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={() => setTrashOpen(true)}
+            title="Recycle Bin"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-surface-container-lowest border border-border-light text-danger rounded-xl text-sm hover:bg-danger/10 transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              delete_sweep
+            </span>
+            <span className="hidden sm:inline">Recycle Bin</span>
           </button>
           <div className="flex bg-surface-container-lowest rounded-xl border border-border-light shadow-sm overflow-hidden">
             <button
@@ -1421,6 +1432,13 @@ export default function MasterGuru() {
         filterField={perhatianFilter}
         perhatianItems={perhatianItems}
         navigate={navigate}
+      />
+
+      {/* ── Modal Recycle Bin ── */}
+      <ModalRecycleBin
+        open={trashOpen}
+        onClose={() => setTrashOpen(false)}
+        queryClient={queryClient}
       />
     </div>
   );
@@ -2094,5 +2112,273 @@ function ModalPerhatianData({
       </div>
     </div>,
     document.body,
+  );
+}
+
+// ── Modal Recycle Bin ─────────────────────────────────────────────────────────
+function ModalRecycleBin({ open, onClose, queryClient }) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [confirmItem, setConfirmItem] = useState(null); // { nuptk, nama, action: 'restore'|'force' }
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["guru-trash", search, page],
+    queryFn: () =>
+      api
+        .get("/operator/master-data/guru/trash", {
+          params: { search, page, per_page: 8 },
+        })
+        .then((r) => r.data.data),
+    enabled: open,
+  });
+
+  const restore = useMutation({
+    mutationFn: (nuptk) =>
+      api.patch(`/operator/master-data/guru/${nuptk}/restore`),
+    onSuccess: () => {
+      toast.success("Guru berhasil dipulihkan.");
+      queryClient.invalidateQueries(["master-guru"]);
+      queryClient.invalidateQueries(["master-guru-stats"]);
+      refetch();
+      setConfirmItem(null);
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message ?? "Gagal memulihkan."),
+  });
+
+  const forceDelete = useMutation({
+    mutationFn: (nuptk) =>
+      api.delete(`/operator/master-data/guru/${nuptk}/force-delete`),
+    onSuccess: () => {
+      toast.success("Data guru dihapus permanen.");
+      refetch();
+      setConfirmItem(null);
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message ?? "Gagal menghapus permanen."),
+  });
+
+  const gurus = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const lastPage = data?.last_page ?? 1;
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col border border-border-light animate-fade-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-danger/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-danger text-[20px]">
+                delete_sweep
+              </span>
+            </div>
+            <div>
+              <h3
+                className="font-bold text-text-primary text-base"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              >
+                Recycle Bin
+              </h3>
+              <p className="text-xs text-text-secondary">
+                {total} guru dihapus — pulihkan atau hapus permanen
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-6 pt-4 pb-2 shrink-0">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">
+              search
+            </span>
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-4 py-2 border border-border-light rounded-xl bg-white text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary placeholder:text-text-secondary"
+              placeholder="Cari nama / NUPTK..."
+            />
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-2">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 gap-2 text-text-secondary">
+              <span className="material-symbols-outlined animate-spin text-[20px]">
+                progress_activity
+              </span>
+              <span className="text-sm">Memuat...</span>
+            </div>
+          ) : gurus.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-text-secondary">
+              <span className="material-symbols-outlined text-[48px] text-outline-variant">
+                delete_sweep
+              </span>
+              <p className="text-sm font-medium">Recycle bin kosong</p>
+            </div>
+          ) : (
+            gurus.map((g) => {
+              const deletedDate = g.deleted_at
+                ? new Date(g.deleted_at).toLocaleDateString("id-ID", {
+                    day: "numeric", month: "short", year: "numeric",
+                  })
+                : "—";
+              return (
+                <div
+                  key={g.nuptk}
+                  className="flex items-center justify-between gap-3 p-3 bg-surface-container-low border border-border-light rounded-xl hover:bg-surface-container transition-colors"
+                >
+                  {/* Avatar + info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-danger/10 border border-danger/20 flex items-center justify-center text-danger font-bold text-sm shrink-0">
+                      {g.nama?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-text-primary truncate">
+                        {g.nama}
+                      </p>
+                      <p className="text-xs text-text-secondary truncate">
+                        {g.nuptk} · {g.jenis_ptk ?? "—"}
+                      </p>
+                      <p className="text-[10px] text-danger/70 flex items-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[12px]">schedule</span>
+                        Dihapus {deletedDate}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setConfirmItem({ nuptk: g.nuptk, nama: g.nama, action: "restore" })}
+                      title="Pulihkan"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success/10 text-success border border-success/20 text-xs font-semibold hover:bg-success/20 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">
+                        restore_from_trash
+                      </span>
+                      Pulihkan
+                    </button>
+                    <button
+                      onClick={() => setConfirmItem({ nuptk: g.nuptk, nama: g.nama, action: "force" })}
+                      title="Hapus Permanen"
+                      className="p-1.5 rounded-lg text-danger hover:bg-danger/10 border border-danger/20 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        delete_forever
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Pagination */}
+        {lastPage > 1 && (
+          <div className="px-6 py-3 border-t border-border-light flex items-center justify-between">
+            <p className="text-xs text-text-secondary">
+              Halaman {page} dari {lastPage}
+            </p>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1.5 rounded-lg border border-border-light text-text-secondary hover:bg-surface-container-low disabled:opacity-40 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
+                disabled={page >= lastPage}
+                className="p-1.5 rounded-lg border border-border-light text-text-secondary hover:bg-surface-container-low disabled:opacity-40 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Confirm Dialog ── */}
+      {confirmItem && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setConfirmItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-border-light"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              confirmItem.action === "restore" ? "bg-success/10" : "bg-danger/10"
+            }`}>
+              <span className={`material-symbols-outlined text-[24px] ${
+                confirmItem.action === "restore" ? "text-success" : "text-danger"
+              }`}>
+                {confirmItem.action === "restore" ? "restore_from_trash" : "delete_forever"}
+              </span>
+            </div>
+            <h4
+              className="text-center font-bold text-text-primary text-base mb-2"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
+              {confirmItem.action === "restore" ? "Pulihkan Data Guru?" : "Hapus Permanen?"}
+            </h4>
+            <p className="text-center text-sm text-text-secondary mb-5">
+              {confirmItem.action === "restore"
+                ? <>Data <strong>{confirmItem.nama}</strong> akan dikembalikan ke daftar aktif.</>
+                : <>Data <strong>{confirmItem.nama}</strong> akan dihapus <span className="text-danger font-semibold">selamanya</span> dan tidak bisa dipulihkan.</>
+              }
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmItem(null)}
+                className="flex-1 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() =>
+                  confirmItem.action === "restore"
+                    ? restore.mutate(confirmItem.nuptk)
+                    : forceDelete.mutate(confirmItem.nuptk)
+                }
+                disabled={restore.isPending || forceDelete.isPending}
+                className={`flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-60 ${
+                  confirmItem.action === "restore"
+                    ? "bg-success hover:bg-success/90"
+                    : "bg-danger hover:bg-danger/90"
+                }`}
+              >
+                {restore.isPending || forceDelete.isPending
+                  ? "Memproses..."
+                  : confirmItem.action === "restore"
+                  ? "Ya, Pulihkan"
+                  : "Ya, Hapus Permanen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body
   );
 }

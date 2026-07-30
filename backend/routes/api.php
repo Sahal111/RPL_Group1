@@ -84,6 +84,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/guru/tanpa-penugasan', [MasterDataGuruController::class, 'tanpaPenugasan']);
             Route::get('/guru/aktivitas-terkini', [MasterDataGuruController::class, 'aktivitasTerkini']);
             Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
+
+            // ── Recycle Bin ──
+            Route::get('/guru/trash', [MasterDataGuruController::class, 'trash']);
+            Route::patch('/guru/{nuptk}/restore', [MasterDataGuruController::class, 'restore']);
+            Route::delete('/guru/{nuptk}/force-delete', [MasterDataGuruController::class, 'forceDelete']);
             // Import / Export / Backup (harus sebelum /{nuptk})
             Route::get('/guru/template', [MasterDataGuruController::class, 'downloadTemplate']);
             Route::post('/guru/import', [MasterDataGuruController::class, 'import']);
