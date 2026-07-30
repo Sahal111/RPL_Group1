@@ -1,4 +1,4 @@
-# ************************************************************
+﻿# ************************************************************
 # Sequel Ace SQL dump
 # Version 20096
 #
@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-29 06:59:49 +0000
+# Generation Time: 2026-07-30 14:14:20 +0000
 # ************************************************************
 
 
@@ -81,7 +81,7 @@ CREATE TABLE `activity_logs` (
   KEY `idx_actlog_module` (`module`),
   KEY `idx_actlog_created` (`created_at`) COMMENT 'Untuk filter log berdasarkan periode waktu',
   CONSTRAINT `fk_actlog_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail seluruh aksi di sistem. Log tidak boleh diubah/dihapus kecuali purging rutin';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail seluruh aksi di sistem. Log tidak boleh diubah/dihapus kecuali purging rutin';
 
 LOCK TABLES `activity_logs` WRITE;
 /*!40000 ALTER TABLE `activity_logs` DISABLE KEYS */;
@@ -159,7 +159,7 @@ CREATE TABLE `bendaharas` (
   KEY `idx_benda_guru_id` (`guru_id`),
   CONSTRAINT `fk_benda_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_benda_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Profil bendahara: jenis kewenangan (BOS/Rutin/Komite) dan SK pengangkatan';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Profil bendahara: jenis kewenangan (BOS/Rutin/Komite) dan SK pengangkatan';
 
 
 
@@ -458,7 +458,7 @@ CREATE TABLE `guru_anaks` (
   PRIMARY KEY (`id`),
   KEY `idx_guruanak_guru_id` (`guru_id`),
   CONSTRAINT `fk_guruanak_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data anak kandung guru. Relasi one-to-many ke gurus';
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data anak kandung guru. Relasi one-to-many ke gurus';
 
 LOCK TABLES `guru_anaks` WRITE;
 /*!40000 ALTER TABLE `guru_anaks` DISABLE KEYS */;
@@ -497,7 +497,7 @@ CREATE TABLE `guru_diklats` (
   PRIMARY KEY (`id`),
   KEY `idx_gurudiklat_guru_id` (`guru_id`),
   CONSTRAINT `fk_gurudiklat_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat diklat/pelatihan guru untuk PKB. Dilaporkan ke Dapodik';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat diklat/pelatihan guru untuk PKB. Dilaporkan ke Dapodik';
 
 LOCK TABLES `guru_diklats` WRITE;
 /*!40000 ALTER TABLE `guru_diklats` DISABLE KEYS */;
@@ -536,8 +536,18 @@ CREATE TABLE `guru_dokumens` (
   PRIMARY KEY (`id`),
   KEY `idx_gurudok_guru_id` (`guru_id`),
   CONSTRAINT `fk_gurudok_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dokumen resmi guru yang diupload (KTP, SK, ijazah, sertifikat, dll)';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dokumen resmi guru yang diupload (KTP, SK, ijazah, sertifikat, dll)';
 
+LOCK TABLES `guru_dokumens` WRITE;
+/*!40000 ALTER TABLE `guru_dokumens` DISABLE KEYS */;
+
+INSERT INTO `guru_dokumens` (`id`, `guru_id`, `kategori`, `nama_dokumen`, `nomor_dokumen`, `tanggal_dokumen`, `tanggal_berlaku`, `tanggal_kadaluarsa`, `penerbit`, `file_path`, `file_type`, `file_size`, `is_verified`, `keterangan`, `created_at`, `updated_at`, `deleted_at`)
+VALUES
+	(1,5,'identitas','ktp','1234567890','2026-07-05',NULL,NULL,'kemenag','guru-dokumen/5/5TgUmGpdCMXWwen3hDp9BwW8aI9xecXIvBNhfq6i.png','image/png',163147,0,NULL,'2026-07-29 15:09:25','2026-07-29 15:09:25',NULL),
+	(2,5,'identitas','identitas','0987654321','2026-07-05',NULL,NULL,'sdfcghvjb','guru-dokumen/5/X7MFqVDepTXdgh5vqFbRgbu0lqd1ozNSp9rS5ctS.png','image/png',296349,0,NULL,'2026-07-29 15:09:46','2026-07-29 15:09:46',NULL);
+
+/*!40000 ALTER TABLE `guru_dokumens` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table guru_inpassings
@@ -561,7 +571,7 @@ CREATE TABLE `guru_inpassings` (
   PRIMARY KEY (`id`),
   KEY `idx_guruinp_guru_id` (`guru_id`),
   CONSTRAINT `fk_guruinp_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data inpassing jabatan fungsional guru non-PNS. Diperlukan untuk klaim tunjangan profesi GTY';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data inpassing jabatan fungsional guru non-PNS. Diperlukan untuk klaim tunjangan profesi GTY';
 
 LOCK TABLES `guru_inpassings` WRITE;
 /*!40000 ALTER TABLE `guru_inpassings` DISABLE KEYS */;
@@ -613,7 +623,7 @@ CREATE TABLE `guru_jabatans` (
   CONSTRAINT `fk_gurujab_cb` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_gurujab_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_gurujab_ub` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat jabatan dan golongan guru. is_current=1 menandai jabatan aktif';
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat jabatan dan golongan guru. is_current=1 menandai jabatan aktif';
 
 LOCK TABLES `guru_jabatans` WRITE;
 /*!40000 ALTER TABLE `guru_jabatans` DISABLE KEYS */;
@@ -623,8 +633,9 @@ VALUES
 	(1,5,'Fungsional',NULL,'guru','kemenag',NULL,'III/A','Penata Muda','Honorer','1234567890',NULL,'2026-07-08','2026-07-03','2026-07-04',NULL,NULL,'ftyffytftgyggygyghggh',1,NULL,'2026-07-27 08:08:10','2026-07-28 20:29:12','2026-07-28 20:29:12',1,1),
 	(2,5,'Fungsional',NULL,'Guru Kelas','yayasan Nurul Huda',NULL,NULL,NULL,'PNS','45755678606776',NULL,'2026-06-30','2026-06-25','2026-07-30',NULL,NULL,NULL,1,NULL,'2026-07-28 20:48:48','2026-07-28 20:53:04','2026-07-28 20:53:04',1,1),
 	(3,5,'Struktural',NULL,'bendahara','kemenag',NULL,'III/A','Penata muda','CPNS','234567890',NULL,'2026-07-05','2026-07-12','2026-07-31',NULL,NULL,'rtdytfuyghbkmnhyjthfgvnbm',0,NULL,'2026-07-29 06:23:49','2026-07-29 06:24:21','2026-07-29 06:24:21',1,1),
-	(4,5,'Fungsional','Pelaksana Tugas (Plt)','Guru Kelas','yayasan Nurul Huda',NULL,'III/c','penata muda','PNS','45755678606776','Kepala Madrasah','2026-06-26','2026-06-21','2026-07-22','2026-07-04','Lainnya','ftegudcshbjxkncdc',1,'Aktif','2026-07-29 06:24:53','2026-07-29 13:33:59',NULL,1,1),
-	(5,5,'Fungsional',NULL,'refvgbgg','rrfgtrgfv',NULL,'III/A','dsyrufhbj','GTT','1234567890',NULL,'2026-07-26','2026-07-19','2026-07-31',NULL,NULL,'feyvghdbjd ,m',0,NULL,'2026-07-29 06:27:13','2026-07-29 06:27:36','2026-07-29 06:27:36',1,1);
+	(4,5,'Fungsional','Pelaksana Tugas (Plt)','Guru Kelas','yayasan Nurul Huda',NULL,'III/c','penata muda','PNS','45755678606776','Kepala Madrasah','2026-06-25','2026-06-20','2026-07-21','2026-07-03','Lainnya','ftegudcshbjxkncdc',0,'Aktif','2026-07-29 06:24:53','2026-07-29 14:35:23',NULL,1,1),
+	(5,5,'Fungsional',NULL,'refvgbgg','rrfgtrgfv',NULL,'III/A','dsyrufhbj','GTT','1234567890',NULL,'2026-07-26','2026-07-19','2026-07-31',NULL,NULL,'feyvghdbjd ,m',0,NULL,'2026-07-29 06:27:13','2026-07-29 06:27:36','2026-07-29 06:27:36',1,1),
+	(6,5,'Tambahan','Perpanjangan','Walikelas','MI Nurul Huda 3','Nurul Huda','IV/c','guru Pertama','Honorer','1234567890','Kepala Madrasah','2026-07-24','2026-07-17','2026-07-29','2026-07-29','Habis Masa Jabatan','sdfghjnkiebjdnm',1,'Aktif','2026-07-29 14:31:55','2026-07-29 14:35:23',NULL,1,1);
 
 /*!40000 ALTER TABLE `guru_jabatans` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -648,7 +659,7 @@ CREATE TABLE `guru_keluargas` (
   PRIMARY KEY (`id`),
   KEY `idx_gurukel_guru_id` (`guru_id`),
   CONSTRAINT `fk_gurukel_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data keluarga guru untuk kelengkapan Dapodik dan tunjangan keluarga';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data keluarga guru untuk kelengkapan Dapodik dan tunjangan keluarga';
 
 LOCK TABLES `guru_keluargas` WRITE;
 /*!40000 ALTER TABLE `guru_keluargas` DISABLE KEYS */;
@@ -700,7 +711,7 @@ CREATE TABLE `guru_kontak_darurat` (
   PRIMARY KEY (`id`),
   KEY `idx_gurukontakdrt_guru_id` (`guru_id`),
   CONSTRAINT `fk_gurukontakdrt_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Kontak darurat guru';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Kontak darurat guru';
 
 LOCK TABLES `guru_kontak_darurat` WRITE;
 /*!40000 ALTER TABLE `guru_kontak_darurat` DISABLE KEYS */;
@@ -763,7 +774,7 @@ CREATE TABLE `guru_pendidikans` (
   PRIMARY KEY (`id`),
   KEY `idx_gurupend_guru_id` (`guru_id`),
   CONSTRAINT `fk_gurupend_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat pendidikan formal guru. Minimal satu baris (pendidikan terakhir) untuk Dapodik';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Riwayat pendidikan formal guru. Minimal satu baris (pendidikan terakhir) untuk Dapodik';
 
 LOCK TABLES `guru_pendidikans` WRITE;
 /*!40000 ALTER TABLE `guru_pendidikans` DISABLE KEYS */;
@@ -832,7 +843,7 @@ CREATE TABLE `guru_rekenings` (
   PRIMARY KEY (`id`),
   KEY `idx_guruerek_guru_id` (`guru_id`),
   CONSTRAINT `fk_guruerek_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Rekening dan komponen gaji guru. Dipakai bendahara untuk transfer dan laporan keuangan';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Rekening dan komponen gaji guru. Dipakai bendahara untuk transfer dan laporan keuangan';
 
 LOCK TABLES `guru_rekenings` WRITE;
 /*!40000 ALTER TABLE `guru_rekenings` DISABLE KEYS */;
@@ -868,14 +879,14 @@ CREATE TABLE `guru_sertifikasis` (
   PRIMARY KEY (`id`),
   KEY `idx_gurucert_guru_id` (`guru_id`),
   CONSTRAINT `fk_gurucert_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Sertifikasi profesi guru. NRG dibutuhkan untuk klaim tunjangan profesi bulanan';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Sertifikasi profesi guru. NRG dibutuhkan untuk klaim tunjangan profesi bulanan';
 
 LOCK TABLES `guru_sertifikasis` WRITE;
 /*!40000 ALTER TABLE `guru_sertifikasis` DISABLE KEYS */;
 
 INSERT INTO `guru_sertifikasis` (`id`, `guru_id`, `jenis_sertifikasi`, `no_sertifikat`, `nrg`, `tahun_sertifikasi`, `lptk`, `bidang_studi`, `file_sertifikat`, `tanggal_terbit`, `expired_at`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,5,'Sertifikasi Guru (PPG)','1234567890','0987654','2020','Universitas Nahdlatul Ulama Indonesia','Matematika','guru-dokumen/5/sertifikasi/c5S72pOsA7701tMrpidMGVRvdcACE7xgDw64tpY4.pdf','2026-07-05','2026-07-31','2026-07-27 07:31:35','2026-07-27 07:31:35',NULL);
+	(1,5,'Sertifikasi Guru (PPG)','1234567890','0987654','2020','Universitas Nahdlatul Ulama Indonesia','Matematika','guru-dokumen/5/sertifikasi/5wKuQCuQSB9LdDjs7ysKtxSYLiCUk4r9QNxj24bv.png','2026-07-04','2026-07-30','2026-07-27 07:31:35','2026-07-29 15:11:37',NULL);
 
 /*!40000 ALTER TABLE `guru_sertifikasis` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -958,7 +969,7 @@ CREATE TABLE `gurus` (
   CONSTRAINT `fk_gurus_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_gurus_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_gurus_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data induk guru/PTK standar Dapodik. Satu baris = satu individu guru/tendik';
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data induk guru/PTK standar Dapodik. Satu baris = satu individu guru/tendik';
 
 LOCK TABLES `gurus` WRITE;
 /*!40000 ALTER TABLE `gurus` DISABLE KEYS */;
@@ -966,10 +977,10 @@ LOCK TABLES `gurus` WRITE;
 INSERT INTO `gurus` (`id`, `user_id`, `nuptk`, `nip`, `nip_lama`, `no_karpeg`, `no_karis_karsu`, `nik`, `no_kk`, `nama`, `gelar_depan`, `gelar_belakang`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`, `golongan_darah`, `agama`, `nama_ibu_kandung`, `alamat_jalan`, `rt`, `rw`, `dusun`, `desa_kelurahan`, `kecamatan`, `kota_kabupaten`, `provinsi`, `kode_pos`, `no_hp`, `no_wa`, `email`, `kewarganegaraan`, `status_hidup`, `jenis_ptk`, `status_kepegawaian`, `status_aktif`, `status_keaktifan`, `tanggal_bergabung`, `tmt_pns`, `tmt_gty`, `no_sk_pengangkatan`, `tgl_sk_pengangkatan`, `instansi_pengangkat`, `masa_kerja_tahun`, `foto`, `is_verified`, `verified_at`, `verified_by`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`, `deleted_by`)
 VALUES
 	(1,2,'1111111111111111',NULL,NULL,NULL,NULL,NULL,NULL,'Kepala Sekolah Test',NULL,NULL,'L',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Kepala Sekolah',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-27 06:51:24',NULL,NULL,1,NULL),
-	(2,3,'2222222222222222',NULL,NULL,NULL,NULL,NULL,NULL,'Guru Pengajar Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-26 21:08:14','2026-07-26 21:08:14',NULL,NULL,NULL),
 	(3,4,'3333333333333333',NULL,NULL,NULL,NULL,NULL,NULL,'Wali Kelas Test',NULL,NULL,'L',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-20 21:44:26',NULL,NULL,NULL,NULL),
-	(4,5,'4444444444444444',NULL,NULL,NULL,NULL,NULL,NULL,'Bendahara Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-26 16:20:56','2026-07-26 16:20:56',NULL,NULL,NULL),
-	(5,NULL,'0987654321123456','780935466789356423','123456789','1234567897','23456798','1243708945236789','0798634513428756','Muhammad Sahal Anwar Hadi','Dr.','S.Kom','L','Bogor','2006-11-12','A','Islam','Yusroh','jl kencana rt 01 rw 02 kel kencana kec. tanah sareal kota bogor','001','002','kencana','kencana','tanah sareal','kota bogor','jawa barat','12345','085811723878','085811723878','sahalanwarhadi25@gmail.com','WNI','Aktif','Guru Kelas','PNS',1,'Aktif','2026-06-22','2026-06-24','2026-07-18','45755678606776','2026-06-29','yayasan Nurul Huda',10,'foto-guru/yxooIiTH0phZlSoEQI5krHQUAwdQYPgppISVXaSP.jpg',1,'2026-07-26 22:23:20',1,'2026-07-26 14:09:36','2026-07-29 06:24:53',NULL,NULL,1,NULL);
+	(4,5,'4444444444444444',NULL,NULL,NULL,NULL,NULL,NULL,'Bendahara Test',NULL,NULL,'P',NULL,NULL,'-',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'WNI','Aktif','Guru Kelas',NULL,1,'Aktif',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,'2026-07-20 21:44:26','2026-07-30 20:45:23',NULL,NULL,1,NULL),
+	(5,NULL,'0987654321123456','780935466789356423','123456789','1234567897','23456798','1243708945236789','0798634513428756','Muhammad Sahal Anwar Hadi','Dr.','S.Kom','L','Bogor','2006-11-12','A','Islam','Yusroh','jl kencana rt 01 rw 02 kel kencana kec. tanah sareal kota bogor','001','002','kencana','kencana','tanah sareal','kota bogor','jawa barat','12345','085811723878','085811723878','sahalanwarhadi25@gmail.com','WNI','Aktif','Guru Kelas','PNS',1,'Aktif','2026-06-22','2026-06-24','2026-07-18','45755678606776','2026-06-29','yayasan Nurul Huda',10,'foto-guru/yxooIiTH0phZlSoEQI5krHQUAwdQYPgppISVXaSP.jpg',1,'2026-07-29 14:38:12',1,'2026-07-26 14:09:36','2026-07-29 14:38:12',NULL,NULL,1,NULL),
+	(8,NULL,'1234567890123456','199001012015011001','98765432','823877328327','234567890987654','3201010101900001','23457965759898','Ahmad Fauzi','Drs.','M.Pd','L','Bogor','1990-01-01','A','Islam','Siti Aminah','Jl. Raya Bogor No. 10','001','002','Bojong','Cibuluh','Bogor Utara','Kota Bogor','Jawa Barat','16152','08123456789','08123456789','ahmad.fauzi@email.com','WNI','Aktif','Guru Kelas','PNS',1,'Aktif','2015-01-01','2015-01-01','2015-01-01',NULL,NULL,NULL,9,NULL,0,NULL,NULL,'2026-07-30 14:00:30','2026-07-30 14:00:30',NULL,1,NULL,NULL);
 
 /*!40000 ALTER TABLE `gurus` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1108,7 +1119,7 @@ CREATE TABLE `kelas` (
   CONSTRAINT `fk_kelas_smt` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_kelas_ta` FOREIGN KEY (`tahun_ajaran_id`) REFERENCES `tahun_ajarans` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_kelas_wali` FOREIGN KEY (`wali_kelas_id`) REFERENCES `gurus` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master kelas per tahun ajaran. Dibuat ulang setiap tahun ajaran baru. Kapasitas maks 32 siswa/kelas';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master kelas per tahun ajaran. Dibuat ulang setiap tahun ajaran baru. Kapasitas maks 32 siswa/kelas';
 
 LOCK TABLES `kelas` WRITE;
 /*!40000 ALTER TABLE `kelas` DISABLE KEYS */;
@@ -1140,7 +1151,7 @@ CREATE TABLE `komponen_penilaians` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master komponen penilaian dengan bobot. Dipakai untuk hitung nilai akhir tertimbang';
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master komponen penilaian dengan bobot. Dipakai untuk hitung nilai akhir tertimbang';
 
 LOCK TABLES `komponen_penilaians` WRITE;
 /*!40000 ALTER TABLE `komponen_penilaians` DISABLE KEYS */;
@@ -1189,7 +1200,7 @@ CREATE TABLE `mapels` (
   UNIQUE KEY `uq_mapels_kode` (`kode`),
   KEY `idx_mapels_tingkat` (`tingkat`),
   KEY `idx_mapels_aktif` (`is_active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master mata pelajaran standar Dapodik. Dipakai untuk plot mengajar dan input nilai';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master mata pelajaran standar Dapodik. Dipakai untuk plot mengajar dan input nilai';
 
 LOCK TABLES `mapels` WRITE;
 /*!40000 ALTER TABLE `mapels` DISABLE KEYS */;
@@ -1333,7 +1344,7 @@ CREATE TABLE `operator_profiles` (
   PRIMARY KEY (`id`),
   KEY `idx_opprof_user_id` (`user_id`),
   CONSTRAINT `fk_opprof_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Profil operator sekolah. akses_modul JSON menentukan modul yang bisa diakses operator ini';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Profil operator sekolah. akses_modul JSON menentukan modul yang bisa diakses operator ini';
 
 LOCK TABLES `operator_profiles` WRITE;
 /*!40000 ALTER TABLE `operator_profiles` DISABLE KEYS */;
@@ -1399,7 +1410,7 @@ CREATE TABLE `orang_tuas` (
   KEY `idx_ortu_nik` (`nik`),
   KEY `idx_ortu_nama` (`nama`),
   CONSTRAINT `fk_ortu_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master orang tua/wali. Satu baris per individu. Satu ortu bisa linked ke banyak anak via orang_tua_siswa';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master orang tua/wali. Satu baris per individu. Satu ortu bisa linked ke banyak anak via orang_tua_siswa';
 
 LOCK TABLES `orang_tuas` WRITE;
 /*!40000 ALTER TABLE `orang_tuas` DISABLE KEYS */;
@@ -1498,7 +1509,7 @@ CREATE TABLE `pengaturans` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_pengaturan_key` (`key`),
   KEY `idx_pengaturan_grup` (`grup`) COMMENT 'Untuk load semua setting dalam satu grup sekaligus'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Konfigurasi dinamis sistem. Admin bisa ubah tanpa edit kode';
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Konfigurasi dinamis sistem. Admin bisa ubah tanpa edit kode';
 
 LOCK TABLES `pengaturans` WRITE;
 /*!40000 ALTER TABLE `pengaturans` DISABLE KEYS */;
@@ -1544,7 +1555,7 @@ CREATE TABLE `pengumumans` (
   KEY `idx_pengumuman_target` (`target`),
   KEY `fk_pengumuman_penulis` (`penulis_id`),
   CONSTRAINT `fk_pengumuman_penulis` FOREIGN KEY (`penulis_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pengumuman madrasah ke target audiens. Mendukung penjadwalan (publish_at) dan expired otomatis';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pengumuman madrasah ke target audiens. Mendukung penjadwalan (publish_at) dan expired otomatis';
 
 LOCK TABLES `pengumumans` WRITE;
 /*!40000 ALTER TABLE `pengumumans` DISABLE KEYS */;
@@ -1607,14 +1618,14 @@ CREATE TABLE `personal_access_tokens` (
   UNIQUE KEY `uq_pat_token` (`token`),
   KEY `idx_pat_tokenable` (`tokenable_type`,`tokenable_id`),
   KEY `idx_pat_expires` (`expires_at`) COMMENT 'Untuk query dan cleanup token expired'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Token API Sanctum untuk autentikasi stateless React/mobile';
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Token API Sanctum untuk autentikasi stateless React/mobile';
 
 LOCK TABLES `personal_access_tokens` WRITE;
 /*!40000 ALTER TABLE `personal_access_tokens` DISABLE KEYS */;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-29 13:57:55',NULL,'2026-07-20 21:48:50','2026-07-29 13:57:55');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-30 21:09:53',NULL,'2026-07-20 21:48:50','2026-07-30 21:09:53');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1792,7 +1803,7 @@ CREATE TABLE `roles` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_roles_slug` (`slug`) COMMENT 'Slug dipakai di kode PHP untuk cek role, harus unik'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master role akses sistem. Diisi via seeder, jarang berubah';
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master role akses sistem. Diisi via seeder, jarang berubah';
 
 LOCK TABLES `roles` WRITE;
 /*!40000 ALTER TABLE `roles` DISABLE KEYS */;
@@ -1829,7 +1840,7 @@ CREATE TABLE `semesters` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_semester_ta_nama` (`tahun_ajaran_id`,`nama`),
   CONSTRAINT `fk_smt_ta` FOREIGN KEY (`tahun_ajaran_id`) REFERENCES `tahun_ajarans` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Semester per tahun ajaran. Satu tahun ajaran = 2 semester (Ganjil + Genap)';
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Semester per tahun ajaran. Satu tahun ajaran = 2 semester (Ganjil + Genap)';
 
 LOCK TABLES `semesters` WRITE;
 /*!40000 ALTER TABLE `semesters` DISABLE KEYS */;
@@ -1959,7 +1970,7 @@ CREATE TABLE `siswas` (
   CONSTRAINT `fk_siswas_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_siswas_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_siswas_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data induk siswa standar Dapodik. Tabel pusat yang direferensi hampir semua tabel lain';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Data induk siswa standar Dapodik. Tabel pusat yang direferensi hampir semua tabel lain';
 
 LOCK TABLES `siswas` WRITE;
 /*!40000 ALTER TABLE `siswas` DISABLE KEYS */;
@@ -2021,7 +2032,7 @@ CREATE TABLE `tahun_ajarans` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_tahun_ajaran` (`tahun`),
   KEY `idx_ta_is_active` (`is_active`) COMMENT 'Query cepat "SELECT * WHERE is_active=1" untuk get tahun ajaran aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master tahun ajaran. Semua data akademik terikat ke satu tahun ajaran';
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master tahun ajaran. Semua data akademik terikat ke satu tahun ajaran';
 
 LOCK TABLES `tahun_ajarans` WRITE;
 /*!40000 ALTER TABLE `tahun_ajarans` DISABLE KEYS */;
@@ -2051,7 +2062,7 @@ CREATE TABLE `user_roles` (
   KEY `idx_user_roles_role_id` (`role_id`),
   CONSTRAINT `fk_user_roles_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_user_roles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pivot many-to-many user ↔ role. Satu user bisa multi-role';
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pivot many-to-many user ↔ role. Satu user bisa multi-role';
 
 LOCK TABLES `user_roles` WRITE;
 /*!40000 ALTER TABLE `user_roles` DISABLE KEYS */;
@@ -2093,7 +2104,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `uq_users_username` (`username`),
   KEY `idx_users_is_active` (`is_active`),
   KEY `idx_users_deleted_at` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Akun autentikasi semua pengguna sistem. Satu akun bisa multi-role via tabel user_roles';
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Akun autentikasi semua pengguna sistem. Satu akun bisa multi-role via tabel user_roles';
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
@@ -2135,7 +2146,7 @@ CREATE TABLE `wali_kelas` (
   KEY `fk_walikelas_ta` (`tahun_ajaran_id`),
   CONSTRAINT `fk_walikelas_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_walikelas_ta` FOREIGN KEY (`tahun_ajaran_id`) REFERENCES `tahun_ajarans` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Penugasan resmi wali kelas per kelas per tahun ajaran. Dilengkapi nomor SK untuk akuntabilitas';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Penugasan resmi wali kelas per kelas per tahun ajaran. Dilengkapi nomor SK untuk akuntabilitas';
 
 LOCK TABLES `wali_kelas` WRITE;
 /*!40000 ALTER TABLE `wali_kelas` DISABLE KEYS */;

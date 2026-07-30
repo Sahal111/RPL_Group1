@@ -1055,6 +1055,38 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Riwayat mutasi ditambahkan.', 'data' => $mutasi], 201);
     }
 
+    public function updateMutasi(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $mutasi = $guru->mutasi()->findOrFail($id);
+
+        $request->validate([
+            'jenis_mutasi' => 'required|in:Masuk,Keluar,Internal',
+            'sekolah_asal' => 'nullable|string|max:200',
+            'npsn_asal' => 'nullable|string|max:10',
+            'sekolah_tujuan' => 'nullable|string|max:200',
+            'npsn_tujuan' => 'nullable|string|max:10',
+            'tanggal_mutasi' => 'required|date',
+            'no_sk' => 'nullable|string|max:80',
+            'tanggal_sk' => 'nullable|date',
+            'keterangan' => 'nullable|string',
+            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $data = $request->only(['jenis_mutasi', 'sekolah_asal', 'npsn_asal', 'sekolah_tujuan', 'npsn_tujuan', 'tanggal_mutasi', 'no_sk', 'tanggal_sk', 'keterangan']);
+
+        if ($request->hasFile('file_sk')) {
+            if ($mutasi->file_sk) {
+                Storage::disk('public')->delete($mutasi->file_sk);
+            }
+            $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/mutasi", 'public');
+        }
+
+        $mutasi->update($data);
+
+        return response()->json(['success' => true, 'message' => 'Riwayat mutasi diperbarui.', 'data' => $mutasi]);
+    }
+
     public function destroyMutasi($nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();

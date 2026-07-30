@@ -1744,7 +1744,6 @@ function TabDokumen({ nuptk }) {
           </form>
         </Modal>
       )}
-      
     </div>
   );
 }
@@ -1824,7 +1823,70 @@ function TabRiwayat({ nuptk, guru }) {
     });
   };
 
-  const mutasis = guru.mutasis ?? [];
+  const [modalMutasi, setModalMutasi] = useState(null); // null | 'add' | object
+
+  const { data: mutasis = [] } = useQuery({
+    queryKey: ["guru-mutasi", nuptk],
+    queryFn: () =>
+      api
+        .get(`/operator/master-data/guru/${nuptk}/mutasi`)
+        .then((r) => r.data.data),
+    initialData: guru.mutasi ?? [],
+  });
+
+  const saveMutasi = useMutation({
+    mutationFn: ({ data, id }) => {
+      const fd = new FormData();
+      Object.entries(data).forEach(
+        ([k, v]) => v != null && v !== "" && fd.append(k, v),
+      );
+      return id
+        ? api.post(`/operator/master-data/guru/${nuptk}/mutasi/${id}`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+        : api.post(`/operator/master-data/guru/${nuptk}/mutasi`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+    },
+    onSuccess: () => {
+      toast.success("Riwayat mutasi disimpan.");
+      queryClient.invalidateQueries(["guru-mutasi", nuptk]);
+      setModalMutasi(null);
+    },
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menyimpan."),
+  });
+
+  const deleteMutasi = useMutation({
+    mutationFn: (id) =>
+      api.delete(`/operator/master-data/guru/${nuptk}/mutasi/${id}`),
+    onSuccess: () => {
+      toast.success("Riwayat mutasi dihapus.");
+      queryClient.invalidateQueries(["guru-mutasi", nuptk]);
+    },
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menghapus."),
+  });
+
+  const handleMutasiSubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    saveMutasi.mutate({
+      id: modalMutasi?.id,
+      data: {
+        jenis_mutasi: f.jenis_mutasi.value,
+        sekolah_asal: f.sekolah_asal.value,
+        npsn_asal: f.npsn_asal.value,
+        sekolah_tujuan: f.sekolah_tujuan.value,
+        npsn_tujuan: f.npsn_tujuan.value,
+        tanggal_mutasi: f.tanggal_mutasi.value,
+        no_sk: f.no_sk.value,
+        tanggal_sk: f.tanggal_sk.value,
+        keterangan: f.keterangan.value,
+        file_sk: f.file_sk.files[0] ?? null,
+      },
+    });
+  };
 
   /* ── Jabatan query & mutations ── */
   const { data: jabatans = [] } = useQuery({
@@ -2065,29 +2127,300 @@ function TabRiwayat({ nuptk, guru }) {
         )}
       </div>
 
-      {/* ── SECTION 2: MUTASI (read-only) ── */}
+      {/* ── SECTION 2: MUTASI ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-        <SectionTitle icon="swap_horiz" label="Riwayat Mutasi" />
+        <div className="flex items-center justify-between mb-6">
+          <SectionTitle
+            icon="swap_horiz"
+            label="Riwayat Mutasi"
+            desc={`${mutasis.length} data tercatat`}
+          />
+          <button
+            onClick={() => setModalMutasi("add")}
+            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>{" "}
+            Tambah
+          </button>
+        </div>
         {mutasis.length === 0 ? (
           <p className="text-sm text-text-secondary text-center py-8">
             Belum ada riwayat mutasi.
           </p>
         ) : (
           <div className="space-y-3">
-            {mutasis.map((m, i) => (
+            {mutasis.map((m) => (
               <div
-                key={i}
+                key={m.id}
                 className="p-4 bg-surface-container-low rounded-xl border border-border-light"
               >
-                <p className="font-medium text-sm">{m.keterangan}</p>
-                <p className="text-xs text-text-secondary mt-1">
-                  {fmtDate(m.tanggal)}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          m.jenis_mutasi === "Masuk"
+                            ? "bg-success/10 text-success"
+                            : m.jenis_mutasi === "Keluar"
+                              ? "bg-error/10 text-error"
+                              : "bg-warning/10 text-warning"
+                        }`}
+                      >
+                        {m.jenis_mutasi}
+                      </span>
+                      <p className="font-semibold text-sm text-text-primary">
+                        {m.jenis_mutasi === "Masuk"
+                          ? m.sekolah_asal || "–"
+                          : m.sekolah_tujuan || "–"}
+                      </p>
+                    </div>
+                    {m.jenis_mutasi === "Internal" && (
+                      <p className="text-xs text-text-secondary">
+                        {m.sekolah_asal} → {m.sekolah_tujuan}
+                      </p>
+                    )}
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {fmtDate(m.tanggal_mutasi)}
+                      {m.no_sk ? ` · SK: ${m.no_sk}` : ""}
+                    </p>
+                    {m.keterangan && (
+                      <p className="text-xs text-text-secondary italic mt-0.5">
+                        {m.keterangan}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    {m.file_sk && (
+                      <button
+                        onClick={() =>
+                          downloadFile(m.file_sk, `SK_Mutasi_${m.id}`)
+                        }
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                        title="Download SK Mutasi"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          download
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setModalMutasi(m)}
+                      className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
+                      title="Edit"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        edit
+                      </span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        confirm("Hapus riwayat mutasi ini?") &&
+                        deleteMutasi.mutate(m.id)
+                      }
+                      className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
+                      title="Hapus"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        delete
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* ── MODAL MUTASI ── */}
+      {modalMutasi && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg border border-border-light max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-light sticky top-0 bg-surface z-10">
+              <h3 className="font-bold text-text-primary">
+                {modalMutasi === "add" ? "Tambah" : "Edit"} Riwayat Mutasi
+              </h3>
+              <button
+                onClick={() => setModalMutasi(null)}
+                className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  close
+                </span>
+              </button>
+            </div>
+            <form onSubmit={handleMutasiSubmit} className="px-6 py-5 space-y-4">
+              {/* Jenis Mutasi */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  Jenis Mutasi <span className="text-danger">*</span>
+                </label>
+                <select
+                  name="jenis_mutasi"
+                  defaultValue={modalMutasi?.jenis_mutasi ?? ""}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                >
+                  <option value="">-- Pilih Jenis --</option>
+                  <option value="Masuk">Masuk</option>
+                  <option value="Keluar">Keluar</option>
+                  <option value="Internal">Internal</option>
+                </select>
+              </div>
+
+              {/* Sekolah Asal & Tujuan */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                    Sekolah Asal
+                  </label>
+                  <input
+                    name="sekolah_asal"
+                    type="text"
+                    defaultValue={modalMutasi?.sekolah_asal ?? ""}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                    placeholder="Nama sekolah asal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                    NPSN Asal
+                  </label>
+                  <input
+                    name="npsn_asal"
+                    type="text"
+                    maxLength={10}
+                    defaultValue={modalMutasi?.npsn_asal ?? ""}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm font-mono"
+                    placeholder="NPSN"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                    Sekolah Tujuan
+                  </label>
+                  <input
+                    name="sekolah_tujuan"
+                    type="text"
+                    defaultValue={modalMutasi?.sekolah_tujuan ?? ""}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                    placeholder="Nama sekolah tujuan"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                    NPSN Tujuan
+                  </label>
+                  <input
+                    name="npsn_tujuan"
+                    type="text"
+                    maxLength={10}
+                    defaultValue={modalMutasi?.npsn_tujuan ?? ""}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm font-mono"
+                    placeholder="NPSN"
+                  />
+                </div>
+              </div>
+
+              {/* Tanggal Mutasi */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  Tanggal Mutasi <span className="text-danger">*</span>
+                </label>
+                <input
+                  name="tanggal_mutasi"
+                  type="date"
+                  required
+                  defaultValue={modalMutasi?.tanggal_mutasi?.slice(0, 10) ?? ""}
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                />
+              </div>
+
+              {/* No SK & Tanggal SK */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                    No. SK
+                  </label>
+                  <input
+                    name="no_sk"
+                    type="text"
+                    defaultValue={modalMutasi?.no_sk ?? ""}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                    placeholder="Nomor SK"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                    Tanggal SK
+                  </label>
+                  <input
+                    name="tanggal_sk"
+                    type="date"
+                    defaultValue={modalMutasi?.tanggal_sk?.slice(0, 10) ?? ""}
+                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Keterangan */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  Keterangan
+                </label>
+                <textarea
+                  name="keterangan"
+                  rows={2}
+                  defaultValue={modalMutasi?.keterangan ?? ""}
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm resize-none"
+                  placeholder="Keterangan tambahan (opsional)"
+                />
+              </div>
+
+              {/* Upload File SK */}
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  File SK Mutasi
+                  {modalMutasi?.file_sk && (
+                    <span className="ml-2 text-xs text-success font-normal">
+                      (sudah ada file)
+                    </span>
+                  )}
+                </label>
+                <input
+                  name="file_sk"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+                <p className="text-xs text-text-secondary mt-1">
+                  PDF / JPG / PNG, maks 5MB
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-2 pt-2 border-t border-border-light">
+                <button
+                  type="button"
+                  onClick={() => setModalMutasi(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saveMutasi.isPending}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {saveMutasi.isPending ? "Menyimpan..." : "Simpan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── SECTION 3a: CARD JABATAN AKTIF ── */}
       {(() => {
