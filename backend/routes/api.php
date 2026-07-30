@@ -80,9 +80,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/users/{id}', [OperatorController::class, 'destroy']);
         Route::prefix('master-data')->group(function () {
             // ── Master Data Guru ──────────────────────────────────────
-// CRUD utama
             Route::get('/guru', [MasterDataGuruController::class, 'index']);
             Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
+            // Import / Export / Backup (harus sebelum /{nuptk})
+            Route::get('/guru/template', [MasterDataGuruController::class, 'downloadTemplate']);
+            Route::post('/guru/import', [MasterDataGuruController::class, 'import']);
+            Route::post('/guru/import-foto', [MasterDataGuruController::class, 'importFoto']);
+            Route::get('/guru/export', [MasterDataGuruController::class, 'export']);
+            Route::get('/guru/backup', [MasterDataGuruController::class, 'exportBackup']);
+            // CRUD utama
             Route::post('/guru', [MasterDataGuruController::class, 'store']);
             Route::get('/guru/{nuptk}', [MasterDataGuruController::class, 'show']);
             Route::put('/guru/{nuptk}', [MasterDataGuruController::class, 'update']);
@@ -147,7 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/guru/{nuptk}/jabatan', [MasterDataGuruController::class, 'storeJabatan']);
             Route::put('/guru/{nuptk}/jabatan/{id}', [MasterDataGuruController::class, 'updateJabatan']);
             Route::delete('/guru/{nuptk}/jabatan/{id}', [MasterDataGuruController::class, 'destroyJabatan']);
-            
+
             Route::patch('/guru/{nuptk}/verifikasi', [MasterDataGuruController::class, 'verifikasi']);
             Route::patch('/guru/{nuptk}/batal-verifikasi', [MasterDataGuruController::class, 'batalVerifikasi']);
             Route::patch('/guru/{nuptk}/koreksi-nuptk', [MasterDataGuruController::class, 'koreksiNuptk']);
@@ -168,7 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
             Route::get('/guru/{nuptk}/dokumen/{id}/download', [MasterDataGuruController::class, 'downloadDokumen']);
             Route::get('/guru/{nuptk}/file-download', [MasterDataGuruController::class, 'downloadFile']);
-            
+
             // Siswa
             Route::get('/siswa', [MasterDataSiswaController::class, 'index']);
             Route::post('/siswa', [MasterDataSiswaController::class, 'store']);

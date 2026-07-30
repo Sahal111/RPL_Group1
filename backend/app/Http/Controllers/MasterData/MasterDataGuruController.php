@@ -1211,4 +1211,667 @@ class MasterDataGuruController extends Controller
 
         return response()->download($fullPath, $safeName . '.' . $ext);
     }
+
+    // --------------------------------------------------------
+    // SECTION: TEMPLATE, IMPORT, EXPORT, BACKUP
+    // --------------------------------------------------------
+
+    /**
+     * GET /guru/template
+     */
+    public function downloadTemplate()
+    {
+        $headers = [
+            'nuptk',
+            'nip',
+            'nik',
+            'nama',
+            'gelar_depan',
+            'gelar_belakang',
+            'jenis_kelamin (L/P)',
+            'tempat_lahir',
+            'tanggal_lahir (YYYY-MM-DD)',
+            'agama',
+            'status_perkawinan',
+            'nama_ibu_kandung',
+            'no_hp',
+            'no_wa',
+            'email',
+            'jenis_ptk',
+            'status_kepegawaian',
+            'status_keaktifan',
+            'tanggal_bergabung (YYYY-MM-DD)',
+            'tmt_pns (YYYY-MM-DD)',
+            'alamat_jalan',
+            'rt',
+            'rw',
+            'desa_kelurahan',
+            'kecamatan',
+            'kota_kabupaten',
+            'provinsi',
+            'kode_pos',
+        ];
+        $examples = [
+            [
+                '1234567890123456',
+                '199001012015011001',
+                '3201010101900001',
+                'Ahmad Fauzi',
+                'Drs.',
+                'M.Pd',
+                'L',
+                'Bogor',
+                '1990-01-01',
+                'Islam',
+                'Menikah',
+                'Siti Aminah',
+                '08123456789',
+                '08123456789',
+                'ahmad@email.com',
+                'Guru Kelas',
+                'PNS',
+                'Aktif',
+                '2015-01-01',
+                '2015-01-01',
+                'Jl. Raya No. 10',
+                '001',
+                '002',
+                'Cibuluh',
+                'Bogor Utara',
+                'Kota Bogor',
+                'Jawa Barat',
+                '16152',
+            ],
+            [
+                '9876543210987654',
+                '',
+                '3201020202910002',
+                'Siti Rahayu',
+                '',
+                'S.Pd',
+                'P',
+                'Depok',
+                '1991-02-02',
+                'Islam',
+                'Menikah',
+                'Rahayu',
+                '08987654321',
+                '08987654321',
+                'siti@email.com',
+                'Guru Mapel',
+                'GTT',
+                'Aktif',
+                '2018-07-01',
+                '',
+                'Jl. Margonda No. 5',
+                '003',
+                '001',
+                'Beji',
+                'Beji',
+                'Kota Depok',
+                'Jawa Barat',
+                '16424',
+            ],
+        ];
+
+        $xlsx = $this->buildXlsx($headers, $examples);
+        return response($xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="template_import_guru.xlsx"',
+            'Content-Length' => strlen($xlsx),
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    /**
+     * POST /guru/import
+     */
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls|max:10240']);
+
+        $allRows = $this->parseXlsx($request->file('file')->getRealPath());
+        if (empty($allRows)) {
+            return response()->json(['success' => false, 'message' => 'File kosong atau tidak bisa dibaca.'], 422);
+        }
+
+        $headerRow = array_map('trim', array_shift($allRows));
+        $headerMap = array_flip($headerRow);
+
+        $get = function (array $row, string $key) use ($headerMap): ?string {
+            $idx = $headerMap[$key] ?? null;
+            if ($idx === null)
+                return null;
+            $val = trim($row[$idx] ?? '');
+            return $val === '' ? null : $val;
+        };
+
+        $results = ['berhasil' => 0, 'diperbarui' => 0, 'gagal' => 0, 'errors' => []];
+
+        foreach ($allRows as $rowIdx => $row) {
+            $baris = $rowIdx + 2;
+            if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                continue;
+
+            $nuptk = $get($row, 'nuptk');
+            $nama = $get($row, 'nama');
+
+            if (!$nuptk) {
+                $results['gagal']++;
+                $results['errors'][] = "Baris {$baris}: NUPTK wajib diisi.";
+                continue;
+            }
+            if (!$nama) {
+                $results['gagal']++;
+                $results['errors'][] = "Baris {$baris}: Nama wajib diisi (NUPTK: {$nuptk}).";
+                continue;
+            }
+
+            $payload = [
+                'nuptk' => $nuptk,
+                'nip' => $get($row, 'nip'),
+                'nik' => $get($row, 'nik'),
+                'nama' => $nama,
+                'gelar_depan' => $get($row, 'gelar_depan'),
+                'gelar_belakang' => $get($row, 'gelar_belakang'),
+                'jenis_kelamin' => strtoupper($get($row, 'jenis_kelamin (L/P)') ?? 'L'),
+                'tempat_lahir' => $get($row, 'tempat_lahir'),
+                'tanggal_lahir' => $get($row, 'tanggal_lahir (YYYY-MM-DD)'),
+                'agama' => $get($row, 'agama') ?? 'Islam',
+                'status_perkawinan' => $get($row, 'status_perkawinan'),
+                'nama_ibu_kandung' => $get($row, 'nama_ibu_kandung'),
+                'no_hp' => $get($row, 'no_hp') ?? '-',
+                'no_wa' => $get($row, 'no_wa'),
+                'email' => $get($row, 'email'),
+                'jenis_ptk' => $get($row, 'jenis_ptk') ?? 'Guru Kelas',
+                'status_kepegawaian' => $get($row, 'status_kepegawaian') ?? 'GTT',
+                'status_keaktifan' => $get($row, 'status_keaktifan') ?? 'Aktif',
+                'tanggal_bergabung' => $get($row, 'tanggal_bergabung (YYYY-MM-DD)'),
+                'tmt_pns' => $get($row, 'tmt_pns (YYYY-MM-DD)'),
+                'alamat_jalan' => $get($row, 'alamat_jalan'),
+                'rt' => $get($row, 'rt'),
+                'rw' => $get($row, 'rw'),
+                'desa_kelurahan' => $get($row, 'desa_kelurahan'),
+                'kecamatan' => $get($row, 'kecamatan'),
+                'kota_kabupaten' => $get($row, 'kota_kabupaten'),
+                'provinsi' => $get($row, 'provinsi'),
+                'kode_pos' => $get($row, 'kode_pos'),
+            ];
+
+            try {
+                $existing = Guru::where('nuptk', $nuptk)->first();
+                if ($existing) {
+                    unset($payload['nuptk']);
+                    $existing->update($payload);
+                    $results['diperbarui']++;
+                } else {
+                    Guru::create($payload);
+                    $results['berhasil']++;
+                }
+            } catch (\Exception $e) {
+                $results['gagal']++;
+                $results['errors'][] = "Baris {$baris} ({$nama}): " . $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Import selesai: {$results['berhasil']} ditambahkan, {$results['diperbarui']} diperbarui, {$results['gagal']} gagal.",
+            'data' => $results,
+        ]);
+    }
+
+    /**
+     * POST /guru/import-foto
+     */
+    public function importFoto(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:zip|max:51200']);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($request->file('file')->getRealPath()) !== true) {
+            return response()->json(['success' => false, 'message' => 'File ZIP tidak bisa dibuka.'], 422);
+        }
+
+        $results = ['berhasil' => 0, 'tidak_ditemukan' => 0, 'dilewati' => 0, 'errors' => []];
+        $allowedExt = ['jpg', 'jpeg', 'png'];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $filename = basename($stat['name']);
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+            if (substr($stat['name'], -1) === '/' || !in_array($ext, $allowedExt)) {
+                $results['dilewati']++;
+                continue;
+            }
+
+            $nuptk = pathinfo($filename, PATHINFO_FILENAME);
+            $guru = Guru::where('nuptk', $nuptk)->first();
+
+            if (!$guru) {
+                $results['tidak_ditemukan']++;
+                $results['errors'][] = "File {$filename}: NUPTK {$nuptk} tidak ditemukan.";
+                continue;
+            }
+
+            try {
+                if ($guru->foto)
+                    Storage::disk('public')->delete($guru->foto);
+                $newPath = "foto-guru/{$nuptk}.{$ext}";
+                Storage::disk('public')->put($newPath, $zip->getFromIndex($i));
+                $guru->update(['foto' => $newPath]);
+                $results['berhasil']++;
+            } catch (\Exception $e) {
+                $results['errors'][] = "File {$filename}: " . $e->getMessage();
+            }
+        }
+        $zip->close();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Import foto selesai: {$results['berhasil']} berhasil, {$results['tidak_ditemukan']} tidak ditemukan, {$results['dilewati']} dilewati.",
+            'data' => $results,
+        ]);
+    }
+
+    /**
+     * GET /guru/export
+     */
+    public function export(Request $request)
+    {
+        $gurus = Guru::query()
+            ->with([
+                'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
+                'sertifikasis:id,guru_id',
+            ])
+            ->when($request->jenis_ptk, fn($q) => $q->where('jenis_ptk', $request->jenis_ptk))
+            ->when($request->status_kepegawaian, fn($q) => $q->where('status_kepegawaian', $request->status_kepegawaian))
+            ->when($request->status_keaktifan, fn($q) => $q->where('status_keaktifan', $request->status_keaktifan))
+            ->when($request->search, fn($q) => $q->where('nama', 'like', "%{$request->search}%")->orWhere('nuptk', 'like', "%{$request->search}%"))
+            ->orderBy('nama')
+            ->get();
+
+        $headers = [
+            'No',
+            'NUPTK',
+            'NIP',
+            'NIK',
+            'Nama Lengkap',
+            'Gelar Depan',
+            'Gelar Belakang',
+            'Jenis Kelamin',
+            'Tempat Lahir',
+            'Tanggal Lahir',
+            'Agama',
+            'Status Perkawinan',
+            'No. HP',
+            'No. WA',
+            'Email',
+            'Jenis PTK',
+            'Status Kepegawaian',
+            'Status Keaktifan',
+            'Tanggal Bergabung',
+            'TMT PNS',
+            'Alamat Jalan',
+            'RT',
+            'RW',
+            'Desa/Kelurahan',
+            'Kecamatan',
+            'Kabupaten/Kota',
+            'Provinsi',
+            'Kode Pos',
+            'Wali Kelas',
+            'Bersertifikasi',
+        ];
+        $dataRows = $gurus->map(fn($g, $i) => [
+            $i + 1,
+            $g->nuptk ?? '-',
+            $g->nip ?? '-',
+            $g->nik ?? '-',
+            trim(($g->gelar_depan ? $g->gelar_depan . ' ' : '') . $g->nama . ($g->gelar_belakang ? ', ' . $g->gelar_belakang : '')),
+            $g->gelar_depan ?? '-',
+            $g->gelar_belakang ?? '-',
+            $g->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+            $g->tempat_lahir ?? '-',
+            $g->tanggal_lahir ? \Carbon\Carbon::parse($g->tanggal_lahir)->format('d/m/Y') : '-',
+            $g->agama ?? '-',
+            $g->status_perkawinan ?? '-',
+            $g->no_hp ?? '-',
+            $g->no_wa ?? '-',
+            $g->email ?? '-',
+            $g->jenis_ptk ?? '-',
+            $g->status_kepegawaian ?? '-',
+            $g->status_keaktifan ?? 'Aktif',
+            $g->tanggal_bergabung ? \Carbon\Carbon::parse($g->tanggal_bergabung)->format('d/m/Y') : '-',
+            $g->tmt_pns ? \Carbon\Carbon::parse($g->tmt_pns)->format('d/m/Y') : '-',
+            $g->alamat_jalan ?? '-',
+            $g->rt ?? '-',
+            $g->rw ?? '-',
+            $g->desa_kelurahan ?? '-',
+            $g->kecamatan ?? '-',
+            $g->kota_kabupaten ?? '-',
+            $g->provinsi ?? '-',
+            $g->kode_pos ?? '-',
+            $g->waliKelas->first()?->kelas?->nama_kelas ?? 'Tidak Ada',
+            $g->sertifikasis->count() > 0 ? 'Ya' : 'Tidak',
+        ])->toArray();
+
+        $filename = 'data_guru_' . now()->format('Ymd_His') . '.xlsx';
+        $xlsx = $this->buildXlsx($headers, $dataRows);
+        return response($xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length' => strlen($xlsx),
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    /**
+     * GET /guru/backup
+     */
+    public function exportBackup()
+    {
+        $gurus = Guru::with([
+            'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
+            'sertifikasis:id,guru_id',
+            'pendidikans',
+            'jabatans',
+        ])->orderBy('nama')->get();
+
+        $headers = [
+            'No',
+            'NUPTK',
+            'NIP',
+            'NIK',
+            'Nama Lengkap',
+            'Gelar Depan',
+            'Gelar Belakang',
+            'Jenis Kelamin',
+            'Tempat Lahir',
+            'Tanggal Lahir',
+            'Agama',
+            'Status Perkawinan',
+            'No. HP',
+            'No. WA',
+            'Email',
+            'Jenis PTK',
+            'Status Kepegawaian',
+            'Status Keaktifan',
+            'Tanggal Bergabung',
+            'TMT PNS',
+            'Alamat Jalan',
+            'RT',
+            'RW',
+            'Desa/Kelurahan',
+            'Kecamatan',
+            'Kabupaten/Kota',
+            'Provinsi',
+            'Kode Pos',
+            'Wali Kelas',
+            'Jml Sertifikasi',
+            'Jml Pendidikan',
+            'Jml Jabatan',
+            'File Foto',
+        ];
+        $dataRows = $gurus->map(fn($g, $i) => [
+            $i + 1,
+            $g->nuptk ?? '-',
+            $g->nip ?? '-',
+            $g->nik ?? '-',
+            trim(($g->gelar_depan ? $g->gelar_depan . ' ' : '') . $g->nama . ($g->gelar_belakang ? ', ' . $g->gelar_belakang : '')),
+            $g->gelar_depan ?? '-',
+            $g->gelar_belakang ?? '-',
+            $g->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+            $g->tempat_lahir ?? '-',
+            $g->tanggal_lahir ? \Carbon\Carbon::parse($g->tanggal_lahir)->format('d/m/Y') : '-',
+            $g->agama ?? '-',
+            $g->status_perkawinan ?? '-',
+            $g->no_hp ?? '-',
+            $g->no_wa ?? '-',
+            $g->email ?? '-',
+            $g->jenis_ptk ?? '-',
+            $g->status_kepegawaian ?? '-',
+            $g->status_keaktifan ?? 'Aktif',
+            $g->tanggal_bergabung ? \Carbon\Carbon::parse($g->tanggal_bergabung)->format('d/m/Y') : '-',
+            $g->tmt_pns ? \Carbon\Carbon::parse($g->tmt_pns)->format('d/m/Y') : '-',
+            $g->alamat_jalan ?? '-',
+            $g->rt ?? '-',
+            $g->rw ?? '-',
+            $g->desa_kelurahan ?? '-',
+            $g->kecamatan ?? '-',
+            $g->kota_kabupaten ?? '-',
+            $g->provinsi ?? '-',
+            $g->kode_pos ?? '-',
+            $g->waliKelas->first()?->kelas?->nama_kelas ?? 'Tidak Ada',
+            $g->sertifikasis->count(),
+            $g->pendidikans->count(),
+            $g->jabatans->count(),
+            $g->foto ? basename($g->foto) : '-',
+        ])->toArray();
+
+        $xlsxBinary = $this->buildXlsx($headers, $dataRows);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'backup_guru_');
+        $zip = new \ZipArchive();
+        $zip->open($tmpFile, \ZipArchive::OVERWRITE);
+        $zip->addFromString('data_guru.xlsx', $xlsxBinary);
+        foreach ($gurus as $guru) {
+            if (!$guru->foto)
+                continue;
+            $fotoPath = storage_path('app/public/' . $guru->foto);
+            if (file_exists($fotoPath)) {
+                $ext = pathinfo($fotoPath, PATHINFO_EXTENSION);
+                $zip->addFile($fotoPath, 'foto-guru/' . ($guru->nuptk ?? $guru->id) . '.' . $ext);
+            }
+        }
+        $zip->addFromString(
+            'README.txt',
+            "BACKUP DATA GURU - " . now()->format('d/m/Y H:i:s') . "\r\n"
+            . "SIAKAD MI Nurul Huda 3\r\n\r\n"
+            . "Isi: data_guru.xlsx (" . count($gurus) . " guru) + foto-guru/\r\n"
+            . "Import kembali: gunakan fitur Import di Master Data Guru.\r\n"
+        );
+        $zip->close();
+
+        $zipBinary = file_get_contents($tmpFile);
+        unlink($tmpFile);
+
+        $filename = 'backup_guru_' . now()->format('Ymd_His') . '.zip';
+        return response($zipBinary, 200, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length' => strlen($zipBinary),
+            'Cache-Control' => 'no-cache',
+        ]);
+    }
+
+    // -- Private helpers --------------------------------------------------
+
+    private function parseXlsx(string $filePath): array
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($filePath) !== true)
+            return [];
+
+        $sharedStrings = [];
+        $ssXml = $zip->getFromName('xl/sharedStrings.xml');
+        if ($ssXml !== false) {
+            $ss = simplexml_load_string($ssXml);
+            foreach ($ss->si as $si) {
+                $t = '';
+                foreach ($si->r as $r)
+                    $t .= (string) $r->t;
+                if ($t === '' && isset($si->t))
+                    $t = (string) $si->t;
+                $sharedStrings[] = $t;
+            }
+        }
+
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+        if ($sheetXml === false)
+            return [];
+
+        $sheet = simplexml_load_string($sheetXml);
+        $rows = [];
+        foreach ($sheet->sheetData->row as $row) {
+            $rowArr = [];
+            $maxCol = 0;
+            foreach ($row->c as $cell) {
+                $ref = (string) $cell['r'];
+                $colLetters = preg_replace('/[0-9]/', '', $ref);
+                $colIdx = $this->colLetterToIndex($colLetters);
+                $maxCol = max($maxCol, $colIdx);
+                $t = (string) $cell['t'];
+                $val = isset($cell->v) ? (string) $cell->v : '';
+                if ($t === 's' && $val !== '')
+                    $val = $sharedStrings[(int) $val] ?? '';
+                $rowArr[$colIdx] = $val;
+            }
+            for ($i = 0; $i <= $maxCol; $i++) {
+                if (!isset($rowArr[$i]))
+                    $rowArr[$i] = '';
+            }
+            ksort($rowArr);
+            $rows[] = array_values($rowArr);
+        }
+        return $rows;
+    }
+
+    private function buildXlsx(array $headerRow, array $dataRows): string
+    {
+        $strings = [];
+        $addStr = function (string $s) use (&$strings): int {
+            $key = array_search($s, $strings, true);
+            if ($key === false) {
+                $strings[] = $s;
+                return count($strings) - 1;
+            }
+            return $key;
+        };
+
+        $sheetRowsXml = '';
+        $allRows = array_merge([$headerRow], $dataRows);
+        foreach ($allRows as $ri => $row) {
+            $rowNum = $ri + 1;
+            $isHeader = $ri === 0;
+            $cellsXml = '';
+            foreach ($row as $ci => $val) {
+                $colLetter = $this->indexToColLetter($ci);
+                $cellRef = "{$colLetter}{$rowNum}";
+                $sAttr = $isHeader ? ' s="1"' : ($ri % 2 === 0 ? ' s="2"' : '');
+                $strIdx = $addStr((string) $val);
+                $cellsXml .= "<c r=\"{$cellRef}\" t=\"s\"{$sAttr}><v>{$strIdx}</v></c>";
+            }
+            $sheetRowsXml .= "<row r=\"{$rowNum}\">{$cellsXml}</row>";
+        }
+
+        $ssItems = '';
+        foreach ($strings as $s) {
+            $ssItems .= '<si><t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1) . '</t></si>';
+        }
+        $ssCount = count($strings);
+        $ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\" uniqueCount=\"{$ssCount}\">{$ssItems}</sst>";
+
+        $colCount = count($headerRow);
+        $colDefsXml = '<cols>';
+        for ($ci = 0; $ci < $colCount; $ci++) {
+            $maxLen = 10;
+            foreach ($allRows as $row) {
+                $maxLen = max($maxLen, mb_strlen((string) ($row[$ci] ?? '')));
+            }
+            $width = min($maxLen + 4, 60);
+            $colNum = $ci + 1;
+            $colDefsXml .= "<col min=\"{$colNum}\" max=\"{$colNum}\" width=\"{$width}\" customWidth=\"1\"/>";
+        }
+        $colDefsXml .= '</cols>';
+
+        $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . $colDefsXml . "<sheetData>{$sheetRowsXml}</sheetData></worksheet>";
+
+        $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font>'
+            . '<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>'
+            . '<font><sz val="11"/><name val="Calibri"/></font></fonts>'
+            . '<fills count="4"><fill><patternFill patternType="none"/></fill>'
+            . '<fill><patternFill patternType="gray125"/></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FF5B21B6"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F3FF"/></patternFill></fill></fills>'
+            . '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'
+            . '<border><left style="thin"><color rgb="FFCCCCCC"/></left>'
+            . '<right style="thin"><color rgb="FFCCCCCC"/></right>'
+            . '<top style="thin"><color rgb="FFCCCCCC"/></top>'
+            . '<bottom style="thin"><color rgb="FFCCCCCC"/></bottom></border></borders>'
+            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+            . '<cellXfs count="3">'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment wrapText="0"/></xf>'
+            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0"><alignment horizontal="center" wrapText="0"/></xf>'
+            . '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0"><alignment wrapText="0"/></xf>'
+            . '</cellXfs></styleSheet>';
+
+        $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>';
+        $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+            . '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+            . '</Relationships>';
+        $rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            . '</Relationships>';
+        $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            . '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . '</Types>';
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx_');
+        $zip = new \ZipArchive();
+        $zip->open($tmpFile, \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', $contentTypes);
+        $zip->addFromString('_rels/.rels', $rootRels);
+        $zip->addFromString('xl/workbook.xml', $workbookXml);
+        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRels);
+        $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
+        $zip->addFromString('xl/sharedStrings.xml', $ssXml);
+        $zip->addFromString('xl/styles.xml', $stylesXml);
+        $zip->close();
+
+        $binary = file_get_contents($tmpFile);
+        unlink($tmpFile);
+        return $binary;
+    }
+
+    private function indexToColLetter(int $index): string
+    {
+        $letter = '';
+        $index++;
+        while ($index > 0) {
+            $index--;
+            $letter = chr(65 + ($index % 26)) . $letter;
+            $index = intdiv($index, 26);
+        }
+        return $letter;
+    }
+
+    private function colLetterToIndex(string $col): int
+    {
+        $col = strtoupper($col);
+        $index = 0;
+        for ($i = 0; $i < strlen($col); $i++) {
+            $index = $index * 26 + (ord($col[$i]) - 64);
+        }
+        return $index - 1;
+    }
 }

@@ -629,6 +629,8 @@ export default function MasterGuru() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [selected, setSelected] = useState(new Set());
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["master-guru", search, jenis, statusFilter, page],
@@ -740,25 +742,30 @@ export default function MasterGuru() {
           </button>
           <div className="flex bg-surface-container-lowest rounded-xl border border-border-light shadow-sm overflow-hidden">
             <button
-              title="Import"
-              className="flex items-center p-2.5 text-text-secondary hover:text-primary hover:bg-surface-container-low transition-colors"
+              title="Import Data / Foto"
+              onClick={() => setImportOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2.5 text-text-secondary hover:text-primary hover:bg-surface-container-low transition-colors text-sm font-medium"
             >
               <span className="material-symbols-outlined text-[20px]">
                 upload_file
               </span>
+              <span className="hidden sm:inline">Import</span>
             </button>
             <div className="w-px bg-border-light" />
             <button
-              title="Export"
-              className="flex items-center p-2.5 text-text-secondary hover:text-primary hover:bg-surface-container-low transition-colors"
+              title="Export / Backup"
+              onClick={() => setExportOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2.5 text-text-secondary hover:text-primary hover:bg-surface-container-low transition-colors text-sm font-medium"
             >
               <span className="material-symbols-outlined text-[20px]">
                 download
               </span>
+              <span className="hidden sm:inline">Export</span>
             </button>
             <div className="w-px bg-border-light" />
             <button
               title="Cetak"
+              onClick={() => window.print()}
               className="flex items-center p-2.5 text-text-secondary hover:text-primary hover:bg-surface-container-low transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">
@@ -1318,16 +1325,506 @@ export default function MasterGuru() {
         </div>
       </div>
 
-      {/* ── Modal ── */}
-      {/* <ModalGuru
-        open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditData(null);
-        }}
-        editData={editData}
+      {/* ── Modal Import ── */}
+      <ModalImport
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
         queryClient={queryClient}
-      /> */}
+      />
+
+      {/* ── Modal Export ── */}
+      <ModalExport
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        filters={{ search, jenis_ptk: jenis, status_keaktifan: statusFilter }}
+        selected={selected}
+      />
+    </div>
+  );
+}
+
+// ── Modal Import ──────────────────────────────────────────────────────────────
+function ModalImport({ open, onClose, queryClient }) {
+  const [tab, setTab] = useState("excel"); // "excel" | "foto"
+  const [file, setFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const fileRef = useRef();
+
+  const reset = () => {
+    setFile(null);
+    setResult(null);
+    setLoading(false);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) pickFile(f);
+  };
+
+  const pickFile = (f) => {
+    setFile(f);
+    setResult(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!file) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const endpoint =
+        tab === "excel"
+          ? "/operator/master-data/guru/import"
+          : "/operator/master-data/guru/import-foto";
+      const res = await api.post(endpoint, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setResult({ success: true, ...res.data });
+      queryClient.invalidateQueries(["master-guru"]);
+      toast.success(res.data.message);
+    } catch (err) {
+      const msg = err.response?.data?.message ?? "Import gagal.";
+      setResult({ success: false, message: msg });
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      const res = await api.get("/operator/master-data/guru/template", {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "template_import_guru.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mengunduh template.");
+    }
+  };
+
+  if (!open) return null;
+
+  const acceptType = tab === "excel" ? ".xlsx,.xls" : ".zip";
+  const maxSize = tab === "excel" ? "10 MB" : "50 MB";
+  const icon = tab === "excel" ? "table_view" : "folder_zip";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg border border-border-light animate-fade-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-[20px]">
+                upload_file
+              </span>
+            </div>
+            <div>
+              <h3
+                className="font-bold text-text-primary text-base"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              >
+                Import Data Guru
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Tambah banyak guru sekaligus
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-border-light px-6">
+          {[
+            { id: "excel", label: "Import Data (Excel)", icon: "table_view" },
+            { id: "foto", label: "Import Foto (ZIP)", icon: "folder_zip" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setTab(t.id);
+                reset();
+              }}
+              className={`flex items-center gap-1.5 py-3 px-1 mr-4 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                tab === t.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                {t.icon}
+              </span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-4">
+          {/* Petunjuk */}
+          {tab === "excel" ? (
+            <div className="flex items-start gap-3 p-3 bg-info/5 border border-info/20 rounded-xl">
+              <span className="material-symbols-outlined text-info text-[18px] mt-0.5 shrink-0">
+                info
+              </span>
+              <div className="text-xs text-text-secondary leading-relaxed">
+                Upload file <strong>.xlsx</strong> sesuai format template. Jika
+                NUPTK sudah ada, data akan <strong>diperbarui</strong>. Jika
+                belum, akan <strong>ditambahkan</strong>.
+                <button
+                  onClick={downloadTemplate}
+                  className="block mt-1.5 text-primary font-semibold hover:underline flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    download
+                  </span>
+                  Unduh Template Excel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 p-3 bg-info/5 border border-info/20 rounded-xl">
+              <span className="material-symbols-outlined text-info text-[18px] mt-0.5 shrink-0">
+                info
+              </span>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Upload file <strong>.zip</strong> berisi foto guru. Nama file di
+                dalam ZIP harus sama dengan <strong>NUPTK guru</strong> (contoh:{" "}
+                <code className="bg-surface-container px-1 rounded">
+                  1234567890123456.jpg
+                </code>
+                ). Format: JPG, PNG.
+              </p>
+            </div>
+          )}
+
+          {/* Drop zone */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+              dragging
+                ? "border-primary bg-primary/5"
+                : file
+                  ? "border-success/40 bg-success/5"
+                  : "border-border-light hover:border-primary/40 hover:bg-surface-container-low"
+            }`}
+          >
+            <input
+              ref={fileRef}
+              type="file"
+              accept={acceptType}
+              className="hidden"
+              onChange={(e) => pickFile(e.target.files?.[0])}
+            />
+            {file ? (
+              <>
+                <span className="material-symbols-outlined text-success text-[36px]">
+                  {icon}
+                </span>
+                <p className="text-sm font-semibold text-text-primary mt-2">
+                  {file.name}
+                </p>
+                <p className="text-xs text-text-secondary mt-1">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    reset();
+                  }}
+                  className="mt-2 text-xs text-danger hover:underline"
+                >
+                  Ganti file
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-text-secondary text-[36px]">
+                  {icon}
+                </span>
+                <p className="text-sm font-semibold text-text-primary mt-2">
+                  Drag & drop file di sini
+                </p>
+                <p className="text-xs text-text-secondary mt-1">
+                  atau klik untuk pilih file
+                </p>
+                <p className="text-[10px] text-text-secondary mt-1 opacity-70">
+                  Format: {acceptType.toUpperCase()} — Maks {maxSize}
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Result */}
+          {result && (
+            <div
+              className={`rounded-xl p-4 border text-sm ${result.success ? "bg-success/5 border-success/20" : "bg-danger/5 border-danger/20"}`}
+            >
+              <p
+                className={`font-semibold ${result.success ? "text-success" : "text-danger"}`}
+              >
+                {result.message}
+              </p>
+              {result.data?.errors?.length > 0 && (
+                <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                  {result.data.errors.map((e, i) => (
+                    <li key={i} className="text-xs text-danger/80 flex gap-1">
+                      <span className="shrink-0">•</span>
+                      {e}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border-light">
+          <button
+            onClick={handleClose}
+            className="px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+          >
+            {result?.success ? "Tutup" : "Batal"}
+          </button>
+          {!result?.success && (
+            <button
+              onClick={handleSubmit}
+              disabled={!file || loading}
+              className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <span className="material-symbols-outlined text-[16px] animate-spin">
+                    progress_activity
+                  </span>
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[16px]">
+                    upload
+                  </span>
+                  Mulai Import
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal Export ──────────────────────────────────────────────────────────────
+function ModalExport({ open, onClose, filters, selected }) {
+  const [loading, setLoading] = useState(null); // null | "excel" | "backup"
+
+  const doExport = async (type) => {
+    setLoading(type);
+    try {
+      const params = new URLSearchParams();
+      if (filters.search) params.append("search", filters.search);
+      if (filters.jenis_ptk) params.append("jenis_ptk", filters.jenis_ptk);
+      if (filters.status_keaktifan)
+        params.append("status_keaktifan", filters.status_keaktifan);
+      if (selected.size > 0)
+        [...selected].forEach((nuptk) => params.append("nuptks[]", nuptk));
+
+      const endpoint =
+        type === "backup"
+          ? "/operator/master-data/guru/backup"
+          : "/operator/master-data/guru/export";
+
+      const res = await api.get(`${endpoint}?${params.toString()}`, {
+        responseType: "blob",
+      });
+
+      const contentDisp = res.headers["content-disposition"] ?? "";
+      const match = contentDisp.match(/filename="?([^";\r\n]+)"?/);
+      const filename =
+        match?.[1] ??
+        (type === "backup" ? "backup_guru.zip" : "data_guru.xlsx");
+
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(
+        `${type === "backup" ? "Backup" : "Export"} berhasil diunduh.`,
+      );
+      onClose();
+    } catch {
+      toast.error("Gagal mengunduh. Coba lagi.");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  if (!open) return null;
+
+  const options = [
+    {
+      id: "excel",
+      icon: "table_view",
+      iconBg: "bg-success/10",
+      iconColor: "text-success",
+      title: "Export Excel",
+      desc:
+        selected.size > 0
+          ? `${selected.size} guru yang dipilih`
+          : filters.search || filters.jenis_ptk || filters.status_keaktifan
+            ? "Sesuai filter aktif"
+            : "Semua guru",
+      sub: "Format .xlsx — cocok untuk diedit atau dilaporkan",
+      badge: null,
+    },
+    {
+      id: "backup",
+      icon: "folder_zip",
+      iconBg: "bg-warning/10",
+      iconColor: "text-warning",
+      title: "Backup Lengkap",
+      desc: "Semua guru + foto profil",
+      sub: "Format .zip — berisi data Excel & semua foto guru",
+      badge: "RECOMMENDED",
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md border border-border-light animate-fade-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-[20px]">
+                download
+              </span>
+            </div>
+            <div>
+              <h3
+                className="font-bold text-text-primary text-base"
+                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              >
+                Export & Backup
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Pilih format yang diinginkan
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        {/* Options */}
+        <div className="p-5 space-y-3">
+          {selected.size > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg text-xs text-primary font-medium">
+              <span className="material-symbols-outlined text-[15px]">
+                check_circle
+              </span>
+              {selected.size} guru dipilih — export akan terbatas ke guru ini
+            </div>
+          )}
+
+          {options.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => doExport(opt.id)}
+              disabled={loading !== null}
+              className="w-full flex items-center gap-4 p-4 bg-surface-container-low border border-border-light rounded-xl hover:border-primary/30 hover:bg-surface-container transition-all text-left disabled:opacity-60 group"
+            >
+              <div
+                className={`w-12 h-12 rounded-xl ${opt.iconBg} flex items-center justify-center shrink-0`}
+              >
+                {loading === opt.id ? (
+                  <span className="material-symbols-outlined animate-spin text-[22px] text-text-secondary">
+                    progress_activity
+                  </span>
+                ) : (
+                  <span
+                    className={`material-symbols-outlined text-[22px] ${opt.iconColor}`}
+                  >
+                    {opt.icon}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-bold text-text-primary">
+                    {opt.title}
+                  </p>
+                  {opt.badge && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-warning/10 text-warning rounded-full border border-warning/20">
+                      {opt.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs font-medium text-primary mt-0.5">
+                  {opt.desc}
+                </p>
+                <p className="text-[11px] text-text-secondary mt-0.5">
+                  {opt.sub}
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-text-secondary text-[18px] group-hover:text-primary transition-colors shrink-0">
+                arrow_forward
+              </span>
+            </button>
+          ))}
+
+          <p className="text-[10px] text-text-secondary text-center pt-1">
+            Backup direkomendasikan secara berkala sebagai cadangan data
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
