@@ -81,6 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('master-data')->group(function () {
             // ── Master Data Guru ──────────────────────────────────────
             Route::get('/guru', [MasterDataGuruController::class, 'index']);
+            Route::get('/guru/stats', [MasterDataGuruController::class, 'stats']);
+            Route::get('/guru/perhatian-detail', [MasterDataGuruController::class, 'perhatianDetail']);
             Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
             // Import / Export / Backup (harus sebelum /{nuptk})
             Route::get('/guru/template', [MasterDataGuruController::class, 'downloadTemplate']);

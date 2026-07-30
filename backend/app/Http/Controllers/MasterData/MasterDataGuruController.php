@@ -307,6 +307,65 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
 
+    public function stats()
+    {
+        $total = Guru::count();
+
+        // Kelengkapan data — field opsional yang penting
+        $kelengkapan = [
+            ['field' => 'foto', 'label' => 'Foto belum diupload', 'count' => Guru::whereNull('foto')->orWhere('foto', '')->count()],
+            ['field' => 'nik', 'label' => 'NIK belum diisi', 'count' => Guru::whereNull('nik')->orWhere('nik', '')->count()],
+            ['field' => 'email', 'label' => 'Email belum diisi', 'count' => Guru::whereNull('email')->orWhere('email', '')->count()],
+            ['field' => 'no_kk', 'label' => 'No. KK belum diisi', 'count' => Guru::whereNull('no_kk')->orWhere('no_kk', '')->count()],
+            ['field' => 'golongan_darah', 'label' => 'Golongan darah belum diisi', 'count' => Guru::whereNull('golongan_darah')->orWhere('golongan_darah', '')->count()],
+            ['field' => 'nama_ibu_kandung', 'label' => 'Nama ibu kandung belum diisi', 'count' => Guru::whereNull('nama_ibu_kandung')->orWhere('nama_ibu_kandung', '')->count()],
+            ['field' => 'tanggal_bergabung', 'label' => 'Tanggal bergabung belum diisi', 'count' => Guru::whereNull('tanggal_bergabung')->count()],
+            ['field' => 'rekening', 'label' => 'Rekening bank belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_rekening')->where('no_rekening', '!=', ''))->count()],
+            ['field' => 'npwp', 'label' => 'NPWP belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('npwp')->where('npwp', '!=', ''))->count()],
+            ['field' => 'bpjs_kesehatan', 'label' => 'BPJS Kesehatan belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_bpjs_kesehatan')->where('no_bpjs_kesehatan', '!=', ''))->count()],
+            ['field' => 'bpjs_ketenagakerjaan', 'label' => 'BPJS Ketenagakerjaan belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_bpjs_ketenagakerjaan')->where('no_bpjs_ketenagakerjaan', '!=', ''))->count()],
+        ];
+
+        // Filter — hanya tampilkan yang count > 0
+        $perhatian = array_values(array_filter($kelengkapan, fn($item) => $item['count'] > 0));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total' => $total,
+                'aktif' => Guru::where('status_keaktifan', 'Aktif')->count(),
+                'nonaktif' => Guru::whereIn('status_keaktifan', ['Cuti', 'Pensiun', 'Mutasi', 'Keluar'])->count(),
+                'bersertifikasi' => Guru::whereHas('sertifikasis')->count(),
+                'wali_kelas' => Guru::whereHas('waliKelas', fn($q) => $q->where('is_active', 1))->count(),
+                'jumlah_mapel' => \App\Models\PlotGuruMapel::distinct('mapel_id')->count('mapel_id'),
+                'perhatian' => $perhatian, // ← array dinamis, hanya yang count > 0
+            ]
+        ]);
+    }
+    public function perhatianDetail(Request $request)
+    {
+        $field = $request->query('field');
+
+        $query = Guru::select('id', 'nuptk', 'nama', 'gelar_depan', 'gelar_belakang', 'jenis_ptk', 'foto');
+
+        match ($field) {
+            'foto' => $query->whereNull('foto')->orWhere('foto', ''),
+            'nik' => $query->where(fn($q) => $q->whereNull('nik')->orWhere('nik', '')),
+            'email' => $query->where(fn($q) => $q->whereNull('email')->orWhere('email', '')),
+            'no_kk' => $query->where(fn($q) => $q->whereNull('no_kk')->orWhere('no_kk', '')),
+            'golongan_darah' => $query->where(fn($q) => $q->whereNull('golongan_darah')->orWhere('golongan_darah', '')),
+            'nama_ibu_kandung' => $query->where(fn($q) => $q->whereNull('nama_ibu_kandung')->orWhere('nama_ibu_kandung', '')),
+            'tanggal_bergabung' => $query->whereNull('tanggal_bergabung'),
+            'rekening' => $query->whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_rekening')->where('no_rekening', '!=', '')),
+            'npwp' => $query->whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('npwp')->where('npwp', '!=', '')),
+            'bpjs_kesehatan' => $query->whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_bpjs_kesehatan')->where('no_bpjs_kesehatan', '!=', '')),
+            'bpjs_ketenagakerjaan' => $query->whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_bpjs_ketenagakerjaan')->where('no_bpjs_ketenagakerjaan', '!=', '')),
+            default => $query->whereRaw('1=0'),
+        };
+
+        return response()->json(['success' => true, 'data' => $query->get()->append('nama_lengkap')]);
+    }
+    
     public function uploadFoto(Request $request, $nuptk)
     {
         $request->validate(['foto' => 'required|image|mimes:jpg,jpeg,png|max:2048']);
