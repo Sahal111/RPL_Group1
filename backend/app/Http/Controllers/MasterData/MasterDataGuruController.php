@@ -1145,9 +1145,26 @@ class MasterDataGuruController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $mutasi = $guru->mutasi()->findOrFail($id);
+
+        $jenis = $mutasi->jenis_mutasi;
+
         if ($mutasi->file_sk)
             Storage::disk('public')->delete($mutasi->file_sk);
         $mutasi->delete();
+
+        // Reverse status setelah hapus — cek dari sisa record mutasi yang ada
+        $sisaMutasi = $guru->mutasi()->orderByDesc('tanggal_mutasi')->first();
+        if ($sisaMutasi) {
+            match ($sisaMutasi->jenis_mutasi) {
+                'Keluar' => $guru->update(['status_keaktifan' => 'Keluar']),
+                'Masuk', 'Kembali Bertugas' => $guru->update(['status_keaktifan' => 'Aktif']),
+                default => null,
+            };
+        } elseif ($jenis === 'Keluar') {
+            // Tidak ada sisa mutasi, dan yang dihapus adalah Keluar → balik Aktif
+            $guru->update(['status_keaktifan' => 'Aktif']);
+        }
+
         return response()->json(['success' => true, 'message' => 'Riwayat mutasi dihapus.']);
     }
 
@@ -2281,8 +2298,9 @@ class MasterDataGuruController extends Controller
                         continue;
 
                     try {
+                        $jenisMutasi = $get($row, 'jenis_mutasi (Masuk/Keluar/Internal)*');
                         $guru->mutasi()->create(array_filter([
-                            'jenis_mutasi' => $get($row, 'jenis_mutasi (Masuk/Keluar/Internal)*'),
+                            'jenis_mutasi' => $jenisMutasi,
                             'sekolah_asal' => $get($row, 'sekolah_asal'),
                             'npsn_asal' => $get($row, 'npsn_asal'),
                             'sekolah_tujuan' => $get($row, 'sekolah_tujuan'),
@@ -2292,6 +2310,14 @@ class MasterDataGuruController extends Controller
                             'tanggal_sk' => $get($row, 'tanggal_sk (YYYY-MM-DD)'),
                             'keterangan' => $get($row, 'keterangan'),
                         ], fn($v) => $v !== null));
+
+                        // Sync status seperti di storeMutasi
+                        match ($jenisMutasi) {
+                            'Keluar' => $guru->update(['status_keaktifan' => 'Keluar']),
+                            'Masuk', 'Kembali Bertugas' => $guru->update(['status_keaktifan' => 'Aktif']),
+                            default => null,
+                        };
+
                         $countRelasi('mutasi');
                     } catch (\Exception $e) {
                         $results['errors'][] = "Mutasi Baris {$baris}: " . $e->getMessage();
@@ -2405,8 +2431,10 @@ class MasterDataGuruController extends Controller
                 'mutasi',
                 'kompetensi',
                 'kontakDarurat',
+                'dokumens',
                 'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
             ])
+
             ->when($request->jenis_ptk, fn($q) => $q->where('jenis_ptk', $request->jenis_ptk))
             ->when($request->status_kepegawaian, fn($q) => $q->where('status_kepegawaian', $request->status_kepegawaian))
             ->when($request->status_keaktifan, fn($q) => $q->where('status_keaktifan', $request->status_keaktifan))
@@ -2591,7 +2619,8 @@ class MasterDataGuruController extends Controller
             'Prodi',
             'Tahun Masuk',
             'Tahun Lulus',
-            'No. Ijazah'
+            'No. Ijazah',
+            'File Ijazah (path)'
         ];
         $rPendidikan = [];
         foreach ($gurus as $g) {
@@ -2605,7 +2634,8 @@ class MasterDataGuruController extends Controller
                     $p->prodi ?? '',
                     $p->tahun_masuk ?? '',
                     $p->tahun_lulus ?? '',
-                    $p->no_ijazah ?? ''
+                    $p->no_ijazah ?? '',
+                    $p->file_ijazah ?? ''
                 ];
             }
         }
@@ -2621,7 +2651,8 @@ class MasterDataGuruController extends Controller
             'LPTK',
             'Bidang Studi',
             'Tanggal Terbit',
-            'Expired'
+            'Expired',
+            'File Sertifikat (path)'
         ];
         $rSertifikasi = [];
         foreach ($gurus as $g) {
@@ -2636,7 +2667,8 @@ class MasterDataGuruController extends Controller
                     $s->lptk ?? '',
                     $s->bidang_studi ?? '',
                     $fmt($s->tanggal_terbit),
-                    $fmt($s->expired_at)
+                    $fmt($s->expired_at),
+                    $s->file_sertifikat ?? ''
                 ];
             }
         }
@@ -2654,7 +2686,8 @@ class MasterDataGuruController extends Controller
             'Jumlah Jam',
             'Peran',
             'No. Sertifikat',
-            'Keterangan'
+            'Keterangan',
+            'File Sertifikat Diklat (path)'
         ];
         $rDiklat = [];
         foreach ($gurus as $g) {
@@ -2671,7 +2704,8 @@ class MasterDataGuruController extends Controller
                     $d->jumlah_jam ?? '',
                     $d->peran ?? '',
                     $d->no_sertifikat ?? '',
-                    $d->keterangan ?? ''
+                    $d->keterangan ?? '',
+                    $d->file_sertifikat ?? ''
                 ];
             }
         }
@@ -2732,7 +2766,8 @@ class MasterDataGuruController extends Controller
             'TMT Inpassing',
             'Golongan Sesudah',
             'Jabatan Fungsional',
-            'Angka Kredit'
+            'Angka Kredit',
+            'File SK (path)'
         ];
         $rInpassing = [];
         foreach ($gurus as $g) {
@@ -2745,7 +2780,8 @@ class MasterDataGuruController extends Controller
                     $fmt($inp->tmt_inpassing),
                     $inp->golongan_sesudah ?? '',
                     $inp->jabatan_fungsional ?? '',
-                    $inp->angka_kredit ?? ''
+                    $inp->angka_kredit ?? '',
+                    $inp->file_sk ?? ''
                 ];
             }
         }
@@ -2762,7 +2798,8 @@ class MasterDataGuruController extends Controller
             'Tgl Mutasi',
             'No. SK',
             'Tgl SK',
-            'Keterangan'
+            'Keterangan',
+            'File SK Mutasi (path)'
         ];
         $rMutasi = [];
         foreach ($gurus as $g) {
@@ -2778,7 +2815,8 @@ class MasterDataGuruController extends Controller
                     $fmt($m->tanggal_mutasi),
                     $m->no_sk ?? '',
                     $fmt($m->tanggal_sk),
-                    $m->keterangan ?? ''
+                    $m->keterangan ?? '',
+                    $m->file_sk ?? ''
                 ];
             }
         }
@@ -2816,6 +2854,41 @@ class MasterDataGuruController extends Controller
             }
         }
 
+        // ── Sheet 12: Dokumen Umum (guru_dokumens) ─────────────────────────
+        $hDokumen = [
+            'NUPTK',
+            'Nama Guru',
+            'Kategori',
+            'Nama Dokumen',
+            'Nomor Dokumen',
+            'Tanggal Dokumen',
+            'Tanggal Berlaku',
+            'Tanggal Kadaluarsa',
+            'Penerbit',
+            'File Path',
+            'Terverifikasi',
+            'Keterangan'
+        ];
+        $rDokumen = [];
+        foreach ($gurus as $g) {
+            foreach ($g->dokumens as $dok) {
+                $rDokumen[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $dok->kategori ?? '',
+                    $dok->nama_dokumen,
+                    $dok->nomor_dokumen ?? '',
+                    $fmt($dok->tanggal_dokumen),
+                    $fmt($dok->tanggal_berlaku),
+                    $fmt($dok->tanggal_kadaluarsa),
+                    $dok->penerbit ?? '',
+                    $dok->file_path ?? '',
+                    $dok->is_verified ? 'Ya' : 'Tidak',
+                    $dok->keterangan ?? ''
+                ];
+            }
+        }
+
         $sheets = [
             ['name' => 'Data Utama', 'headers' => $hUtama, 'rows' => $rUtama],
             ['name' => 'Keluarga & Anak', 'headers' => $hKeluarga, 'rows' => $rKeluarga],
@@ -2828,6 +2901,7 @@ class MasterDataGuruController extends Controller
             ['name' => 'Mutasi', 'headers' => $hMutasi, 'rows' => $rMutasi],
             ['name' => 'Kompetensi', 'headers' => $hKompetensi, 'rows' => $rKompetensi],
             ['name' => 'Kontak Darurat', 'headers' => $hKontak, 'rows' => $rKontak],
+            ['name' => 'Dokumen Umum', 'headers' => $hDokumen, 'rows' => $rDokumen],
         ];
 
         $filename = 'data_guru_' . now()->format('Ymd_His') . '.xlsx';
@@ -2901,104 +2975,578 @@ class MasterDataGuruController extends Controller
     public function exportBackup()
     {
         $gurus = Guru::with([
-            'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
-            'sertifikasis:id,guru_id',
+            'keluarga',
+            'anaks',
+            'rekenings' => fn($q) => $q->where('is_primary', 1),
             'pendidikans',
+            'sertifikasis',
+            'diklats',
             'jabatans',
+            'inpassings',
+            'mutasi',
+            'kompetensi',
+            'kontakDarurat',
+            'dokumens',
+            'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
         ])->orderBy('nama')->get();
 
-        $headers = [
+        $fmt = fn($d) => $d ? \Carbon\Carbon::parse($d)->format('d/m/Y') : '';
+
+        // ── bangun multi-sheet identik dengan export() ──────────────────
+        $hUtama = [
             'No',
             'NUPTK',
             'NIP',
+            'NIP Lama',
+            'No. Karpeg',
+            'No. Karis/Karsu',
             'NIK',
-            'Nama Lengkap',
+            'No. KK',
+            'Nama',
             'Gelar Depan',
             'Gelar Belakang',
             'Jenis Kelamin',
             'Tempat Lahir',
             'Tanggal Lahir',
             'Agama',
-            'Status Perkawinan',
+            'Golongan Darah',
+            'Kewarganegaraan',
+            'Status Hidup',
+            'Nama Ibu Kandung',
             'No. HP',
             'No. WA',
             'Email',
-            'Jenis PTK',
-            'Status Kepegawaian',
-            'Status Keaktifan',
-            'Tanggal Bergabung',
-            'TMT PNS',
             'Alamat Jalan',
             'RT',
             'RW',
+            'Dusun',
             'Desa/Kelurahan',
             'Kecamatan',
             'Kabupaten/Kota',
             'Provinsi',
             'Kode Pos',
+            'Jenis PTK',
+            'Status Kepegawaian',
+            'Status Keaktifan',
+            'Tanggal Bergabung',
+            'TMT PNS',
+            'TMT GTY',
+            'Masa Kerja (Thn)',
+            'No. SK Pengangkatan',
+            'Tgl SK Pengangkatan',
+            'Instansi Pengangkat',
             'Wali Kelas',
-            'Jml Sertifikasi',
-            'Jml Pendidikan',
-            'Jml Jabatan',
-            'File Foto',
         ];
-        $dataRows = $gurus->map(fn($g, $i) => [
+        $rUtama = $gurus->map(fn($g, $i) => [
             $i + 1,
-            $g->nuptk ?? '-',
-            $g->nip ?? '-',
-            $g->nik ?? '-',
-            trim(($g->gelar_depan ? $g->gelar_depan . ' ' : '') . $g->nama . ($g->gelar_belakang ? ', ' . $g->gelar_belakang : '')),
-            $g->gelar_depan ?? '-',
-            $g->gelar_belakang ?? '-',
+            $g->nuptk ?? '',
+            $g->nip ?? '',
+            $g->nip_lama ?? '',
+            $g->no_karpeg ?? '',
+            $g->no_karis_karsu ?? '',
+            $g->nik ?? '',
+            $g->no_kk ?? '',
+            $g->nama,
+            $g->gelar_depan ?? '',
+            $g->gelar_belakang ?? '',
             $g->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
-            $g->tempat_lahir ?? '-',
-            $g->tanggal_lahir ? \Carbon\Carbon::parse($g->tanggal_lahir)->format('d/m/Y') : '-',
-            $g->agama ?? '-',
-            $g->status_perkawinan ?? '-',
-            $g->no_hp ?? '-',
-            $g->no_wa ?? '-',
-            $g->email ?? '-',
-            $g->jenis_ptk ?? '-',
-            $g->status_kepegawaian ?? '-',
-            $g->status_keaktifan ?? 'Aktif',
-            $g->tanggal_bergabung ? \Carbon\Carbon::parse($g->tanggal_bergabung)->format('d/m/Y') : '-',
-            $g->tmt_pns ? \Carbon\Carbon::parse($g->tmt_pns)->format('d/m/Y') : '-',
-            $g->alamat_jalan ?? '-',
-            $g->rt ?? '-',
-            $g->rw ?? '-',
-            $g->desa_kelurahan ?? '-',
-            $g->kecamatan ?? '-',
-            $g->kota_kabupaten ?? '-',
-            $g->provinsi ?? '-',
-            $g->kode_pos ?? '-',
-            $g->waliKelas->first()?->kelas?->nama_kelas ?? 'Tidak Ada',
-            $g->sertifikasis->count(),
-            $g->pendidikans->count(),
-            $g->jabatans->count(),
-            $g->foto ? basename($g->foto) : '-',
-        ])->toArray();
+            $g->tempat_lahir ?? '',
+            $fmt($g->tanggal_lahir),
+            $g->agama ?? '',
+            $g->golongan_darah ?? '',
+            $g->kewarganegaraan ?? '',
+            $g->status_hidup ?? '',
+            $g->nama_ibu_kandung ?? '',
+            $g->no_hp ?? '',
+            $g->no_wa ?? '',
+            $g->email ?? '',
+            $g->alamat_jalan ?? '',
+            $g->rt ?? '',
+            $g->rw ?? '',
+            $g->dusun ?? '',
+            $g->desa_kelurahan ?? '',
+            $g->kecamatan ?? '',
+            $g->kota_kabupaten ?? '',
+            $g->provinsi ?? '',
+            $g->kode_pos ?? '',
+            $g->jenis_ptk ?? '',
+            $g->status_kepegawaian ?? '',
+            $g->status_keaktifan ?? '',
+            $fmt($g->tanggal_bergabung),
+            $fmt($g->tmt_pns),
+            $fmt($g->tmt_gty),
+            $g->masa_kerja_tahun ?? '',
+            $g->no_sk_pengangkatan ?? '',
+            $fmt($g->tgl_sk_pengangkatan),
+            $g->instansi_pengangkat ?? '',
+            $g->waliKelas->first()?->kelas?->nama_kelas ?? '',
+        ])->values()->toArray();
 
-        $xlsxBinary = $this->buildMultiSheetXlsx([["name" => "Data Guru", "headers" => $headers, "rows" => $dataRows]]);
+        $hKeluarga = [
+            'NUPTK',
+            'Nama Guru',
+            'Status Perkawinan',
+            'Nama Pasangan',
+            'NIK Pasangan',
+            'Pekerjaan Pasangan',
+            'Jumlah Anak',
+            'Nama Anak',
+            'JK Anak',
+            'Tgl Lahir Anak',
+            'Urutan Anak'
+        ];
+        $rKeluarga = [];
+        foreach ($gurus as $g) {
+            $kel = $g->keluarga;
+            $anaks = $g->anaks;
+            if (!$kel && $anaks->isEmpty())
+                continue;
+            $kelRow = [
+                $g->nuptk,
+                $g->nama,
+                $kel?->status_perkawinan ?? '',
+                $kel?->nama_pasangan ?? '',
+                $kel?->nik_pasangan ?? '',
+                $kel?->pekerjaan_pasangan ?? '',
+                $kel?->jumlah_anak ?? ''
+            ];
+            if ($anaks->isEmpty()) {
+                $rKeluarga[] = array_merge($kelRow, ['', '', '', '']);
+            } else {
+                foreach ($anaks as $ai => $anak) {
+                    $rKeluarga[] = array_merge(
+                        $ai === 0 ? $kelRow : [$g->nuptk, $g->nama, '', '', '', '', ''],
+                        [$anak->nama, $anak->jenis_kelamin ?? '', $fmt($anak->tanggal_lahir), $anak->urutan ?? '']
+                    );
+                }
+            }
+        }
 
+        $hRekening = [
+            'NUPTK',
+            'Nama Guru',
+            'Nama Bank',
+            'No. Rekening',
+            'Atas Nama',
+            'Cabang',
+            'NPWP',
+            'No. BPJS Kesehatan',
+            'No. BPJS Ketenagakerjaan',
+            'Gaji Pokok',
+            'Tunjangan Fungsional',
+            'Tunjangan Profesi'
+        ];
+        $rRekening = [];
+        foreach ($gurus as $g) {
+            $rek = $g->rekenings->first();
+            $rRekening[] = [
+                $g->nuptk,
+                $g->nama,
+                $rek?->nama_bank ?? '',
+                $rek?->no_rekening ?? '',
+                $rek?->atas_nama ?? '',
+                $rek?->cabang ?? '',
+                $rek?->npwp ?? '',
+                $rek?->no_bpjs_kesehatan ?? '',
+                $rek?->no_bpjs_ketenagakerjaan ?? '',
+                $rek?->gaji_pokok ?? '',
+                $rek?->tunjangan_fungsional ?? '',
+                $rek?->tunjangan_profesi ?? ''
+            ];
+        }
+
+        $hPendidikan = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenjang',
+            'Nama Sekolah',
+            'Jurusan',
+            'Prodi',
+            'Tahun Masuk',
+            'Tahun Lulus',
+            'No. Ijazah',
+            'File Ijazah (path)'
+        ];
+        $rPendidikan = [];
+        foreach ($gurus as $g) {
+            foreach ($g->pendidikans as $p) {
+                $rPendidikan[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $p->jenjang,
+                    $p->nama_sekolah,
+                    $p->jurusan ?? '',
+                    $p->prodi ?? '',
+                    $p->tahun_masuk ?? '',
+                    $p->tahun_lulus ?? '',
+                    $p->no_ijazah ?? '',
+                    $p->file_ijazah ?? ''
+                ];
+            }
+        }
+
+        $hSertifikasi = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenis Sertifikasi',
+            'No. Sertifikat',
+            'NRG',
+            'Tahun Sertifikasi',
+            'LPTK',
+            'Bidang Studi',
+            'Tanggal Terbit',
+            'Expired',
+            'File Sertifikat (path)'
+        ];
+        $rSertifikasi = [];
+        foreach ($gurus as $g) {
+            foreach ($g->sertifikasis as $s) {
+                $rSertifikasi[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $s->jenis_sertifikasi,
+                    $s->no_sertifikat ?? '',
+                    $s->nrg ?? '',
+                    $s->tahun_sertifikasi ?? '',
+                    $s->lptk ?? '',
+                    $s->bidang_studi ?? '',
+                    $fmt($s->tanggal_terbit),
+                    $fmt($s->expired_at),
+                    $s->file_sertifikat ?? ''
+                ];
+            }
+        }
+
+        $hDiklat = [
+            'NUPTK',
+            'Nama Guru',
+            'Nama Diklat',
+            'Penyelenggara',
+            'Jenis',
+            'Tingkat',
+            'Tgl Mulai',
+            'Tgl Selesai',
+            'Jumlah Jam',
+            'Peran',
+            'No. Sertifikat',
+            'Keterangan',
+            'File Sertifikat Diklat (path)'
+        ];
+        $rDiklat = [];
+        foreach ($gurus as $g) {
+            foreach ($g->diklats as $d) {
+                $rDiklat[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $d->nama_diklat,
+                    $d->penyelenggara ?? '',
+                    $d->jenis ?? '',
+                    $d->tingkat ?? '',
+                    $fmt($d->tanggal_mulai),
+                    $fmt($d->tanggal_selesai),
+                    $d->jumlah_jam ?? '',
+                    $d->peran ?? '',
+                    $d->no_sertifikat ?? '',
+                    $d->keterangan ?? '',
+                    $d->file_sertifikat ?? ''
+                ];
+            }
+        }
+
+        $hJabatan = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenis Jabatan',
+            'Jabatan',
+            'Unit Kerja',
+            'Instansi Pengangkat',
+            'Golongan',
+            'Pangkat',
+            'Jenis Pengangkatan',
+            'Status Kepegawaian',
+            'No. SK',
+            'Tgl SK',
+            'Pejabat TTD',
+            'TMT Jabatan',
+            'Tgl Selesai',
+            'Status Jabatan',
+            'Is Current',
+            'Uraian Tugas'
+        ];
+        $rJabatan = [];
+        foreach ($gurus as $g) {
+            foreach ($g->jabatans as $j) {
+                $rJabatan[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $j->jenis_jabatan,
+                    $j->jabatan,
+                    $j->unit_kerja ?? '',
+                    $j->instansi_pengangkat ?? '',
+                    $j->golongan ?? '',
+                    $j->pangkat ?? '',
+                    $j->jenis_pengangkatan ?? '',
+                    $j->status_kepegawaian ?? '',
+                    $j->no_sk ?? '',
+                    $fmt($j->tanggal_sk),
+                    $j->pejabat_penandatangan ?? '',
+                    $fmt($j->tmt_jabatan),
+                    $fmt($j->tanggal_selesai),
+                    $j->status_jabatan ?? '',
+                    $j->is_current ? 'Ya' : 'Tidak',
+                    $j->uraian_tugas ?? ''
+                ];
+            }
+        }
+
+        $hInpassing = [
+            'NUPTK',
+            'Nama Guru',
+            'No. SK',
+            'Tanggal SK',
+            'TMT Inpassing',
+            'Golongan Sesudah',
+            'Jabatan Fungsional',
+            'Angka Kredit',
+            'File SK (path)'
+        ];
+        $rInpassing = [];
+        foreach ($gurus as $g) {
+            foreach ($g->inpassings as $inp) {
+                $rInpassing[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $inp->no_sk,
+                    $fmt($inp->tanggal_sk),
+                    $fmt($inp->tmt_inpassing),
+                    $inp->golongan_sesudah ?? '',
+                    $inp->jabatan_fungsional ?? '',
+                    $inp->angka_kredit ?? '',
+                    $inp->file_sk ?? ''
+                ];
+            }
+        }
+
+        $hMutasi = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenis Mutasi',
+            'Sekolah Asal',
+            'NPSN Asal',
+            'Sekolah Tujuan',
+            'NPSN Tujuan',
+            'Tgl Mutasi',
+            'No. SK',
+            'Tgl SK',
+            'Keterangan',
+            'File SK Mutasi (path)'
+        ];
+        $rMutasi = [];
+        foreach ($gurus as $g) {
+            foreach ($g->mutasi as $m) {
+                $rMutasi[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $m->jenis_mutasi,
+                    $m->sekolah_asal ?? '',
+                    $m->npsn_asal ?? '',
+                    $m->sekolah_tujuan ?? '',
+                    $m->npsn_tujuan ?? '',
+                    $fmt($m->tanggal_mutasi),
+                    $m->no_sk ?? '',
+                    $fmt($m->tanggal_sk),
+                    $m->keterangan ?? '',
+                    $m->file_sk ?? ''
+                ];
+            }
+        }
+
+        $hKompetensi = ['NUPTK', 'Nama Guru', 'Jenis', 'Nama Kompetensi', 'Tingkat', 'Keterangan'];
+        $rKompetensi = [];
+        foreach ($gurus as $g) {
+            foreach ($g->kompetensi as $k) {
+                $rKompetensi[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $k->jenis,
+                    $k->nama,
+                    $k->tingkat ?? '',
+                    $k->keterangan ?? ''
+                ];
+            }
+        }
+
+        $hKontak = ['NUPTK', 'Nama Guru', 'Nama Kontak', 'Hubungan', 'No. HP', 'Alamat', 'Primary'];
+        $rKontak = [];
+        foreach ($gurus as $g) {
+            foreach ($g->kontakDarurat as $kd) {
+                $rKontak[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $kd->nama,
+                    $kd->hubungan,
+                    $kd->no_hp,
+                    $kd->alamat ?? '',
+                    $kd->is_primary ? 'Ya' : 'Tidak'
+                ];
+            }
+        }
+
+        $hDokumen = [
+            'NUPTK',
+            'Nama Guru',
+            'Kategori',
+            'Nama Dokumen',
+            'Nomor Dokumen',
+            'Tanggal Dokumen',
+            'Tanggal Berlaku',
+            'Tanggal Kadaluarsa',
+            'Penerbit',
+            'File Path',
+            'Terverifikasi',
+            'Keterangan'
+        ];
+        $rDokumen = [];
+        foreach ($gurus as $g) {
+            foreach ($g->dokumens as $dok) {
+                $rDokumen[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $dok->kategori ?? '',
+                    $dok->nama_dokumen,
+                    $dok->nomor_dokumen ?? '',
+                    $fmt($dok->tanggal_dokumen),
+                    $fmt($dok->tanggal_berlaku),
+                    $fmt($dok->tanggal_kadaluarsa),
+                    $dok->penerbit ?? '',
+                    $dok->file_path ?? '',
+                    $dok->is_verified ? 'Ya' : 'Tidak',
+                    $dok->keterangan ?? ''
+                ];
+            }
+        }
+
+        $sheets = [
+            ['name' => 'Data Utama', 'headers' => $hUtama, 'rows' => $rUtama],
+            ['name' => 'Keluarga & Anak', 'headers' => $hKeluarga, 'rows' => $rKeluarga],
+            ['name' => 'Rekening', 'headers' => $hRekening, 'rows' => $rRekening],
+            ['name' => 'Pendidikan', 'headers' => $hPendidikan, 'rows' => $rPendidikan],
+            ['name' => 'Sertifikasi', 'headers' => $hSertifikasi, 'rows' => $rSertifikasi],
+            ['name' => 'Diklat', 'headers' => $hDiklat, 'rows' => $rDiklat],
+            ['name' => 'Jabatan', 'headers' => $hJabatan, 'rows' => $rJabatan],
+            ['name' => 'Inpassing', 'headers' => $hInpassing, 'rows' => $rInpassing],
+            ['name' => 'Mutasi', 'headers' => $hMutasi, 'rows' => $rMutasi],
+            ['name' => 'Kompetensi', 'headers' => $hKompetensi, 'rows' => $rKompetensi],
+            ['name' => 'Kontak Darurat', 'headers' => $hKontak, 'rows' => $rKontak],
+            ['name' => 'Dokumen Umum', 'headers' => $hDokumen, 'rows' => $rDokumen],
+        ];
+        $xlsxBinary = $this->buildMultiSheetXlsx($sheets);
+
+        // ── ZIP: xlsx + foto + semua file dokumen ───────────────────────
         $tmpFile = tempnam(sys_get_temp_dir(), 'backup_guru_');
         $zip = new \ZipArchive();
         $zip->open($tmpFile, \ZipArchive::OVERWRITE);
         $zip->addFromString('data_guru.xlsx', $xlsxBinary);
+
+        // Foto profil
         foreach ($gurus as $guru) {
             if (!$guru->foto)
                 continue;
-            $fotoPath = storage_path('app/public/' . $guru->foto);
-            if (file_exists($fotoPath)) {
-                $ext = pathinfo($fotoPath, PATHINFO_EXTENSION);
-                $zip->addFile($fotoPath, 'foto-guru/' . ($guru->nuptk ?? $guru->id) . '.' . $ext);
+            $path = storage_path('app/public/' . $guru->foto);
+            if (file_exists($path)) {
+                $ext = pathinfo($path, PATHINFO_EXTENSION);
+                $zip->addFile($path, 'foto-guru/' . ($guru->nuptk ?? $guru->id) . '.' . $ext);
             }
         }
+
+        // File ijazah (pendidikan)
+        foreach ($gurus as $guru) {
+            foreach ($guru->pendidikans as $p) {
+                if (!$p->file_ijazah)
+                    continue;
+                $path = storage_path('app/public/' . $p->file_ijazah);
+                if (file_exists($path)) {
+                    $zip->addFile($path, 'file-ijazah/' . ($guru->nuptk ?? $guru->id) . '_' . $p->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+                }
+            }
+        }
+
+        // File sertifikat (sertifikasi)
+        foreach ($gurus as $guru) {
+            foreach ($guru->sertifikasis as $s) {
+                if (!$s->file_sertifikat)
+                    continue;
+                $path = storage_path('app/public/' . $s->file_sertifikat);
+                if (file_exists($path)) {
+                    $zip->addFile($path, 'file-sertifikasi/' . ($guru->nuptk ?? $guru->id) . '_' . $s->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+                }
+            }
+        }
+
+        // File sertifikat diklat
+        foreach ($gurus as $guru) {
+            foreach ($guru->diklats as $d) {
+                if (!$d->file_sertifikat)
+                    continue;
+                $path = storage_path('app/public/' . $d->file_sertifikat);
+                if (file_exists($path)) {
+                    $zip->addFile($path, 'file-diklat/' . ($guru->nuptk ?? $guru->id) . '_' . $d->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+                }
+            }
+        }
+
+        // File SK inpassing
+        foreach ($gurus as $guru) {
+            foreach ($guru->inpassings as $inp) {
+                if (!$inp->file_sk)
+                    continue;
+                $path = storage_path('app/public/' . $inp->file_sk);
+                if (file_exists($path)) {
+                    $zip->addFile($path, 'file-inpassing/' . ($guru->nuptk ?? $guru->id) . '_' . $inp->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+                }
+            }
+        }
+
+        // File SK mutasi
+        foreach ($gurus as $guru) {
+            foreach ($guru->mutasi as $m) {
+                if (!$m->file_sk)
+                    continue;
+                $path = storage_path('app/public/' . $m->file_sk);
+                if (file_exists($path)) {
+                    $zip->addFile($path, 'file-mutasi/' . ($guru->nuptk ?? $guru->id) . '_' . $m->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+                }
+            }
+        }
+
+        // Dokumen umum
+        foreach ($gurus as $guru) {
+            foreach ($guru->dokumens as $dok) {
+                if (!$dok->file_path)
+                    continue;
+                $path = storage_path('app/public/' . $dok->file_path);
+                if (file_exists($path)) {
+                    $zip->addFile($path, 'file-dokumen/' . ($guru->nuptk ?? $guru->id) . '_' . $dok->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+                }
+            }
+        }
+
+        $totalGuru = count($gurus);
         $zip->addFromString(
             'README.txt',
             "BACKUP DATA GURU - " . now()->format('d/m/Y H:i:s') . "\r\n"
             . "SIAKAD MI Nurul Huda 3\r\n\r\n"
-            . "Isi: data_guru.xlsx (" . count($gurus) . " guru) + foto-guru/\r\n"
-            . "Import kembali: gunakan fitur Import di Master Data Guru.\r\n"
+            . "Isi backup:\r\n"
+            . "  data_guru.xlsx       — {$totalGuru} guru, 12 sheet (data lengkap)\r\n"
+            . "  foto-guru/           — foto profil guru\r\n"
+            . "  file-ijazah/         — scan ijazah (dari riwayat pendidikan)\r\n"
+            . "  file-sertifikasi/    — file sertifikat pendidik\r\n"
+            . "  file-diklat/         — sertifikat pelatihan/diklat\r\n"
+            . "  file-inpassing/      — SK inpassing\r\n"
+            . "  file-mutasi/         — SK mutasi\r\n"
+            . "  file-dokumen/        — dokumen umum guru\r\n\r\n"
+            . "Nama file: <nuptk>_<id>.<ext>\r\n"
+            . "Referensi path ada di kolom 'File * (path)' di masing-masing sheet xlsx.\r\n"
         );
         $zip->close();
 
@@ -3013,7 +3561,6 @@ class MasterDataGuruController extends Controller
             'Cache-Control' => 'no-cache',
         ]);
     }
-
 
     // ── Private: Multi-Sheet XLSX Builder ─────────────────────────────
     private function buildMultiSheetXlsx(array $sheets): string
@@ -3073,88 +3620,160 @@ class MasterDataGuruController extends Controller
 
             $sheetsXml[$si] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
                 . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-                . $colDefsXml . "<sheetData>{$sheetRowsXml}</sheetData></worksheet>";
+                . $colDefsXml . "<sheetData>{$sheetRowsXml}</sheetData>
+</worksheet>";
 
             $rId = "rId{$sheetNum}";
-            $workbookSheets .= "<sheet name=\"{$sheetName}\" sheetId=\"{$sheetNum}\" r:id=\"{$rId}\"/>";
+            $workbookSheets .= "
+<sheet name=\"{$sheetName}\" sheetId=\"{$sheetNum}\" r:id=\"{$rId}\" />";
 
-            $sheetRelsXml[] = "<Relationship Id=\"{$rId}\" "
-                . "Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" "
-                . "Target=\"worksheets/sheet{$sheetNum}.xml\"/>";
+            $sheetRelsXml[] = "
+<Relationship Id=\"{$rId}\" "
+                . " Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" "
+                . " Target=\"worksheets/sheet{$sheetNum}.xml\" />";
 
-            $contentParts[] = "<Override PartName=\"/xl/worksheets/sheet{$sheetNum}.xml\" "
-                . "ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>";
+            $contentParts[] = "
+<Override PartName=\"/xl/worksheets/sheet{$sheetNum}.xml\" "
+                . " ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\" />";
         }
 
         // sharedStrings
         $ssItems = '';
         foreach ($globalStrings as $s) {
-            $ssItems .= '<si><t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1) . '</t></si>';
+            $ssItems .= '<si>
+    <t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1) . '</t>
+</si>';
         }
         $ssCount = count($globalStrings);
-        $ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\" uniqueCount=\"{$ssCount}\">{$ssItems}</sst>";
+        $ssXml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\"
+    uniqueCount=\"{$ssCount}\">{$ssItems}</sst>";
 
         // styles
-        $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        $stylesXml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
             . '<fonts count="2">'
-            . '<font><sz val="11"/><name val="Calibri"/></font>'
-            . '<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>'
+            . '<font>
+            <sz val="11" />
+            <name val="Calibri" />
+        </font>'
+            . '<font><b />
+            <sz val="11" />
+            <name val="Calibri" />
+            <color rgb="FFFFFFFF" />
+        </font>'
             . '</fonts>'
             . '<fills count="4">'
-            . '<fill><patternFill patternType="none"/></fill>'
-            . '<fill><patternFill patternType="gray125"/></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FF5B21B6"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F3FF"/></patternFill></fill>'
+            . '<fill>
+            <patternFill patternType="none" />
+        </fill>'
+            . '<fill>
+            <patternFill patternType="gray125" />
+        </fill>'
+            . '<fill>
+            <patternFill patternType="solid">
+                <fgColor rgb="FF5B21B6" />
+            </patternFill>
+        </fill>'
+            . '<fill>
+            <patternFill patternType="solid">
+                <fgColor rgb="FFF5F3FF" />
+            </patternFill>
+        </fill>'
             . '</fills>'
             . '<borders count="2">'
-            . '<border><left/><right/><top/><bottom/><diagonal/></border>'
+            . '<border>
+            <left />
+            <right />
+            <top />
+            <bottom />
+            <diagonal />
+        </border>'
             . '<border>'
-            . '<left style="thin"><color rgb="FFCCCCCC"/></left>'
-            . '<right style="thin"><color rgb="FFCCCCCC"/></right>'
-            . '<top style="thin"><color rgb="FFCCCCCC"/></top>'
-            . '<bottom style="thin"><color rgb="FFCCCCCC"/></bottom>'
+            . '<left style="thin">
+                <color rgb="FFCCCCCC" />
+            </left>'
+            . '<right style="thin">
+                <color rgb="FFCCCCCC" />
+            </right>'
+            . '<top style="thin">
+                <color rgb="FFCCCCCC" />
+            </top>'
+            . '<bottom style="thin">
+                <color rgb="FFCCCCCC" />
+            </bottom>'
             . '</border>'
             . '</borders>'
-            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+            . '<cellStyleXfs count="1">
+        <xf numFmtId="0" fontId="0" fillId="0" borderId="0" />
+    </cellStyleXfs>'
             . '<cellXfs count="3">'
-            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/>'
-            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0"><alignment horizontal="center"/></xf>'
-            . '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0"/>'
-            . '</cellXfs>'
+            . '
+        <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" />'
+            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0">
+            <alignment horizontal="center" />
+        </xf>'
+            . '
+        <xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" />'
+            . '
+    </cellXfs>'
             . '</styleSheet>';
 
         // workbook
-        $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        $workbookXml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
-            . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            . "<sheets>{$workbookSheets}</sheets></workbook>";
+            . ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . "<sheets>{$workbookSheets}</sheets>
+</workbook>";
 
         // workbook.xml.rels — sheets + sharedStrings + styles
         $sharedRId = 'rId' . (count($sheets) + 1);
         $stylesRId = 'rId' . (count($sheets) + 2);
-        $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        $workbookRels = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             . implode('', $sheetRelsXml)
-            . "<Relationship Id=\"{$sharedRId}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/>"
-            . "<Relationship Id=\"{$stylesRId}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>"
-            . '</Relationships>';
+            . "
+    <Relationship Id=\"{$sharedRId}\"
+        Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\"
+        Target=\"sharedStrings.xml\" />"
+            . "
+    <Relationship Id=\"{$stylesRId}\"
+        Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\" />"
+            . '
+</Relationships>';
 
-        $rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        $rootRels = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
-            . '</Relationships>';
+            . '
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+        Target="xl/workbook.xml" />'
+            . '
+</Relationships>';
 
-        $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        $contentTypes = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-            . '<Default Extension="xml" ContentType="application/xml"/>'
-            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-            . '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
-            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . '
+    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />'
+            . '
+    <Default Extension="xml" ContentType="application/xml" />'
+            . '
+    <Override PartName="/xl/workbook.xml"
+        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" />'
+            . '
+    <Override PartName="/xl/sharedStrings.xml"
+        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" />'
+            . '
+    <Override PartName="/xl/styles.xml"
+        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml" />'
             . implode('', $contentParts)
-            . '</Types>';
+            . '
+</Types>';
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx_multi_');
         $zip = new \ZipArchive();
