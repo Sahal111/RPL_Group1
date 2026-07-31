@@ -1461,7 +1461,10 @@ class MasterDataGuruController extends Controller
      */
     public function downloadTemplate()
     {
-        // ── Sheet 1: Data Utama (tabel gurus) ──────────────────────────
+        // NUPTK contoh — satu guru, semua sheet pakai NUPTK yang sama
+        $nuptk = '1234567890123456';
+
+        // ── Sheet 1: Data Utama ─────────────────────────────────────────
         $sheetUtamaHeaders = [
             'nuptk*',
             'nip',
@@ -1506,10 +1509,10 @@ class MasterDataGuruController extends Controller
         ];
         $sheetUtamaExample = [
             [
-                '1234567890123456',
+                $nuptk,
                 '199001012015011001',
                 '',
-                '',
+                'G-123456',
                 '',
                 '3201010101900001',
                 '3201010101900001',
@@ -1545,74 +1548,31 @@ class MasterDataGuruController extends Controller
                 '9',
                 'SK-001/2015',
                 '2015-01-01',
-                'Kemendikbud'
-            ],
-            [
-                '9876543210987654',
-                '',
-                '',
-                '',
-                '',
-                '3201020202910002',
-                '',
-                'Siti Rahayu',
-                '',
-                'S.Pd',
-                'P',
-                'Depok',
-                '1991-02-02',
-                'Islam',
-                'B',
-                'WNI',
-                'Aktif',
-                'Rahayu',
-                '08987654321',
-                '08987654321',
-                'siti.rahayu@email.com',
-                'Jl. Margonda No.5',
-                '003',
-                '001',
-                '',
-                'Beji',
-                'Beji',
-                'Kota Depok',
-                'Jawa Barat',
-                '16424',
-                'Guru Mapel',
-                'GTT',
-                'Aktif',
-                '2018-07-01',
-                '',
-                '',
-                '6',
-                '',
-                '',
-                ''
-            ],
+                'Kemendikbud',
+            ]
         ];
 
-        // ── Sheet 2: Keluarga & Anak (guru_keluargas + guru_anaks) ─────
+        // ── Sheet 2: Keluarga & Anak ────────────────────────────────────
         $sheetKeluargaHeaders = [
             'nuptk* (harus ada di Sheet1)',
-            // keluarga
             'status_perkawinan',
             'nama_pasangan',
             'nik_pasangan',
             'pekerjaan_pasangan',
             'jumlah_anak',
-            // anak (bisa diulang untuk anak ke-2 dst di baris baru dengan nuptk sama)
             'nama_anak',
             'jenis_kelamin_anak (L/P)',
             'tanggal_lahir_anak (YYYY-MM-DD)',
             'urutan_anak',
         ];
         $sheetKeluargaExample = [
-            ['1234567890123456', 'Menikah', 'Dewi Rahayu', '3201019001010001', 'Karyawan Swasta', '2', 'Muhammad Rizki', 'L', '2015-03-10', '1'],
-            ['1234567890123456', '', '', '', '', '', 'Fatimah Azzahra', 'P', '2017-07-22', '2'],
-            ['9876543210987654', 'Menikah', 'Budi Santoso', '3201011001910002', 'Wiraswasta', '1', 'Budi Junior', 'L', '2019-05-15', '1'],
+            // baris 1: data keluarga + anak pertama
+            [$nuptk, 'Menikah', 'Dewi Rahayu', '3201019001010001', 'Karyawan Swasta', '2', 'Muhammad Rizki', 'L', '2015-03-10', '1'],
+            // baris 2: anak kedua — kolom keluarga dikosongkan, NUPTK sama
+            [$nuptk, '', '', '', '', '', 'Fatimah Azzahra', 'P', '2017-07-22', '2'],
         ];
 
-        // ── Sheet 3: Rekening & Administrasi (guru_rekenings) ──────────
+        // ── Sheet 3: Rekening ───────────────────────────────────────────
         $sheetRekeningHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'nama_bank',
@@ -1627,11 +1587,22 @@ class MasterDataGuruController extends Controller
             'tunjangan_profesi',
         ];
         $sheetRekeningExample = [
-            ['1234567890123456', 'BRI', '1234567890', 'Ahmad Fauzi', 'BRI Cabang Bogor', '12.345.678.9-012.000', '0001234567890', '00087654321', '3500000', '500000', '1500000'],
-            ['9876543210987654', 'BCA', '9876543210', 'Siti Rahayu', 'BCA KCP Depok', '', '0009876543210', '', '2500000', '250000', ''],
+            [
+                $nuptk,
+                'BRI',
+                '001234567890',
+                'Ahmad Fauzi',
+                'BRI Cabang Bogor Kota',
+                '12.345.678.9-012.000',
+                '0001234567890',
+                '00087654321',
+                '3500000',
+                '500000',
+                '1500000',
+            ]
         ];
 
-        // ── Sheet 4: Pendidikan (guru_pendidikans) ──────────────────────
+        // ── Sheet 4: Pendidikan ─────────────────────────────────────────
         $sheetPendidikanHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'jenjang (SD/SMP/SMA-SMK/D1/D2/D3/D4/S1/S2/S3)*',
@@ -1643,12 +1614,13 @@ class MasterDataGuruController extends Controller
             'no_ijazah',
         ];
         $sheetPendidikanExample = [
-            ['1234567890123456', 'S1', 'Universitas Pendidikan Indonesia', 'PGSD', 'Pendidikan Guru SD', '2008', '2012', 'IJZ-2012-001'],
-            ['1234567890123456', 'S2', 'Universitas Negeri Jakarta', 'Manajemen Pendidikan', '', '2013', '2015', 'IJZ-2015-002'],
-            ['9876543210987654', 'S1', 'Universitas Negeri Bandung', 'Pendidikan Matematika', '', '2009', '2013', 'IJZ-2013-003'],
+            // S1 — pendidikan terakhir sebelum S2
+            [$nuptk, 'S1', 'Universitas Pendidikan Indonesia', 'PGSD', 'Pendidikan Guru SD', '2008', '2012', 'IJZ-S1-2012-001'],
+            // S2 — pendidikan tertinggi
+            [$nuptk, 'S2', 'Universitas Negeri Jakarta', 'Manajemen Pendidikan', '', '2013', '2015', 'IJZ-S2-2015-001'],
         ];
 
-        // ── Sheet 5: Sertifikasi (guru_sertifikasis) ────────────────────
+        // ── Sheet 5: Sertifikasi ────────────────────────────────────────
         $sheetSertifikasiHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'jenis_sertifikasi*',
@@ -1661,11 +1633,20 @@ class MasterDataGuruController extends Controller
             'expired_at (YYYY-MM-DD)',
         ];
         $sheetSertifikasiExample = [
-            ['1234567890123456', 'Guru Kelas SD', 'SERT-2016-001', '12345678901234', '2016', 'UPI Bandung', 'Guru Kelas SD', '2016-12-01', ''],
-            ['9876543210987654', 'Guru Matematika', 'SERT-2018-002', '98765432101234', '2018', 'UNJ Jakarta', 'Pendidikan Matematika', '2018-06-15', ''],
+            [
+                $nuptk,
+                'Guru Kelas SD',
+                'SERT-2016-001',
+                '12345678901234',
+                '2016',
+                'UPI Bandung',
+                'Guru Kelas SD',
+                '2016-12-01',
+                '',
+            ]
         ];
 
-        // ── Sheet 6: Diklat / Pelatihan (guru_diklats) ─────────────────
+        // ── Sheet 6: Diklat ─────────────────────────────────────────────
         $sheetDiklatHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'nama_diklat*',
@@ -1680,11 +1661,11 @@ class MasterDataGuruController extends Controller
             'keterangan',
         ];
         $sheetDiklatExample = [
-            ['1234567890123456', 'Pelatihan Kurikulum Merdeka', 'Kemendikbud', 'bimtek', 'Nasional', '2023-07-10', '2023-07-14', '32', 'peserta', 'BT-2023-001', 'Implementasi K-Merdeka'],
-            ['9876543210987654', 'Workshop Penilaian Autentik', 'Dinas Pendidikan Kota', 'workshop', 'Kabupaten-Kota', '2022-11-05', '2022-11-06', '16', 'peserta', 'WS-2022-015', ''],
+            [$nuptk, 'Pelatihan Kurikulum Merdeka', 'Kemendikbud', 'bimtek', 'Nasional', '2023-07-10', '2023-07-14', '32', 'peserta', 'BT-2023-001', 'Implementasi Kurikulum Merdeka'],
+            [$nuptk, 'Workshop Penilaian Autentik', 'Dinas Pendidikan Kota Bogor', 'workshop', 'Kabupaten-Kota', '2022-11-05', '2022-11-06', '16', 'peserta', 'WS-2022-015', ''],
         ];
 
-        // ── Sheet 7: Jabatan (guru_jabatans) ───────────────────────────
+        // ── Sheet 7: Jabatan ────────────────────────────────────────────
         $sheetJabatanHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'jenis_jabatan (Struktural/Fungsional/Tambahan)*',
@@ -1705,11 +1686,13 @@ class MasterDataGuruController extends Controller
             'uraian_tugas',
         ];
         $sheetJabatanExample = [
-            ['1234567890123456', 'Fungsional', 'Guru Madya', 'SDN Contoh', 'Kemendikbud', 'III/c', 'Penata', 'Pengangkatan Baru', 'PNS', 'SK-2020-001', '2020-01-01', 'Kepala Dinas', '2020-01-01', '', 'Aktif', '1', ''],
-            ['9876543210987654', 'Tambahan', 'Bendahara', 'MI Nurul Huda 3', 'Yayasan', '', '', 'Pengangkatan Baru', 'GTT', 'SK-YY-2021-003', '2021-07-01', 'Ketua Yayasan', '2021-07-01', '2023-06-30', 'Berakhir', '0', 'Mengelola keuangan sekolah'],
+            // jabatan lama — sudah berakhir
+            [$nuptk, 'Fungsional', 'Guru Pertama', 'MI Nurul Huda 3', 'Kemendikbud', 'III/a', 'Penata Muda', 'Pengangkatan Baru', 'PNS', 'SK-2015-001', '2015-01-01', 'Kepala Dinas Kota Bogor', '2015-01-01', '2019-12-31', 'Berakhir', '0', ''],
+            // jabatan aktif sekarang
+            [$nuptk, 'Fungsional', 'Guru Madya', 'MI Nurul Huda 3', 'Kemendikbud', 'III/c', 'Penata', 'Kenaikan Jabatan', 'PNS', 'SK-2020-001', '2020-01-01', 'Kepala Dinas Kota Bogor', '2020-01-01', '', 'Aktif', '1', 'Mengajar kelas IV-VI'],
         ];
 
-        // ── Sheet 8: Inpassing (guru_inpassings) ───────────────────────
+        // ── Sheet 8: Inpassing ──────────────────────────────────────────
         $sheetInpassingHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'no_sk*',
@@ -1720,10 +1703,18 @@ class MasterDataGuruController extends Controller
             'angka_kredit',
         ];
         $sheetInpassingExample = [
-            ['1234567890123456', 'SK-INP-2021-001', '2021-03-01', '2021-04-01', 'III/c', 'Guru Madya', '300.50'],
+            [
+                $nuptk,
+                'SK-INP-2021-001',
+                '2021-03-01',
+                '2021-04-01',
+                'III/c',
+                'Guru Madya',
+                '300.50',
+            ]
         ];
 
-        // ── Sheet 9: Mutasi (guru_mutasi) ──────────────────────────────
+        // ── Sheet 9: Mutasi ─────────────────────────────────────────────
         $sheetMutasiHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'jenis_mutasi (Masuk/Keluar/Internal)*',
@@ -1737,10 +1728,21 @@ class MasterDataGuruController extends Controller
             'keterangan',
         ];
         $sheetMutasiExample = [
-            ['1234567890123456', 'Masuk', 'SDN Budi Luhur', '20217891', 'MI Nurul Huda 3', '20123456', '2015-01-01', 'SK-MUT-2015-001', '2014-12-15', 'Mutasi atas permintaan sendiri'],
+            [
+                $nuptk,
+                'Masuk',
+                'SDN Budi Luhur 1 Bogor',
+                '20217891',
+                'MI Nurul Huda 3',
+                '20123456',
+                '2015-01-01',
+                'SK-MUT-2015-001',
+                '2014-12-15',
+                'Mutasi atas permintaan sendiri',
+            ]
         ];
 
-        // ── Sheet 10: Kompetensi (guru_kompetensi) ─────────────────────
+        // ── Sheet 10: Kompetensi ────────────────────────────────────────
         $sheetKompetensiHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'jenis (bahasa/it/bidang_keahlian/lainnya)*',
@@ -1749,12 +1751,12 @@ class MasterDataGuruController extends Controller
             'keterangan',
         ];
         $sheetKompetensiExample = [
-            ['1234567890123456', 'bahasa', 'Bahasa Inggris', 'Menengah', 'TOEFL 450'],
-            ['1234567890123456', 'it', 'Microsoft Office', 'Mahir', ''],
-            ['9876543210987654', 'bidang_keahlian', 'Matematika SMP', 'Ahli', 'Instruktur Olimpiade Kab'],
+            [$nuptk, 'bahasa', 'Bahasa Inggris', 'Menengah', 'TOEFL 450'],
+            [$nuptk, 'it', 'Microsoft Office', 'Mahir', 'Word, Excel, PowerPoint'],
+            [$nuptk, 'bidang_keahlian', 'Pendidikan Dasar', 'Ahli', 'Spesialisasi kelas rendah'],
         ];
 
-        // ── Sheet 11: Kontak Darurat (guru_kontak_darurat) ─────────────
+        // ── Sheet 11: Kontak Darurat ────────────────────────────────────
         $sheetKontakHeaders = [
             'nuptk* (harus ada di Sheet1)',
             'nama*',
@@ -1764,28 +1766,61 @@ class MasterDataGuruController extends Controller
             'is_primary (1/0)',
         ];
         $sheetKontakExample = [
-            ['1234567890123456', 'Dewi Rahayu', 'Istri', '081234567899', 'Jl. Raya Bogor No.10', '1'],
-            ['9876543210987654', 'Budi Santoso', 'Suami', '089876543210', 'Jl. Margonda No.5', '1'],
+            // kontak utama
+            [$nuptk, 'Dewi Rahayu', 'Istri', '081234567899', 'Jl. Raya Bogor No.10, Cibuluh, Bogor Utara', '1'],
+            // kontak alternatif
+            [$nuptk, 'Hasan Fauzi', 'Kakak', '081298765432', 'Jl. Sudirman No.5, Bogor Tengah', '0'],
         ];
 
-        // ── Sheet Petunjuk ─────────────────────────────────────────────
-        $sheetPetunjukHeaders = ['PETUNJUK PENGISIAN'];
+        // ── Sheet Petunjuk ──────────────────────────────────────────────
+        $sheetPetunjukHeaders = ['PETUNJUK PENGISIAN TEMPLATE IMPORT GURU'];
         $sheetPetunjukExample = [
-            ['Sheet1 (Data Utama): Wajib diisi. Satu baris = satu guru. Kolom bertanda * wajib diisi.'],
-            ['Sheet2 (Keluarga & Anak): Isi data keluarga dan anak. Anak ke-2 dst: baris baru dengan NUPTK yang sama, kolom keluarga dikosongkan.'],
-            ['Sheet3 (Rekening): Rekening & data administrasi keuangan guru.'],
-            ['Sheet4 (Pendidikan): Riwayat pendidikan. Bisa lebih dari 1 baris per guru.'],
-            ['Sheet5 (Sertifikasi): Sertifikasi guru. Bisa lebih dari 1 baris per guru.'],
-            ['Sheet6 (Diklat): Riwayat pelatihan/diklat. Bisa lebih dari 1 baris per guru.'],
-            ['Sheet7 (Jabatan): Riwayat jabatan. Bisa lebih dari 1 baris per guru.'],
-            ['Sheet8 (Inpassing): Data inpassing guru.'],
-            ['Sheet9 (Mutasi): Riwayat mutasi guru.'],
-            ['Sheet10 (Kompetensi): Kompetensi guru. Bisa lebih dari 1 baris per guru.'],
-            ['Sheet11 (Kontak Darurat): Kontak darurat guru.'],
             [''],
-            ['PENTING: NUPTK di setiap sheet HARUS ada di Sheet1 (Data Utama). Jika guru belum ada di DB, pastikan ada di Sheet1 terlebih dahulu.'],
-            ['Format tanggal: YYYY-MM-DD (contoh: 2024-07-15)'],
-            ['Kolom opsional boleh dikosongkan. Kolom bertanda * wajib diisi.'],
+            ['CARA PENGGUNAAN:'],
+            ['1. Sheet "Data Utama" WAJIB diisi terlebih dahulu. Satu baris = satu guru.'],
+            ['2. Sheet lain bersifat opsional, diisi sesuai data yang tersedia.'],
+            ['3. Kolom bertanda * (bintang) wajib diisi, kolom lain boleh dikosongkan.'],
+            ['4. NUPTK di setiap sheet HARUS sama persis dengan NUPTK di sheet "Data Utama".'],
+            ['5. Format tanggal: YYYY-MM-DD (contoh: 2025-07-31).'],
+            ['6. Hapus baris contoh sebelum mengisi data asli, atau timpa langsung.'],
+            [''],
+            ['PENJELASAN TIAP SHEET:'],
+            ['Sheet "Data Utama"   — Data identitas & kepegawaian guru (tabel: gurus)'],
+            ['Sheet "Keluarga"     — Status perkawinan, pasangan, dan data anak (tabel: guru_keluargas + guru_anaks)'],
+            ['                       Untuk anak ke-2 dst: baris baru dengan NUPTK sama, kolom keluarga dikosongkan.'],
+            ['Sheet "Rekening"     — Rekening bank, NPWP, BPJS, dan tunjangan (tabel: guru_rekenings)'],
+            ['Sheet "Pendidikan"   — Riwayat pendidikan formal (tabel: guru_pendidikans). Bisa lebih dari 1 baris.'],
+            ['Sheet "Sertifikasi"  — Data sertifikat pendidik (tabel: guru_sertifikasis). Bisa lebih dari 1 baris.'],
+            ['Sheet "Diklat"       — Riwayat pelatihan/diklat (tabel: guru_diklats). Bisa lebih dari 1 baris.'],
+            ['Sheet "Jabatan"      — Riwayat jabatan struktural/fungsional (tabel: guru_jabatans). Bisa lebih dari 1 baris.'],
+            ['                       Kolom "is_current": isi 1 untuk jabatan aktif sekarang, 0 untuk riwayat.'],
+            ['Sheet "Inpassing"    — Data inpassing/penyetaraan jabatan (tabel: guru_inpassings).'],
+            ['Sheet "Mutasi"       — Riwayat mutasi masuk/keluar (tabel: guru_mutasi).'],
+            ['Sheet "Kompetensi"   — Kompetensi bahasa, IT, atau bidang keahlian (tabel: guru_kompetensi).'],
+            ['Sheet "Kontak Darurat" — Kontak darurat guru (tabel: guru_kontak_darurat).'],
+            ['                         Kolom "is_primary": isi 1 untuk kontak utama, 0 untuk alternatif.'],
+            [''],
+            ['NILAI YANG DIIZINKAN:'],
+            ['jenis_kelamin       : L atau P'],
+            ['agama               : Islam / Kristen / Katolik / Hindu / Buddha / Konghucu'],
+            ['status_keaktifan    : Aktif / Nonaktif / Pensiun / Meninggal'],
+            ['status_kepegawaian  : PNS / PPPK / GTY / GTT / Honorer / Kontrak'],
+            ['jenis_ptk           : Guru Kelas / Guru Mapel / Guru BK / Kepala Sekolah / Tenaga Kependidikan'],
+            ['jenjang pendidikan  : SD / SMP / SMA / SMK / D1 / D2 / D3 / D4 / S1 / S2 / S3'],
+            ['jenis diklat        : diklat / bimtek / workshop / seminar / pelatihan / kursus'],
+            ['tingkat diklat      : Kecamatan / Kabupaten-Kota / Provinsi / Nasional / Internasional'],
+            ['peran diklat        : peserta / narasumber / panitia / moderator'],
+            ['jenis jabatan       : Struktural / Fungsional / Tambahan'],
+            ['status jabatan      : Aktif / Berakhir / Nonaktif / Mutasi / Pensiun'],
+            ['status kepeg jabatan: CPNS / PNS / PPPK / GTY / GTT / Honorer / Kontrak'],
+            ['jenis mutasi        : Masuk / Keluar / Internal'],
+            ['jenis kompetensi    : bahasa / it / bidang_keahlian / lainnya'],
+            ['tingkat kompetensi  : Dasar / Menengah / Mahir / Ahli'],
+            [''],
+            ['CATATAN:'],
+            ['- File hasil import dapat dipakai untuk import ulang tanpa perlu modifikasi (NUPTK yang sudah ada di DB akan diperbarui).'],
+            ['- File dokumen (ijazah, sertifikat, SK) tidak bisa diimport lewat Excel; upload manual via halaman detail guru.'],
+            ['- Jika ada error saat import, cek kolom NUPTK dan format tanggal terlebih dahulu.'],
         ];
 
         $sheets = [
@@ -3565,233 +3600,48 @@ class MasterDataGuruController extends Controller
     // ── Private: Multi-Sheet XLSX Builder ─────────────────────────────
     private function buildMultiSheetXlsx(array $sheets): string
     {
-        $globalStrings = [];
-        $addStr = function (string $s) use (&$globalStrings): int {
-            $key = array_search($s, $globalStrings, true);
-            if ($key === false) {
-                $globalStrings[] = $s;
-                return count($globalStrings) - 1;
-            }
-            return $key;
-        };
-
-        $sheetsXml = [];
-        $sheetRelsXml = [];
-        $contentParts = [];
-        $workbookSheets = '';
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0); // hapus sheet default
 
         foreach ($sheets as $si => $sheet) {
-            $sheetNum = $si + 1;
-            $sheetName = htmlspecialchars($sheet['name'], ENT_XML1);
-            $allRows = array_merge([$sheet['headers']], $sheet['rows']);
-            $colCount = max(array_map('count', $allRows));
+            $ws = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $sheet['name']);
+            $spreadsheet->addSheet($ws, $si);
 
-            // auto-column widths
-            $colWidths = array_fill(0, $colCount, 10);
-            foreach ($allRows as $row) {
+            // Header row
+            foreach ($sheet['headers'] as $ci => $header) {
+                $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
+                $cell = $ws->getCell("{$col}1");
+                $cell->setValue($header);
+                // Style header: bold, background ungu, teks putih
+                $cell->getStyle()->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                    'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '5B21B6']],
+                    'alignment' => ['horizontal' => 'center'],
+                ]);
+            }
+
+            // Data rows
+            foreach ($sheet['rows'] as $ri => $row) {
+                $rowNum = $ri + 2;
+                $bg = $ri % 2 === 0 ? 'FFFFFF' : 'F5F3FF';
                 foreach ($row as $ci => $val) {
-                    $len = mb_strlen((string) $val);
-                    if ($len > ($colWidths[$ci] ?? 10))
-                        $colWidths[$ci] = min($len + 4, 60);
+                    $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
+                    $cell = $ws->getCell("{$col}{$rowNum}");
+                    $cell->setValueExplicit((string) $val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    $cell->getStyle()->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
                 }
             }
 
-            $colDefsXml = '<cols>';
-            for ($ci = 0; $ci < $colCount; $ci++) {
-                $n = $ci + 1;
-                $colDefsXml .= "<col min=\"{$n}\" max=\"{$n}\" width=\"{$colWidths[$ci]}\" customWidth=\"1\"/>";
+            // Auto width
+            foreach (range(1, count($sheet['headers'])) as $colIdx) {
+                $ws->getColumnDimensionByColumn($colIdx)->setAutoSize(true);
             }
-            $colDefsXml .= '</cols>';
-
-            $sheetRowsXml = '';
-            foreach ($allRows as $ri => $row) {
-                $rowNum = $ri + 1;
-                $isHeader = $ri === 0;
-                $sAttr = $isHeader ? ' s="1"' : ($ri % 2 === 0 ? '' : ' s="2"');
-                $cellsXml = '';
-                foreach ($row as $ci => $val) {
-                    $col = $this->indexToColLetter($ci);
-                    $ref = "{$col}{$rowNum}";
-                    $idx = $addStr((string) $val);
-                    $cellsXml .= "<c r=\"{$ref}\" t=\"s\"{$sAttr}><v>{$idx}</v></c>";
-                }
-                $sheetRowsXml .= "<row r=\"{$rowNum}\">{$cellsXml}</row>";
-            }
-
-            $sheetsXml[$si] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-                . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-                . $colDefsXml . "<sheetData>{$sheetRowsXml}</sheetData>
-</worksheet>";
-
-            $rId = "rId{$sheetNum}";
-            $workbookSheets .= "
-<sheet name=\"{$sheetName}\" sheetId=\"{$sheetNum}\" r:id=\"{$rId}\" />";
-
-            $sheetRelsXml[] = "
-<Relationship Id=\"{$rId}\" "
-                . " Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" "
-                . " Target=\"worksheets/sheet{$sheetNum}.xml\" />";
-
-            $contentParts[] = "
-<Override PartName=\"/xl/worksheets/sheet{$sheetNum}.xml\" "
-                . " ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\" />";
         }
 
-        // sharedStrings
-        $ssItems = '';
-        foreach ($globalStrings as $s) {
-            $ssItems .= '<si>
-    <t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1) . '</t>
-</si>';
-        }
-        $ssCount = count($globalStrings);
-        $ssXml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\"
-    uniqueCount=\"{$ssCount}\">{$ssItems}</sst>";
-
-        // styles
-        $stylesXml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . '<fonts count="2">'
-            . '<font>
-            <sz val="11" />
-            <name val="Calibri" />
-        </font>'
-            . '<font><b />
-            <sz val="11" />
-            <name val="Calibri" />
-            <color rgb="FFFFFFFF" />
-        </font>'
-            . '</fonts>'
-            . '<fills count="4">'
-            . '<fill>
-            <patternFill patternType="none" />
-        </fill>'
-            . '<fill>
-            <patternFill patternType="gray125" />
-        </fill>'
-            . '<fill>
-            <patternFill patternType="solid">
-                <fgColor rgb="FF5B21B6" />
-            </patternFill>
-        </fill>'
-            . '<fill>
-            <patternFill patternType="solid">
-                <fgColor rgb="FFF5F3FF" />
-            </patternFill>
-        </fill>'
-            . '</fills>'
-            . '<borders count="2">'
-            . '<border>
-            <left />
-            <right />
-            <top />
-            <bottom />
-            <diagonal />
-        </border>'
-            . '<border>'
-            . '<left style="thin">
-                <color rgb="FFCCCCCC" />
-            </left>'
-            . '<right style="thin">
-                <color rgb="FFCCCCCC" />
-            </right>'
-            . '<top style="thin">
-                <color rgb="FFCCCCCC" />
-            </top>'
-            . '<bottom style="thin">
-                <color rgb="FFCCCCCC" />
-            </bottom>'
-            . '</border>'
-            . '</borders>'
-            . '<cellStyleXfs count="1">
-        <xf numFmtId="0" fontId="0" fillId="0" borderId="0" />
-    </cellStyleXfs>'
-            . '<cellXfs count="3">'
-            . '
-        <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" />'
-            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0">
-            <alignment horizontal="center" />
-        </xf>'
-            . '
-        <xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" />'
-            . '
-    </cellXfs>'
-            . '</styleSheet>';
-
-        // workbook
-        $workbookXml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
-            . ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            . "<sheets>{$workbookSheets}</sheets>
-</workbook>";
-
-        // workbook.xml.rels — sheets + sharedStrings + styles
-        $sharedRId = 'rId' . (count($sheets) + 1);
-        $stylesRId = 'rId' . (count($sheets) + 2);
-        $workbookRels = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . implode('', $sheetRelsXml)
-            . "
-    <Relationship Id=\"{$sharedRId}\"
-        Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\"
-        Target=\"sharedStrings.xml\" />"
-            . "
-    <Relationship Id=\"{$stylesRId}\"
-        Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\" />"
-            . '
-</Relationships>';
-
-        $rootRels = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . '
-    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
-        Target="xl/workbook.xml" />'
-            . '
-</Relationships>';
-
-        $contentTypes = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            . '
-    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />'
-            . '
-    <Default Extension="xml" ContentType="application/xml" />'
-            . '
-    <Override PartName="/xl/workbook.xml"
-        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" />'
-            . '
-    <Override PartName="/xl/sharedStrings.xml"
-        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" />'
-            . '
-    <Override PartName="/xl/styles.xml"
-        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml" />'
-            . implode('', $contentParts)
-            . '
-</Types>';
-
-        $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx_multi_');
-        $zip = new \ZipArchive();
-        $zip->open($tmpFile, \ZipArchive::OVERWRITE);
-        $zip->addFromString('[Content_Types].xml', $contentTypes);
-        $zip->addFromString('_rels/.rels', $rootRels);
-        $zip->addFromString('xl/workbook.xml', $workbookXml);
-        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRels);
-        $zip->addFromString('xl/sharedStrings.xml', $ssXml);
-        $zip->addFromString('xl/styles.xml', $stylesXml);
-        foreach ($sheetsXml as $si => $sXml) {
-            $zip->addFromString('xl/worksheets/sheet' . ($si + 1) . '.xml', $sXml);
-        }
-        $zip->close();
-
-        $binary = file_get_contents($tmpFile);
-        unlink($tmpFile);
-        return $binary;
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        ob_start();
+        $writer->save('php://output');
+        return ob_get_clean();
     }
 
     // ── Private: Multi-Sheet XLSX Parser ──────────────────────────────

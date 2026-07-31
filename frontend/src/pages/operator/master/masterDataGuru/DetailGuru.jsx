@@ -2350,6 +2350,8 @@ function TabRiwayat({ nuptk, guru }) {
     onSuccess: () => {
       toast.success("Riwayat mutasi disimpan.");
       queryClient.invalidateQueries(["guru-mutasi", nuptk]);
+      queryClient.invalidateQueries(["guru-detail", nuptk]);
+      queryClient.invalidateQueries(["master-guru"]);
       setModalMutasi(null);
     },
     onError: (e) =>
@@ -2362,6 +2364,8 @@ function TabRiwayat({ nuptk, guru }) {
     onSuccess: () => {
       toast.success("Riwayat mutasi dihapus.");
       queryClient.invalidateQueries(["guru-mutasi", nuptk]);
+      queryClient.invalidateQueries(["guru-detail", nuptk]);
+      queryClient.invalidateQueries(["master-guru"]);
     },
     onError: (e) =>
       toast.error(e.response?.data?.message ?? "Gagal menghapus."),
