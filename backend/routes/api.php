@@ -142,8 +142,13 @@ Route::middleware('auth:sanctum')->group(function () {
             // Kompetensi
             Route::get('/guru/{nuptk}/kompetensi', [MasterDataGuruController::class, 'getKompetensi']);
             Route::post('/guru/{nuptk}/kompetensi', [MasterDataGuruController::class, 'storeKompetensi']);
+            Route::put('/guru/{nuptk}/kompetensi/{id}', [MasterDataGuruController::class, 'updateKompetensi']);
             Route::delete('/guru/{nuptk}/kompetensi/{id}', [MasterDataGuruController::class, 'destroyKompetensi']);
 
+            // Penugasan (Plot Guru Mapel)
+            Route::get('/guru/{nuptk}/penugasan', [MasterDataGuruController::class, 'getPenugasan']);
+            Route::post('/guru/{nuptk}/penugasan', [MasterDataGuruController::class, 'storePenugasan']);
+            Route::delete('/guru/{nuptk}/penugasan/{id}', [MasterDataGuruController::class, 'destroyPenugasan']);
             // Diklat / pelatihan
             Route::get('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'getDiklat']);
             Route::post('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'storeDiklat']);

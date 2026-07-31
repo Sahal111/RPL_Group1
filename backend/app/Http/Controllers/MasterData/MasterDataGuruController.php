@@ -16,6 +16,7 @@ use App\Models\GuruKompetensi;
 use App\Models\GuruDiklat;
 use App\Models\GuruMutasi;
 use App\Models\GuruPkg;
+use App\Models\PlotGuruMapel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +84,12 @@ class MasterDataGuruController extends Controller
             'mutasi',
             'pkgs.tahunAjaran',
             'pkgs.semester',
+            'plotGuruMapels.mapel:id,kode,nama_mapel,kelompok',
+            'plotGuruMapels.kelas:id,nama_kelas,tingkat',
+            'plotGuruMapels.tahunAjaran:id,tahun',
+            'plotGuruMapels.semester:id,nama',
+            'jadwals.mapel:id,nama_mapel',
+            'jadwals.kelas:id,nama_kelas',
         ])->where('nuptk', $nuptk)->firstOrFail();
 
         return response()->json(['success' => true, 'data' => $guru]);
@@ -891,11 +898,106 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Kompetensi ditambahkan.', 'data' => $data], 201);
     }
 
+    public function updateKompetensi(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $komp = $guru->kompetensi()->findOrFail($id);
+
+        $request->validate([
+            'jenis' => 'required|in:bahasa,it,bidang_keahlian,lainnya',
+            'nama' => 'required|string|max:150',
+            'tingkat' => 'nullable|in:Dasar,Menengah,Mahir,Ahli',
+            'keterangan' => 'nullable|string|max:255',
+        ]);
+
+        $komp->update($request->only(['jenis', 'nama', 'tingkat', 'keterangan']));
+        return response()->json(['success' => true, 'message' => 'Kompetensi diperbarui.', 'data' => $komp]);
+    }
+
     public function destroyKompetensi($nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $guru->kompetensi()->findOrFail($id)->delete();
         return response()->json(['success' => true, 'message' => 'Kompetensi dihapus.']);
+    }
+
+    // ────────────────────────────────────────────────────────
+    // SECTION: PENUGASAN (PLOT GURU MAPEL)
+    // ────────────────────────────────────────────────────────
+
+    public function getPenugasan($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $data = $guru->plotGuruMapels()
+            ->with([
+                'mapel:id,kode,nama_mapel,kelompok',
+                'kelas:id,nama_kelas,tingkat',
+                'tahunAjaran:id,tahun',
+                'semester:id,nama',
+            ])
+            ->orderByDesc('tahun_ajaran_id')
+            ->get();
+        return response()->json(['success' => true, 'data' => $data]);
+    }
+
+    public function storePenugasan(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $request->validate([
+            'mapel_id' => 'required|integer|exists:mapels,id',
+            'kelas_id' => 'required|integer|exists:kelas,id',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajarans,id',
+            'semester_id' => 'required|integer|exists:semesters,id',
+            'beban_jam' => 'nullable|integer|min:1|max:40',
+        ]);
+
+        // cek duplikat
+        $exists = PlotGuruMapel::where('guru_id', $guru->id)
+            ->where('mapel_id', $request->mapel_id)
+            ->where('kelas_id', $request->kelas_id)
+            ->where('semester_id', $request->semester_id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Penugasan ini sudah ada untuk semester yang dipilih.',
+            ], 422);
+        }
+
+        $plot = PlotGuruMapel::create([
+            'guru_id' => $guru->id,
+            'mapel_id' => $request->mapel_id,
+            'kelas_id' => $request->kelas_id,
+            'tahun_ajaran_id' => $request->tahun_ajaran_id,
+            'semester_id' => $request->semester_id,
+            'beban_jam' => $request->beban_jam ?? 0,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Penugasan berhasil ditambahkan.',
+            'data' => $plot->load([
+                'mapel:id,kode,nama_mapel,kelompok',
+                'kelas:id,nama_kelas,tingkat',
+                'tahunAjaran:id,tahun',
+                'semester:id,nama',
+            ]),
+        ], 201);
+    }
+
+    public function destroyPenugasan($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $plot = $guru->plotGuruMapels()->findOrFail($id);
+
+        // hapus jadwal yang terkait dulu
+        \App\Models\JadwalPelajaran::where('plot_id', $plot->id)->delete();
+        $plot->delete();
+
+        return response()->json(['success' => true, 'message' => 'Penugasan dihapus beserta jadwalnya.']);
     }
 
     // ────────────────────────────────────────────────────────
