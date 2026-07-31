@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-07-30 14:14:20 +0000
+# Generation Time: 2026-07-31 02:53:27 +0000
 # ************************************************************
 
 
@@ -605,9 +605,9 @@ CREATE TABLE `guru_jabatans` (
   `tanggal_sk` date DEFAULT NULL COMMENT 'Tanggal penerbitan SK',
   `tmt_jabatan` date DEFAULT NULL COMMENT 'Tanggal Mulai Tugas jabatan ini berlaku efektif',
   `tanggal_selesai` date DEFAULT NULL COMMENT 'Tanggal jabatan ini berakhir. NULL jika masih menjabat',
-  `masa_berlaku` date DEFAULT NULL,
   `alasan_berakhir` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `uraian_tugas` text COLLATE utf8mb4_unicode_ci,
+  `masa_berlaku` date DEFAULT NULL,
   `is_current` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1=Jabatan yang sedang aktif sekarang. Hanya satu per guru. Diupdate saat ada jabatan baru',
   `status_jabatan` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -628,14 +628,14 @@ CREATE TABLE `guru_jabatans` (
 LOCK TABLES `guru_jabatans` WRITE;
 /*!40000 ALTER TABLE `guru_jabatans` DISABLE KEYS */;
 
-INSERT INTO `guru_jabatans` (`id`, `guru_id`, `jenis_jabatan`, `jenis_pengangkatan`, `jabatan`, `unit_kerja`, `instansi_pengangkat`, `golongan`, `pangkat`, `status_kepegawaian`, `no_sk`, `pejabat_penandatangan`, `tanggal_sk`, `tmt_jabatan`, `tanggal_selesai`, `masa_berlaku`, `alasan_berakhir`, `uraian_tugas`, `is_current`, `status_jabatan`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`)
+INSERT INTO `guru_jabatans` (`id`, `guru_id`, `jenis_jabatan`, `jenis_pengangkatan`, `jabatan`, `unit_kerja`, `instansi_pengangkat`, `golongan`, `pangkat`, `status_kepegawaian`, `no_sk`, `pejabat_penandatangan`, `tanggal_sk`, `tmt_jabatan`, `tanggal_selesai`, `alasan_berakhir`, `uraian_tugas`, `masa_berlaku`, `is_current`, `status_jabatan`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`)
 VALUES
-	(1,5,'Fungsional',NULL,'guru','kemenag',NULL,'III/A','Penata Muda','Honorer','1234567890',NULL,'2026-07-08','2026-07-03','2026-07-04',NULL,NULL,'ftyffytftgyggygyghggh',1,NULL,'2026-07-27 08:08:10','2026-07-28 20:29:12','2026-07-28 20:29:12',1,1),
+	(1,5,'Fungsional',NULL,'guru','kemenag',NULL,'III/A','Penata Muda','Honorer','1234567890',NULL,'2026-07-08','2026-07-03','2026-07-04',NULL,'ftyffytftgyggygyghggh',NULL,1,NULL,'2026-07-27 08:08:10','2026-07-28 20:29:12','2026-07-28 20:29:12',1,1),
 	(2,5,'Fungsional',NULL,'Guru Kelas','yayasan Nurul Huda',NULL,NULL,NULL,'PNS','45755678606776',NULL,'2026-06-30','2026-06-25','2026-07-30',NULL,NULL,NULL,1,NULL,'2026-07-28 20:48:48','2026-07-28 20:53:04','2026-07-28 20:53:04',1,1),
-	(3,5,'Struktural',NULL,'bendahara','kemenag',NULL,'III/A','Penata muda','CPNS','234567890',NULL,'2026-07-05','2026-07-12','2026-07-31',NULL,NULL,'rtdytfuyghbkmnhyjthfgvnbm',0,NULL,'2026-07-29 06:23:49','2026-07-29 06:24:21','2026-07-29 06:24:21',1,1),
-	(4,5,'Fungsional','Pelaksana Tugas (Plt)','Guru Kelas','yayasan Nurul Huda',NULL,'III/c','penata muda','PNS','45755678606776','Kepala Madrasah','2026-06-25','2026-06-20','2026-07-21','2026-07-03','Lainnya','ftegudcshbjxkncdc',0,'Aktif','2026-07-29 06:24:53','2026-07-29 14:35:23',NULL,1,1),
-	(5,5,'Fungsional',NULL,'refvgbgg','rrfgtrgfv',NULL,'III/A','dsyrufhbj','GTT','1234567890',NULL,'2026-07-26','2026-07-19','2026-07-31',NULL,NULL,'feyvghdbjd ,m',0,NULL,'2026-07-29 06:27:13','2026-07-29 06:27:36','2026-07-29 06:27:36',1,1),
-	(6,5,'Tambahan','Perpanjangan','Walikelas','MI Nurul Huda 3','Nurul Huda','IV/c','guru Pertama','Honorer','1234567890','Kepala Madrasah','2026-07-24','2026-07-17','2026-07-29','2026-07-29','Habis Masa Jabatan','sdfghjnkiebjdnm',1,'Aktif','2026-07-29 14:31:55','2026-07-29 14:35:23',NULL,1,1);
+	(3,5,'Struktural',NULL,'bendahara','kemenag',NULL,'III/A','Penata muda','CPNS','234567890',NULL,'2026-07-05','2026-07-12','2026-07-31',NULL,'rtdytfuyghbkmnhyjthfgvnbm',NULL,0,NULL,'2026-07-29 06:23:49','2026-07-29 06:24:21','2026-07-29 06:24:21',1,1),
+	(4,5,'Fungsional','Pelaksana Tugas (Plt)','Guru Kelas','yayasan Nurul Huda',NULL,'III/c','penata muda','PNS','45755678606776','Kepala Madrasah','2026-06-25','2026-06-20','2026-07-21','Lainnya','ftegudcshbjxkncdc','2026-07-03',0,'Aktif','2026-07-29 06:24:53','2026-07-29 14:35:23',NULL,1,1),
+	(5,5,'Fungsional',NULL,'refvgbgg','rrfgtrgfv',NULL,'III/A','dsyrufhbj','GTT','1234567890',NULL,'2026-07-26','2026-07-19','2026-07-31',NULL,'feyvghdbjd ,m',NULL,0,NULL,'2026-07-29 06:27:13','2026-07-29 06:27:36','2026-07-29 06:27:36',1,1),
+	(6,5,'Tambahan','Perpanjangan','Walikelas','MI Nurul Huda 3','Nurul Huda','IV/c','guru Pertama','Honorer','1234567890','Kepala Madrasah','2026-07-24','2026-07-17','2026-07-29','Habis Masa Jabatan','sdfghjnkiebjdnm','2026-07-29',1,'Aktif','2026-07-29 14:31:55','2026-07-29 14:35:23',NULL,1,1);
 
 /*!40000 ALTER TABLE `guru_jabatans` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -732,14 +732,21 @@ DROP TABLE IF EXISTS `guru_mutasi`;
 CREATE TABLE `guru_mutasi` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `guru_id` bigint unsigned NOT NULL COMMENT 'FK ke gurus.id',
-  `jenis_mutasi` enum('Masuk','Keluar','Internal') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Masuk=dari sekolah lain, Keluar=ke sekolah lain, Internal=pindah tugas dalam sekolah',
+  `jenis_mutasi` enum('Masuk','Keluar','Internal','Penugasan Sementara','Kembali Bertugas') COLLATE utf8mb4_unicode_ci NOT NULL,
   `sekolah_asal` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nama sekolah asal',
   `npsn_asal` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `sekolah_tujuan` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nama sekolah tujuan',
   `npsn_tujuan` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `tanggal_mutasi` date NOT NULL,
+  `tmt_mutasi` date DEFAULT NULL,
+  `tanggal_berakhir` date DEFAULT NULL,
+  `jabatan_sebelum` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `jabatan_sesudah` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status_kepegawaian` enum('PNS','PPPK','GTY','GTT') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `no_sk` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Nomor SK mutasi',
   `tanggal_sk` date DEFAULT NULL,
+  `instansi_penerbit_sk` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `alasan_mutasi` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `file_sk` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Path file SK mutasi yang diupload',
   `keterangan` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1625,7 +1632,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-30 21:09:53',NULL,'2026-07-20 21:48:50','2026-07-30 21:09:53');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-07-31 09:52:03',NULL,'2026-07-20 21:48:50','2026-07-31 09:52:03');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;

@@ -153,7 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
             // Mutasi
             Route::get('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'getMutasi']);
             Route::post('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'storeMutasi']);
-            Route::post('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'updateMutasi']);
+            Route::put('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'updateMutasi']);
             Route::delete('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'destroyMutasi']);
 
             // Jabatan

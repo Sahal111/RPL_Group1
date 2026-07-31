@@ -1823,6 +1823,7 @@ function TabRiwayat({ nuptk, guru }) {
     });
   };
 
+  /* ── Mutasi query & mutations ── */
   const [modalMutasi, setModalMutasi] = useState(null); // null | 'add' | object
 
   const { data: mutasis = [] } = useQuery({
@@ -1841,7 +1842,7 @@ function TabRiwayat({ nuptk, guru }) {
         ([k, v]) => v != null && v !== "" && fd.append(k, v),
       );
       return id
-        ? api.post(`/operator/master-data/guru/${nuptk}/mutasi/${id}`, fd, {
+        ? api.put(`/operator/master-data/guru/${nuptk}/mutasi/${id}`, fd, {
             headers: { "Content-Type": "multipart/form-data" },
           })
         : api.post(`/operator/master-data/guru/${nuptk}/mutasi`, fd, {
@@ -1871,19 +1872,28 @@ function TabRiwayat({ nuptk, guru }) {
   const handleMutasiSubmit = (e) => {
     e.preventDefault();
     const f = e.target;
+    const val = (name) => f.elements[name]?.value ?? "";
+    const file = (name) => f.elements[name]?.files?.[0] ?? null;
     saveMutasi.mutate({
       id: modalMutasi?.id,
       data: {
-        jenis_mutasi: f.jenis_mutasi.value,
-        sekolah_asal: f.sekolah_asal.value,
-        npsn_asal: f.npsn_asal.value,
-        sekolah_tujuan: f.sekolah_tujuan.value,
-        npsn_tujuan: f.npsn_tujuan.value,
-        tanggal_mutasi: f.tanggal_mutasi.value,
-        no_sk: f.no_sk.value,
-        tanggal_sk: f.tanggal_sk.value,
-        keterangan: f.keterangan.value,
-        file_sk: f.file_sk.files[0] ?? null,
+        jenis_mutasi: val("jenis_mutasi"),
+        sekolah_asal: val("sekolah_asal"),
+        npsn_asal: val("npsn_asal"),
+        sekolah_tujuan: val("sekolah_tujuan"),
+        npsn_tujuan: val("npsn_tujuan"),
+        jabatan_sebelum: val("jabatan_sebelum"),
+        jabatan_sesudah: val("jabatan_sesudah"),
+        tanggal_mutasi: val("tanggal_mutasi"),
+        tmt_mutasi: val("tmt_mutasi"),
+        tanggal_berakhir: val("tanggal_berakhir"),
+        no_sk: val("no_sk"),
+        tanggal_sk: val("tanggal_sk"),
+        instansi_penerbit_sk: val("instansi_penerbit_sk"),
+        status_kepegawaian: val("status_kepegawaian"),
+        alasan_mutasi: val("alasan_mutasi"),
+        keterangan: val("keterangan"),
+        file_sk: file("file_sk"),
       },
     });
   };
@@ -2139,288 +2149,649 @@ function TabRiwayat({ nuptk, guru }) {
             onClick={() => setModalMutasi("add")}
             className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>{" "}
+            <span className="material-symbols-outlined text-[18px]">add</span>
             Tambah
           </button>
         </div>
+
         {mutasis.length === 0 ? (
           <p className="text-sm text-text-secondary text-center py-8">
             Belum ada riwayat mutasi.
           </p>
         ) : (
           <div className="space-y-3">
-            {mutasis.map((m) => (
-              <div
-                key={m.id}
-                className="p-4 bg-surface-container-low rounded-xl border border-border-light"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                          m.jenis_mutasi === "Masuk"
-                            ? "bg-success/10 text-success"
-                            : m.jenis_mutasi === "Keluar"
-                              ? "bg-error/10 text-error"
-                              : "bg-warning/10 text-warning"
-                        }`}
-                      >
-                        {m.jenis_mutasi}
-                      </span>
-                      <p className="font-semibold text-sm text-text-primary">
-                        {m.jenis_mutasi === "Masuk"
-                          ? m.sekolah_asal || "–"
-                          : m.sekolah_tujuan || "–"}
-                      </p>
+            {mutasis.map((m) => {
+              const badgeColor =
+                m.jenis_mutasi === "Masuk"
+                  ? "bg-success/10 text-success"
+                  : m.jenis_mutasi === "Keluar"
+                    ? "bg-error/10 text-error"
+                    : m.jenis_mutasi === "Internal"
+                      ? "bg-warning/10 text-warning"
+                      : m.jenis_mutasi === "Penugasan Sementara"
+                        ? "bg-blue-100 text-blue-600"
+                        : "bg-surface-container text-text-secondary";
+
+              return (
+                <div
+                  key={m.id}
+                  className="p-4 bg-surface-container-low rounded-xl border border-border-light"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Baris 1: badge jenis + SK */}
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}
+                        >
+                          {m.jenis_mutasi}
+                        </span>
+                        {m.no_sk && (
+                          <span className="text-[11px] text-text-secondary font-mono">
+                            SK: {m.no_sk}
+                          </span>
+                        )}
+                        {m.tanggal_sk && (
+                          <span className="text-[11px] text-text-secondary">
+                            {fmtDate(m.tanggal_sk)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Baris 2: Sekolah asal → tujuan */}
+                      {(m.sekolah_asal || m.sekolah_tujuan) && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-sm font-medium text-text-primary truncate">
+                            {m.sekolah_asal || "–"}
+                          </span>
+                          <span className="material-symbols-outlined text-[16px] text-text-secondary flex-shrink-0">
+                            arrow_forward
+                          </span>
+                          <span className="text-sm font-medium text-text-primary truncate">
+                            {m.sekolah_tujuan || "–"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Baris 3: Jabatan sebelum → sesudah */}
+                      {(m.jabatan_sebelum || m.jabatan_sesudah) && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs text-text-secondary truncate">
+                            {m.jabatan_sebelum || "–"}
+                          </span>
+                          <span className="material-symbols-outlined text-[14px] text-text-secondary flex-shrink-0">
+                            arrow_forward
+                          </span>
+                          <span className="text-xs text-text-secondary truncate">
+                            {m.jabatan_sesudah || "–"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Baris 4: Tanggal & TMT */}
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        <span className="text-xs text-text-secondary">
+                          Tanggal Mutasi: <b>{fmtDate(m.tanggal_mutasi)}</b>
+                        </span>
+                        {m.tmt_mutasi && (
+                          <span className="text-xs text-text-secondary">
+                            TMT: <b>{fmtDate(m.tmt_mutasi)}</b>
+                          </span>
+                        )}
+                        {m.status_kepegawaian && (
+                          <span className="text-xs text-text-secondary">
+                            Status: <b>{m.status_kepegawaian}</b>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Baris 5: Instansi & Alasan */}
+                      {(m.instansi_penerbit_sk || m.alasan_mutasi) && (
+                        <div className="flex flex-wrap gap-3 mt-0.5">
+                          {m.instansi_penerbit_sk && (
+                            <span className="text-xs text-text-secondary">
+                              Penerbit: {m.instansi_penerbit_sk}
+                            </span>
+                          )}
+                          {m.alasan_mutasi && (
+                            <span className="text-xs text-text-secondary">
+                              Alasan: {m.alasan_mutasi}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Baris 6: Keterangan */}
+                      {m.keterangan && (
+                        <p className="text-xs text-text-secondary italic mt-0.5">
+                          {m.keterangan}
+                        </p>
+                      )}
                     </div>
-                    {m.jenis_mutasi === "Internal" && (
-                      <p className="text-xs text-text-secondary">
-                        {m.sekolah_asal} → {m.sekolah_tujuan}
-                      </p>
-                    )}
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      {fmtDate(m.tanggal_mutasi)}
-                      {m.no_sk ? ` · SK: ${m.no_sk}` : ""}
-                    </p>
-                    {m.keterangan && (
-                      <p className="text-xs text-text-secondary italic mt-0.5">
-                        {m.keterangan}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-1.5 flex-shrink-0">
-                    {m.file_sk && (
+
+                    {/* Tombol aksi */}
+                    <div className="flex gap-1 flex-shrink-0 ml-1">
+                      {m.file_sk && (
+                        <button
+                          onClick={() =>
+                            downloadFile(m.file_sk, `SK_Mutasi_${m.id}`)
+                          }
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                          title="Download SK"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            download
+                          </span>
+                        </button>
+                      )}
                       <button
-                        onClick={() =>
-                          downloadFile(m.file_sk, `SK_Mutasi_${m.id}`)
-                        }
-                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Download SK Mutasi"
+                        onClick={() => setModalMutasi(m)}
+                        className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
+                        title="Edit"
                       >
                         <span className="material-symbols-outlined text-[18px]">
-                          download
+                          edit
                         </span>
                       </button>
-                    )}
-                    <button
-                      onClick={() => setModalMutasi(m)}
-                      className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
-                      title="Edit"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        edit
-                      </span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        confirm("Hapus riwayat mutasi ini?") &&
-                        deleteMutasi.mutate(m.id)
-                      }
-                      className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
-                      title="Hapus"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        delete
-                      </span>
-                    </button>
+                      <button
+                        onClick={() =>
+                          confirm("Hapus riwayat mutasi ini?") &&
+                          deleteMutasi.mutate(m.id)
+                        }
+                        className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
+                        title="Hapus"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          delete
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* ── MODAL MUTASI ── */}
-      {modalMutasi && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg border border-border-light max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-light sticky top-0 bg-surface z-10">
-              <h3 className="font-bold text-text-primary">
-                {modalMutasi === "add" ? "Tambah" : "Edit"} Riwayat Mutasi
-              </h3>
-              <button
-                onClick={() => setModalMutasi(null)}
-                className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  close
-                </span>
-              </button>
-            </div>
-            <form onSubmit={handleMutasiSubmit} className="px-6 py-5 space-y-4">
-              {/* Jenis Mutasi */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">
-                  Jenis Mutasi <span className="text-danger">*</span>
-                </label>
-                <select
-                  name="jenis_mutasi"
-                  defaultValue={modalMutasi?.jenis_mutasi ?? ""}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-                >
-                  <option value="">-- Pilih Jenis --</option>
-                  <option value="Masuk">Masuk</option>
-                  <option value="Keluar">Keluar</option>
-                  <option value="Internal">Internal</option>
-                </select>
-              </div>
+      {/* ── MODAL MUTASI (Dinamis per Jenis) ── */}
+      {modalMutasi &&
+        (() => {
+          const isAdd = modalMutasi === "add";
+          const [jenisDipilih, setJenisDipilih] = React.useState(
+            isAdd ? "" : (modalMutasi.jenis_mutasi ?? ""),
+          );
 
-              {/* Sekolah Asal & Tujuan */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Sekolah Asal
-                  </label>
-                  <input
-                    name="sekolah_asal"
-                    type="text"
-                    defaultValue={modalMutasi?.sekolah_asal ?? ""}
-                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-                    placeholder="Nama sekolah asal"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    NPSN Asal
-                  </label>
-                  <input
-                    name="npsn_asal"
-                    type="text"
-                    maxLength={10}
-                    defaultValue={modalMutasi?.npsn_asal ?? ""}
-                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm font-mono"
-                    placeholder="NPSN"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Sekolah Tujuan
-                  </label>
-                  <input
-                    name="sekolah_tujuan"
-                    type="text"
-                    defaultValue={modalMutasi?.sekolah_tujuan ?? ""}
-                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-                    placeholder="Nama sekolah tujuan"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    NPSN Tujuan
-                  </label>
-                  <input
-                    name="npsn_tujuan"
-                    type="text"
-                    maxLength={10}
-                    defaultValue={modalMutasi?.npsn_tujuan ?? ""}
-                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm font-mono"
-                    placeholder="NPSN"
-                  />
-                </div>
-              </div>
+          const show = {
+            sekolah_asal: ["Masuk", "Internal", "Penugasan Sementara"].includes(
+              jenisDipilih,
+            ),
+            npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
+            sekolah_tujuan: [
+              "Keluar",
+              "Internal",
+              "Penugasan Sementara",
+            ].includes(jenisDipilih),
+            npsn_tujuan: ["Keluar", "Penugasan Sementara"].includes(
+              jenisDipilih,
+            ),
+            jabatan_sebelum: [
+              "Masuk",
+              "Keluar",
+              "Internal",
+              "Penugasan Sementara",
+              "Kembali Bertugas",
+            ].includes(jenisDipilih),
+            jabatan_sesudah: ["Internal", "Kembali Bertugas"].includes(
+              jenisDipilih,
+            ),
+            tanggal_berakhir: ["Penugasan Sementara"].includes(jenisDipilih),
+            tmt_mutasi: [
+              "Masuk",
+              "Internal",
+              "Penugasan Sementara",
+              "Kembali Bertugas",
+            ].includes(jenisDipilih),
+            alasan_mutasi: [
+              "Keluar",
+              "Internal",
+              "Penugasan Sementara",
+            ].includes(jenisDipilih),
+          };
 
-              {/* Tanggal Mutasi */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">
-                  Tanggal Mutasi <span className="text-danger">*</span>
-                </label>
-                <input
-                  name="tanggal_mutasi"
-                  type="date"
-                  required
-                  defaultValue={modalMutasi?.tanggal_mutasi?.slice(0, 10) ?? ""}
-                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-                />
-              </div>
+          const labelTanggalMutasi =
+            {
+              Masuk: "Tanggal Bergabung",
+              Keluar: "Tanggal Keluar",
+              Internal: "Tanggal Mutasi",
+              "Penugasan Sementara": "Tanggal Mulai Penugasan",
+              "Kembali Bertugas": "Tanggal Kembali Bertugas",
+            }[jenisDipilih] ?? "Tanggal Mutasi";
 
-              {/* No SK & Tanggal SK */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    No. SK
-                  </label>
-                  <input
-                    name="no_sk"
-                    type="text"
-                    defaultValue={modalMutasi?.no_sk ?? ""}
-                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-                    placeholder="Nomor SK"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Tanggal SK
-                  </label>
-                  <input
-                    name="tanggal_sk"
-                    type="date"
-                    defaultValue={modalMutasi?.tanggal_sk?.slice(0, 10) ?? ""}
-                    className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
-                  />
-                </div>
-              </div>
+          const descJenis = {
+            Masuk: "Guru pindah dari sekolah lain ke sekolah ini.",
+            Keluar: "Guru pindah ke sekolah lain.",
+            Internal: "Perubahan unit kerja atau jabatan di sekolah yang sama.",
+            "Penugasan Sementara":
+              "Guru diperbantukan ke sekolah lain untuk sementara.",
+            "Kembali Bertugas":
+              "Guru kembali setelah diperbantukan atau cuti panjang.",
+          }[jenisDipilih];
 
-              {/* Keterangan */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">
-                  Keterangan
-                </label>
-                <textarea
-                  name="keterangan"
-                  rows={2}
-                  defaultValue={modalMutasi?.keterangan ?? ""}
-                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm resize-none"
-                  placeholder="Keterangan tambahan (opsional)"
-                />
-              </div>
+          const inputCls =
+            "w-full px-4 py-2.5 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm";
 
-              {/* Upload File SK */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">
-                  File SK Mutasi
-                  {modalMutasi?.file_sk && (
-                    <span className="ml-2 text-xs text-success font-normal">
-                      (sudah ada file)
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+              <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl border border-border-light max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border-light flex-shrink-0">
+                  <div>
+                    <h3 className="font-bold text-text-primary text-base">
+                      {isAdd ? "Tambah" : "Edit"} Riwayat Mutasi
+                    </h3>
+                    {descJenis && (
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {descJenis}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setModalMutasi(null)}
+                    className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      close
                     </span>
-                  )}
-                </label>
-                <input
-                  name="file_sk"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="w-full px-4 py-3 rounded-xl border border-border-light bg-surface-container-lowest text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                />
-                <p className="text-xs text-text-secondary mt-1">
-                  PDF / JPG / PNG, maks 5MB
-                </p>
-              </div>
+                  </button>
+                </div>
 
-              {/* Footer */}
-              <div className="flex gap-2 pt-2 border-t border-border-light">
-                <button
-                  type="button"
-                  onClick={() => setModalMutasi(null)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+                <form
+                  onSubmit={handleMutasiSubmit}
+                  className="px-6 py-5 space-y-4 overflow-y-auto flex-1"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saveMutasi.isPending}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
-                >
-                  {saveMutasi.isPending ? "Menyimpan..." : "Simpan"}
-                </button>
+                  {/* ── Jenis Mutasi ── */}
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1.5">
+                      Jenis Mutasi <span className="text-error">*</span>
+                    </label>
+                    <select
+                      name="jenis_mutasi"
+                      value={jenisDipilih}
+                      onChange={(e) => setJenisDipilih(e.target.value)}
+                      required
+                      className={inputCls}
+                    >
+                      <option value="">-- Pilih Jenis Mutasi --</option>
+                      <option value="Masuk">
+                        🟢 Mutasi Masuk — guru dari sekolah lain
+                      </option>
+                      <option value="Keluar">
+                        🔴 Mutasi Keluar — guru pindah ke sekolah lain
+                      </option>
+                      <option value="Internal">
+                        🟡 Mutasi Internal — perubahan jabatan/unit di sekolah
+                        ini
+                      </option>
+                      <option value="Penugasan Sementara">
+                        🔵 Penugasan Sementara — diperbantukan ke sekolah lain
+                      </option>
+                      <option value="Kembali Bertugas">
+                        ⚪ Kembali Bertugas — kembali dari penugasan/cuti
+                      </option>
+                    </select>
+                  </div>
+
+                  {/* Placeholder saat belum pilih jenis */}
+                  {!jenisDipilih && (
+                    <div className="flex flex-col items-center justify-center py-10 text-text-secondary/60">
+                      <span className="material-symbols-outlined text-[48px] mb-2">
+                        swap_horiz
+                      </span>
+                      <p className="text-sm">
+                        Pilih jenis mutasi untuk menampilkan form
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── Field dinamis, hanya tampil jika jenis sudah dipilih ── */}
+                  {jenisDipilih && (
+                    <>
+                      {/* Sekolah Asal */}
+                      {show.sekolah_asal && (
+                        <div
+                          className={
+                            show.npsn_asal ? "grid grid-cols-3 gap-3" : ""
+                          }
+                        >
+                          <div className={show.npsn_asal ? "col-span-2" : ""}>
+                            <label className="block text-sm font-medium text-text-primary mb-1.5">
+                              Sekolah Asal <span className="text-error">*</span>
+                            </label>
+                            <input
+                              name="sekolah_asal"
+                              type="text"
+                              required
+                              defaultValue={modalMutasi?.sekolah_asal ?? ""}
+                              placeholder={
+                                jenisDipilih === "Masuk"
+                                  ? "Nama sekolah asal guru"
+                                  : jenisDipilih === "Penugasan Sementara"
+                                    ? "Sekolah induk guru ini"
+                                    : "Sekolah sebelum mutasi"
+                              }
+                              className={inputCls}
+                            />
+                          </div>
+                          {show.npsn_asal && (
+                            <div>
+                              <label className="block text-sm font-medium text-text-primary mb-1.5">
+                                NPSN Asal
+                              </label>
+                              <input
+                                name="npsn_asal"
+                                type="text"
+                                maxLength={10}
+                                defaultValue={modalMutasi?.npsn_asal ?? ""}
+                                placeholder="10 digit"
+                                className={`${inputCls} font-mono`}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sekolah Tujuan */}
+                      {show.sekolah_tujuan && (
+                        <div
+                          className={
+                            show.npsn_tujuan ? "grid grid-cols-3 gap-3" : ""
+                          }
+                        >
+                          <div className={show.npsn_tujuan ? "col-span-2" : ""}>
+                            <label className="block text-sm font-medium text-text-primary mb-1.5">
+                              Sekolah Tujuan{" "}
+                              <span className="text-error">*</span>
+                            </label>
+                            <input
+                              name="sekolah_tujuan"
+                              type="text"
+                              required
+                              defaultValue={modalMutasi?.sekolah_tujuan ?? ""}
+                              placeholder={
+                                jenisDipilih === "Keluar"
+                                  ? "Sekolah tujuan guru"
+                                  : jenisDipilih === "Internal"
+                                    ? "Unit/jabatan tujuan di sekolah ini"
+                                    : "Sekolah tempat penugasan"
+                              }
+                              className={inputCls}
+                            />
+                          </div>
+                          {show.npsn_tujuan && (
+                            <div>
+                              <label className="block text-sm font-medium text-text-primary mb-1.5">
+                                NPSN Tujuan
+                              </label>
+                              <input
+                                name="npsn_tujuan"
+                                type="text"
+                                maxLength={10}
+                                defaultValue={modalMutasi?.npsn_tujuan ?? ""}
+                                placeholder="10 digit"
+                                className={`${inputCls} font-mono`}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Jabatan Sebelum & Sesudah */}
+                      {show.jabatan_sebelum && (
+                        <div
+                          className={
+                            show.jabatan_sesudah ? "grid grid-cols-2 gap-3" : ""
+                          }
+                        >
+                          <div>
+                            <label className="block text-sm font-medium text-text-primary mb-1.5">
+                              Jabatan Sebelum
+                            </label>
+                            <input
+                              name="jabatan_sebelum"
+                              type="text"
+                              defaultValue={modalMutasi?.jabatan_sebelum ?? ""}
+                              placeholder="Guru Kelas, Guru PAI, Wali Kelas, dll"
+                              className={inputCls}
+                            />
+                          </div>
+                          {show.jabatan_sesudah && (
+                            <div>
+                              <label className="block text-sm font-medium text-text-primary mb-1.5">
+                                Jabatan Sesudah
+                              </label>
+                              <input
+                                name="jabatan_sesudah"
+                                type="text"
+                                defaultValue={
+                                  modalMutasi?.jabatan_sesudah ?? ""
+                                }
+                                placeholder="Jabatan setelah mutasi"
+                                className={inputCls}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Tanggal Mutasi & TMT */}
+                      <div
+                        className={
+                          show.tmt_mutasi ? "grid grid-cols-2 gap-3" : ""
+                        }
+                      >
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            {labelTanggalMutasi}{" "}
+                            <span className="text-error">*</span>
+                          </label>
+                          <input
+                            name="tanggal_mutasi"
+                            type="date"
+                            required
+                            defaultValue={
+                              modalMutasi?.tanggal_mutasi
+                                ?.toString()
+                                .slice(0, 10) ?? ""
+                            }
+                            className={inputCls}
+                          />
+                        </div>
+                        {show.tmt_mutasi && (
+                          <div>
+                            <label className="block text-sm font-medium text-text-primary mb-1.5">
+                              TMT Mutasi
+                              <span className="ml-1 text-xs text-text-secondary font-normal">
+                                (Tanggal Mulai Berlaku)
+                              </span>
+                            </label>
+                            <input
+                              name="tmt_mutasi"
+                              type="date"
+                              defaultValue={
+                                modalMutasi?.tmt_mutasi
+                                  ?.toString()
+                                  .slice(0, 10) ?? ""
+                              }
+                              className={inputCls}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tanggal Berakhir (khusus Penugasan Sementara) */}
+                      {show.tanggal_berakhir && (
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            Tanggal Berakhir Penugasan
+                          </label>
+                          <input
+                            name="tanggal_berakhir"
+                            type="date"
+                            defaultValue={
+                              modalMutasi?.tanggal_berakhir
+                                ?.toString()
+                                .slice(0, 10) ?? ""
+                            }
+                            className={inputCls}
+                          />
+                          <p className="text-xs text-text-secondary mt-1">
+                            Kosongkan jika belum ditentukan
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Nomor SK & Tanggal SK */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            Nomor SK
+                          </label>
+                          <input
+                            name="no_sk"
+                            type="text"
+                            defaultValue={modalMutasi?.no_sk ?? ""}
+                            placeholder="Nomor surat keputusan"
+                            className={inputCls}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            Tanggal SK
+                          </label>
+                          <input
+                            name="tanggal_sk"
+                            type="date"
+                            defaultValue={
+                              modalMutasi?.tanggal_sk
+                                ?.toString()
+                                .slice(0, 10) ?? ""
+                            }
+                            className={inputCls}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Instansi Penerbit SK & Status Kepegawaian */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            Instansi Penerbit SK
+                          </label>
+                          <input
+                            name="instansi_penerbit_sk"
+                            type="text"
+                            defaultValue={
+                              modalMutasi?.instansi_penerbit_sk ?? ""
+                            }
+                            placeholder="Kemenag, Yayasan, dll"
+                            className={inputCls}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            Status Kepegawaian
+                          </label>
+                          <select
+                            name="status_kepegawaian"
+                            defaultValue={modalMutasi?.status_kepegawaian ?? ""}
+                            className={inputCls}
+                          >
+                            <option value="">-- Pilih --</option>
+                            <option value="PNS">PNS</option>
+                            <option value="PPPK">PPPK</option>
+                            <option value="GTY">GTY</option>
+                            <option value="GTT">GTT</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Alasan Mutasi */}
+                      {show.alasan_mutasi && (
+                        <div>
+                          <label className="block text-sm font-medium text-text-primary mb-1.5">
+                            Alasan Mutasi
+                          </label>
+                          <input
+                            name="alasan_mutasi"
+                            type="text"
+                            defaultValue={modalMutasi?.alasan_mutasi ?? ""}
+                            placeholder="Permintaan sendiri, kebutuhan organisasi, promosi, dll"
+                            className={inputCls}
+                          />
+                        </div>
+                      )}
+
+                      {/* Keterangan */}
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">
+                          Keterangan
+                        </label>
+                        <textarea
+                          name="keterangan"
+                          rows={2}
+                          defaultValue={modalMutasi?.keterangan ?? ""}
+                          placeholder="Catatan tambahan (opsional)"
+                          className={`${inputCls} resize-none`}
+                        />
+                      </div>
+
+                      {/* Dokumen SK */}
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">
+                          Dokumen SK Mutasi
+                          {!isAdd && modalMutasi?.file_sk && (
+                            <span className="ml-2 text-xs text-success font-normal">
+                              (file sudah ada — kosongkan jika tidak ingin
+                              mengganti)
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          name="file_sk"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                        />
+                        <p className="text-xs text-text-secondary mt-1">
+                          PDF / JPG / PNG, maks 5 MB
+                        </p>
+                      </div>
+
+                      {/* Footer tombol */}
+                      <div className="flex gap-2 pt-2 border-t border-border-light">
+                        <button
+                          type="button"
+                          onClick={() => setModalMutasi(null)}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={saveMutasi.isPending}
+                          className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+                        >
+                          {saveMutasi.isPending ? "Menyimpan..." : "Simpan"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </form>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+          );
+        })()}
 
       {/* ── SECTION 3a: CARD JABATAN AKTIF ── */}
       {(() => {

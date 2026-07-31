@@ -29,12 +29,14 @@ class GuruMutasi extends Model
         'alasan_mutasi',
         'file_sk',
         'keterangan',
+        'tanggal_berakhir',
     ];
 
     protected $casts = [
         'tanggal_mutasi' => 'date',
         'tmt_mutasi' => 'date',
         'tanggal_sk' => 'date',
+        'tanggal_berakhir' => 'date',
     ];
 
     public function guru()
