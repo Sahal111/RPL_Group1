@@ -145,6 +145,15 @@ function TabIdentitas({ guru, onGoToRiwayat }) {
             <InfoRow label="No. Kartu Keluarga" value={guru.no_kk} mono />
             <InfoRow label="No. Karpeg" value={guru.no_karpeg} mono />
             <InfoRow
+              label="No. Karis / Karsu"
+              value={guru.no_karis_karsu}
+              mono
+            />
+            <InfoRow
+              label="Jenis Kelamin"
+              value={guru.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
+            />
+            <InfoRow
               label="Jenis Kelamin"
               value={guru.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
             />
@@ -1989,12 +1998,12 @@ function TabKeluarga({ guru }) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   TAB 5 — Dokumen
+   TAB 5 — Dokumen (lengkap: upload manual + ringkasan dari data pribadi)
    ══════════════════════════════════════════════════════════ */
-function TabDokumen({ nuptk }) {
+function TabDokumen({ nuptk, guru }) {
   const queryClient = useQueryClient();
   const [modalUpload, setModalUpload] = useState(false);
-  const [modalEdit, setModalEdit] = useState(null); // null | object dokumen
+  const [modalEdit, setModalEdit] = useState(null);
   const fileRef = useRef();
 
   const KATEGORI_OPTS = [
@@ -2049,13 +2058,9 @@ function TabDokumen({ nuptk }) {
 
   const editDokumen = useMutation({
     mutationFn: ({ id, fd }) =>
-      api.post(
-        `/operator/master-data/guru/${nuptk}/dokumen/${id}?_method=PUT`,
-        fd,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      ),
+      api.post(`/operator/master-data/guru/${nuptk}/dokumen/${id}`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
     onSuccess: () => {
       toast.success("Dokumen berhasil diperbarui.");
       queryClient.invalidateQueries(["guru-dokumen", nuptk]);
@@ -2081,7 +2086,10 @@ function TabDokumen({ nuptk }) {
     fd.append("nama_dokumen", f.nama_dokumen.value);
     fd.append("nomor_dokumen", f.nomor_dokumen.value);
     fd.append("tanggal_dokumen", f.tanggal_dokumen.value);
+    fd.append("tanggal_berlaku", f.tanggal_berlaku.value);
+    fd.append("tanggal_kadaluarsa", f.tanggal_kadaluarsa.value);
     fd.append("penerbit", f.penerbit.value);
+    fd.append("keterangan", f.keterangan.value);
     if (f.file.files[0]) fd.append("file", f.file.files[0]);
     uploadDokumen.mutate(fd);
   };
@@ -2094,9 +2102,29 @@ function TabDokumen({ nuptk }) {
     fd.append("nama_dokumen", f.nama_dokumen.value);
     fd.append("nomor_dokumen", f.nomor_dokumen.value);
     fd.append("tanggal_dokumen", f.tanggal_dokumen.value);
+    fd.append("tanggal_berlaku", f.tanggal_berlaku.value);
+    fd.append("tanggal_kadaluarsa", f.tanggal_kadaluarsa.value);
     fd.append("penerbit", f.penerbit.value);
+    fd.append("keterangan", f.keterangan.value);
     if (f.file.files[0]) fd.append("file", f.file.files[0]);
     editDokumen.mutate({ id: modalEdit.id, fd });
+  };
+
+  const handleDownload = async (dokumenId, namaFile) => {
+    try {
+      const res = await api.get(
+        `/operator/master-data/guru/${nuptk}/dokumen/${dokumenId}/download`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = namaFile ?? "dokumen";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Gagal mendownload file.");
+    }
   };
 
   const fmtSize = (bytes) => {
@@ -2118,30 +2146,174 @@ function TabDokumen({ nuptk }) {
     return icons[kategori] ?? "description";
   };
 
-  const handleDownload = async (dokumenId, namaFile) => {
-    try {
-      const res = await api.get(
-        `/operator/master-data/guru/${nuptk}/dokumen/${dokumenId}/download`,
-        { responseType: "blob" },
-      );
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = namaFile ?? "dokumen";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Gagal mendownload file.");
-    }
+  // ── Kumpulkan dokumen dari data pribadi guru ──
+  const pendidikans = guru?.pendidikans ?? [];
+  const sertifikasis = guru?.sertifikasis ?? [];
+  const inpassings = guru?.inpassings ?? [];
+  const diklats = guru?.diklats ?? [];
+
+  const isExpired = (tgl) => tgl && new Date(tgl) < new Date();
+  const isNearExpiry = (tgl) => {
+    if (!tgl) return false;
+    const diff = new Date(tgl) - new Date();
+    return diff > 0 && diff < 1000 * 60 * 60 * 24 * 90; // 90 hari
   };
+
+  const ExpBadge = ({ tgl }) => {
+    if (!tgl) return null;
+    if (isExpired(tgl))
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-error/10 text-error">
+          Kadaluarsa {fmtDate(tgl)}
+        </span>
+      );
+    if (isNearExpiry(tgl))
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warning/10 text-warning">
+          Exp {fmtDate(tgl)}
+        </span>
+      );
+    return (
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/10 text-success">
+        Berlaku s/d {fmtDate(tgl)}
+      </span>
+    );
+  };
+
+  const DokumenForm = ({ defaultValues = {}, isPending, onClose }) => (
+    <div className="space-y-4">
+      <Field label="Kategori Dokumen" required>
+        <select
+          name="kategori"
+          required
+          defaultValue={defaultValues.kategori ?? ""}
+          className={inputCls}
+        >
+          <option value="">-- Pilih kategori --</option>
+          {KATEGORI_OPTS.map((k) => (
+            <option key={k.value} value={k.value}>
+              {k.label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Nama Dokumen">
+        <input
+          name="nama_dokumen"
+          defaultValue={defaultValues.nama_dokumen ?? ""}
+          className={inputCls}
+          placeholder="Kosongkan untuk pakai nama kategori"
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Nomor Dokumen">
+          <input
+            name="nomor_dokumen"
+            defaultValue={defaultValues.nomor_dokumen ?? ""}
+            className={inputCls}
+            placeholder="No. seri / nomor dokumen"
+          />
+        </Field>
+        <Field label="Tanggal Dokumen">
+          <input
+            name="tanggal_dokumen"
+            type="date"
+            defaultValue={defaultValues.tanggal_dokumen?.slice(0, 10) ?? ""}
+            className={inputCls}
+          />
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Tanggal Berlaku">
+          <input
+            name="tanggal_berlaku"
+            type="date"
+            defaultValue={defaultValues.tanggal_berlaku?.slice(0, 10) ?? ""}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Tanggal Kadaluarsa">
+          <input
+            name="tanggal_kadaluarsa"
+            type="date"
+            defaultValue={defaultValues.tanggal_kadaluarsa?.slice(0, 10) ?? ""}
+            className={inputCls}
+          />
+        </Field>
+      </div>
+      <Field label="Penerbit / Instansi">
+        <input
+          name="penerbit"
+          defaultValue={defaultValues.penerbit ?? ""}
+          className={inputCls}
+          placeholder="Contoh: Dukcapil, Kemenag, dll."
+        />
+      </Field>
+      <Field label="Keterangan">
+        <textarea
+          name="keterangan"
+          rows={2}
+          defaultValue={defaultValues.keterangan ?? ""}
+          className={`${inputCls} resize-none`}
+          placeholder="Catatan tambahan (opsional)"
+        />
+      </Field>
+      <Field
+        label={
+          defaultValues.file_path
+            ? "Ganti File (opsional)"
+            : "File (PDF/JPG/PNG, maks 10MB)"
+        }
+        required={!defaultValues.file_path}
+      >
+        <input
+          ref={defaultValues.file_path ? undefined : fileRef}
+          name="file"
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          required={!defaultValues.file_path}
+          className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+        />
+        {defaultValues.file_path && (
+          <p className="text-xs text-text-secondary mt-1">
+            File saat ini:{" "}
+            <a
+              href={`${BASE_URL}/storage/${defaultValues.file_path}`}
+              target="_blank"
+              className="text-primary underline"
+            >
+              lihat
+            </a>
+          </p>
+        )}
+      </Field>
+      <div className="flex gap-2 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+        >
+          {isPending ? "Menyimpan..." : "Simpan"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
+      {/* ── SECTION 1: DOKUMEN UPLOAD MANUAL ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <SectionTitle
             icon="folder_open"
-            label="Dokumen Guru"
+            label="Dokumen Terupload"
             desc={`${dokumens.length} dokumen tersimpan`}
           />
           <button
@@ -2178,9 +2350,9 @@ function TabDokumen({ nuptk }) {
             {dokumens.map((d) => (
               <div
                 key={d.id}
-                className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
+                className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="material-symbols-outlined text-primary text-[22px]">
                     {iconByKategori(d.kategori)}
                   </span>
@@ -2189,7 +2361,7 @@ function TabDokumen({ nuptk }) {
                   <p className="text-sm font-semibold text-text-primary truncate">
                     {d.nama_dokumen ?? d.kategori}
                   </p>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                     {d.kategori && (
                       <span className="text-[11px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-medium">
                         {d.kategori}
@@ -2200,49 +2372,64 @@ function TabDokumen({ nuptk }) {
                         {fmtSize(d.file_size)}
                       </span>
                     )}
-                    <span className="text-xs text-text-secondary">
-                      {fmtDate(d.created_at)}
-                    </span>
                   </div>
                   {d.nomor_dokumen && (
                     <p className="text-xs text-text-secondary font-mono mt-0.5">
                       No: {d.nomor_dokumen}
                     </p>
                   )}
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button
-                    onClick={() => setModalEdit(d)}
-                    className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
-                    title="Edit dokumen"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      edit
-                    </span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleDownload(d.id, d.nama_dokumen ?? d.kategori)
-                    }
-                    className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                    title="Download"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      download
-                    </span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      confirm("Hapus dokumen ini?") &&
-                      deleteDokumen.mutate(d.id)
-                    }
-                    className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
-                    title="Hapus"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      delete
-                    </span>
-                  </button>
+                  {d.penerbit && (
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {d.penerbit}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {d.tanggal_berlaku && (
+                      <span className="text-[10px] text-text-secondary">
+                        Berlaku: {fmtDate(d.tanggal_berlaku)}
+                      </span>
+                    )}
+                    <ExpBadge tgl={d.tanggal_kadaluarsa} />
+                  </div>
+                  {d.keterangan && (
+                    <p className="text-xs text-text-secondary italic mt-0.5 line-clamp-1">
+                      {d.keterangan}
+                    </p>
+                  )}
+                  <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setModalEdit(d)}
+                      className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
+                      title="Edit"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        edit
+                      </span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDownload(d.id, d.nama_dokumen ?? d.kategori)
+                      }
+                      className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                      title="Download"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        download
+                      </span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        confirm("Hapus dokumen ini?") &&
+                        deleteDokumen.mutate(d.id)
+                      }
+                      className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
+                      title="Hapus"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        delete
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -2250,165 +2437,289 @@ function TabDokumen({ nuptk }) {
         )}
       </div>
 
+      {/* ── SECTION 2: DOKUMEN IJAZAH (dari riwayat pendidikan) ── */}
+      {pendidikans.some((p) => p.file_ijazah) && (
+        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+          <SectionTitle
+            icon="school"
+            label="Dokumen Ijazah"
+            desc={`${pendidikans.filter((p) => p.file_ijazah).length} file dari riwayat pendidikan`}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {pendidikans
+              .filter((p) => p.file_ijazah)
+              .map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-blue-500 text-[22px]">
+                      description
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-primary truncate">
+                      Ijazah {p.jenjang} — {p.nama_sekolah}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">
+                        ijazah
+                      </span>
+                      {p.tahun_lulus && (
+                        <span className="text-xs text-text-secondary">
+                          {p.tahun_lulus}
+                        </span>
+                      )}
+                    </div>
+                    {p.no_ijazah && (
+                      <p className="text-xs text-text-secondary font-mono mt-0.5">
+                        No: {p.no_ijazah}
+                      </p>
+                    )}
+                    {p.prodi && (
+                      <p className="text-xs text-text-secondary mt-0.5 truncate">
+                        {[p.prodi, p.jurusan].filter(Boolean).join(" / ")}
+                      </p>
+                    )}
+                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a
+                        href={`${BASE_URL}/storage/${p.file_ijazah}`}
+                        target="_blank"
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                        title="Buka file"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          open_in_new
+                        </span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 3: DOKUMEN SERTIFIKASI ── */}
+      {sertifikasis.some((s) => s.file_sertifikat) && (
+        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+          <SectionTitle
+            icon="workspace_premium"
+            label="Dokumen Sertifikasi"
+            desc={`${sertifikasis.filter((s) => s.file_sertifikat).length} file dari data sertifikasi`}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {sertifikasis
+              .filter((s) => s.file_sertifikat)
+              .map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-purple-500 text-[22px]">
+                      workspace_premium
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-primary truncate">
+                      {s.jenis_sertifikasi}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-medium">
+                        sertifikasi
+                      </span>
+                      {s.tahun_sertifikasi && (
+                        <span className="text-xs text-text-secondary">
+                          {s.tahun_sertifikasi}
+                        </span>
+                      )}
+                    </div>
+                    {s.nrg && (
+                      <p className="text-xs text-text-secondary font-mono mt-0.5">
+                        NRG: {s.nrg}
+                      </p>
+                    )}
+                    {s.lptk && (
+                      <p className="text-xs text-text-secondary mt-0.5 truncate">
+                        {s.lptk}
+                      </p>
+                    )}
+                    <div className="mt-1">
+                      <ExpBadge tgl={s.expired_at} />
+                    </div>
+                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a
+                        href={`${BASE_URL}/storage/${s.file_sertifikat}`}
+                        target="_blank"
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                        title="Buka file"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          open_in_new
+                        </span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 4: DOKUMEN INPASSING ── */}
+      {inpassings.some((i) => i.file_sk) && (
+        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+          <SectionTitle
+            icon="military_tech"
+            label="Dokumen SK Inpassing"
+            desc={`${inpassings.filter((i) => i.file_sk).length} file dari data inpassing`}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {inpassings
+              .filter((i) => i.file_sk)
+              .map((i) => (
+                <div
+                  key={i.id}
+                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-amber-500 text-[22px]">
+                      military_tech
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-primary truncate">
+                      SK Inpassing — {i.no_sk}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-medium">
+                        inpassing
+                      </span>
+                      {i.golongan_sesudah && (
+                        <span className="text-xs text-text-secondary font-mono">
+                          Gol. {i.golongan_sesudah}
+                        </span>
+                      )}
+                    </div>
+                    {i.jabatan_fungsional && (
+                      <p className="text-xs text-text-secondary mt-0.5 truncate">
+                        {i.jabatan_fungsional}
+                      </p>
+                    )}
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {fmtDate(i.tanggal_sk)}
+                    </p>
+                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a
+                        href={`${BASE_URL}/storage/${i.file_sk}`}
+                        target="_blank"
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                        title="Buka file"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          open_in_new
+                        </span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 5: DOKUMEN DIKLAT ── */}
+      {diklats.some((d) => d.file_sertifikat) && (
+        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+          <SectionTitle
+            icon="cast_for_education"
+            label="Sertifikat Diklat & Pelatihan"
+            desc={`${diklats.filter((d) => d.file_sertifikat).length} file dari riwayat diklat`}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {diklats
+              .filter((d) => d.file_sertifikat)
+              .map((d) => (
+                <div
+                  key={d.id}
+                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-green-500 text-[22px]">
+                      cast_for_education
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-primary truncate">
+                      {d.nama_diklat}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">
+                        diklat
+                      </span>
+                      {d.tingkat && (
+                        <span className="text-xs text-text-secondary">
+                          {d.tingkat}
+                        </span>
+                      )}
+                      {d.jumlah_jam && (
+                        <span className="text-xs text-text-secondary">
+                          {d.jumlah_jam} JP
+                        </span>
+                      )}
+                    </div>
+                    {d.penyelenggara && (
+                      <p className="text-xs text-text-secondary mt-0.5 truncate">
+                        {d.penyelenggara}
+                      </p>
+                    )}
+                    {d.no_sertifikat && (
+                      <p className="text-xs text-text-secondary font-mono mt-0.5">
+                        No: {d.no_sertifikat}
+                      </p>
+                    )}
+                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a
+                        href={`${BASE_URL}/storage/${d.file_sertifikat}`}
+                        target="_blank"
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                        title="Buka file"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          open_in_new
+                        </span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Modal Upload */}
       {modalUpload && (
         <Modal title="Upload Dokumen" onClose={() => setModalUpload(false)}>
-          <form onSubmit={handleUploadSubmit} className="space-y-4">
-            <Field label="Kategori Dokumen" required>
-              <select name="kategori" required className={inputCls}>
-                <option value="">-- Pilih kategori --</option>
-                {KATEGORI_OPTS.map((k) => (
-                  <option key={k.value} value={k.value}>
-                    {k.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Nama Dokumen">
-              <input
-                name="nama_dokumen"
-                className={inputCls}
-                placeholder="Kosongkan untuk pakai nama kategori"
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Nomor Dokumen">
-                <input
-                  name="nomor_dokumen"
-                  className={inputCls}
-                  placeholder="No. seri / nomor dokumen"
-                />
-              </Field>
-              <Field label="Tanggal Dokumen">
-                <input
-                  name="tanggal_dokumen"
-                  type="date"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-            <Field label="Penerbit / Instansi">
-              <input
-                name="penerbit"
-                className={inputCls}
-                placeholder="Contoh: Dukcapil, Kemenag, dll."
-              />
-            </Field>
-            <Field label="File (PDF/JPG/PNG, maks 10MB)" required>
-              <input
-                ref={fileRef}
-                name="file"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                required
-                className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-              />
-            </Field>
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setModalUpload(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={uploadDokumen.isPending}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
-              >
-                {uploadDokumen.isPending ? "Mengupload..." : "Upload"}
-              </button>
-            </div>
+          <form onSubmit={handleUploadSubmit}>
+            <DokumenForm
+              isPending={uploadDokumen.isPending}
+              onClose={() => setModalUpload(false)}
+            />
           </form>
         </Modal>
       )}
 
+      {/* Modal Edit */}
       {modalEdit && (
         <Modal title="Edit Dokumen" onClose={() => setModalEdit(null)}>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <Field label="Kategori Dokumen" required>
-              <select
-                name="kategori"
-                required
-                defaultValue={modalEdit.kategori}
-                className={inputCls}
-              >
-                <option value="">-- Pilih kategori --</option>
-                {KATEGORI_OPTS.map((k) => (
-                  <option key={k.value} value={k.value}>
-                    {k.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Nama Dokumen">
-              <input
-                name="nama_dokumen"
-                defaultValue={modalEdit.nama_dokumen ?? ""}
-                className={inputCls}
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Nomor Dokumen">
-                <input
-                  name="nomor_dokumen"
-                  defaultValue={modalEdit.nomor_dokumen ?? ""}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Tanggal Dokumen">
-                <input
-                  name="tanggal_dokumen"
-                  type="date"
-                  defaultValue={modalEdit.tanggal_dokumen?.slice(0, 10) ?? ""}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-            <Field label="Penerbit / Instansi">
-              <input
-                name="penerbit"
-                defaultValue={modalEdit.penerbit ?? ""}
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Ganti File (opsional)">
-              <input
-                name="file"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-              />
-              {modalEdit.file_path && (
-                <p className="text-xs text-text-secondary mt-1">
-                  File saat ini:{" "}
-                  <a
-                    href={`${BASE_URL}/storage/${modalEdit.file_path}`}
-                    target="_blank"
-                    className="text-primary underline"
-                  >
-                    lihat
-                  </a>
-                </p>
-              )}
-            </Field>
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setModalEdit(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={editDokumen.isPending}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
-              >
-                {editDokumen.isPending ? "Menyimpan..." : "Simpan"}
-              </button>
-            </div>
+          <form onSubmit={handleEditSubmit}>
+            <DokumenForm
+              defaultValues={modalEdit}
+              isPending={editDokumen.isPending}
+              onClose={() => setModalEdit(null)}
+            />
           </form>
         </Modal>
       )}
@@ -2425,8 +2736,54 @@ function ModalMutasi({
   onSubmit,
   isPending,
   jabatanAktif,
+  guruInfo,
+  lastMutasiKeluar,
 }) {
   const isAdd = modalMutasi === "add";
+
+  const autoFill = (field, jenis) => {
+    if (!isAdd) return null;
+    const jabatan = jabatanAktif?.jabatan ?? "";
+    const sekolahKu = guruInfo?.nama_sekolah ?? "";
+    const npsnKu = guruInfo?.npsn ?? "";
+    const statusKep = guruInfo?.status_kepegawaian ?? "";
+
+    const map = {
+      Masuk: {
+        sekolah_asal: lastMutasiKeluar?.sekolah_tujuan ?? "",
+        npsn_asal: lastMutasiKeluar?.npsn_tujuan ?? "",
+        sekolah_tujuan: sekolahKu,
+        npsn_tujuan: npsnKu,
+        jabatan_sebelum: jabatan,
+        status_kepegawaian: statusKep,
+      },
+      Keluar: {
+        sekolah_asal: sekolahKu,
+        npsn_asal: npsnKu,
+        jabatan_sebelum: jabatan,
+        status_kepegawaian: statusKep,
+      },
+      Internal: {
+        jabatan_sebelum: jabatan,
+        status_kepegawaian: statusKep,
+      },
+      "Penugasan Sementara": {
+        sekolah_asal: sekolahKu,
+        npsn_asal: npsnKu,
+        jabatan_sebelum: jabatan,
+        status_kepegawaian: statusKep,
+      },
+      "Kembali Bertugas": {
+        sekolah_asal: lastMutasiKeluar?.sekolah_tujuan ?? "",
+        npsn_asal: lastMutasiKeluar?.npsn_tujuan ?? "",
+        jabatan_sebelum: jabatan,
+        status_kepegawaian: statusKep,
+      },
+    };
+
+    return map[jenis]?.[field] ?? "";
+  };
+
   const [jenisDipilih, setJenisDipilih] = useState(
     isAdd ? "" : (modalMutasi?.jenis_mutasi ?? ""),
   );
@@ -2572,7 +2929,7 @@ function ModalMutasi({
           )}
 
           {jenisDipilih && (
-            <>
+            <div key={jenisDipilih}>
               {/* Sekolah Asal */}
               {show.sekolah_asal && (
                 <div className={show.npsn_asal ? "grid grid-cols-3 gap-3" : ""}>
@@ -2585,7 +2942,9 @@ function ModalMutasi({
                       type="text"
                       required
                       defaultValue={
-                        isAdd ? "" : (modalMutasi?.sekolah_asal ?? "")
+                        isAdd
+                          ? autoFill("sekolah_asal", jenisDipilih)
+                          : (modalMutasi?.sekolah_asal ?? "")
                       }
                       placeholder={
                         jenisDipilih === "Masuk"
@@ -2607,7 +2966,9 @@ function ModalMutasi({
                         type="text"
                         maxLength={10}
                         defaultValue={
-                          isAdd ? "" : (modalMutasi?.npsn_asal ?? "")
+                          isAdd
+                            ? autoFill("npsn_asal", jenisDipilih)
+                            : (modalMutasi?.npsn_asal ?? "")
                         }
                         placeholder="10 digit"
                         className={`${cls} font-mono`}
@@ -2631,7 +2992,9 @@ function ModalMutasi({
                       type="text"
                       required
                       defaultValue={
-                        isAdd ? "" : (modalMutasi?.sekolah_tujuan ?? "")
+                        isAdd
+                          ? autoFill("sekolah_tujuan", jenisDipilih)
+                          : (modalMutasi?.sekolah_tujuan ?? "")
                       }
                       placeholder={
                         jenisDipilih === "Keluar"
@@ -2653,7 +3016,9 @@ function ModalMutasi({
                         type="text"
                         maxLength={10}
                         defaultValue={
-                          isAdd ? "" : (modalMutasi?.npsn_tujuan ?? "")
+                          isAdd
+                            ? autoFill("npsn_tujuan", jenisDipilih)
+                            : (modalMutasi?.npsn_tujuan ?? "")
                         }
                         placeholder="10 digit"
                         className={`${cls} font-mono`}
@@ -2679,7 +3044,7 @@ function ModalMutasi({
                       type="text"
                       defaultValue={
                         isAdd
-                          ? (jabatanAktif?.jabatan ?? "")
+                          ? autoFill("jabatan_sebelum", jenisDipilih)
                           : (modalMutasi?.jabatan_sebelum ?? "")
                       }
                       placeholder="Guru Kelas, Guru PAI, Wali Kelas, dll"
@@ -2827,7 +3192,9 @@ function ModalMutasi({
                   <select
                     name="status_kepegawaian"
                     defaultValue={
-                      isAdd ? "" : (modalMutasi?.status_kepegawaian ?? "")
+                      isAdd
+                        ? autoFill("status_kepegawaian", jenisDipilih)
+                        : (modalMutasi?.status_kepegawaian ?? "")
                     }
                     className={cls}
                   >
@@ -2910,7 +3277,7 @@ function ModalMutasi({
                   {isPending ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>
-            </>
+            </div>
           )}
         </form>
       </div>
@@ -3492,6 +3859,16 @@ function TabRiwayat({ nuptk, guru }) {
           onSubmit={handleMutasiSubmit}
           isPending={saveMutasi.isPending}
           jabatanAktif={jabatanRows.find((j) => j.is_current) ?? null}
+          guruInfo={{
+            status_kepegawaian: guru.status_kepegawaian ?? "",
+            nama_sekolah: "MI Nurul Huda 3",
+            npsn: "",
+          }}
+          lastMutasiKeluar={
+            mutasis.find((m) =>
+              ["Keluar", "Penugasan Sementara"].includes(m.jenis_mutasi),
+            ) ?? null
+          }
         />
       )}
 
@@ -5129,7 +5506,7 @@ export default function DetailGuru() {
             <TabPendidikan nuptk={nuptk} guru={guru} />
           )}
           {activeTab === "keluarga" && <TabKeluarga guru={guru} />}
-          {activeTab === "dokumen" && <TabDokumen nuptk={nuptk} />}
+          {activeTab === "dokumen" && <TabDokumen nuptk={nuptk} guru={guru} />}
           {activeTab === "riwayat" && <TabRiwayat nuptk={nuptk} guru={guru} />}
           {activeTab === "administrasi" && <TabAdministrasi guru={guru} />}
           {activeTab === "akun" && (

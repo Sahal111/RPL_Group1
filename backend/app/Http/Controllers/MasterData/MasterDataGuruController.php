@@ -797,6 +797,10 @@ class MasterDataGuruController extends Controller
             'nama_dokumen' => 'nullable|string|max:150',
             'nomor_dokumen' => 'nullable|string|max:80',
             'tanggal_dokumen' => 'nullable|date',
+            'tanggal_berlaku' => 'nullable|date',
+            'tanggal_kadaluarsa' => 'nullable|date',
+            'penerbit' => 'nullable|string|max:150',
+            'keterangan' => 'nullable|string|max:500',
             'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
@@ -808,7 +812,10 @@ class MasterDataGuruController extends Controller
             'nama_dokumen' => $request->nama_dokumen ?? $request->kategori,
             'nomor_dokumen' => $request->nomor_dokumen,
             'tanggal_dokumen' => $request->tanggal_dokumen,
+            'tanggal_berlaku' => $request->tanggal_berlaku,
+            'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
             'penerbit' => $request->penerbit,
+            'keterangan' => $request->keterangan,
             'file_path' => $path,
             'file_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
@@ -824,6 +831,45 @@ class MasterDataGuruController extends Controller
         Storage::disk('public')->delete($dokumen->file_path);
         $dokumen->delete();
         return response()->json(['success' => true, 'message' => 'Dokumen dihapus.']);
+    }
+
+    public function updateDokumen(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        $request->validate([
+            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,penghargaan,lainnya',
+            'nama_dokumen' => 'nullable|string|max:150',
+            'nomor_dokumen' => 'nullable|string|max:80',
+            'tanggal_dokumen' => 'nullable|date',
+            'tanggal_berlaku' => 'nullable|date',
+            'tanggal_kadaluarsa' => 'nullable|date',
+            'penerbit' => 'nullable|string|max:150',
+            'keterangan' => 'nullable|string|max:500',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ]);
+
+        $dokumen->kategori = $request->kategori;
+        $dokumen->nama_dokumen = $request->nama_dokumen ?? $request->kategori;
+        $dokumen->nomor_dokumen = $request->nomor_dokumen;
+        $dokumen->tanggal_dokumen = $request->tanggal_dokumen;
+        $dokumen->tanggal_berlaku = $request->tanggal_berlaku;
+        $dokumen->tanggal_kadaluarsa = $request->tanggal_kadaluarsa;
+        $dokumen->penerbit = $request->penerbit;
+        $dokumen->keterangan = $request->keterangan;
+
+        if ($request->hasFile('file')) {
+            Storage::disk('public')->delete($dokumen->file_path);
+            $file = $request->file('file');
+            $dokumen->file_path = $file->store("guru-dokumen/{$guru->id}", 'public');
+            $dokumen->file_type = $file->getMimeType();
+            $dokumen->file_size = $file->getSize();
+        }
+
+        $dokumen->save();
+
+        return response()->json(['success' => true, 'message' => 'Dokumen berhasil diperbarui.', 'data' => $dokumen]);
     }
 
     // ────────────────────────────────────────────────────────

@@ -133,6 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
             // Dokumen upload
             Route::get('/guru/{nuptk}/dokumen', [MasterDataGuruController::class, 'getDokumen']);
             Route::post('/guru/{nuptk}/dokumen', [MasterDataGuruController::class, 'uploadDokumen']);
+            Route::post('/guru/{nuptk}/dokumen/{id}', [MasterDataGuruController::class, 'updateDokumen']);
             Route::delete('/guru/{nuptk}/dokumen/{id}', [MasterDataGuruController::class, 'destroyDokumen']);
 
             // Administrasi (rekening, BPJS, NPWP)
