@@ -1020,6 +1020,7 @@ class MasterDataGuruController extends Controller
             'npsn_tujuan',
             'tanggal_mutasi',
             'tmt_mutasi',
+            'tanggal_berakhir',
             'jabatan_sebelum',
             'jabatan_sesudah',
             'status_kepegawaian',
@@ -1035,6 +1036,40 @@ class MasterDataGuruController extends Controller
         }
 
         $mutasi = $guru->mutasi()->create($data);
+
+        // Sinkron status_keaktifan otomatis
+        if ($data['jenis_mutasi'] === 'Keluar') {
+            $guru->update(['status_keaktifan' => 'Keluar']);
+        } elseif ($data['jenis_mutasi'] === 'Masuk') {
+            $guru->update(['status_keaktifan' => 'Aktif']);
+        } elseif ($data['jenis_mutasi'] === 'Kembali Bertugas') {
+            $guru->update(['status_keaktifan' => 'Aktif']);
+        }
+
+        // Sinkron jabatan aktif saat mutasi internal
+        if ($data['jenis_mutasi'] === 'Internal' && !empty($data['jabatan_sesudah'])) {
+            $jabatanAktif = $guru->jabatanAktif;
+            if ($jabatanAktif) {
+                $jabatanAktif->update([
+                    'jabatan' => $data['jabatan_sesudah'],
+                    'tanggal_selesai' => $data['tanggal_mutasi'] ?? null,
+                    'status_jabatan' => 'Mutasi',
+                    'is_current' => false,
+                ]);
+            }
+            $guru->jabatans()->create([
+                'jabatan' => $data['jabatan_sesudah'],
+                'jenis_jabatan' => $jabatanAktif->jenis_jabatan ?? 'Fungsional',
+                'unit_kerja' => $jabatanAktif->unit_kerja ?? '',
+                'tmt_jabatan' => $data['tmt_mutasi'] ?? $data['tanggal_mutasi'],
+                'status_kepegawaian' => $data['status_kepegawaian'] ?? ($jabatanAktif->status_kepegawaian ?? null),
+                'no_sk' => $data['no_sk'] ?? null,
+                'tanggal_sk' => $data['tanggal_sk'] ?? null,
+                'instansi_pengangkat' => $data['instansi_penerbit_sk'] ?? null,
+                'status_jabatan' => 'Aktif',
+                'is_current' => true,
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => 'Riwayat mutasi ditambahkan.', 'data' => $mutasi], 201);
     }
@@ -1072,6 +1107,7 @@ class MasterDataGuruController extends Controller
             'npsn_tujuan',
             'tanggal_mutasi',
             'tmt_mutasi',
+            'tanggal_berakhir',
             'jabatan_sebelum',
             'jabatan_sesudah',
             'status_kepegawaian',
@@ -1088,7 +1124,20 @@ class MasterDataGuruController extends Controller
             $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/mutasi", 'public');
         }
 
+        $jenisBaru = $data['jenis_mutasi'];
+        $jenisLama = $mutasi->jenis_mutasi;
+
         $mutasi->update($data);
+
+        // Re-sync status hanya kalau jenis berubah ke/dari Keluar atau Masuk
+        if ($jenisBaru !== $jenisLama) {
+            match ($jenisBaru) {
+                'Keluar' => $guru->update(['status_keaktifan' => 'Keluar']),
+                'Masuk', 'Kembali Bertugas' => $guru->update(['status_keaktifan' => 'Aktif']),
+                default => null,
+            };
+        }
+
         return response()->json(['success' => true, 'message' => 'Riwayat mutasi diperbarui.', 'data' => $mutasi]);
     }
 

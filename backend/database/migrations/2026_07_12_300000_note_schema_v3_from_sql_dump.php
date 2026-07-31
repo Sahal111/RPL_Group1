@@ -11,7 +11,7 @@ use Illuminate\Database\Migrations\Migration;
  *   roles, users, user_roles, personal_access_tokens, activity_logs
  *   tahun_ajarans, semesters
  *   gurus, guru_jabatans, guru_pendidikans, guru_sertifikasis, guru_inpassings
- *   guru_diklats, guru_keluargas, guru_rekenings, guru_dokumens, guru_absensis
+ *   guru_diklats, guru_mutasis, guru_keluargas, guru_rekenings, guru_dokumens, guru_absensis
  *   wali_kelas, bendaharas, operator_profiles, admin_ppdb_profiles
  *   mapels, kelas, plot_guru_mapels, jadwals
  *   siswas, data_tambahan_siswas, perkembangan_siswas, program_kesejahteraan_siswas

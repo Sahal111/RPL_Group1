@@ -1757,34 +1757,30 @@ function ModalMutasi({ modalMutasi, onClose, onSubmit, isPending }) {
     isAdd ? "" : (modalMutasi?.jenis_mutasi ?? ""),
   );
 
-  const show = {
-    sekolah_asal: ["Masuk", "Internal", "Penugasan Sementara"].includes(
-      jenisDipilih,
-    ),
-    npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
-    sekolah_tujuan: ["Keluar", "Internal", "Penugasan Sementara"].includes(
-      jenisDipilih,
-    ),
-    npsn_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
-    jabatan_sebelum: [
-      "Masuk",
-      "Keluar",
-      "Internal",
-      "Penugasan Sementara",
-      "Kembali Bertugas",
-    ].includes(jenisDipilih),
-    jabatan_sesudah: ["Internal", "Kembali Bertugas"].includes(jenisDipilih),
-    tanggal_berakhir: ["Penugasan Sementara"].includes(jenisDipilih),
-    tmt_mutasi: [
-      "Masuk",
-      "Internal",
-      "Penugasan Sementara",
-      "Kembali Bertugas",
-    ].includes(jenisDipilih),
-    alasan_mutasi: ["Keluar", "Internal", "Penugasan Sementara"].includes(
-      jenisDipilih,
-    ),
-  };
+const show = {
+  sekolah_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
+  npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
+  sekolah_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
+  npsn_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
+  jabatan_sebelum: [
+    "Masuk",
+    "Keluar",
+    "Internal",
+    "Penugasan Sementara",
+    "Kembali Bertugas",
+  ].includes(jenisDipilih),
+  jabatan_sesudah: ["Internal", "Kembali Bertugas"].includes(jenisDipilih),
+  tanggal_berakhir: ["Penugasan Sementara"].includes(jenisDipilih),
+  tmt_mutasi: [
+    "Masuk",
+    "Internal",
+    "Penugasan Sementara",
+    "Kembali Bertugas",
+  ].includes(jenisDipilih),
+  alasan_mutasi: ["Keluar", "Internal", "Penugasan Sementara"].includes(
+    jenisDipilih,
+  ),
+};
 
   const labelTanggal =
     {
@@ -2340,9 +2336,13 @@ function TabRiwayat({ nuptk, guru }) {
         ([k, v]) => v != null && v !== "" && fd.append(k, v),
       );
       return id
-        ? api.put(`/operator/master-data/guru/${nuptk}/mutasi/${id}`, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
+        ? api.post(
+            `/operator/master-data/guru/${nuptk}/mutasi/${id}?_method=PUT`,
+            fd,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            },
+          )
         : api.post(`/operator/master-data/guru/${nuptk}/mutasi`, fd, {
             headers: { "Content-Type": "multipart/form-data" },
           });
@@ -2662,6 +2662,24 @@ function TabRiwayat({ nuptk, guru }) {
                         >
                           {m.jenis_mutasi}
                         </span>
+                        {m.jenis_mutasi === "Keluar" && (
+                          <span
+                            className="text-[11px] text-text-secondary italic"
+                            title="Jika guru ini kembali bertugas di sekolah ini, tambahkan riwayat Mutasi Masuk baru."
+                          >
+                            · Untuk mengaktifkan kembali, tambah Mutasi Masuk
+                          </span>
+                        )}
+                        {m.jenis_mutasi === "Penugasan Sementara" &&
+                          !m.tanggal_berakhir && (
+                            <span
+                              className="text-[11px] text-warning font-medium"
+                              title="Penugasan masih aktif. Tambah Kembali Bertugas untuk menutup."
+                            >
+                              · Masih aktif — tambah Kembali Bertugas jika sudah
+                              selesai
+                            </span>
+                          )}
                         {m.no_sk && (
                           <span className="text-[11px] text-text-secondary font-mono">
                             SK: {m.no_sk}
