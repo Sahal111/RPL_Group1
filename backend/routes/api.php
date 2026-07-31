@@ -154,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'getMutasi']);
             Route::post('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'storeMutasi']);
             Route::put('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'updateMutasi']);
+            Route::post('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'updateMutasi']); // ← tambah ini untuk _method=PUT dari FormData
             Route::delete('/guru/{nuptk}/mutasi/{id}', [MasterDataGuruController::class, 'destroyMutasi']);
 
             // Jabatan

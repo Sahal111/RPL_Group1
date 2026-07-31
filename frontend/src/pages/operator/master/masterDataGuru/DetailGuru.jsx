@@ -1751,36 +1751,42 @@ function TabDokumen({ nuptk }) {
 /* ══════════════════════════════════════════════════════════
    MODAL MUTASI — komponen terpisah agar hooks legal
    ══════════════════════════════════════════════════════════ */
-function ModalMutasi({ modalMutasi, onClose, onSubmit, isPending }) {
+function ModalMutasi({
+  modalMutasi,
+  onClose,
+  onSubmit,
+  isPending,
+  jabatanAktif,
+}) {
   const isAdd = modalMutasi === "add";
   const [jenisDipilih, setJenisDipilih] = useState(
     isAdd ? "" : (modalMutasi?.jenis_mutasi ?? ""),
   );
 
-const show = {
-  sekolah_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
-  npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
-  sekolah_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
-  npsn_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
-  jabatan_sebelum: [
-    "Masuk",
-    "Keluar",
-    "Internal",
-    "Penugasan Sementara",
-    "Kembali Bertugas",
-  ].includes(jenisDipilih),
-  jabatan_sesudah: ["Internal", "Kembali Bertugas"].includes(jenisDipilih),
-  tanggal_berakhir: ["Penugasan Sementara"].includes(jenisDipilih),
-  tmt_mutasi: [
-    "Masuk",
-    "Internal",
-    "Penugasan Sementara",
-    "Kembali Bertugas",
-  ].includes(jenisDipilih),
-  alasan_mutasi: ["Keluar", "Internal", "Penugasan Sementara"].includes(
-    jenisDipilih,
-  ),
-};
+  const show = {
+    sekolah_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
+    npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
+    sekolah_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
+    npsn_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
+    jabatan_sebelum: [
+      "Masuk",
+      "Keluar",
+      "Internal",
+      "Penugasan Sementara",
+      "Kembali Bertugas",
+    ].includes(jenisDipilih),
+    jabatan_sesudah: ["Internal", "Kembali Bertugas"].includes(jenisDipilih),
+    tanggal_berakhir: ["Penugasan Sementara"].includes(jenisDipilih),
+    tmt_mutasi: [
+      "Masuk",
+      "Internal",
+      "Penugasan Sementara",
+      "Kembali Bertugas",
+    ].includes(jenisDipilih),
+    alasan_mutasi: ["Keluar", "Internal", "Penugasan Sementara"].includes(
+      jenisDipilih,
+    ),
+  };
 
   const labelTanggal =
     {
@@ -2004,7 +2010,9 @@ const show = {
                       name="jabatan_sebelum"
                       type="text"
                       defaultValue={
-                        isAdd ? "" : (modalMutasi?.jabatan_sebelum ?? "")
+                        isAdd
+                          ? (jabatanAktif?.jabatan ?? "")
+                          : (modalMutasi?.jabatan_sebelum ?? "")
                       }
                       placeholder="Guru Kelas, Guru PAI, Wali Kelas, dll"
                       className={cls}
@@ -2327,6 +2335,7 @@ function TabRiwayat({ nuptk, guru }) {
         .get(`/operator/master-data/guru/${nuptk}/mutasi`)
         .then((r) => r.data.data),
     initialData: guru.mutasi ?? [],
+    initialDataUpdatedAt: 0, // ← tambah ini: paksa refetch saat pertama render
   });
 
   const saveMutasi = useMutation({
@@ -2339,19 +2348,14 @@ function TabRiwayat({ nuptk, guru }) {
         ? api.post(
             `/operator/master-data/guru/${nuptk}/mutasi/${id}?_method=PUT`,
             fd,
-            {
-              headers: { "Content-Type": "multipart/form-data" },
-            },
           )
-        : api.post(`/operator/master-data/guru/${nuptk}/mutasi`, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+        : api.post(`/operator/master-data/guru/${nuptk}/mutasi`, fd);
     },
     onSuccess: () => {
       toast.success("Riwayat mutasi disimpan.");
-      queryClient.invalidateQueries(["guru-mutasi", nuptk]);
-      queryClient.invalidateQueries(["guru-detail", nuptk]);
-      queryClient.invalidateQueries(["master-guru"]);
+      queryClient.invalidateQueries({ queryKey: ["guru-mutasi", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["master-guru"] });
       setModalMutasi(null);
     },
     onError: (e) =>
@@ -2363,9 +2367,9 @@ function TabRiwayat({ nuptk, guru }) {
       api.delete(`/operator/master-data/guru/${nuptk}/mutasi/${id}`),
     onSuccess: () => {
       toast.success("Riwayat mutasi dihapus.");
-      queryClient.invalidateQueries(["guru-mutasi", nuptk]);
-      queryClient.invalidateQueries(["guru-detail", nuptk]);
-      queryClient.invalidateQueries(["master-guru"]);
+      queryClient.invalidateQueries({ queryKey: ["guru-mutasi", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["master-guru"] });
     },
     onError: (e) =>
       toast.error(e.response?.data?.message ?? "Gagal menghapus."),
@@ -2812,7 +2816,6 @@ function TabRiwayat({ nuptk, guru }) {
         )}
       </div>
 
-    
       {/* ── MODAL MUTASI (Dinamis per Jenis) ── */}
       {modalMutasi && (
         <ModalMutasi
@@ -2820,6 +2823,7 @@ function TabRiwayat({ nuptk, guru }) {
           onClose={() => setModalMutasi(null)}
           onSubmit={handleMutasiSubmit}
           isPending={saveMutasi.isPending}
+          jabatanAktif={jabatanRows.find((j) => j.is_current) ?? null}
         />
       )}
 
