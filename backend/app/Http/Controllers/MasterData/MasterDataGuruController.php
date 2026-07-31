@@ -293,48 +293,9 @@ class MasterDataGuruController extends Controller
             ], 422);
         }
 
-        $guru->delete(); // Soft delete — masuk recycle bin
+        $guru->delete();
 
-        return response()->json(['success' => true, 'message' => 'Data guru dipindahkan ke recycle bin.']);
-    }
-
-    // ── Recycle Bin: daftar guru yang di-soft-delete ──────────────────────────
-    public function trash(Request $request)
-    {
-        $data = Guru::onlyTrashed()
-            ->when(
-                $request->search,
-                fn($q) => $q->where('nama', 'like', "%{$request->search}%")
-                    ->orWhere('nuptk', 'like', "%{$request->search}%")
-            )
-            ->orderByDesc('deleted_at')
-            ->paginate($request->per_page ?? 10);
-
-        return response()->json(['success' => true, 'data' => $data]);
-    }
-
-    // ── Recycle Bin: pulihkan guru ────────────────────────────────────────────
-    public function restore($nuptk)
-    {
-        $guru = Guru::onlyTrashed()->where('nuptk', $nuptk)->firstOrFail();
-        $guru->restore();
-
-        return response()->json(['success' => true, 'message' => 'Data guru berhasil dipulihkan.']);
-    }
-
-    // ── Recycle Bin: hapus permanen ───────────────────────────────────────────
-    public function forceDelete($nuptk)
-    {
-        $guru = Guru::onlyTrashed()->where('nuptk', $nuptk)->firstOrFail();
-
-        // Hapus foto dari storage jika ada
-        if ($guru->foto) {
-            Storage::disk('public')->delete($guru->foto);
-        }
-
-        $guru->forceDelete();
-
-        return response()->json(['success' => true, 'message' => 'Data guru dihapus permanen.']);
+        return response()->json(['success' => true, 'message' => 'Data guru berhasil dihapus.']);
     }
 
     public function dropdown()
@@ -1055,38 +1016,6 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Riwayat mutasi ditambahkan.', 'data' => $mutasi], 201);
     }
 
-    public function updateMutasi(Request $request, $nuptk, $id)
-    {
-        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        $mutasi = $guru->mutasi()->findOrFail($id);
-
-        $request->validate([
-            'jenis_mutasi' => 'required|in:Masuk,Keluar,Internal',
-            'sekolah_asal' => 'nullable|string|max:200',
-            'npsn_asal' => 'nullable|string|max:10',
-            'sekolah_tujuan' => 'nullable|string|max:200',
-            'npsn_tujuan' => 'nullable|string|max:10',
-            'tanggal_mutasi' => 'required|date',
-            'no_sk' => 'nullable|string|max:80',
-            'tanggal_sk' => 'nullable|date',
-            'keterangan' => 'nullable|string',
-            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
-        $data = $request->only(['jenis_mutasi', 'sekolah_asal', 'npsn_asal', 'sekolah_tujuan', 'npsn_tujuan', 'tanggal_mutasi', 'no_sk', 'tanggal_sk', 'keterangan']);
-
-        if ($request->hasFile('file_sk')) {
-            if ($mutasi->file_sk) {
-                Storage::disk('public')->delete($mutasi->file_sk);
-            }
-            $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/mutasi", 'public');
-        }
-
-        $mutasi->update($data);
-
-        return response()->json(['success' => true, 'message' => 'Riwayat mutasi diperbarui.', 'data' => $mutasi]);
-    }
-
     public function destroyMutasi($nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
@@ -1384,34 +1313,35 @@ class MasterDataGuruController extends Controller
 
     /**
      * GET /guru/template
+     * Multi-sheet: Sheet1=Data Utama, Sheet2=Keluarga & Anak, Sheet3=Rekening & Adm,
+     *              Sheet4=Pendidikan, Sheet5=Sertifikasi, Sheet6=Diklat,
+     *              Sheet7=Jabatan, Sheet8=Inpassing, Sheet9=Mutasi, Sheet10=Kompetensi
      */
     public function downloadTemplate()
     {
-        $headers = [
-            // Identitas
-            'nuptk',
+        // ── Sheet 1: Data Utama (tabel gurus) ──────────────────────────
+        $sheetUtamaHeaders = [
+            'nuptk*',
             'nip',
             'nip_lama',
+            'no_karpeg',
             'no_karis_karsu',
             'nik',
             'no_kk',
-            'no_karpeg',
-            'nama',
+            'nama*',
             'gelar_depan',
             'gelar_belakang',
-            'jenis_kelamin (L/P)',
-            'tempat_lahir',
-            'tanggal_lahir (YYYY-MM-DD)',
+            'jenis_kelamin (L/P)*',
+            'tempat_lahir*',
+            'tanggal_lahir (YYYY-MM-DD)*',
             'agama',
             'golongan_darah',
             'kewarganegaraan',
             'status_hidup',
             'nama_ibu_kandung',
-            // Kontak
-            'no_hp',
+            'no_hp*',
             'no_wa',
             'email',
-            // Alamat
             'alamat_jalan',
             'rt',
             'rw',
@@ -1421,50 +1351,26 @@ class MasterDataGuruController extends Controller
             'kota_kabupaten',
             'provinsi',
             'kode_pos',
-            // Kepegawaian
-            'jenis_ptk',
-            'status_kepegawaian',
+            'jenis_ptk*',
+            'status_kepegawaian*',
             'status_keaktifan',
             'tanggal_bergabung (YYYY-MM-DD)',
             'tmt_pns (YYYY-MM-DD)',
             'tmt_gty (YYYY-MM-DD)',
             'masa_kerja_tahun',
-            // // Keluarga
-            // 'status_perkawinan',
-            // 'nama_pasangan',
-            // 'nik_pasangan',
-            // 'pekerjaan_pasangan',
-            // 'jumlah_anak',
-            // // Administrasi
-            // 'nama_bank',
-            // 'no_rekening',
-            // 'atas_nama',
-            // 'cabang',
-            // 'npwp',
-            // 'no_bpjs_kesehatan',
-            // 'no_bpjs_ketenagakerjaan',
-            // 'gaji_pokok',
-            // 'tunjangan_fungsional',
-            // 'tunjangan_profesi',
-            // Kolom-kolom di bawah ini HANYA sebagai referensi — tidak diimport otomatis
-            // (data keluarga & rekening diisi manual di halaman detail guru)
-            '[INFO] status_perkawinan',
-            '[INFO] nama_pasangan',
-            '[INFO] nik_pasangan',
-            '[INFO] nama_bank',
-            '[INFO] no_rekening',
-            '[INFO] npwp',
+            'no_sk_pengangkatan',
+            'tgl_sk_pengangkatan (YYYY-MM-DD)',
+            'instansi_pengangkat',
         ];
-        $examples = [
+        $sheetUtamaExample = [
             [
-                // Identitas
                 '1234567890123456',
                 '199001012015011001',
-                '123456789',
+                '',
+                '',
                 '',
                 '3201010101900001',
-                '',
-                '',
+                '3201010101900001',
                 'Ahmad Fauzi',
                 'Drs.',
                 'M.Pd',
@@ -1476,12 +1382,10 @@ class MasterDataGuruController extends Controller
                 'WNI',
                 'Aktif',
                 'Siti Aminah',
-                // Kontak
                 '08123456789',
                 '08123456789',
                 'ahmad.fauzi@email.com',
-                // Alamat
-                'Jl. Raya Bogor No. 10',
+                'Jl. Raya Bogor No.10',
                 '001',
                 '002',
                 'Bojong',
@@ -1490,7 +1394,6 @@ class MasterDataGuruController extends Controller
                 'Kota Bogor',
                 'Jawa Barat',
                 '16152',
-                // Kepegawaian
                 'Guru Kelas',
                 'PNS',
                 'Aktif',
@@ -1498,32 +1401,17 @@ class MasterDataGuruController extends Controller
                 '2015-01-01',
                 '',
                 '9',
-                // Keluarga
-                'Menikah',
-                'Dewi Rahayu',
-                '3201019001010001',
-                'Karyawan Swasta',
-                '2',
-                // Administrasi
-                'BRI',
-                '1234567890',
-                'Ahmad Fauzi',
-                'BRI Cabang Bogor',
-                '12.345.678.9-012.000',
-                '',
-                '',
-                '',
-                '',
-                '',
+                'SK-001/2015',
+                '2015-01-01',
+                'Kemendikbud'
             ],
             [
-                // Identitas
                 '9876543210987654',
                 '',
                 '',
                 '',
-                '3201020202910002',
                 '',
+                '3201020202910002',
                 '',
                 'Siti Rahayu',
                 '',
@@ -1536,12 +1424,10 @@ class MasterDataGuruController extends Controller
                 'WNI',
                 'Aktif',
                 'Rahayu',
-                // Kontak
                 '08987654321',
                 '08987654321',
                 'siti.rahayu@email.com',
-                // Alamat
-                'Jl. Margonda No. 5',
+                'Jl. Margonda No.5',
                 '003',
                 '001',
                 '',
@@ -1550,7 +1436,6 @@ class MasterDataGuruController extends Controller
                 'Kota Depok',
                 'Jawa Barat',
                 '16424',
-                // Kepegawaian
                 'Guru Mapel',
                 'GTT',
                 'Aktif',
@@ -1558,27 +1443,225 @@ class MasterDataGuruController extends Controller
                 '',
                 '',
                 '6',
-                // Keluarga
-                'Menikah',
-                'Budi Santoso',
-                '3201011001910002',
-                'Wiraswasta',
-                '1',
-                // Administrasi
-                'BCA',
-                '9876543210',
-                'Siti Rahayu',
-                'BCA KCP Depok',
                 '',
                 '',
-                '',
-                '',
-                '',
-                '',
+                ''
             ],
         ];
 
-        $xlsx = $this->buildXlsx($headers, $examples);
+        // ── Sheet 2: Keluarga & Anak (guru_keluargas + guru_anaks) ─────
+        $sheetKeluargaHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            // keluarga
+            'status_perkawinan',
+            'nama_pasangan',
+            'nik_pasangan',
+            'pekerjaan_pasangan',
+            'jumlah_anak',
+            // anak (bisa diulang untuk anak ke-2 dst di baris baru dengan nuptk sama)
+            'nama_anak',
+            'jenis_kelamin_anak (L/P)',
+            'tanggal_lahir_anak (YYYY-MM-DD)',
+            'urutan_anak',
+        ];
+        $sheetKeluargaExample = [
+            ['1234567890123456', 'Menikah', 'Dewi Rahayu', '3201019001010001', 'Karyawan Swasta', '2', 'Muhammad Rizki', 'L', '2015-03-10', '1'],
+            ['1234567890123456', '', '', '', '', '', 'Fatimah Azzahra', 'P', '2017-07-22', '2'],
+            ['9876543210987654', 'Menikah', 'Budi Santoso', '3201011001910002', 'Wiraswasta', '1', 'Budi Junior', 'L', '2019-05-15', '1'],
+        ];
+
+        // ── Sheet 3: Rekening & Administrasi (guru_rekenings) ──────────
+        $sheetRekeningHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'nama_bank',
+            'no_rekening',
+            'atas_nama',
+            'cabang',
+            'npwp',
+            'no_bpjs_kesehatan',
+            'no_bpjs_ketenagakerjaan',
+            'gaji_pokok',
+            'tunjangan_fungsional',
+            'tunjangan_profesi',
+        ];
+        $sheetRekeningExample = [
+            ['1234567890123456', 'BRI', '1234567890', 'Ahmad Fauzi', 'BRI Cabang Bogor', '12.345.678.9-012.000', '0001234567890', '00087654321', '3500000', '500000', '1500000'],
+            ['9876543210987654', 'BCA', '9876543210', 'Siti Rahayu', 'BCA KCP Depok', '', '0009876543210', '', '2500000', '250000', ''],
+        ];
+
+        // ── Sheet 4: Pendidikan (guru_pendidikans) ──────────────────────
+        $sheetPendidikanHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'jenjang (SD/SMP/SMA-SMK/D1/D2/D3/D4/S1/S2/S3)*',
+            'nama_sekolah*',
+            'jurusan',
+            'prodi',
+            'tahun_masuk',
+            'tahun_lulus',
+            'no_ijazah',
+        ];
+        $sheetPendidikanExample = [
+            ['1234567890123456', 'S1', 'Universitas Pendidikan Indonesia', 'PGSD', 'Pendidikan Guru SD', '2008', '2012', 'IJZ-2012-001'],
+            ['1234567890123456', 'S2', 'Universitas Negeri Jakarta', 'Manajemen Pendidikan', '', '2013', '2015', 'IJZ-2015-002'],
+            ['9876543210987654', 'S1', 'Universitas Negeri Bandung', 'Pendidikan Matematika', '', '2009', '2013', 'IJZ-2013-003'],
+        ];
+
+        // ── Sheet 5: Sertifikasi (guru_sertifikasis) ────────────────────
+        $sheetSertifikasiHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'jenis_sertifikasi*',
+            'no_sertifikat',
+            'nrg',
+            'tahun_sertifikasi',
+            'lptk',
+            'bidang_studi',
+            'tanggal_terbit (YYYY-MM-DD)',
+            'expired_at (YYYY-MM-DD)',
+        ];
+        $sheetSertifikasiExample = [
+            ['1234567890123456', 'Guru Kelas SD', 'SERT-2016-001', '12345678901234', '2016', 'UPI Bandung', 'Guru Kelas SD', '2016-12-01', ''],
+            ['9876543210987654', 'Guru Matematika', 'SERT-2018-002', '98765432101234', '2018', 'UNJ Jakarta', 'Pendidikan Matematika', '2018-06-15', ''],
+        ];
+
+        // ── Sheet 6: Diklat / Pelatihan (guru_diklats) ─────────────────
+        $sheetDiklatHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'nama_diklat*',
+            'penyelenggara',
+            'jenis (diklat/bimtek/workshop/seminar/pelatihan/kursus)',
+            'tingkat (Kecamatan/Kabupaten-Kota/Provinsi/Nasional/Internasional)',
+            'tanggal_mulai (YYYY-MM-DD)',
+            'tanggal_selesai (YYYY-MM-DD)',
+            'jumlah_jam',
+            'peran (peserta/narasumber/panitia/moderator)',
+            'no_sertifikat',
+            'keterangan',
+        ];
+        $sheetDiklatExample = [
+            ['1234567890123456', 'Pelatihan Kurikulum Merdeka', 'Kemendikbud', 'bimtek', 'Nasional', '2023-07-10', '2023-07-14', '32', 'peserta', 'BT-2023-001', 'Implementasi K-Merdeka'],
+            ['9876543210987654', 'Workshop Penilaian Autentik', 'Dinas Pendidikan Kota', 'workshop', 'Kabupaten-Kota', '2022-11-05', '2022-11-06', '16', 'peserta', 'WS-2022-015', ''],
+        ];
+
+        // ── Sheet 7: Jabatan (guru_jabatans) ───────────────────────────
+        $sheetJabatanHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'jenis_jabatan (Struktural/Fungsional/Tambahan)*',
+            'jabatan*',
+            'unit_kerja',
+            'instansi_pengangkat',
+            'golongan',
+            'pangkat',
+            'jenis_pengangkatan',
+            'status_kepegawaian_jabatan (CPNS/PNS/PPPK/GTY/GTT/Honorer/Kontrak)',
+            'no_sk',
+            'tanggal_sk (YYYY-MM-DD)',
+            'pejabat_penandatangan',
+            'tmt_jabatan (YYYY-MM-DD)',
+            'tanggal_selesai (YYYY-MM-DD)',
+            'status_jabatan (Aktif/Berakhir/Nonaktif/Mutasi/Pensiun)',
+            'is_current (1/0)',
+            'uraian_tugas',
+        ];
+        $sheetJabatanExample = [
+            ['1234567890123456', 'Fungsional', 'Guru Madya', 'SDN Contoh', 'Kemendikbud', 'III/c', 'Penata', 'Pengangkatan Baru', 'PNS', 'SK-2020-001', '2020-01-01', 'Kepala Dinas', '2020-01-01', '', 'Aktif', '1', ''],
+            ['9876543210987654', 'Tambahan', 'Bendahara', 'MI Nurul Huda 3', 'Yayasan', '', '', 'Pengangkatan Baru', 'GTT', 'SK-YY-2021-003', '2021-07-01', 'Ketua Yayasan', '2021-07-01', '2023-06-30', 'Berakhir', '0', 'Mengelola keuangan sekolah'],
+        ];
+
+        // ── Sheet 8: Inpassing (guru_inpassings) ───────────────────────
+        $sheetInpassingHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'no_sk*',
+            'tanggal_sk (YYYY-MM-DD)*',
+            'tmt_inpassing (YYYY-MM-DD)*',
+            'golongan_sesudah',
+            'jabatan_fungsional',
+            'angka_kredit',
+        ];
+        $sheetInpassingExample = [
+            ['1234567890123456', 'SK-INP-2021-001', '2021-03-01', '2021-04-01', 'III/c', 'Guru Madya', '300.50'],
+        ];
+
+        // ── Sheet 9: Mutasi (guru_mutasi) ──────────────────────────────
+        $sheetMutasiHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'jenis_mutasi (Masuk/Keluar/Internal)*',
+            'sekolah_asal',
+            'npsn_asal',
+            'sekolah_tujuan',
+            'npsn_tujuan',
+            'tanggal_mutasi (YYYY-MM-DD)*',
+            'no_sk',
+            'tanggal_sk (YYYY-MM-DD)',
+            'keterangan',
+        ];
+        $sheetMutasiExample = [
+            ['1234567890123456', 'Masuk', 'SDN Budi Luhur', '20217891', 'MI Nurul Huda 3', '20123456', '2015-01-01', 'SK-MUT-2015-001', '2014-12-15', 'Mutasi atas permintaan sendiri'],
+        ];
+
+        // ── Sheet 10: Kompetensi (guru_kompetensi) ─────────────────────
+        $sheetKompetensiHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'jenis (bahasa/it/bidang_keahlian/lainnya)*',
+            'nama*',
+            'tingkat (Dasar/Menengah/Mahir/Ahli)',
+            'keterangan',
+        ];
+        $sheetKompetensiExample = [
+            ['1234567890123456', 'bahasa', 'Bahasa Inggris', 'Menengah', 'TOEFL 450'],
+            ['1234567890123456', 'it', 'Microsoft Office', 'Mahir', ''],
+            ['9876543210987654', 'bidang_keahlian', 'Matematika SMP', 'Ahli', 'Instruktur Olimpiade Kab'],
+        ];
+
+        // ── Sheet 11: Kontak Darurat (guru_kontak_darurat) ─────────────
+        $sheetKontakHeaders = [
+            'nuptk* (harus ada di Sheet1)',
+            'nama*',
+            'hubungan*',
+            'no_hp*',
+            'alamat',
+            'is_primary (1/0)',
+        ];
+        $sheetKontakExample = [
+            ['1234567890123456', 'Dewi Rahayu', 'Istri', '081234567899', 'Jl. Raya Bogor No.10', '1'],
+            ['9876543210987654', 'Budi Santoso', 'Suami', '089876543210', 'Jl. Margonda No.5', '1'],
+        ];
+
+        // ── Sheet Petunjuk ─────────────────────────────────────────────
+        $sheetPetunjukHeaders = ['PETUNJUK PENGISIAN'];
+        $sheetPetunjukExample = [
+            ['Sheet1 (Data Utama): Wajib diisi. Satu baris = satu guru. Kolom bertanda * wajib diisi.'],
+            ['Sheet2 (Keluarga & Anak): Isi data keluarga dan anak. Anak ke-2 dst: baris baru dengan NUPTK yang sama, kolom keluarga dikosongkan.'],
+            ['Sheet3 (Rekening): Rekening & data administrasi keuangan guru.'],
+            ['Sheet4 (Pendidikan): Riwayat pendidikan. Bisa lebih dari 1 baris per guru.'],
+            ['Sheet5 (Sertifikasi): Sertifikasi guru. Bisa lebih dari 1 baris per guru.'],
+            ['Sheet6 (Diklat): Riwayat pelatihan/diklat. Bisa lebih dari 1 baris per guru.'],
+            ['Sheet7 (Jabatan): Riwayat jabatan. Bisa lebih dari 1 baris per guru.'],
+            ['Sheet8 (Inpassing): Data inpassing guru.'],
+            ['Sheet9 (Mutasi): Riwayat mutasi guru.'],
+            ['Sheet10 (Kompetensi): Kompetensi guru. Bisa lebih dari 1 baris per guru.'],
+            ['Sheet11 (Kontak Darurat): Kontak darurat guru.'],
+            [''],
+            ['PENTING: NUPTK di setiap sheet HARUS ada di Sheet1 (Data Utama). Jika guru belum ada di DB, pastikan ada di Sheet1 terlebih dahulu.'],
+            ['Format tanggal: YYYY-MM-DD (contoh: 2024-07-15)'],
+            ['Kolom opsional boleh dikosongkan. Kolom bertanda * wajib diisi.'],
+        ];
+
+        $sheets = [
+            ['name' => 'Petunjuk', 'headers' => $sheetPetunjukHeaders, 'rows' => $sheetPetunjukExample],
+            ['name' => 'Data Utama', 'headers' => $sheetUtamaHeaders, 'rows' => $sheetUtamaExample],
+            ['name' => 'Keluarga & Anak', 'headers' => $sheetKeluargaHeaders, 'rows' => $sheetKeluargaExample],
+            ['name' => 'Rekening', 'headers' => $sheetRekeningHeaders, 'rows' => $sheetRekeningExample],
+            ['name' => 'Pendidikan', 'headers' => $sheetPendidikanHeaders, 'rows' => $sheetPendidikanExample],
+            ['name' => 'Sertifikasi', 'headers' => $sheetSertifikasiHeaders, 'rows' => $sheetSertifikasiExample],
+            ['name' => 'Diklat', 'headers' => $sheetDiklatHeaders, 'rows' => $sheetDiklatExample],
+            ['name' => 'Jabatan', 'headers' => $sheetJabatanHeaders, 'rows' => $sheetJabatanExample],
+            ['name' => 'Inpassing', 'headers' => $sheetInpassingHeaders, 'rows' => $sheetInpassingExample],
+            ['name' => 'Mutasi', 'headers' => $sheetMutasiHeaders, 'rows' => $sheetMutasiExample],
+            ['name' => 'Kompetensi', 'headers' => $sheetKompetensiHeaders, 'rows' => $sheetKompetensiExample],
+            ['name' => 'Kontak Darurat', 'headers' => $sheetKontakHeaders, 'rows' => $sheetKontakExample],
+        ];
+
+        $xlsx = $this->buildMultiSheetXlsx($sheets);
         return response($xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="template_import_guru.xlsx"',
@@ -1588,130 +1671,1047 @@ class MasterDataGuruController extends Controller
     }
 
     /**
-     * POST /guru/import
+     * POST /guru/import — Multi-sheet import
      */
     public function import(Request $request)
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls|max:10240']);
 
-        $allRows = $this->parseXlsx($request->file('file')->getRealPath());
-        if (empty($allRows)) {
+        $allSheets = $this->parseMultiSheetXlsx($request->file('file')->getRealPath());
+        if (empty($allSheets)) {
             return response()->json(['success' => false, 'message' => 'File kosong atau tidak bisa dibaca.'], 422);
         }
 
-        $headerRow = array_map('trim', array_shift($allRows));
-        $headerMap = array_flip($headerRow);
-
-        $get = function (array $row, string $key) use ($headerMap): ?string {
-            $idx = $headerMap[$key] ?? null;
-            if ($idx === null)
-                return null;
-            $val = trim($row[$idx] ?? '');
-            return $val === '' ? null : $val;
+        // Helper: ambil sheet by name (case-insensitive) atau by index
+        $getSheet = function (array $sheets, string|int $nameOrIdx): ?array {
+            if (is_int($nameOrIdx))
+                return $sheets[$nameOrIdx] ?? null;
+            foreach ($sheets as $s) {
+                if (strtolower($s['name']) === strtolower($nameOrIdx))
+                    return $s;
+            }
+            return null;
         };
 
-        $results = ['berhasil' => 0, 'diperbarui' => 0, 'gagal' => 0, 'errors' => []];
+        $results = ['berhasil' => 0, 'diperbarui' => 0, 'gagal' => 0, 'relasi' => [], 'errors' => []];
 
-        foreach ($allRows as $rowIdx => $row) {
-            $baris = $rowIdx + 2;
-            if (empty(array_filter($row, fn($v) => trim($v) !== '')))
-                continue;
+        // ── SHEET 1 / "Data Utama" — tabel gurus ───────────────────────
+        $sheetUtama = $getSheet($allSheets, 'Data Utama') ?? $getSheet($allSheets, 0);
+        if ($sheetUtama) {
+            $rows = $sheetUtama['rows'];
+            if (!empty($rows)) {
+                $headerRow = array_map('trim', array_shift($rows));
+                $headerMap = array_flip($headerRow);
+                $get = fn(array $row, string $key): ?string =>
+                    (($idx = $headerMap[$key] ?? null) !== null && trim($row[$idx] ?? '') !== '')
+                    ? trim($row[$idx]) : null;
 
-            $nuptk = $get($row, 'nuptk');
-            $nama = $get($row, 'nama');
+                foreach ($rows as $rowIdx => $row) {
+                    $baris = $rowIdx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
 
-            if (!$nuptk) {
-                $results['gagal']++;
-                $results['errors'][] = "Baris {$baris}: NUPTK wajib diisi.";
-                continue;
-            }
-            if (!$nama) {
-                $results['gagal']++;
-                $results['errors'][] = "Baris {$baris}: Nama wajib diisi (NUPTK: {$nuptk}).";
-                continue;
-            }
+                    $nuptk = $get($row, 'nuptk*');
+                    $nama = $get($row, 'nama*');
+                    if (!$nuptk) {
+                        $results['gagal']++;
+                        $results['errors'][] = "Utama Baris {$baris}: NUPTK wajib.";
+                        continue;
+                    }
+                    if (!$nama) {
+                        $results['gagal']++;
+                        $results['errors'][] = "Utama Baris {$baris}: Nama wajib (NUPTK: {$nuptk}).";
+                        continue;
+                    }
 
-            $payload = [
-                // Identitas
-                'nuptk' => $nuptk,
-                'nip' => $get($row, 'nip'),
-                'nip_lama' => $get($row, 'nip_lama'),
-                'no_karis_karsu' => $get($row, 'no_karis_karsu'),
-                'nik' => $get($row, 'nik'),
-                'no_kk' => $get($row, 'no_kk'),
-                'no_karpeg' => $get($row, 'no_karpeg'),
-                'nama' => $nama,
-                'gelar_depan' => $get($row, 'gelar_depan'),
-                'gelar_belakang' => $get($row, 'gelar_belakang'),
-                'jenis_kelamin' => strtoupper($get($row, 'jenis_kelamin (L/P)') ?? 'L'),
-                'tempat_lahir' => $get($row, 'tempat_lahir'),
-                'tanggal_lahir' => $get($row, 'tanggal_lahir (YYYY-MM-DD)'),
-                'agama' => $get($row, 'agama') ?? 'Islam',
-                'golongan_darah' => $get($row, 'golongan_darah'),
-                'kewarganegaraan' => $get($row, 'kewarganegaraan') ?? 'WNI',
-                'status_hidup' => $get($row, 'status_hidup') ?? 'Aktif',
-                'nama_ibu_kandung' => $get($row, 'nama_ibu_kandung'),
-                // Kontak
-                'no_hp' => $get($row, 'no_hp') ?? '-',
-                'no_wa' => $get($row, 'no_wa'),
-                'email' => $get($row, 'email'),
-                // Alamat
-                'alamat_jalan' => $get($row, 'alamat_jalan'),
-                'rt' => $get($row, 'rt'),
-                'rw' => $get($row, 'rw'),
-                'dusun' => $get($row, 'dusun'),
-                'desa_kelurahan' => $get($row, 'desa_kelurahan'),
-                'kecamatan' => $get($row, 'kecamatan'),
-                'kota_kabupaten' => $get($row, 'kota_kabupaten'),
-                'provinsi' => $get($row, 'provinsi'),
-                'kode_pos' => $get($row, 'kode_pos'),
-                // Kepegawaian
-                'jenis_ptk' => $get($row, 'jenis_ptk') ?? 'Guru Kelas',
-                'status_kepegawaian' => $get($row, 'status_kepegawaian') ?? 'GTT',
-                'status_keaktifan' => $get($row, 'status_keaktifan') ?? 'Aktif',
-                'tanggal_bergabung' => $get($row, 'tanggal_bergabung (YYYY-MM-DD)'),
-                'tmt_pns' => $get($row, 'tmt_pns (YYYY-MM-DD)'),
-                'tmt_gty' => $get($row, 'tmt_gty (YYYY-MM-DD)'),
-                'masa_kerja_tahun' => $get($row, 'masa_kerja_tahun'),
-                // // Keluarga
-                // 'status_perkawinan' => $get($row, 'status_perkawinan'),
-                // 'nama_pasangan' => $get($row, 'nama_pasangan'),
-                // 'nik_pasangan' => $get($row, 'nik_pasangan'),
-                // 'pekerjaan_pasangan' => $get($row, 'pekerjaan_pasangan'),
-                // 'jumlah_anak' => $get($row, 'jumlah_anak'),
-                // // Administrasi
-                // 'nama_bank' => $get($row, 'nama_bank'),
-                // 'no_rekening' => $get($row, 'no_rekening'),
-                // 'atas_nama' => $get($row, 'atas_nama'),
-                // 'cabang' => $get($row, 'cabang'),
-                // 'npwp' => $get($row, 'npwp'),
-                // 'no_bpjs_kesehatan' => $get($row, 'no_bpjs_kesehatan'),
-                // 'no_bpjs_ketenagakerjaan' => $get($row, 'no_bpjs_ketenagakerjaan'),
-                // 'gaji_pokok' => $get($row, 'gaji_pokok'),
-                // 'tunjangan_fungsional' => $get($row, 'tunjangan_fungsional'),
-                // 'tunjangan_profesi' => $get($row, 'tunjangan_profesi'),
-            ];
+                    $payload = array_filter([
+                        'nuptk' => $nuptk,
+                        'nip' => $get($row, 'nip'),
+                        'nip_lama' => $get($row, 'nip_lama'),
+                        'no_karpeg' => $get($row, 'no_karpeg'),
+                        'no_karis_karsu' => $get($row, 'no_karis_karsu'),
+                        'nik' => $get($row, 'nik'),
+                        'no_kk' => $get($row, 'no_kk'),
+                        'nama' => $nama,
+                        'gelar_depan' => $get($row, 'gelar_depan'),
+                        'gelar_belakang' => $get($row, 'gelar_belakang'),
+                        'jenis_kelamin' => strtoupper($get($row, 'jenis_kelamin (L/P)*') ?? 'L'),
+                        'tempat_lahir' => $get($row, 'tempat_lahir*'),
+                        'tanggal_lahir' => $get($row, 'tanggal_lahir (YYYY-MM-DD)*'),
+                        'agama' => $get($row, 'agama') ?? 'Islam',
+                        'golongan_darah' => $get($row, 'golongan_darah'),
+                        'kewarganegaraan' => $get($row, 'kewarganegaraan') ?? 'WNI',
+                        'status_hidup' => $get($row, 'status_hidup') ?? 'Aktif',
+                        'nama_ibu_kandung' => $get($row, 'nama_ibu_kandung'),
+                        'no_hp' => $get($row, 'no_hp*') ?? '-',
+                        'no_wa' => $get($row, 'no_wa'),
+                        'email' => $get($row, 'email'),
+                        'alamat_jalan' => $get($row, 'alamat_jalan'),
+                        'rt' => $get($row, 'rt'),
+                        'rw' => $get($row, 'rw'),
+                        'dusun' => $get($row, 'dusun'),
+                        'desa_kelurahan' => $get($row, 'desa_kelurahan'),
+                        'kecamatan' => $get($row, 'kecamatan'),
+                        'kota_kabupaten' => $get($row, 'kota_kabupaten'),
+                        'provinsi' => $get($row, 'provinsi'),
+                        'kode_pos' => $get($row, 'kode_pos'),
+                        'jenis_ptk' => $get($row, 'jenis_ptk*') ?? 'Guru Kelas',
+                        'status_kepegawaian' => $get($row, 'status_kepegawaian*') ?? 'GTT',
+                        'status_keaktifan' => $get($row, 'status_keaktifan') ?? 'Aktif',
+                        'tanggal_bergabung' => $get($row, 'tanggal_bergabung (YYYY-MM-DD)'),
+                        'tmt_pns' => $get($row, 'tmt_pns (YYYY-MM-DD)'),
+                        'tmt_gty' => $get($row, 'tmt_gty (YYYY-MM-DD)'),
+                        'masa_kerja_tahun' => $get($row, 'masa_kerja_tahun'),
+                        'no_sk_pengangkatan' => $get($row, 'no_sk_pengangkatan'),
+                        'tgl_sk_pengangkatan' => $get($row, 'tgl_sk_pengangkatan (YYYY-MM-DD)'),
+                        'instansi_pengangkat' => $get($row, 'instansi_pengangkat'),
+                    ], fn($v) => $v !== null);
 
-            try {
-                $existing = Guru::where('nuptk', $nuptk)->first();
-                if ($existing) {
-                    unset($payload['nuptk']);
-                    $existing->update($payload);
-                    $results['diperbarui']++;
-                } else {
-                    Guru::create($payload);
-                    $results['berhasil']++;
+                    try {
+                        $existing = Guru::where('nuptk', $nuptk)->first();
+                        if ($existing) {
+                            unset($payload['nuptk']);
+                            $existing->update($payload);
+                            $results['diperbarui']++;
+                        } else {
+                            Guru::create($payload);
+                            $results['berhasil']++;
+                        }
+                    } catch (\Exception $e) {
+                        $results['gagal']++;
+                        $results['errors'][] = "Utama Baris {$baris} ({$nama}): " . $e->getMessage();
+                    }
                 }
-            } catch (\Exception $e) {
-                $results['gagal']++;
-                $results['errors'][] = "Baris {$baris} ({$nama}): " . $e->getMessage();
             }
         }
 
+        // Closure helper: cari guru_id by nuptk, catat error jika tidak ada
+        $findGuru = function (string $nuptk, string $sheet, int $baris) use (&$results): ?Guru {
+            $guru = Guru::where('nuptk', $nuptk)->first();
+            if (!$guru) {
+                $results['errors'][] = "{$sheet} Baris {$baris}: NUPTK {$nuptk} tidak ditemukan di DB.";
+            }
+            return $guru;
+        };
+
+        $countRelasi = function (string $key) use (&$results) {
+            $results['relasi'][$key] = ($results['relasi'][$key] ?? 0) + 1;
+        };
+
+        // ── SHEET 2 / "Keluarga & Anak" ────────────────────────────────
+        $sheetKeluarga = $getSheet($allSheets, 'Keluarga & Anak') ?? $getSheet($allSheets, 2);
+        if ($sheetKeluarga) {
+            $rows = $sheetKeluarga['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Keluarga', $baris);
+                    if (!$guru)
+                        continue;
+
+                    try {
+                        // Update/create keluarga jika ada data keluarga di baris ini
+                        $spk = $get($row, 'status_perkawinan');
+                        if ($spk || $get($row, 'nama_pasangan')) {
+                            $guru->keluarga()->updateOrCreate(
+                                ['guru_id' => $guru->id],
+                                array_filter([
+                                    'status_perkawinan' => $spk,
+                                    'nama_pasangan' => $get($row, 'nama_pasangan'),
+                                    'nik_pasangan' => $get($row, 'nik_pasangan'),
+                                    'pekerjaan_pasangan' => $get($row, 'pekerjaan_pasangan'),
+                                    'jumlah_anak' => $get($row, 'jumlah_anak'),
+                                ], fn($v) => $v !== null)
+                            );
+                            $countRelasi('keluarga');
+                        }
+
+                        // Tambahkan anak jika ada nama anak
+                        $namaAnak = $get($row, 'nama_anak');
+                        if ($namaAnak) {
+                            $guru->anaks()->create(array_filter([
+                                'nama' => $namaAnak,
+                                'jenis_kelamin' => $get($row, 'jenis_kelamin_anak (L/P)'),
+                                'tanggal_lahir' => $get($row, 'tanggal_lahir_anak (YYYY-MM-DD)'),
+                                'urutan' => $get($row, 'urutan_anak'),
+                            ], fn($v) => $v !== null));
+                            $countRelasi('anak');
+                        }
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Keluarga Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 3 / "Rekening" ───────────────────────────────────────
+        $sheetRekening = $getSheet($allSheets, 'Rekening') ?? $getSheet($allSheets, 3);
+        if ($sheetRekening) {
+            $rows = $sheetRekening['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Rekening', $baris);
+                    if (!$guru)
+                        continue;
+
+                    try {
+                        $guru->rekenings()->updateOrCreate(
+                            ['guru_id' => $guru->id, 'is_primary' => 1],
+                            array_filter([
+                                'nama_bank' => $get($row, 'nama_bank'),
+                                'no_rekening' => $get($row, 'no_rekening'),
+                                'atas_nama' => $get($row, 'atas_nama'),
+                                'cabang' => $get($row, 'cabang'),
+                                'npwp' => $get($row, 'npwp'),
+                                'no_bpjs_kesehatan' => $get($row, 'no_bpjs_kesehatan'),
+                                'no_bpjs_ketenagakerjaan' => $get($row, 'no_bpjs_ketenagakerjaan'),
+                                'gaji_pokok' => $get($row, 'gaji_pokok'),
+                                'tunjangan_fungsional' => $get($row, 'tunjangan_fungsional'),
+                                'tunjangan_profesi' => $get($row, 'tunjangan_profesi'),
+                                'is_primary' => 1,
+                            ], fn($v) => $v !== null)
+                        );
+                        $countRelasi('rekening');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Rekening Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 4 / "Pendidikan" ─────────────────────────────────────
+        $sheetPendidikan = $getSheet($allSheets, 'Pendidikan') ?? $getSheet($allSheets, 4);
+        if ($sheetPendidikan) {
+            $rows = $sheetPendidikan['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Pendidikan', $baris);
+                    if (!$guru)
+                        continue;
+
+                    $jenjang = $get($row, 'jenjang (SD/SMP/SMA-SMK/D1/D2/D3/D4/S1/S2/S3)*');
+                    $namaSekolah = $get($row, 'nama_sekolah*');
+                    if (!$jenjang || !$namaSekolah) {
+                        $results['errors'][] = "Pendidikan Baris {$baris}: jenjang dan nama_sekolah wajib.";
+                        continue;
+                    }
+
+                    try {
+                        $jenjangDb = str_replace('-', '/', $jenjang); // SMA-SMK → SMA/SMK
+                        $guru->pendidikans()->create(array_filter([
+                            'jenjang' => $jenjangDb,
+                            'nama_sekolah' => $namaSekolah,
+                            'jurusan' => $get($row, 'jurusan'),
+                            'prodi' => $get($row, 'prodi'),
+                            'tahun_masuk' => $get($row, 'tahun_masuk'),
+                            'tahun_lulus' => $get($row, 'tahun_lulus'),
+                            'no_ijazah' => $get($row, 'no_ijazah'),
+                        ], fn($v) => $v !== null));
+                        $countRelasi('pendidikan');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Pendidikan Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 5 / "Sertifikasi" ────────────────────────────────────
+        $sheetSert = $getSheet($allSheets, 'Sertifikasi') ?? $getSheet($allSheets, 5);
+        if ($sheetSert) {
+            $rows = $sheetSert['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Sertifikasi', $baris);
+                    if (!$guru)
+                        continue;
+
+                    $jenisSert = $get($row, 'jenis_sertifikasi*');
+                    if (!$jenisSert) {
+                        $results['errors'][] = "Sertifikasi Baris {$baris}: jenis_sertifikasi wajib.";
+                        continue;
+                    }
+
+                    try {
+                        $guru->sertifikasis()->create(array_filter([
+                            'jenis_sertifikasi' => $jenisSert,
+                            'no_sertifikat' => $get($row, 'no_sertifikat'),
+                            'nrg' => $get($row, 'nrg'),
+                            'tahun_sertifikasi' => $get($row, 'tahun_sertifikasi'),
+                            'lptk' => $get($row, 'lptk'),
+                            'bidang_studi' => $get($row, 'bidang_studi'),
+                            'tanggal_terbit' => $get($row, 'tanggal_terbit (YYYY-MM-DD)'),
+                            'expired_at' => $get($row, 'expired_at (YYYY-MM-DD)'),
+                        ], fn($v) => $v !== null));
+                        $countRelasi('sertifikasi');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Sertifikasi Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 6 / "Diklat" ─────────────────────────────────────────
+        $sheetDiklat = $getSheet($allSheets, 'Diklat') ?? $getSheet($allSheets, 6);
+        if ($sheetDiklat) {
+            $rows = $sheetDiklat['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Diklat', $baris);
+                    if (!$guru)
+                        continue;
+
+                    $namaDiklat = $get($row, 'nama_diklat*');
+                    if (!$namaDiklat) {
+                        $results['errors'][] = "Diklat Baris {$baris}: nama_diklat wajib.";
+                        continue;
+                    }
+
+                    try {
+                        $jenis = $get($row, 'jenis (diklat/bimtek/workshop/seminar/pelatihan/kursus)');
+                        $tingkat = $get($row, 'tingkat (Kecamatan/Kabupaten-Kota/Provinsi/Nasional/Internasional)');
+                        if ($tingkat)
+                            $tingkat = str_replace('-', '/', $tingkat);
+                        $guru->diklats()->create(array_filter([
+                            'nama_diklat' => $namaDiklat,
+                            'penyelenggara' => $get($row, 'penyelenggara'),
+                            'jenis' => $jenis,
+                            'tingkat' => $tingkat,
+                            'tanggal_mulai' => $get($row, 'tanggal_mulai (YYYY-MM-DD)'),
+                            'tanggal_selesai' => $get($row, 'tanggal_selesai (YYYY-MM-DD)'),
+                            'jumlah_jam' => $get($row, 'jumlah_jam'),
+                            'peran' => $get($row, 'peran (peserta/narasumber/panitia/moderator)'),
+                            'no_sertifikat' => $get($row, 'no_sertifikat'),
+                            'keterangan' => $get($row, 'keterangan'),
+                        ], fn($v) => $v !== null));
+                        $countRelasi('diklat');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Diklat Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 7 / "Jabatan" ────────────────────────────────────────
+        $sheetJabatan = $getSheet($allSheets, 'Jabatan') ?? $getSheet($allSheets, 7);
+        if ($sheetJabatan) {
+            $rows = $sheetJabatan['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Jabatan', $baris);
+                    if (!$guru)
+                        continue;
+
+                    $jabatan = $get($row, 'jabatan*');
+                    $jenisJab = $get($row, 'jenis_jabatan (Struktural/Fungsional/Tambahan)*');
+                    if (!$jabatan || !$jenisJab) {
+                        $results['errors'][] = "Jabatan Baris {$baris}: jabatan dan jenis_jabatan wajib.";
+                        continue;
+                    }
+
+                    try {
+                        $isCurrent = (int) ($get($row, 'is_current (1/0)') ?? 0);
+                        if ($isCurrent) {
+                            $guru->jabatans()->update(['is_current' => false]);
+                        }
+                        $guru->jabatans()->create(array_filter([
+                            'jenis_jabatan' => $jenisJab,
+                            'jabatan' => $jabatan,
+                            'unit_kerja' => $get($row, 'unit_kerja'),
+                            'instansi_pengangkat' => $get($row, 'instansi_pengangkat'),
+                            'golongan' => $get($row, 'golongan'),
+                            'pangkat' => $get($row, 'pangkat'),
+                            'jenis_pengangkatan' => $get($row, 'jenis_pengangkatan'),
+                            'status_kepegawaian' => $get($row, 'status_kepegawaian_jabatan (CPNS/PNS/PPPK/GTY/GTT/Honorer/Kontrak)'),
+                            'no_sk' => $get($row, 'no_sk'),
+                            'tanggal_sk' => $get($row, 'tanggal_sk (YYYY-MM-DD)'),
+                            'pejabat_penandatangan' => $get($row, 'pejabat_penandatangan'),
+                            'tmt_jabatan' => $get($row, 'tmt_jabatan (YYYY-MM-DD)'),
+                            'tanggal_selesai' => $get($row, 'tanggal_selesai (YYYY-MM-DD)'),
+                            'status_jabatan' => $get($row, 'status_jabatan (Aktif/Berakhir/Nonaktif/Mutasi/Pensiun)'),
+                            'is_current' => $isCurrent,
+                            'uraian_tugas' => $get($row, 'uraian_tugas'),
+                        ], fn($v) => $v !== null && $v !== ''));
+                        $countRelasi('jabatan');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Jabatan Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 8 / "Inpassing" ──────────────────────────────────────
+        $sheetInpassing = $getSheet($allSheets, 'Inpassing') ?? $getSheet($allSheets, 8);
+        if ($sheetInpassing) {
+            $rows = $sheetInpassing['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Inpassing', $baris);
+                    if (!$guru)
+                        continue;
+
+                    try {
+                        $guru->inpassings()->create(array_filter([
+                            'no_sk' => $get($row, 'no_sk*'),
+                            'tanggal_sk' => $get($row, 'tanggal_sk (YYYY-MM-DD)*'),
+                            'tmt_inpassing' => $get($row, 'tmt_inpassing (YYYY-MM-DD)*'),
+                            'golongan_sesudah' => $get($row, 'golongan_sesudah'),
+                            'jabatan_fungsional' => $get($row, 'jabatan_fungsional'),
+                            'angka_kredit' => $get($row, 'angka_kredit'),
+                        ], fn($v) => $v !== null));
+                        $countRelasi('inpassing');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Inpassing Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 9 / "Mutasi" ─────────────────────────────────────────
+        $sheetMutasi = $getSheet($allSheets, 'Mutasi') ?? $getSheet($allSheets, 9);
+        if ($sheetMutasi) {
+            $rows = $sheetMutasi['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Mutasi', $baris);
+                    if (!$guru)
+                        continue;
+
+                    try {
+                        $guru->mutasi()->create(array_filter([
+                            'jenis_mutasi' => $get($row, 'jenis_mutasi (Masuk/Keluar/Internal)*'),
+                            'sekolah_asal' => $get($row, 'sekolah_asal'),
+                            'npsn_asal' => $get($row, 'npsn_asal'),
+                            'sekolah_tujuan' => $get($row, 'sekolah_tujuan'),
+                            'npsn_tujuan' => $get($row, 'npsn_tujuan'),
+                            'tanggal_mutasi' => $get($row, 'tanggal_mutasi (YYYY-MM-DD)*'),
+                            'no_sk' => $get($row, 'no_sk'),
+                            'tanggal_sk' => $get($row, 'tanggal_sk (YYYY-MM-DD)'),
+                            'keterangan' => $get($row, 'keterangan'),
+                        ], fn($v) => $v !== null));
+                        $countRelasi('mutasi');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Mutasi Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 10 / "Kompetensi" ────────────────────────────────────
+        $sheetKomp = $getSheet($allSheets, 'Kompetensi') ?? $getSheet($allSheets, 10);
+        if ($sheetKomp) {
+            $rows = $sheetKomp['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Kompetensi', $baris);
+                    if (!$guru)
+                        continue;
+
+                    try {
+                        $guru->kompetensi()->create(array_filter([
+                            'jenis' => $get($row, 'jenis (bahasa/it/bidang_keahlian/lainnya)*'),
+                            'nama' => $get($row, 'nama*'),
+                            'tingkat' => $get($row, 'tingkat (Dasar/Menengah/Mahir/Ahli)'),
+                            'keterangan' => $get($row, 'keterangan'),
+                        ], fn($v) => $v !== null));
+                        $countRelasi('kompetensi');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Kompetensi Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        // ── SHEET 11 / "Kontak Darurat" ────────────────────────────────
+        $sheetKontak = $getSheet($allSheets, 'Kontak Darurat') ?? $getSheet($allSheets, 11);
+        if ($sheetKontak) {
+            $rows = $sheetKontak['rows'];
+            if (!empty($rows)) {
+                $hRow = array_map('trim', array_shift($rows));
+                $hMap = array_flip($hRow);
+                $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+                foreach ($rows as $idx => $row) {
+                    $baris = $idx + 2;
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+                    $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)');
+                    if (!$nuptk)
+                        continue;
+                    $guru = $findGuru($nuptk, 'Kontak Darurat', $baris);
+                    if (!$guru)
+                        continue;
+
+                    try {
+                        $isPrimary = (int) ($get($row, 'is_primary (1/0)') ?? 0);
+                        if ($isPrimary) {
+                            $guru->kontakDarurat()->update(['is_primary' => 0]);
+                        }
+                        $guru->kontakDarurat()->create(array_filter([
+                            'nama' => $get($row, 'nama*'),
+                            'hubungan' => $get($row, 'hubungan*'),
+                            'no_hp' => $get($row, 'no_hp*'),
+                            'alamat' => $get($row, 'alamat'),
+                            'is_primary' => $isPrimary,
+                        ], fn($v) => $v !== null));
+                        $countRelasi('kontak_darurat');
+                    } catch (\Exception $e) {
+                        $results['errors'][] = "Kontak Darurat Baris {$baris}: " . $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        $relasiMsg = collect($results['relasi'])
+            ->map(fn($v, $k) => "{$v} {$k}")
+            ->join(', ');
+
         return response()->json([
             'success' => true,
-            'message' => "Import selesai: {$results['berhasil']} ditambahkan, {$results['diperbarui']} diperbarui, {$results['gagal']} gagal.",
+            'message' => "Import selesai: {$results['berhasil']} guru ditambahkan, {$results['diperbarui']} diperbarui, {$results['gagal']} gagal."
+                . ($relasiMsg ? " Relasi: {$relasiMsg}." : ''),
             'data' => $results,
+        ]);
+    }
+
+    /**
+     * GET /guru/export — Multi-sheet export lengkap
+     */
+    public function export(Request $request)
+    {
+        $gurus = Guru::query()
+            ->with([
+                'keluarga',
+                'anaks',
+                'rekenings' => fn($q) => $q->where('is_primary', 1),
+                'pendidikans',
+                'sertifikasis',
+                'diklats',
+                'jabatans',
+                'inpassings',
+                'mutasi',
+                'kompetensi',
+                'kontakDarurat',
+                'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
+            ])
+            ->when($request->jenis_ptk, fn($q) => $q->where('jenis_ptk', $request->jenis_ptk))
+            ->when($request->status_kepegawaian, fn($q) => $q->where('status_kepegawaian', $request->status_kepegawaian))
+            ->when($request->status_keaktifan, fn($q) => $q->where('status_keaktifan', $request->status_keaktifan))
+            ->when($request->search, fn($q) => $q->where('nama', 'like', "%{$request->search}%")->orWhere('nuptk', 'like', "%{$request->search}%"))
+            ->orderBy('nama')
+            ->get();
+
+        $fmt = fn($d) => $d ? \Carbon\Carbon::parse($d)->format('d/m/Y') : '';
+
+        // ── Sheet 1: Data Utama ─────────────────────────────────────────
+        $hUtama = [
+            'No',
+            'NUPTK',
+            'NIP',
+            'NIP Lama',
+            'No. Karpeg',
+            'No. Karis/Karsu',
+            'NIK',
+            'No. KK',
+            'Nama',
+            'Gelar Depan',
+            'Gelar Belakang',
+            'Jenis Kelamin',
+            'Tempat Lahir',
+            'Tanggal Lahir',
+            'Agama',
+            'Golongan Darah',
+            'Kewarganegaraan',
+            'Status Hidup',
+            'Nama Ibu Kandung',
+            'No. HP',
+            'No. WA',
+            'Email',
+            'Alamat Jalan',
+            'RT',
+            'RW',
+            'Dusun',
+            'Desa/Kelurahan',
+            'Kecamatan',
+            'Kabupaten/Kota',
+            'Provinsi',
+            'Kode Pos',
+            'Jenis PTK',
+            'Status Kepegawaian',
+            'Status Keaktifan',
+            'Tanggal Bergabung',
+            'TMT PNS',
+            'TMT GTY',
+            'Masa Kerja (Thn)',
+            'No. SK Pengangkatan',
+            'Tgl SK Pengangkatan',
+            'Instansi Pengangkat',
+            'Wali Kelas',
+        ];
+        $rUtama = $gurus->map(fn($g, $i) => [
+            $i + 1,
+            $g->nuptk ?? '',
+            $g->nip ?? '',
+            $g->nip_lama ?? '',
+            $g->no_karpeg ?? '',
+            $g->no_karis_karsu ?? '',
+            $g->nik ?? '',
+            $g->no_kk ?? '',
+            $g->nama,
+            $g->gelar_depan ?? '',
+            $g->gelar_belakang ?? '',
+            $g->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+            $g->tempat_lahir ?? '',
+            $fmt($g->tanggal_lahir),
+            $g->agama ?? '',
+            $g->golongan_darah ?? '',
+            $g->kewarganegaraan ?? '',
+            $g->status_hidup ?? '',
+            $g->nama_ibu_kandung ?? '',
+            $g->no_hp ?? '',
+            $g->no_wa ?? '',
+            $g->email ?? '',
+            $g->alamat_jalan ?? '',
+            $g->rt ?? '',
+            $g->rw ?? '',
+            $g->dusun ?? '',
+            $g->desa_kelurahan ?? '',
+            $g->kecamatan ?? '',
+            $g->kota_kabupaten ?? '',
+            $g->provinsi ?? '',
+            $g->kode_pos ?? '',
+            $g->jenis_ptk ?? '',
+            $g->status_kepegawaian ?? '',
+            $g->status_keaktifan ?? '',
+            $fmt($g->tanggal_bergabung),
+            $fmt($g->tmt_pns),
+            $fmt($g->tmt_gty),
+            $g->masa_kerja_tahun ?? '',
+            $g->no_sk_pengangkatan ?? '',
+            $fmt($g->tgl_sk_pengangkatan),
+            $g->instansi_pengangkat ?? '',
+            $g->waliKelas->first()?->kelas?->nama_kelas ?? '',
+        ])->values()->toArray();
+
+        // ── Sheet 2: Keluarga & Anak ────────────────────────────────────
+        $hKeluarga = [
+            'NUPTK',
+            'Nama Guru',
+            'Status Perkawinan',
+            'Nama Pasangan',
+            'NIK Pasangan',
+            'Pekerjaan Pasangan',
+            'Jumlah Anak',
+            'Nama Anak',
+            'JK Anak',
+            'Tgl Lahir Anak',
+            'Urutan Anak'
+        ];
+        $rKeluarga = [];
+        foreach ($gurus as $g) {
+            $kel = $g->keluarga;
+            $anaks = $g->anaks;
+            if (!$kel && $anaks->isEmpty())
+                continue;
+            $kelRow = [
+                $g->nuptk,
+                $g->nama,
+                $kel?->status_perkawinan ?? '',
+                $kel?->nama_pasangan ?? '',
+                $kel?->nik_pasangan ?? '',
+                $kel?->pekerjaan_pasangan ?? '',
+                $kel?->jumlah_anak ?? ''
+            ];
+            if ($anaks->isEmpty()) {
+                $rKeluarga[] = array_merge($kelRow, ['', '', '', '']);
+            } else {
+                foreach ($anaks as $ai => $anak) {
+                    $rKeluarga[] = array_merge(
+                        $ai === 0 ? $kelRow : [$g->nuptk, $g->nama, '', '', '', '', ''],
+                        [$anak->nama, $anak->jenis_kelamin ?? '', $fmt($anak->tanggal_lahir), $anak->urutan ?? '']
+                    );
+                }
+            }
+        }
+
+        // ── Sheet 3: Rekening & Administrasi ───────────────────────────
+        $hRekening = [
+            'NUPTK',
+            'Nama Guru',
+            'Nama Bank',
+            'No. Rekening',
+            'Atas Nama',
+            'Cabang',
+            'NPWP',
+            'No. BPJS Kesehatan',
+            'No. BPJS Ketenagakerjaan',
+            'Gaji Pokok',
+            'Tunjangan Fungsional',
+            'Tunjangan Profesi'
+        ];
+        $rRekening = [];
+        foreach ($gurus as $g) {
+            $rek = $g->rekenings->first();
+            $rRekening[] = [
+                $g->nuptk,
+                $g->nama,
+                $rek?->nama_bank ?? '',
+                $rek?->no_rekening ?? '',
+                $rek?->atas_nama ?? '',
+                $rek?->cabang ?? '',
+                $rek?->npwp ?? '',
+                $rek?->no_bpjs_kesehatan ?? '',
+                $rek?->no_bpjs_ketenagakerjaan ?? '',
+                $rek?->gaji_pokok ?? '',
+                $rek?->tunjangan_fungsional ?? '',
+                $rek?->tunjangan_profesi ?? '',
+            ];
+        }
+
+        // ── Sheet 4: Pendidikan ─────────────────────────────────────────
+        $hPendidikan = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenjang',
+            'Nama Sekolah',
+            'Jurusan',
+            'Prodi',
+            'Tahun Masuk',
+            'Tahun Lulus',
+            'No. Ijazah'
+        ];
+        $rPendidikan = [];
+        foreach ($gurus as $g) {
+            foreach ($g->pendidikans as $p) {
+                $rPendidikan[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $p->jenjang,
+                    $p->nama_sekolah,
+                    $p->jurusan ?? '',
+                    $p->prodi ?? '',
+                    $p->tahun_masuk ?? '',
+                    $p->tahun_lulus ?? '',
+                    $p->no_ijazah ?? ''
+                ];
+            }
+        }
+
+        // ── Sheet 5: Sertifikasi ────────────────────────────────────────
+        $hSertifikasi = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenis Sertifikasi',
+            'No. Sertifikat',
+            'NRG',
+            'Tahun Sertifikasi',
+            'LPTK',
+            'Bidang Studi',
+            'Tanggal Terbit',
+            'Expired'
+        ];
+        $rSertifikasi = [];
+        foreach ($gurus as $g) {
+            foreach ($g->sertifikasis as $s) {
+                $rSertifikasi[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $s->jenis_sertifikasi,
+                    $s->no_sertifikat ?? '',
+                    $s->nrg ?? '',
+                    $s->tahun_sertifikasi ?? '',
+                    $s->lptk ?? '',
+                    $s->bidang_studi ?? '',
+                    $fmt($s->tanggal_terbit),
+                    $fmt($s->expired_at)
+                ];
+            }
+        }
+
+        // ── Sheet 6: Diklat ─────────────────────────────────────────────
+        $hDiklat = [
+            'NUPTK',
+            'Nama Guru',
+            'Nama Diklat',
+            'Penyelenggara',
+            'Jenis',
+            'Tingkat',
+            'Tgl Mulai',
+            'Tgl Selesai',
+            'Jumlah Jam',
+            'Peran',
+            'No. Sertifikat',
+            'Keterangan'
+        ];
+        $rDiklat = [];
+        foreach ($gurus as $g) {
+            foreach ($g->diklats as $d) {
+                $rDiklat[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $d->nama_diklat,
+                    $d->penyelenggara ?? '',
+                    $d->jenis ?? '',
+                    $d->tingkat ?? '',
+                    $fmt($d->tanggal_mulai),
+                    $fmt($d->tanggal_selesai),
+                    $d->jumlah_jam ?? '',
+                    $d->peran ?? '',
+                    $d->no_sertifikat ?? '',
+                    $d->keterangan ?? ''
+                ];
+            }
+        }
+
+        // ── Sheet 7: Jabatan ────────────────────────────────────────────
+        $hJabatan = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenis Jabatan',
+            'Jabatan',
+            'Unit Kerja',
+            'Instansi Pengangkat',
+            'Golongan',
+            'Pangkat',
+            'Jenis Pengangkatan',
+            'Status Kepegawaian',
+            'No. SK',
+            'Tgl SK',
+            'Pejabat TTD',
+            'TMT Jabatan',
+            'Tgl Selesai',
+            'Status Jabatan',
+            'Is Current',
+            'Uraian Tugas'
+        ];
+        $rJabatan = [];
+        foreach ($gurus as $g) {
+            foreach ($g->jabatans as $j) {
+                $rJabatan[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $j->jenis_jabatan,
+                    $j->jabatan,
+                    $j->unit_kerja ?? '',
+                    $j->instansi_pengangkat ?? '',
+                    $j->golongan ?? '',
+                    $j->pangkat ?? '',
+                    $j->jenis_pengangkatan ?? '',
+                    $j->status_kepegawaian ?? '',
+                    $j->no_sk ?? '',
+                    $fmt($j->tanggal_sk),
+                    $j->pejabat_penandatangan ?? '',
+                    $fmt($j->tmt_jabatan),
+                    $fmt($j->tanggal_selesai),
+                    $j->status_jabatan ?? '',
+                    $j->is_current ? 'Ya' : 'Tidak',
+                    $j->uraian_tugas ?? ''
+                ];
+            }
+        }
+
+        // ── Sheet 8: Inpassing ──────────────────────────────────────────
+        $hInpassing = [
+            'NUPTK',
+            'Nama Guru',
+            'No. SK',
+            'Tanggal SK',
+            'TMT Inpassing',
+            'Golongan Sesudah',
+            'Jabatan Fungsional',
+            'Angka Kredit'
+        ];
+        $rInpassing = [];
+        foreach ($gurus as $g) {
+            foreach ($g->inpassings as $inp) {
+                $rInpassing[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $inp->no_sk,
+                    $fmt($inp->tanggal_sk),
+                    $fmt($inp->tmt_inpassing),
+                    $inp->golongan_sesudah ?? '',
+                    $inp->jabatan_fungsional ?? '',
+                    $inp->angka_kredit ?? ''
+                ];
+            }
+        }
+
+        // ── Sheet 9: Mutasi ─────────────────────────────────────────────
+        $hMutasi = [
+            'NUPTK',
+            'Nama Guru',
+            'Jenis Mutasi',
+            'Sekolah Asal',
+            'NPSN Asal',
+            'Sekolah Tujuan',
+            'NPSN Tujuan',
+            'Tgl Mutasi',
+            'No. SK',
+            'Tgl SK',
+            'Keterangan'
+        ];
+        $rMutasi = [];
+        foreach ($gurus as $g) {
+            foreach ($g->mutasi as $m) {
+                $rMutasi[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $m->jenis_mutasi,
+                    $m->sekolah_asal ?? '',
+                    $m->npsn_asal ?? '',
+                    $m->sekolah_tujuan ?? '',
+                    $m->npsn_tujuan ?? '',
+                    $fmt($m->tanggal_mutasi),
+                    $m->no_sk ?? '',
+                    $fmt($m->tanggal_sk),
+                    $m->keterangan ?? ''
+                ];
+            }
+        }
+
+        // ── Sheet 10: Kompetensi ────────────────────────────────────────
+        $hKompetensi = ['NUPTK', 'Nama Guru', 'Jenis', 'Nama Kompetensi', 'Tingkat', 'Keterangan'];
+        $rKompetensi = [];
+        foreach ($gurus as $g) {
+            foreach ($g->kompetensi as $k) {
+                $rKompetensi[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $k->jenis,
+                    $k->nama,
+                    $k->tingkat ?? '',
+                    $k->keterangan ?? ''
+                ];
+            }
+        }
+
+        // ── Sheet 11: Kontak Darurat ────────────────────────────────────
+        $hKontak = ['NUPTK', 'Nama Guru', 'Nama Kontak', 'Hubungan', 'No. HP', 'Alamat', 'Primary'];
+        $rKontak = [];
+        foreach ($gurus as $g) {
+            foreach ($g->kontakDarurat as $kd) {
+                $rKontak[] = [
+                    $g->nuptk,
+                    $g->nama,
+                    $kd->nama,
+                    $kd->hubungan,
+                    $kd->no_hp,
+                    $kd->alamat ?? '',
+                    $kd->is_primary ? 'Ya' : 'Tidak'
+                ];
+            }
+        }
+
+        $sheets = [
+            ['name' => 'Data Utama', 'headers' => $hUtama, 'rows' => $rUtama],
+            ['name' => 'Keluarga & Anak', 'headers' => $hKeluarga, 'rows' => $rKeluarga],
+            ['name' => 'Rekening', 'headers' => $hRekening, 'rows' => $rRekening],
+            ['name' => 'Pendidikan', 'headers' => $hPendidikan, 'rows' => $rPendidikan],
+            ['name' => 'Sertifikasi', 'headers' => $hSertifikasi, 'rows' => $rSertifikasi],
+            ['name' => 'Diklat', 'headers' => $hDiklat, 'rows' => $rDiklat],
+            ['name' => 'Jabatan', 'headers' => $hJabatan, 'rows' => $rJabatan],
+            ['name' => 'Inpassing', 'headers' => $hInpassing, 'rows' => $rInpassing],
+            ['name' => 'Mutasi', 'headers' => $hMutasi, 'rows' => $rMutasi],
+            ['name' => 'Kompetensi', 'headers' => $hKompetensi, 'rows' => $rKompetensi],
+            ['name' => 'Kontak Darurat', 'headers' => $hKontak, 'rows' => $rKontak],
+        ];
+
+        $filename = 'data_guru_' . now()->format('Ymd_His') . '.xlsx';
+        $xlsx = $this->buildMultiSheetXlsx($sheets);
+        return response($xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length' => strlen($xlsx),
+            'Cache-Control' => 'max-age=0',
         ]);
     }
 
@@ -1769,97 +2769,6 @@ class MasterDataGuruController extends Controller
         ]);
     }
 
-    /**
-     * GET /guru/export
-     */
-    public function export(Request $request)
-    {
-        $gurus = Guru::query()
-            ->with([
-                'waliKelas' => fn($q) => $q->where('is_active', 1)->with('kelas:id,nama_kelas'),
-                'sertifikasis:id,guru_id',
-            ])
-            ->when($request->jenis_ptk, fn($q) => $q->where('jenis_ptk', $request->jenis_ptk))
-            ->when($request->status_kepegawaian, fn($q) => $q->where('status_kepegawaian', $request->status_kepegawaian))
-            ->when($request->status_keaktifan, fn($q) => $q->where('status_keaktifan', $request->status_keaktifan))
-            ->when($request->search, fn($q) => $q->where('nama', 'like', "%{$request->search}%")->orWhere('nuptk', 'like', "%{$request->search}%"))
-            ->orderBy('nama')
-            ->get();
-
-        $headers = [
-            'No',
-            'NUPTK',
-            'NIP',
-            'NIK',
-            'Nama Lengkap',
-            'Gelar Depan',
-            'Gelar Belakang',
-            'Jenis Kelamin',
-            'Tempat Lahir',
-            'Tanggal Lahir',
-            'Agama',
-            'Status Perkawinan',
-            'No. HP',
-            'No. WA',
-            'Email',
-            'Jenis PTK',
-            'Status Kepegawaian',
-            'Status Keaktifan',
-            'Tanggal Bergabung',
-            'TMT PNS',
-            'Alamat Jalan',
-            'RT',
-            'RW',
-            'Desa/Kelurahan',
-            'Kecamatan',
-            'Kabupaten/Kota',
-            'Provinsi',
-            'Kode Pos',
-            'Wali Kelas',
-            'Bersertifikasi',
-        ];
-        $dataRows = $gurus->map(fn($g, $i) => [
-            $i + 1,
-            $g->nuptk ?? '-',
-            $g->nip ?? '-',
-            $g->nik ?? '-',
-            trim(($g->gelar_depan ? $g->gelar_depan . ' ' : '') . $g->nama . ($g->gelar_belakang ? ', ' . $g->gelar_belakang : '')),
-            $g->gelar_depan ?? '-',
-            $g->gelar_belakang ?? '-',
-            $g->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan',
-            $g->tempat_lahir ?? '-',
-            $g->tanggal_lahir ? \Carbon\Carbon::parse($g->tanggal_lahir)->format('d/m/Y') : '-',
-            $g->agama ?? '-',
-            $g->status_perkawinan ?? '-',
-            $g->no_hp ?? '-',
-            $g->no_wa ?? '-',
-            $g->email ?? '-',
-            $g->jenis_ptk ?? '-',
-            $g->status_kepegawaian ?? '-',
-            $g->status_keaktifan ?? 'Aktif',
-            $g->tanggal_bergabung ? \Carbon\Carbon::parse($g->tanggal_bergabung)->format('d/m/Y') : '-',
-            $g->tmt_pns ? \Carbon\Carbon::parse($g->tmt_pns)->format('d/m/Y') : '-',
-            $g->alamat_jalan ?? '-',
-            $g->rt ?? '-',
-            $g->rw ?? '-',
-            $g->desa_kelurahan ?? '-',
-            $g->kecamatan ?? '-',
-            $g->kota_kabupaten ?? '-',
-            $g->provinsi ?? '-',
-            $g->kode_pos ?? '-',
-            $g->waliKelas->first()?->kelas?->nama_kelas ?? 'Tidak Ada',
-            $g->sertifikasis->count() > 0 ? 'Ya' : 'Tidak',
-        ])->toArray();
-
-        $filename = 'data_guru_' . now()->format('Ymd_His') . '.xlsx';
-        $xlsx = $this->buildXlsx($headers, $dataRows);
-        return response($xlsx, 200, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Content-Length' => strlen($xlsx),
-            'Cache-Control' => 'max-age=0',
-        ]);
-    }
 
     /**
      * GET /guru/backup
@@ -1944,7 +2853,7 @@ class MasterDataGuruController extends Controller
             $g->foto ? basename($g->foto) : '-',
         ])->toArray();
 
-        $xlsxBinary = $this->buildXlsx($headers, $dataRows);
+        $xlsxBinary = $this->buildMultiSheetXlsx([["name" => "Data Guru", "headers" => $headers, "rows" => $dataRows]]);
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'backup_guru_');
         $zip = new \ZipArchive();
@@ -1980,14 +2889,175 @@ class MasterDataGuruController extends Controller
         ]);
     }
 
-    // -- Private helpers --------------------------------------------------
 
-    private function parseXlsx(string $filePath): array
+    // ── Private: Multi-Sheet XLSX Builder ─────────────────────────────
+    private function buildMultiSheetXlsx(array $sheets): string
+    {
+        $globalStrings = [];
+        $addStr = function (string $s) use (&$globalStrings): int {
+            $key = array_search($s, $globalStrings, true);
+            if ($key === false) {
+                $globalStrings[] = $s;
+                return count($globalStrings) - 1;
+            }
+            return $key;
+        };
+
+        $sheetsXml = [];
+        $sheetRelsXml = [];
+        $contentParts = [];
+        $workbookSheets = '';
+
+        foreach ($sheets as $si => $sheet) {
+            $sheetNum = $si + 1;
+            $sheetName = htmlspecialchars($sheet['name'], ENT_XML1);
+            $allRows = array_merge([$sheet['headers']], $sheet['rows']);
+            $colCount = max(array_map('count', $allRows));
+
+            // auto-column widths
+            $colWidths = array_fill(0, $colCount, 10);
+            foreach ($allRows as $row) {
+                foreach ($row as $ci => $val) {
+                    $len = mb_strlen((string) $val);
+                    if ($len > ($colWidths[$ci] ?? 10))
+                        $colWidths[$ci] = min($len + 4, 60);
+                }
+            }
+
+            $colDefsXml = '<cols>';
+            for ($ci = 0; $ci < $colCount; $ci++) {
+                $n = $ci + 1;
+                $colDefsXml .= "<col min=\"{$n}\" max=\"{$n}\" width=\"{$colWidths[$ci]}\" customWidth=\"1\"/>";
+            }
+            $colDefsXml .= '</cols>';
+
+            $sheetRowsXml = '';
+            foreach ($allRows as $ri => $row) {
+                $rowNum = $ri + 1;
+                $isHeader = $ri === 0;
+                $sAttr = $isHeader ? ' s="1"' : ($ri % 2 === 0 ? '' : ' s="2"');
+                $cellsXml = '';
+                foreach ($row as $ci => $val) {
+                    $col = $this->indexToColLetter($ci);
+                    $ref = "{$col}{$rowNum}";
+                    $idx = $addStr((string) $val);
+                    $cellsXml .= "<c r=\"{$ref}\" t=\"s\"{$sAttr}><v>{$idx}</v></c>";
+                }
+                $sheetRowsXml .= "<row r=\"{$rowNum}\">{$cellsXml}</row>";
+            }
+
+            $sheetsXml[$si] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                . $colDefsXml . "<sheetData>{$sheetRowsXml}</sheetData></worksheet>";
+
+            $rId = "rId{$sheetNum}";
+            $workbookSheets .= "<sheet name=\"{$sheetName}\" sheetId=\"{$sheetNum}\" r:id=\"{$rId}\"/>";
+
+            $sheetRelsXml[] = "<Relationship Id=\"{$rId}\" "
+                . "Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" "
+                . "Target=\"worksheets/sheet{$sheetNum}.xml\"/>";
+
+            $contentParts[] = "<Override PartName=\"/xl/worksheets/sheet{$sheetNum}.xml\" "
+                . "ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>";
+        }
+
+        // sharedStrings
+        $ssItems = '';
+        foreach ($globalStrings as $s) {
+            $ssItems .= '<si><t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1) . '</t></si>';
+        }
+        $ssCount = count($globalStrings);
+        $ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\" uniqueCount=\"{$ssCount}\">{$ssItems}</sst>";
+
+        // styles
+        $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<fonts count="2">'
+            . '<font><sz val="11"/><name val="Calibri"/></font>'
+            . '<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>'
+            . '</fonts>'
+            . '<fills count="4">'
+            . '<fill><patternFill patternType="none"/></fill>'
+            . '<fill><patternFill patternType="gray125"/></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FF5B21B6"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F3FF"/></patternFill></fill>'
+            . '</fills>'
+            . '<borders count="2">'
+            . '<border><left/><right/><top/><bottom/><diagonal/></border>'
+            . '<border>'
+            . '<left style="thin"><color rgb="FFCCCCCC"/></left>'
+            . '<right style="thin"><color rgb="FFCCCCCC"/></right>'
+            . '<top style="thin"><color rgb="FFCCCCCC"/></top>'
+            . '<bottom style="thin"><color rgb="FFCCCCCC"/></bottom>'
+            . '</border>'
+            . '</borders>'
+            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+            . '<cellXfs count="3">'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/>'
+            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0"><alignment horizontal="center"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0"/>'
+            . '</cellXfs>'
+            . '</styleSheet>';
+
+        // workbook
+        $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . "<sheets>{$workbookSheets}</sheets></workbook>";
+
+        // workbook.xml.rels — sheets + sharedStrings + styles
+        $sharedRId = 'rId' . (count($sheets) + 1);
+        $stylesRId = 'rId' . (count($sheets) + 2);
+        $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . implode('', $sheetRelsXml)
+            . "<Relationship Id=\"{$sharedRId}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/>"
+            . "<Relationship Id=\"{$stylesRId}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>"
+            . '</Relationships>';
+
+        $rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            . '</Relationships>';
+
+        $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            . '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . implode('', $contentParts)
+            . '</Types>';
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx_multi_');
+        $zip = new \ZipArchive();
+        $zip->open($tmpFile, \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', $contentTypes);
+        $zip->addFromString('_rels/.rels', $rootRels);
+        $zip->addFromString('xl/workbook.xml', $workbookXml);
+        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRels);
+        $zip->addFromString('xl/sharedStrings.xml', $ssXml);
+        $zip->addFromString('xl/styles.xml', $stylesXml);
+        foreach ($sheetsXml as $si => $sXml) {
+            $zip->addFromString('xl/worksheets/sheet' . ($si + 1) . '.xml', $sXml);
+        }
+        $zip->close();
+
+        $binary = file_get_contents($tmpFile);
+        unlink($tmpFile);
+        return $binary;
+    }
+
+    // ── Private: Multi-Sheet XLSX Parser ──────────────────────────────
+    private function parseMultiSheetXlsx(string $filePath): array
     {
         $zip = new \ZipArchive();
         if ($zip->open($filePath) !== true)
             return [];
 
+        // shared strings
         $sharedStrings = [];
         $ssXml = $zip->getFromName('xl/sharedStrings.xml');
         if ($ssXml !== false) {
@@ -2002,150 +3072,78 @@ class MasterDataGuruController extends Controller
             }
         }
 
-        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
-        $zip->close();
-        if ($sheetXml === false)
-            return [];
+        // workbook — get sheet names & targets
+        $wbXml = $zip->getFromName('xl/workbook.xml');
+        $wbRelsXml = $zip->getFromName('xl/_rels/workbook.xml.rels');
+        $sheetList = [];
 
-        $sheet = simplexml_load_string($sheetXml);
-        $rows = [];
-        foreach ($sheet->sheetData->row as $row) {
-            $rowArr = [];
-            $maxCol = 0;
-            foreach ($row->c as $cell) {
-                $ref = (string) $cell['r'];
-                $colLetters = preg_replace('/[0-9]/', '', $ref);
-                $colIdx = $this->colLetterToIndex($colLetters);
-                $maxCol = max($maxCol, $colIdx);
-                $t = (string) $cell['t'];
-                $val = isset($cell->v) ? (string) $cell->v : '';
-                if ($t === 's' && $val !== '')
-                    $val = $sharedStrings[(int) $val] ?? '';
-                $rowArr[$colIdx] = $val;
+        if ($wbXml && $wbRelsXml) {
+            $wb = simplexml_load_string($wbXml);
+            $wbRels = simplexml_load_string($wbRelsXml);
+
+            $relMap = [];
+            foreach ($wbRels->Relationship as $rel) {
+                $relMap[(string) $rel['Id']] = (string) $rel['Target'];
             }
-            for ($i = 0; $i <= $maxCol; $i++) {
-                if (!isset($rowArr[$i]))
-                    $rowArr[$i] = '';
+
+            $ns = $wb->getNamespaces(true);
+            $rNs = $ns['r'] ?? 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+            foreach ($wb->sheets->sheet as $sheet) {
+                $rId = (string) $sheet->attributes($rNs)['id'];
+                $target = $relMap[$rId] ?? null;
+                if (!$target)
+                    continue;
+                // target could be "worksheets/sheet1.xml" or absolute
+                $path = (strpos($target, '/') === 0) ? ltrim($target, '/') : 'xl/' . $target;
+                $sheetList[] = ['name' => (string) $sheet['name'], 'path' => $path];
             }
-            ksort($rowArr);
-            $rows[] = array_values($rowArr);
+        } else {
+            // fallback: try sheet1..sheetN
+            for ($i = 1; $i <= 15; $i++) {
+                $path = "xl/worksheets/sheet{$i}.xml";
+                if ($zip->getFromName($path) !== false) {
+                    $sheetList[] = ['name' => "Sheet{$i}", 'path' => $path];
+                }
+            }
         }
-        return $rows;
+
+        $result = [];
+        foreach ($sheetList as $sheetMeta) {
+            $sheetXml = $zip->getFromName($sheetMeta['path']);
+            if ($sheetXml === false)
+                continue;
+
+            $sheet = simplexml_load_string($sheetXml);
+            $rows = [];
+            foreach ($sheet->sheetData->row as $row) {
+                $rowArr = [];
+                $maxCol = 0;
+                foreach ($row->c as $cell) {
+                    $ref = (string) $cell['r'];
+                    $colLetter = preg_replace('/[0-9]/', '', $ref);
+                    $colIdx = $this->colLetterToIndex($colLetter);
+                    $maxCol = max($maxCol, $colIdx);
+                    $t = (string) $cell['t'];
+                    $val = isset($cell->v) ? (string) $cell->v : '';
+                    if ($t === 's' && $val !== '')
+                        $val = $sharedStrings[(int) $val] ?? '';
+                    $rowArr[$colIdx] = $val;
+                }
+                for ($i = 0; $i <= $maxCol; $i++) {
+                    if (!isset($rowArr[$i]))
+                        $rowArr[$i] = '';
+                }
+                ksort($rowArr);
+                $rows[] = array_values($rowArr);
+            }
+            $result[] = ['name' => $sheetMeta['name'], 'rows' => $rows];
+        }
+
+        $zip->close();
+        return $result;
     }
 
-    private function buildXlsx(array $headerRow, array $dataRows): string
-    {
-        $strings = [];
-        $addStr = function (string $s) use (&$strings): int {
-            $key = array_search($s, $strings, true);
-            if ($key === false) {
-                $strings[] = $s;
-                return count($strings) - 1;
-            }
-            return $key;
-        };
-
-        $sheetRowsXml = '';
-        $allRows = array_merge([$headerRow], $dataRows);
-        foreach ($allRows as $ri => $row) {
-            $rowNum = $ri + 1;
-            $isHeader = $ri === 0;
-            $cellsXml = '';
-            foreach ($row as $ci => $val) {
-                $colLetter = $this->indexToColLetter($ci);
-                $cellRef = "{$colLetter}{$rowNum}";
-                $sAttr = $isHeader ? ' s="1"' : ($ri % 2 === 0 ? ' s="2"' : '');
-                $strIdx = $addStr((string) $val);
-                $cellsXml .= "<c r=\"{$cellRef}\" t=\"s\"{$sAttr}><v>{$strIdx}</v></c>";
-            }
-            $sheetRowsXml .= "<row r=\"{$rowNum}\">{$cellsXml}</row>";
-        }
-
-        $ssItems = '';
-        foreach ($strings as $s) {
-            $ssItems .= '<si><t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1) . '</t></si>';
-        }
-        $ssCount = count($strings);
-        $ssXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\" uniqueCount=\"{$ssCount}\">{$ssItems}</sst>";
-
-        $colCount = count($headerRow);
-        $colDefsXml = '<cols>';
-        for ($ci = 0; $ci < $colCount; $ci++) {
-            $maxLen = 10;
-            foreach ($allRows as $row) {
-                $maxLen = max($maxLen, mb_strlen((string) ($row[$ci] ?? '')));
-            }
-            $width = min($maxLen + 4, 60);
-            $colNum = $ci + 1;
-            $colDefsXml .= "<col min=\"{$colNum}\" max=\"{$colNum}\" width=\"{$width}\" customWidth=\"1\"/>";
-        }
-        $colDefsXml .= '</cols>';
-
-        $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . $colDefsXml . "<sheetData>{$sheetRowsXml}</sheetData></worksheet>";
-
-        $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . '<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font>'
-            . '<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>'
-            . '<font><sz val="11"/><name val="Calibri"/></font></fonts>'
-            . '<fills count="4"><fill><patternFill patternType="none"/></fill>'
-            . '<fill><patternFill patternType="gray125"/></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FF5B21B6"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F3FF"/></patternFill></fill></fills>'
-            . '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'
-            . '<border><left style="thin"><color rgb="FFCCCCCC"/></left>'
-            . '<right style="thin"><color rgb="FFCCCCCC"/></right>'
-            . '<top style="thin"><color rgb="FFCCCCCC"/></top>'
-            . '<bottom style="thin"><color rgb="FFCCCCCC"/></bottom></border></borders>'
-            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            . '<cellXfs count="3">'
-            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment wrapText="0"/></xf>'
-            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0"><alignment horizontal="center" wrapText="0"/></xf>'
-            . '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0"><alignment wrapText="0"/></xf>'
-            . '</cellXfs></styleSheet>';
-
-        $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            . '<sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>';
-        $workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
-            . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
-            . '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
-            . '</Relationships>';
-        $rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
-            . '</Relationships>';
-        $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-            . '<Default Extension="xml" ContentType="application/xml"/>'
-            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-            . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-            . '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
-            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
-            . '</Types>';
-
-        $tmpFile = tempnam(sys_get_temp_dir(), 'xlsx_');
-        $zip = new \ZipArchive();
-        $zip->open($tmpFile, \ZipArchive::OVERWRITE);
-        $zip->addFromString('[Content_Types].xml', $contentTypes);
-        $zip->addFromString('_rels/.rels', $rootRels);
-        $zip->addFromString('xl/workbook.xml', $workbookXml);
-        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRels);
-        $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
-        $zip->addFromString('xl/sharedStrings.xml', $ssXml);
-        $zip->addFromString('xl/styles.xml', $stylesXml);
-        $zip->close();
-
-        $binary = file_get_contents($tmpFile);
-        unlink($tmpFile);
-        return $binary;
-    }
 
     private function indexToColLetter(int $index): string
     {

@@ -19,14 +19,21 @@ class GuruMutasi extends Model
         'sekolah_tujuan',
         'npsn_tujuan',
         'tanggal_mutasi',
+        'tmt_mutasi',
+        'jabatan_sebelum',
+        'jabatan_sesudah',
+        'status_kepegawaian',
         'no_sk',
         'tanggal_sk',
+        'instansi_penerbit_sk',
+        'alasan_mutasi',
         'file_sk',
         'keterangan',
     ];
 
     protected $casts = [
         'tanggal_mutasi' => 'date',
+        'tmt_mutasi' => 'date',
         'tanggal_sk' => 'date',
     ];
 
