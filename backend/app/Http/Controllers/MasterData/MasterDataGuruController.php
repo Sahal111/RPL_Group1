@@ -17,6 +17,7 @@ use App\Models\GuruDiklat;
 use App\Models\GuruMutasi;
 use App\Models\GuruPkg;
 use App\Models\PlotGuruMapel;
+use App\Services\MutasiGuruService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -1126,8 +1127,8 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Riwayat pelatihan dihapus.']);
     }
 
-    // ────────────────────────────────────────────────────────
-    // SECTION 10: MUTASI
+    /// ────────────────────────────────────────────────────────
+    // SECTION 10: MUTASI — Business Process + Validation Engine
     // ────────────────────────────────────────────────────────
 
     public function getMutasi($nuptk)
@@ -1136,17 +1137,51 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->mutasi]);
     }
 
+    /**
+     * POST /guru/{nuptk}/mutasi/analyze
+     * Validasi + impact analysis — SEBELUM simpan.
+     * Return: { errors[], warnings[], dampak[], sistemAkan[] }
+     */
+    public function analyzeMutasi(Request $request, $nuptk)
+    {
+        $guru = Guru::with([
+            'user',
+            'jabatanAktif',
+            'kelasWali',
+            'plotGuruMapels.mapel',
+            'jadwals',
+            'mutasi',
+        ])->where('nuptk', $nuptk)->firstOrFail();
+
+        $service = new \App\Services\MutasiGuruService();
+        $result = $service->analyze($guru, $request->all());
+
+        // errors → 422 agar frontend bisa bedain valid/invalid
+        $status = count($result['errors']) > 0 ? 422 : 200;
+
+        return response()->json([
+            'success' => $status === 200,
+            'data' => $result,
+        ], $status);
+    }
+
     public function storeMutasi(Request $request, $nuptk)
     {
-        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $guru = Guru::with([
+            'user',
+            'jabatanAktif',
+            'kelasWali',
+            'plotGuruMapels',
+            'jadwals',
+        ])->where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
             'jenis_mutasi' => 'required|in:Masuk,Keluar,Internal,Penugasan Sementara,Kembali Bertugas',
+            'tanggal_mutasi' => 'required|date',
             'sekolah_asal' => 'nullable|string|max:200',
             'npsn_asal' => 'nullable|string|max:10',
             'sekolah_tujuan' => 'nullable|string|max:200',
             'npsn_tujuan' => 'nullable|string|max:10',
-            'tanggal_mutasi' => 'required|date',
             'tmt_mutasi' => 'nullable|date',
             'jabatan_sebelum' => 'nullable|string|max:100',
             'jabatan_sesudah' => 'nullable|string|max:100',
@@ -1155,10 +1190,22 @@ class MasterDataGuruController extends Controller
             'tanggal_sk' => 'nullable|date',
             'instansi_penerbit_sk' => 'nullable|string|max:200',
             'alasan_mutasi' => 'nullable|string|max:200',
-            'keterangan' => 'nullable|string',
+            'keterangan' => 'nullable|string|max:500',
             'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'tanggal_berakhir' => 'nullable|date',
         ]);
+
+        // Jalankan business rules validation lagi di backend (defense-in-depth)
+        $service = new \App\Services\MutasiGuruService();
+        $validation = $service->analyze($guru, $request->all());
+
+        if (count($validation['errors']) > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => $validation['errors'][0],
+                'errors' => $validation['errors'],
+            ], 422);
+        }
 
         $data = $request->only([
             'jenis_mutasi',
@@ -1180,60 +1227,37 @@ class MasterDataGuruController extends Controller
         ]);
 
         if ($request->hasFile('file_sk')) {
-            $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/mutasi", 'public');
+            $data['file_sk'] = $request->file('file_sk')
+                ->store("guru-dokumen/{$guru->id}/mutasi", 'public');
         }
 
-        $mutasi = $guru->mutasi()->create($data);
+        $mutasi = $service->execute($guru, $data);
 
-        // Sinkron status_keaktifan otomatis
-        if ($data['jenis_mutasi'] === 'Keluar') {
-            $guru->update(['status_keaktifan' => 'Keluar']);
-        } elseif ($data['jenis_mutasi'] === 'Masuk') {
-            $guru->update(['status_keaktifan' => 'Aktif']);
-        } elseif ($data['jenis_mutasi'] === 'Kembali Bertugas') {
-            $guru->update(['status_keaktifan' => 'Aktif']);
-        }
-
-        // Sinkron jabatan aktif saat mutasi internal
-        if ($data['jenis_mutasi'] === 'Internal' && !empty($data['jabatan_sesudah'])) {
-            $jabatanAktif = $guru->jabatanAktif;
-            if ($jabatanAktif) {
-                $jabatanAktif->update([
-                    'jabatan' => $data['jabatan_sesudah'],
-                    'tanggal_selesai' => $data['tanggal_mutasi'] ?? null,
-                    'status_jabatan' => 'Mutasi',
-                    'is_current' => false,
-                ]);
-            }
-            $guru->jabatans()->create([
-                'jabatan' => $data['jabatan_sesudah'],
-                'jenis_jabatan' => $jabatanAktif->jenis_jabatan ?? 'Fungsional',
-                'unit_kerja' => $jabatanAktif->unit_kerja ?? '',
-                'tmt_jabatan' => $data['tmt_mutasi'] ?? $data['tanggal_mutasi'],
-                'status_kepegawaian' => $data['status_kepegawaian'] ?? ($jabatanAktif->status_kepegawaian ?? null),
-                'no_sk' => $data['no_sk'] ?? null,
-                'tanggal_sk' => $data['tanggal_sk'] ?? null,
-                'instansi_pengangkat' => $data['instansi_penerbit_sk'] ?? null,
-                'status_jabatan' => 'Aktif',
-                'is_current' => true,
-            ]);
-        }
-
-        return response()->json(['success' => true, 'message' => 'Riwayat mutasi ditambahkan.', 'data' => $mutasi], 201);
+        return response()->json([
+            'success' => true,
+            'message' => "Mutasi {$data['jenis_mutasi']} berhasil disimpan dan sistem telah disinkronkan.",
+            'data' => $mutasi,
+        ], 201);
     }
 
     public function updateMutasi(Request $request, $nuptk, $id)
     {
-        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $guru = Guru::with([
+            'user',
+            'jabatanAktif',
+            'kelasWali',
+            'plotGuruMapels',
+            'jadwals',
+        ])->where('nuptk', $nuptk)->firstOrFail();
         $mutasi = $guru->mutasi()->findOrFail($id);
 
         $request->validate([
             'jenis_mutasi' => 'required|in:Masuk,Keluar,Internal,Penugasan Sementara,Kembali Bertugas',
+            'tanggal_mutasi' => 'required|date',
             'sekolah_asal' => 'nullable|string|max:200',
             'npsn_asal' => 'nullable|string|max:10',
             'sekolah_tujuan' => 'nullable|string|max:200',
             'npsn_tujuan' => 'nullable|string|max:10',
-            'tanggal_mutasi' => 'required|date',
             'tmt_mutasi' => 'nullable|date',
             'jabatan_sebelum' => 'nullable|string|max:100',
             'jabatan_sesudah' => 'nullable|string|max:100',
@@ -1242,10 +1266,21 @@ class MasterDataGuruController extends Controller
             'tanggal_sk' => 'nullable|date',
             'instansi_penerbit_sk' => 'nullable|string|max:200',
             'alasan_mutasi' => 'nullable|string|max:200',
-            'keterangan' => 'nullable|string',
+            'keterangan' => 'nullable|string|max:500',
             'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'tanggal_berakhir' => 'nullable|date',
         ]);
+
+        $service = new \App\Services\MutasiGuruService();
+        $validation = $service->analyze($guru, array_merge($request->all(), ['mutasi_id' => $id]));
+
+        if (count($validation['errors']) > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => $validation['errors'][0],
+                'errors' => $validation['errors'],
+            ], 422);
+        }
 
         $data = $request->only([
             'jenis_mutasi',
@@ -1269,47 +1304,44 @@ class MasterDataGuruController extends Controller
         if ($request->hasFile('file_sk')) {
             if ($mutasi->file_sk)
                 Storage::disk('public')->delete($mutasi->file_sk);
-            $data['file_sk'] = $request->file('file_sk')->store("guru-dokumen/{$guru->id}/mutasi", 'public');
+            $data['file_sk'] = $request->file('file_sk')
+                ->store("guru-dokumen/{$guru->id}/mutasi", 'public');
         }
 
-        $jenisBaru = $data['jenis_mutasi'];
-        $jenisLama = $mutasi->jenis_mutasi;
-
-        $mutasi->update($data);
-
-        // Re-sync status hanya kalau jenis berubah ke/dari Keluar atau Masuk
-        if ($jenisBaru !== $jenisLama) {
-            match ($jenisBaru) {
-                'Keluar' => $guru->update(['status_keaktifan' => 'Keluar']),
-                'Masuk', 'Kembali Bertugas' => $guru->update(['status_keaktifan' => 'Aktif']),
-                default => null,
-            };
+        // Re-sync hanya jika jenis berubah
+        if ($data['jenis_mutasi'] !== $mutasi->jenis_mutasi) {
+            $mutasi = $service->execute($guru, $data, $mutasi->id);
+        } else {
+            $mutasi->update($data);
         }
 
-        return response()->json(['success' => true, 'message' => 'Riwayat mutasi diperbarui.', 'data' => $mutasi]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Riwayat mutasi diperbarui.',
+            'data' => $mutasi->fresh(),
+        ]);
     }
 
     public function destroyMutasi($nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $mutasi = $guru->mutasi()->findOrFail($id);
-
         $jenis = $mutasi->jenis_mutasi;
 
         if ($mutasi->file_sk)
             Storage::disk('public')->delete($mutasi->file_sk);
         $mutasi->delete();
 
-        // Reverse status setelah hapus — cek dari sisa record mutasi yang ada
+        // Re-derive status dari sisa mutasi terbaru
         $sisaMutasi = $guru->mutasi()->orderByDesc('tanggal_mutasi')->first();
         if ($sisaMutasi) {
             match ($sisaMutasi->jenis_mutasi) {
                 'Keluar' => $guru->update(['status_keaktifan' => 'Keluar']),
-                'Masuk', 'Kembali Bertugas' => $guru->update(['status_keaktifan' => 'Aktif']),
+                'Masuk',
+                'Kembali Bertugas' => $guru->update(['status_keaktifan' => 'Aktif']),
                 default => null,
             };
         } elseif ($jenis === 'Keluar') {
-            // Tidak ada sisa mutasi, dan yang dihapus adalah Keluar → balik Aktif
             $guru->update(['status_keaktifan' => 'Aktif']);
         }
 

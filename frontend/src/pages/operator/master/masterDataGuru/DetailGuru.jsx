@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../../../lib/axios";
@@ -2941,6 +2941,239 @@ function TabDokumen({ nuptk, guru }) {
 /* ══════════════════════════════════════════════════════════
    MODAL MUTASI — komponen terpisah agar hooks legal
    ══════════════════════════════════════════════════════════ */
+/* ─── Impact Analysis Panel ─────────────────────────────────────────────── */
+function ImpactPanel({ result, loading }) {
+  if (loading)
+    return (
+      <div className="flex items-center gap-2 p-4 rounded-xl bg-surface-container text-sm text-text-secondary">
+        <span className="material-symbols-outlined animate-spin text-[18px]">
+          refresh
+        </span>
+        Menganalisis dampak...
+      </div>
+    );
+
+  if (!result) return null;
+
+  const { errors = [], warnings = [], dampak = [], sistemAkan = [] } = result;
+
+  const colorCls = {
+    success: "text-success",
+    error: "text-error",
+    warning: "text-warning",
+    neutral: "text-text-secondary",
+  };
+  const bgCls = {
+    success: "bg-success/10",
+    error: "bg-error/10",
+    warning: "bg-warning/10",
+    neutral: "bg-surface-container",
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Error blocking */}
+      {errors.length > 0 && (
+        <div className="rounded-xl border border-error/30 bg-error/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-error text-[18px]">
+              error
+            </span>
+            <p className="text-sm font-bold text-error">
+              Mutasi tidak dapat dilanjutkan
+            </p>
+          </div>
+          <ul className="space-y-1">
+            {errors.map((e, i) => (
+              <li
+                key={i}
+                className="text-xs text-error flex items-start gap-1.5"
+              >
+                <span className="mt-0.5 flex-shrink-0">❌</span>
+                {e}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Warnings */}
+      {warnings.length > 0 && (
+        <div className="rounded-xl border border-warning/30 bg-warning/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-warning text-[18px]">
+              warning
+            </span>
+            <p className="text-sm font-bold text-warning">Perhatian</p>
+          </div>
+          <ul className="space-y-1">
+            {warnings.map((w, i) => (
+              <li
+                key={i}
+                className="text-xs text-warning flex items-start gap-1.5"
+              >
+                <span className="mt-0.5 flex-shrink-0">⚠️</span>
+                {w}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Kondisi saat ini */}
+      {dampak.length > 0 && (
+        <div className="rounded-xl border border-border-light bg-surface-container-lowest p-4">
+          <p className="text-[11px] font-bold text-text-secondary uppercase tracking-widest mb-3">
+            Kondisi Saat Ini
+          </p>
+          <div className="space-y-2">
+            {dampak.map((item, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <span
+                  className={`material-symbols-outlined text-[16px] p-0.5 rounded-md flex-shrink-0 ${bgCls[item.color]} ${colorCls[item.color]}`}
+                >
+                  {item.icon}
+                </span>
+                <span className="text-xs text-text-primary">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sistem akan */}
+      {sistemAkan.length > 0 && (
+        <div className="rounded-xl border border-border-light bg-surface-container-lowest p-4">
+          <p className="text-[11px] font-bold text-text-secondary uppercase tracking-widest mb-3">
+            Sistem Akan Melakukan
+          </p>
+          <div className="space-y-2">
+            {sistemAkan.map((item, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <span
+                  className={`material-symbols-outlined text-[16px] p-0.5 rounded-md flex-shrink-0 ${bgCls[item.color]} ${colorCls[item.color]}`}
+                >
+                  {item.icon}
+                </span>
+                <span className="text-xs text-text-primary">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Konfirmasi Dialog ──────────────────────────────────────────────────── */
+function KonfirmasiDialog({ result, jenis, onCancel, onConfirm, isPending }) {
+  const { sistemAkan = [], warnings = [] } = result ?? {};
+
+  const jenisLabel =
+    {
+      Masuk: "Mutasi Masuk",
+      Keluar: "Mutasi Keluar",
+      Internal: "Mutasi Internal",
+      "Penugasan Sementara": "Penugasan Sementara",
+      "Kembali Bertugas": "Kembali Bertugas",
+    }[jenis] ?? jenis;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-md border border-border-light">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border-light">
+          <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-warning text-[20px]">
+              warning
+            </span>
+          </div>
+          <div>
+            <h3 className="font-bold text-text-primary text-base">
+              Konfirmasi {jenisLabel}
+            </h3>
+            <p className="text-xs text-text-secondary">
+              Tindakan ini akan mengubah data di beberapa modul
+            </p>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 space-y-3">
+          {warnings.length > 0 && (
+            <div className="rounded-xl bg-warning/5 border border-warning/20 p-3">
+              {warnings.map((w, i) => (
+                <p key={i} className="text-xs text-warning">
+                  ⚠️ {w}
+                </p>
+              ))}
+            </div>
+          )}
+
+          <p className="text-sm font-semibold text-text-primary">
+            Mutasi ini akan melakukan:
+          </p>
+          <div className="space-y-1.5">
+            {sistemAkan.map((item, i) => {
+              const colorCls = {
+                success: "text-success",
+                error: "text-error",
+                warning: "text-warning",
+                neutral: "text-text-secondary",
+              };
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span
+                    className={`material-symbols-outlined text-[15px] ${colorCls[item.color]}`}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="text-xs text-text-primary">
+                    {item.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-text-secondary pt-1">
+            Apakah Anda yakin ingin melanjutkan?
+          </p>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-light">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-container rounded-xl transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="px-5 py-2 bg-primary text-on-primary rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {isPending ? (
+              <>
+                <span className="material-symbols-outlined animate-spin text-[16px]">
+                  refresh
+                </span>
+                Menyimpan...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[16px]">
+                  check
+                </span>
+                Lanjutkan Mutasi
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Modal Mutasi Utama ─────────────────────────────────────────────────── */
 function ModalMutasi({
   modalMutasi,
   onClose,
@@ -2949,16 +3182,27 @@ function ModalMutasi({
   jabatanAktif,
   guruInfo,
   lastMutasiKeluar,
+  nuptk,
 }) {
   const isAdd = modalMutasi === "add";
 
+  // ── State ──────────────────────────────────────────────────
+  const [jenisDipilih, setJenisDipilih] = useState(
+    isAdd ? "" : (modalMutasi?.jenis_mutasi ?? ""),
+  );
+  const [analyzeResult, setAnalyzeResult] = useState(null);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [showKonfirmasi, setShowKonfirmasi] = useState(false);
+  const [formData, setFormData] = useState(null); // payload siap kirim
+  const debounceRef = useRef(null);
+
+  // ── Auto-fill helper ───────────────────────────────────────
   const autoFill = (field, jenis) => {
     if (!isAdd) return null;
     const jabatan = jabatanAktif?.jabatan ?? "";
-    const sekolahKu = guruInfo?.nama_sekolah ?? "";
+    const sekolahKu = guruInfo?.nama_sekolah ?? "MI Nurul Huda 3";
     const npsnKu = guruInfo?.npsn ?? "";
     const statusKep = guruInfo?.status_kepegawaian ?? "";
-
     const map = {
       Masuk: {
         sekolah_asal: lastMutasiKeluar?.sekolah_tujuan ?? "",
@@ -2974,10 +3218,7 @@ function ModalMutasi({
         jabatan_sebelum: jabatan,
         status_kepegawaian: statusKep,
       },
-      Internal: {
-        jabatan_sebelum: jabatan,
-        status_kepegawaian: statusKep,
-      },
+      Internal: { jabatan_sebelum: jabatan, status_kepegawaian: statusKep },
       "Penugasan Sementara": {
         sekolah_asal: sekolahKu,
         npsn_asal: npsnKu,
@@ -2991,14 +3232,68 @@ function ModalMutasi({
         status_kepegawaian: statusKep,
       },
     };
-
     return map[jenis]?.[field] ?? "";
   };
 
-  const [jenisDipilih, setJenisDipilih] = useState(
-    isAdd ? "" : (modalMutasi?.jenis_mutasi ?? ""),
+  // ── Analyze — panggil backend ──────────────────────────────
+  const runAnalyze = useCallback(
+    async (jenis, extraPayload = {}) => {
+      if (!jenis || !nuptk) {
+        setAnalyzeResult(null);
+        return;
+      }
+      setAnalyzeLoading(true);
+      try {
+        const res = await api.post(
+          `/operator/master-data/guru/${nuptk}/mutasi/analyze`,
+          {
+            jenis_mutasi: jenis,
+            ...extraPayload,
+            ...(isAdd ? {} : { mutasi_id: modalMutasi?.id }),
+          },
+        );
+        setAnalyzeResult(res.data.data);
+      } catch (e) {
+        setAnalyzeResult(e.response?.data?.data ?? null);
+      } finally {
+        setAnalyzeLoading(false);
+      }
+    },
+    [nuptk, isAdd, modalMutasi?.id],
   );
 
+  // Auto-analyze saat modal edit dibuka
+  useEffect(() => {
+    if (!isAdd && modalMutasi?.jenis_mutasi) {
+      runAnalyze(modalMutasi.jenis_mutasi, {
+        tanggal_mutasi: modalMutasi.tanggal_mutasi ?? "",
+        no_sk: modalMutasi.no_sk ?? "",
+        jabatan_sesudah: modalMutasi.jabatan_sesudah ?? "",
+        tanggal_berakhir: modalMutasi.tanggal_berakhir ?? "",
+      });
+    }
+  }, []); // eslint-disable-line
+
+  // ── Saat jenis berubah ─────────────────────────────────────
+  const handleJenisClick = (val) => {
+    setJenisDipilih(val);
+    setAnalyzeResult(null);
+    runAnalyze(val);
+  };
+
+  // ── Debounce re-analyze saat field penting berubah ─────────
+  const handleFieldChange = (extraPayload) => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (jenisDipilih) runAnalyze(jenisDipilih, extraPayload);
+    }, 600);
+  };
+
+  // ── Computed: apakah ada error blocking ───────────────────
+  const hasBlockingError = (analyzeResult?.errors?.length ?? 0) > 0;
+  const canSubmit = jenisDipilih && !hasBlockingError && !analyzeLoading;
+
+  // ── Form show/hide logic ───────────────────────────────────
   const show = {
     sekolah_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
     npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
@@ -3033,25 +3328,48 @@ function ModalMutasi({
       "Kembali Bertugas": "Tanggal Kembali Bertugas",
     }[jenisDipilih] ?? "Tanggal Mutasi";
 
-  const descJenis = {
-    Masuk: "Guru pindah dari sekolah lain ke sekolah ini.",
-    Keluar: "Guru pindah ke sekolah lain.",
-    Internal: "Perubahan jabatan atau unit kerja di sekolah yang sama.",
-    "Penugasan Sementara":
-      "Guru diperbantukan ke sekolah lain untuk sementara.",
-    "Kembali Bertugas": "Guru kembali setelah diperbantukan atau cuti panjang.",
-  }[jenisDipilih];
+  const jenisOptions = [
+    {
+      value: "Masuk",
+      icon: "🟢",
+      label: "Mutasi Masuk",
+      sub: "Guru baru bergabung dari sekolah lain",
+    },
+    {
+      value: "Keluar",
+      icon: "🔴",
+      label: "Mutasi Keluar",
+      sub: "Guru pindah ke sekolah lain",
+    },
+    {
+      value: "Internal",
+      icon: "🟡",
+      label: "Mutasi Internal",
+      sub: "Perubahan jabatan / unit di sekolah ini",
+    },
+    {
+      value: "Penugasan Sementara",
+      icon: "🔵",
+      label: "Penugasan Sementara",
+      sub: "Diperbantukan ke sekolah lain",
+    },
+    {
+      value: "Kembali Bertugas",
+      icon: "⚪",
+      label: "Kembali Bertugas",
+      sub: "Kembali setelah cuti / penugasan",
+    },
+  ];
 
   const cls =
     "w-full px-4 py-2.5 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const val = (name) => f.elements[name]?.value ?? "";
-    const file = (name) => f.elements[name]?.files?.[0] ?? null;
-    onSubmit({
-      jenis_mutasi: val("jenis_mutasi"),
+  // ── Collect form payload ───────────────────────────────────
+  const collectPayload = (form) => {
+    const val = (name) => form.elements[name]?.value ?? "";
+    const file = (name) => form.elements[name]?.files?.[0] ?? null;
+    return {
+      jenis_mutasi: jenisDipilih,
       sekolah_asal: val("sekolah_asal"),
       npsn_asal: val("npsn_asal"),
       sekolah_tujuan: val("sekolah_tujuan"),
@@ -3068,431 +3386,483 @@ function ModalMutasi({
       alasan_mutasi: val("alasan_mutasi"),
       keterangan: val("keterangan"),
       file_sk: file("file_sk"),
-    });
+    };
+  };
+
+  // ── Submit: tampilkan konfirmasi dulu ─────────────────────
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    const payload = collectPayload(e.target);
+    setFormData(payload);
+    setShowKonfirmasi(true);
+  };
+
+  // ── Final submit setelah konfirmasi ───────────────────────
+  const handleConfirm = () => {
+    setShowKonfirmasi(false);
+    onSubmit(formData);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl border border-border-light max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light flex-shrink-0">
-          <div>
-            <h3 className="font-bold text-text-primary text-base">
-              {isAdd ? "Tambah" : "Edit"} Riwayat Mutasi
-            </h3>
-            {descJenis && (
-              <p className="text-xs text-text-secondary mt-0.5">{descJenis}</p>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="px-6 py-5 space-y-4 overflow-y-auto flex-1"
-        >
-          {/* Jenis Mutasi */}
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1.5">
-              Jenis Mutasi <span className="text-error">*</span>
-            </label>
-            <select
-              name="jenis_mutasi"
-              value={jenisDipilih}
-              onChange={(e) => setJenisDipilih(e.target.value)}
-              required
-              className={cls}
-            >
-              <option value="">-- Pilih Jenis Mutasi --</option>
-              <option value="Masuk">
-                🟢 Mutasi Masuk — guru dari sekolah lain
-              </option>
-              <option value="Keluar">
-                🔴 Mutasi Keluar — guru pindah ke sekolah lain
-              </option>
-              <option value="Internal">
-                🟡 Mutasi Internal — perubahan jabatan/unit di sekolah ini
-              </option>
-              <option value="Penugasan Sementara">
-                🔵 Penugasan Sementara — diperbantukan ke sekolah lain
-              </option>
-              <option value="Kembali Bertugas">
-                ⚪ Kembali Bertugas — kembali dari penugasan/cuti
-              </option>
-            </select>
-          </div>
-
-          {/* Placeholder belum pilih */}
-          {!jenisDipilih && (
-            <div className="flex flex-col items-center justify-center py-10 text-text-secondary/60">
-              <span className="material-symbols-outlined text-[48px] mb-2">
-                swap_horiz
-              </span>
-              <p className="text-sm">
-                Pilih jenis mutasi untuk menampilkan form
-              </p>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl border border-border-light max-h-[92vh] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-light flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-primary text-[20px]">
+                  swap_horiz
+                </span>
+              </div>
+              <div>
+                <h3 className="font-bold text-text-primary text-base">
+                  {isAdd ? "Tambah" : "Edit"} Riwayat Mutasi
+                </h3>
+                <p className="text-xs text-text-secondary">
+                  Sistem akan memvalidasi dan menyinkronkan seluruh modul
+                  terkait
+                </p>
+              </div>
             </div>
-          )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                close
+              </span>
+            </button>
+          </div>
 
-          {jenisDipilih && (
-            <div key={jenisDipilih}>
-              {/* Sekolah Asal */}
-              {show.sekolah_asal && (
-                <div className={show.npsn_asal ? "grid grid-cols-3 gap-3" : ""}>
-                  <div className={show.npsn_asal ? "col-span-2" : ""}>
-                    <label className="block text-sm font-medium text-text-primary mb-1.5">
-                      Sekolah Asal <span className="text-error">*</span>
-                    </label>
-                    <input
-                      name="sekolah_asal"
-                      type="text"
-                      required
-                      defaultValue={
-                        isAdd
-                          ? autoFill("sekolah_asal", jenisDipilih)
-                          : (modalMutasi?.sekolah_asal ?? "")
-                      }
-                      placeholder={
-                        jenisDipilih === "Masuk"
-                          ? "Nama sekolah asal guru"
-                          : jenisDipilih === "Penugasan Sementara"
-                            ? "Sekolah induk guru ini"
-                            : "Sekolah sebelum mutasi"
-                      }
-                      className={cls}
-                    />
-                  </div>
-                  {show.npsn_asal && (
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1.5">
-                        NPSN Asal
-                      </label>
-                      <input
-                        name="npsn_asal"
-                        type="text"
-                        maxLength={10}
-                        defaultValue={
-                          isAdd
-                            ? autoFill("npsn_asal", jenisDipilih)
-                            : (modalMutasi?.npsn_asal ?? "")
-                        }
-                        placeholder="10 digit"
-                        className={`${cls} font-mono`}
-                      />
+          <form
+            id="form-mutasi-modal"
+            onSubmit={handleFormSubmit}
+            className="px-6 py-5 space-y-5 overflow-y-auto flex-1"
+          >
+            {/* ── Pilih Jenis Mutasi ── */}
+            <div>
+              <label className="block text-sm font-semibold text-text-primary mb-2">
+                Jenis Mutasi <span className="text-error">*</span>
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {jenisOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleJenisClick(opt.value)}
+                    className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border text-left transition-all ${
+                      jenisDipilih === opt.value
+                        ? "border-primary bg-primary/8 ring-2 ring-primary/20"
+                        : "border-border-light bg-surface-container-lowest hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="text-base flex-shrink-0">{opt.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-text-primary">
+                        {opt.label}
+                      </p>
+                      <p className="text-xs text-text-secondary">{opt.sub}</p>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Sekolah Tujuan */}
-              {show.sekolah_tujuan && (
-                <div
-                  className={show.npsn_tujuan ? "grid grid-cols-3 gap-3" : ""}
-                >
-                  <div className={show.npsn_tujuan ? "col-span-2" : ""}>
-                    <label className="block text-sm font-medium text-text-primary mb-1.5">
-                      Sekolah Tujuan <span className="text-error">*</span>
-                    </label>
-                    <input
-                      name="sekolah_tujuan"
-                      type="text"
-                      required
-                      defaultValue={
-                        isAdd
-                          ? autoFill("sekolah_tujuan", jenisDipilih)
-                          : (modalMutasi?.sekolah_tujuan ?? "")
-                      }
-                      placeholder={
-                        jenisDipilih === "Keluar"
-                          ? "Sekolah tujuan guru"
-                          : jenisDipilih === "Internal"
-                            ? "Unit/jabatan tujuan di sekolah ini"
-                            : "Sekolah tempat penugasan"
-                      }
-                      className={cls}
-                    />
-                  </div>
-                  {show.npsn_tujuan && (
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1.5">
-                        NPSN Tujuan
-                      </label>
-                      <input
-                        name="npsn_tujuan"
-                        type="text"
-                        maxLength={10}
-                        defaultValue={
-                          isAdd
-                            ? autoFill("npsn_tujuan", jenisDipilih)
-                            : (modalMutasi?.npsn_tujuan ?? "")
-                        }
-                        placeholder="10 digit"
-                        className={`${cls} font-mono`}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Jabatan Sebelum & Sesudah */}
-              {show.jabatan_sebelum && (
-                <div
-                  className={
-                    show.jabatan_sesudah ? "grid grid-cols-2 gap-3" : ""
-                  }
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-1.5">
-                      Jabatan Sebelum
-                    </label>
-                    <input
-                      name="jabatan_sebelum"
-                      type="text"
-                      defaultValue={
-                        isAdd
-                          ? autoFill("jabatan_sebelum", jenisDipilih)
-                          : (modalMutasi?.jabatan_sebelum ?? "")
-                      }
-                      placeholder="Guru Kelas, Guru PAI, Wali Kelas, dll"
-                      className={cls}
-                    />
-                  </div>
-                  {show.jabatan_sesudah && (
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1.5">
-                        Jabatan Sesudah
-                      </label>
-                      <input
-                        name="jabatan_sesudah"
-                        type="text"
-                        defaultValue={
-                          isAdd ? "" : (modalMutasi?.jabatan_sesudah ?? "")
-                        }
-                        placeholder="Jabatan setelah mutasi"
-                        className={cls}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tanggal Mutasi & TMT */}
-              <div className={show.tmt_mutasi ? "grid grid-cols-2 gap-3" : ""}>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    {labelTanggal} <span className="text-error">*</span>
-                  </label>
-                  <input
-                    name="tanggal_mutasi"
-                    type="date"
-                    required
-                    defaultValue={
-                      isAdd
-                        ? ""
-                        : (modalMutasi?.tanggal_mutasi
-                            ?.toString()
-                            .slice(0, 10) ?? "")
-                    }
-                    className={cls}
-                  />
-                </div>
-                {show.tmt_mutasi && (
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-1.5">
-                      TMT Mutasi
-                      <span className="ml-1 text-xs text-text-secondary font-normal">
-                        (Tgl Mulai Berlaku)
+                    {jenisDipilih === opt.value && (
+                      <span className="material-symbols-outlined text-primary text-[18px] ml-auto flex-shrink-0">
+                        check_circle
                       </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Impact Analysis Panel ── */}
+            {jenisDipilih && (
+              <ImpactPanel result={analyzeResult} loading={analyzeLoading} />
+            )}
+
+            {/* ── Form Fields (muncul setelah jenis dipilih, meski ada error) ── */}
+            {jenisDipilih && (
+              <div className="space-y-4 border-t border-border-light pt-4">
+                <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">
+                  Data Mutasi
+                </p>
+
+                {/* Sekolah Asal */}
+                {show.sekolah_asal && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                        Sekolah Asal
+                      </label>
+                      <input
+                        className={cls}
+                        name="sekolah_asal"
+                        placeholder="Nama sekolah asal"
+                        defaultValue={
+                          isAdd
+                            ? autoFill("sekolah_asal", jenisDipilih)
+                            : (modalMutasi?.sekolah_asal ?? "")
+                        }
+                      />
+                    </div>
+                    {show.npsn_asal && (
+                      <div>
+                        <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                          NPSN Asal
+                        </label>
+                        <input
+                          className={cls}
+                          name="npsn_asal"
+                          placeholder="NPSN"
+                          maxLength={10}
+                          defaultValue={
+                            isAdd
+                              ? autoFill("npsn_asal", jenisDipilih)
+                              : (modalMutasi?.npsn_asal ?? "")
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Sekolah Tujuan */}
+                {show.sekolah_tujuan && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                        Sekolah Tujuan
+                      </label>
+                      <input
+                        className={cls}
+                        name="sekolah_tujuan"
+                        placeholder="Nama sekolah tujuan"
+                        defaultValue={
+                          isAdd ? "" : (modalMutasi?.sekolah_tujuan ?? "")
+                        }
+                      />
+                    </div>
+                    {show.npsn_tujuan && (
+                      <div>
+                        <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                          NPSN Tujuan
+                        </label>
+                        <input
+                          className={cls}
+                          name="npsn_tujuan"
+                          placeholder="NPSN"
+                          maxLength={10}
+                          defaultValue={
+                            isAdd ? "" : (modalMutasi?.npsn_tujuan ?? "")
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Jabatan */}
+                {(show.jabatan_sebelum || show.jabatan_sesudah) && (
+                  <div
+                    className={
+                      show.jabatan_sesudah ? "grid grid-cols-2 gap-3" : ""
+                    }
+                  >
+                    {show.jabatan_sebelum && (
+                      <div>
+                        <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                          Jabatan Sebelum
+                        </label>
+                        <input
+                          className={cls}
+                          name="jabatan_sebelum"
+                          placeholder="Jabatan lama"
+                          defaultValue={
+                            isAdd
+                              ? autoFill("jabatan_sebelum", jenisDipilih)
+                              : (modalMutasi?.jabatan_sebelum ?? "")
+                          }
+                        />
+                      </div>
+                    )}
+                    {show.jabatan_sesudah && (
+                      <div>
+                        <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                          Jabatan Sesudah
+                        </label>
+                        <input
+                          className={cls}
+                          name="jabatan_sesudah"
+                          placeholder="Jabatan baru"
+                          onChange={(e) =>
+                            handleFieldChange({
+                              jabatan_sesudah: e.target.value,
+                            })
+                          }
+                          defaultValue={
+                            isAdd ? "" : (modalMutasi?.jabatan_sesudah ?? "")
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tanggal Mutasi + TMT */}
+                <div
+                  className={show.tmt_mutasi ? "grid grid-cols-2 gap-3" : ""}
+                >
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      {labelTanggal} <span className="text-error">*</span>
                     </label>
                     <input
-                      name="tmt_mutasi"
                       type="date"
+                      className={cls}
+                      name="tanggal_mutasi"
+                      required
+                      onChange={(e) =>
+                        handleFieldChange({ tanggal_mutasi: e.target.value })
+                      }
                       defaultValue={
                         isAdd
                           ? ""
-                          : (modalMutasi?.tmt_mutasi?.toString().slice(0, 10) ??
-                            "")
+                          : (modalMutasi?.tanggal_mutasi
+                              ?.toString()
+                              .slice(0, 10) ?? "")
                       }
+                    />
+                  </div>
+                  {show.tmt_mutasi && (
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                        TMT Mulai Bertugas
+                      </label>
+                      <input
+                        type="date"
+                        className={cls}
+                        name="tmt_mutasi"
+                        defaultValue={
+                          isAdd
+                            ? ""
+                            : (modalMutasi?.tmt_mutasi
+                                ?.toString()
+                                .slice(0, 10) ?? "")
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Tanggal Berakhir (Penugasan Sementara) */}
+                {show.tanggal_berakhir && (
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Tanggal Selesai Penugasan
+                    </label>
+                    <input
+                      type="date"
                       className={cls}
+                      name="tanggal_berakhir"
+                      onChange={(e) =>
+                        handleFieldChange({ tanggal_berakhir: e.target.value })
+                      }
+                      defaultValue={
+                        isAdd
+                          ? ""
+                          : (modalMutasi?.tanggal_berakhir
+                              ?.toString()
+                              .slice(0, 10) ?? "")
+                      }
                     />
                   </div>
                 )}
-              </div>
 
-              {/* Tanggal Berakhir — khusus Penugasan Sementara */}
-              {show.tanggal_berakhir && (
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Tanggal Berakhir Penugasan
-                  </label>
-                  <input
-                    name="tanggal_berakhir"
-                    type="date"
-                    defaultValue={
-                      isAdd
-                        ? ""
-                        : (modalMutasi?.tanggal_berakhir
-                            ?.toString()
-                            .slice(0, 10) ?? "")
-                    }
-                    className={cls}
-                  />
-                  <p className="text-xs text-text-secondary mt-1">
-                    Kosongkan jika belum ditentukan
-                  </p>
+                {/* SK */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      No. SK
+                    </label>
+                    <input
+                      className={cls}
+                      name="no_sk"
+                      placeholder="Nomor SK"
+                      onChange={(e) =>
+                        handleFieldChange({ no_sk: e.target.value })
+                      }
+                      defaultValue={isAdd ? "" : (modalMutasi?.no_sk ?? "")}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Tanggal SK
+                    </label>
+                    <input
+                      type="date"
+                      className={cls}
+                      name="tanggal_sk"
+                      defaultValue={
+                        isAdd
+                          ? ""
+                          : (modalMutasi?.tanggal_sk?.toString().slice(0, 10) ??
+                            "")
+                      }
+                    />
+                  </div>
                 </div>
-              )}
 
-              {/* Nomor SK & Tanggal SK */}
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Nomor SK
-                  </label>
-                  <input
-                    name="no_sk"
-                    type="text"
-                    defaultValue={isAdd ? "" : (modalMutasi?.no_sk ?? "")}
-                    placeholder="Nomor surat keputusan"
-                    className={cls}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Tanggal SK
-                  </label>
-                  <input
-                    name="tanggal_sk"
-                    type="date"
-                    defaultValue={
-                      isAdd
-                        ? ""
-                        : (modalMutasi?.tanggal_sk?.toString().slice(0, 10) ??
-                          "")
-                    }
-                    className={cls}
-                  />
-                </div>
-              </div>
-
-              {/* Instansi Penerbit SK & Status Kepegawaian */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
                     Instansi Penerbit SK
                   </label>
                   <input
+                    className={cls}
                     name="instansi_penerbit_sk"
-                    type="text"
+                    placeholder="Dinas / Kementerian / Yayasan"
                     defaultValue={
                       isAdd ? "" : (modalMutasi?.instansi_penerbit_sk ?? "")
                     }
-                    placeholder="Kemenag, Yayasan, dll"
-                    className={cls}
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
                     Status Kepegawaian
                   </label>
                   <select
+                    className={cls}
                     name="status_kepegawaian"
                     defaultValue={
                       isAdd
                         ? autoFill("status_kepegawaian", jenisDipilih)
                         : (modalMutasi?.status_kepegawaian ?? "")
                     }
-                    className={cls}
                   >
                     <option value="">-- Pilih --</option>
-                    <option value="PNS">PNS</option>
-                    <option value="PPPK">PPPK</option>
-                    <option value="GTY">GTY</option>
-                    <option value="GTT">GTT</option>
+                    {["PNS", "PPPK", "GTY", "GTT"].map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
-              </div>
 
-              {/* Alasan Mutasi */}
-              {show.alasan_mutasi && (
+                {show.alasan_mutasi && (
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Alasan Mutasi
+                    </label>
+                    <input
+                      className={cls}
+                      name="alasan_mutasi"
+                      placeholder="Alasan / latar belakang mutasi"
+                      defaultValue={
+                        isAdd ? "" : (modalMutasi?.alasan_mutasi ?? "")
+                      }
+                    />
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1.5">
-                    Alasan Mutasi
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    Keterangan{" "}
+                    <span className="text-text-secondary font-normal">
+                      (maks. 500 karakter)
+                    </span>
                   </label>
-                  <input
-                    name="alasan_mutasi"
-                    type="text"
-                    defaultValue={
-                      isAdd ? "" : (modalMutasi?.alasan_mutasi ?? "")
-                    }
-                    placeholder="Permintaan sendiri, kebutuhan organisasi, promosi, dll"
-                    className={cls}
+                  <textarea
+                    className={`${cls} resize-none`}
+                    name="keterangan"
+                    rows={2}
+                    maxLength={500}
+                    placeholder="Catatan tambahan (opsional)"
+                    defaultValue={isAdd ? "" : (modalMutasi?.keterangan ?? "")}
                   />
                 </div>
-              )}
 
-              {/* Keterangan */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">
-                  Keterangan
-                </label>
-                <textarea
-                  name="keterangan"
-                  rows={2}
-                  defaultValue={isAdd ? "" : (modalMutasi?.keterangan ?? "")}
-                  placeholder="Catatan tambahan (opsional)"
-                  className={`${cls} resize-none`}
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    Dokumen SK Mutasi
+                    {!isAdd && modalMutasi?.file_sk && (
+                      <span className="ml-2 text-[10px] text-success font-normal">
+                        ✓ File sudah ada
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="file"
+                    className="w-full text-sm text-text-secondary file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                    name="file_sk"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                  <p className="text-[10px] text-text-secondary mt-1">
+                    Format: PDF, JPG, PNG • Maks. 5 MB
+                  </p>
+                </div>
               </div>
+            )}
+          </form>
 
-              {/* Dokumen SK */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">
-                  Dokumen SK Mutasi
-                  {!isAdd && modalMutasi?.file_sk && (
-                    <span className="ml-2 text-xs text-success font-normal">
-                      (file sudah ada — kosongkan jika tidak ingin mengganti)
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border-light flex-shrink-0 bg-surface-container-lowest rounded-b-2xl">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-container rounded-xl transition-colors"
+            >
+              Batal
+            </button>
+
+            {jenisDipilih && (
+              <button
+                type="submit"
+                form="form-mutasi-modal"
+                disabled={!canSubmit || isPending}
+                className={`px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors ${
+                  canSubmit && !isPending
+                    ? "bg-primary text-on-primary hover:bg-primary/90"
+                    : "bg-surface-container text-text-secondary cursor-not-allowed"
+                }`}
+              >
+                {analyzeLoading ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[16px]">
+                      refresh
                     </span>
-                  )}
-                </label>
-                <input
-                  name="file_sk"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-                />
-                <p className="text-xs text-text-secondary mt-1">
-                  PDF / JPG / PNG, maks 5 MB
-                </p>
-              </div>
-
-              {/* Footer */}
-              <div className="flex gap-2 pt-2 border-t border-border-light">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
-                >
-                  {isPending ? "Menyimpan..." : "Simpan"}
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
+                    Memvalidasi...
+                  </>
+                ) : hasBlockingError ? (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">
+                      block
+                    </span>
+                    Ada Error Validasi
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">
+                      save
+                    </span>
+                    Simpan & Sinkronkan
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Dialog konfirmasi — muncul di atas modal */}
+      {showKonfirmasi && (
+        <KonfirmasiDialog
+          result={analyzeResult}
+          jenis={jenisDipilih}
+          onCancel={() => setShowKonfirmasi(false)}
+          onConfirm={handleConfirm}
+          isPending={isPending}
+        />
+      )}
+    </>
   );
 }
 
@@ -4080,6 +4450,7 @@ function TabRiwayat({ nuptk, guru }) {
               ["Keluar", "Penugasan Sementara"].includes(m.jenis_mutasi),
             ) ?? null
           }
+          nuptk={nuptk}
         />
       )}
 
