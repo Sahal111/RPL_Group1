@@ -3109,49 +3109,244 @@ class MasterDataGuruController extends Controller
             return response()->json(['success' => false, 'message' => 'File ZIP tidak bisa dibuka.'], 422);
         }
 
-        $results = ['berhasil' => 0, 'tidak_ditemukan' => 0, 'dilewati' => 0, 'errors' => []];
-        $allowedExt = ['jpg', 'jpeg', 'png'];
+        $results = [
+            'foto' => ['berhasil' => 0, 'gagal' => 0],
+            'ijazah' => ['berhasil' => 0, 'gagal' => 0],
+            'sertifikasi' => ['berhasil' => 0, 'gagal' => 0],
+            'diklat' => ['berhasil' => 0, 'gagal' => 0],
+            'inpassing' => ['berhasil' => 0, 'gagal' => 0],
+            'mutasi' => ['berhasil' => 0, 'gagal' => 0],
+            'dokumen' => ['berhasil' => 0, 'gagal' => 0],
+            'dilewati' => 0,
+            'errors' => [],
+        ];
+
+        $allowedImg = ['jpg', 'jpeg', 'png', 'webp'];
+        $allowedDoc = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $stat = $zip->statIndex($i);
-            $filename = basename($stat['name']);
+            $zipPath = $stat['name'];
+            $filename = basename($zipPath);
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-            if (substr($stat['name'], -1) === '/' || !in_array($ext, $allowedExt)) {
+            // Skip folder, macOS metadata
+            if (
+                substr($zipPath, -1) === '/'
+                || str_contains($zipPath, '__MACOSX')
+                || str_starts_with($filename, '._')
+                || $filename === ''
+            ) {
                 $results['dilewati']++;
                 continue;
             }
 
-            $nuptk = pathinfo($filename, PATHINFO_FILENAME);
-            $guru = Guru::where('nuptk', $nuptk)->first();
+            // Tentukan kategori dari nama folder di dalam ZIP
+            // Format: foto-guru/1234567890123456.jpg
+            //         file-ijazah/1234567890123456_123.pdf
+            //         file-sertifikasi/1234567890123456_456.pdf
+            //         file-diklat/1234567890123456_789.pdf
+            //         file-inpassing/1234567890123456_111.pdf
+            //         file-mutasi/1234567890123456_222.pdf
+            //         file-dokumen/1234567890123456_333.pdf
+            // atau langsung di root ZIP: 1234567890123456.jpg (dianggap foto)
 
+            $folder = '';
+            if (str_contains($zipPath, '/')) {
+                $parts = explode('/', $zipPath);
+                $folder = strtolower($parts[0]);
+            }
+
+            // Ambil NUPTK dari nama file (sebelum _ jika ada suffix _id)
+            $stem = pathinfo($filename, PATHINFO_FILENAME); // "1234567890123456" atau "1234567890123456_123"
+            $nuptk = explode('_', $stem)[0];
+
+            $guru = Guru::where('nuptk', $nuptk)->first();
             if (!$guru) {
-                $results['tidak_ditemukan']++;
-                $results['errors'][] = "File {$filename}: NUPTK {$nuptk} tidak ditemukan.";
+                $results['errors'][] = "{$filename}: NUPTK {$nuptk} tidak ditemukan di database.";
+                $results['dilewati']++;
                 continue;
             }
 
+            $content = $zip->getFromIndex($i);
+
             try {
-                if ($guru->foto)
-                    Storage::disk('public')->delete($guru->foto);
-                $newPath = "foto-guru/{$nuptk}.{$ext}";
-                Storage::disk('public')->put($newPath, $zip->getFromIndex($i));
-                $guru->update(['foto' => $newPath]);
-                $results['berhasil']++;
+                // ── FOTO PROFIL ─────────────────────────────────────────────
+                if ($folder === 'foto-guru' || $folder === '') {
+                    if (!in_array($ext, $allowedImg)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    if ($guru->foto)
+                        Storage::disk('public')->delete($guru->foto);
+                    $path = "foto-guru/{$nuptk}.{$ext}";
+                    Storage::disk('public')->put($path, $content);
+                    $guru->update(['foto' => $path]);
+                    $results['foto']['berhasil']++;
+
+                    // ── FILE IJAZAH ─────────────────────────────────────────────
+                } elseif ($folder === 'file-ijazah') {
+                    if (!in_array($ext, $allowedDoc)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    // Cari record pendidikan by id (suffix setelah _) atau ambil yang terakhir
+                    $recordId = count(explode('_', $stem)) > 1 ? explode('_', $stem, 2)[1] : null;
+                    $pendidikan = $recordId
+                        ? $guru->pendidikans()->find($recordId)
+                        : $guru->pendidikans()->latest()->first();
+                    if (!$pendidikan) {
+                        $results['errors'][] = "{$filename}: Data pendidikan untuk NUPTK {$nuptk} tidak ditemukan.";
+                        $results['ijazah']['gagal']++;
+                        continue;
+                    }
+                    if ($pendidikan->file_ijazah)
+                        Storage::disk('public')->delete($pendidikan->file_ijazah);
+                    $path = "file-ijazah/{$nuptk}_{$pendidikan->id}.{$ext}";
+                    Storage::disk('public')->put($path, $content);
+                    $pendidikan->update(['file_ijazah' => $path]);
+                    $results['ijazah']['berhasil']++;
+
+                    // ── FILE SERTIFIKASI ────────────────────────────────────────
+                } elseif ($folder === 'file-sertifikasi') {
+                    if (!in_array($ext, $allowedDoc)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    $recordId = count(explode('_', $stem)) > 1 ? explode('_', $stem, 2)[1] : null;
+                    $sertifikasi = $recordId
+                        ? $guru->sertifikasis()->find($recordId)
+                        : $guru->sertifikasis()->latest()->first();
+                    if (!$sertifikasi) {
+                        $results['errors'][] = "{$filename}: Data sertifikasi untuk NUPTK {$nuptk} tidak ditemukan.";
+                        $results['sertifikasi']['gagal']++;
+                        continue;
+                    }
+                    if ($sertifikasi->file_sertifikat)
+                        Storage::disk('public')->delete($sertifikasi->file_sertifikat);
+                    $path = "file-sertifikasi/{$nuptk}_{$sertifikasi->id}.{$ext}";
+                    Storage::disk('public')->put($path, $content);
+                    $sertifikasi->update(['file_sertifikat' => $path]);
+                    $results['sertifikasi']['berhasil']++;
+
+                    // ── FILE DIKLAT ─────────────────────────────────────────────
+                } elseif ($folder === 'file-diklat') {
+                    if (!in_array($ext, $allowedDoc)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    $recordId = count(explode('_', $stem)) > 1 ? explode('_', $stem, 2)[1] : null;
+                    $diklat = $recordId
+                        ? $guru->diklats()->find($recordId)
+                        : $guru->diklats()->latest()->first();
+                    if (!$diklat) {
+                        $results['errors'][] = "{$filename}: Data diklat untuk NUPTK {$nuptk} tidak ditemukan.";
+                        $results['diklat']['gagal']++;
+                        continue;
+                    }
+                    if ($diklat->file_sertifikat)
+                        Storage::disk('public')->delete($diklat->file_sertifikat);
+                    $path = "file-diklat/{$nuptk}_{$diklat->id}.{$ext}";
+                    Storage::disk('public')->put($path, $content);
+                    $diklat->update(['file_sertifikat' => $path]);
+                    $results['diklat']['berhasil']++;
+
+                    // ── FILE SK INPASSING ───────────────────────────────────────
+                } elseif ($folder === 'file-inpassing') {
+                    if (!in_array($ext, $allowedDoc)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    $recordId = count(explode('_', $stem)) > 1 ? explode('_', $stem, 2)[1] : null;
+                    $inpassing = $recordId
+                        ? $guru->inpassings()->find($recordId)
+                        : $guru->inpassings()->latest()->first();
+                    if (!$inpassing) {
+                        $results['errors'][] = "{$filename}: Data inpassing untuk NUPTK {$nuptk} tidak ditemukan.";
+                        $results['inpassing']['gagal']++;
+                        continue;
+                    }
+                    if ($inpassing->file_sk)
+                        Storage::disk('public')->delete($inpassing->file_sk);
+                    $path = "file-inpassing/{$nuptk}_{$inpassing->id}.{$ext}";
+                    Storage::disk('public')->put($path, $content);
+                    $inpassing->update(['file_sk' => $path]);
+                    $results['inpassing']['berhasil']++;
+
+                    // ── FILE SK MUTASI ──────────────────────────────────────────
+                } elseif ($folder === 'file-mutasi') {
+                    if (!in_array($ext, $allowedDoc)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    $recordId = count(explode('_', $stem)) > 1 ? explode('_', $stem, 2)[1] : null;
+                    $mutasi = $recordId
+                        ? $guru->mutasi()->find($recordId)
+                        : $guru->mutasi()->latest()->first();
+                    if (!$mutasi) {
+                        $results['errors'][] = "{$filename}: Data mutasi untuk NUPTK {$nuptk} tidak ditemukan.";
+                        $results['mutasi']['gagal']++;
+                        continue;
+                    }
+                    if ($mutasi->file_sk)
+                        Storage::disk('public')->delete($mutasi->file_sk);
+                    $path = "file-mutasi/{$nuptk}_{$mutasi->id}.{$ext}";
+                    Storage::disk('public')->put($path, $content);
+                    $mutasi->update(['file_sk' => $path]);
+                    $results['mutasi']['berhasil']++;
+
+                    // ── FILE DOKUMEN UMUM ───────────────────────────────────────
+                } elseif ($folder === 'file-dokumen') {
+                    if (!in_array($ext, $allowedDoc)) {
+                        $results['dilewati']++;
+                        continue;
+                    }
+                    $recordId = count(explode('_', $stem)) > 1 ? explode('_', $stem, 2)[1] : null;
+                    $dokumen = $recordId
+                        ? $guru->dokumens()->find($recordId)
+                        : $guru->dokumens()->latest()->first();
+                    if (!$dokumen) {
+                        // Buat record dokumen baru
+                        $path = "file-dokumen/{$nuptk}_" . time() . ".{$ext}";
+                        Storage::disk('public')->put($path, $content);
+                        $guru->dokumens()->create([
+                            'nama_dokumen' => pathinfo($filename, PATHINFO_FILENAME),
+                            'file_path' => $path,
+                            'file_type' => $ext,
+                            'file_size' => strlen($content),
+                            'kategori' => 'Lainnya',
+                        ]);
+                    } else {
+                        if ($dokumen->file_path)
+                            Storage::disk('public')->delete($dokumen->file_path);
+                        $path = "file-dokumen/{$nuptk}_{$dokumen->id}.{$ext}";
+                        Storage::disk('public')->put($path, $content);
+                        $dokumen->update(['file_path' => $path, 'file_type' => $ext, 'file_size' => strlen($content)]);
+                    }
+                    $results['dokumen']['berhasil']++;
+
+                } else {
+                    $results['dilewati']++;
+                }
             } catch (\Exception $e) {
-                $results['errors'][] = "File {$filename}: " . $e->getMessage();
+                $results['errors'][] = "{$filename}: " . $e->getMessage();
             }
         }
+
         $zip->close();
+
+        $total = collect($results)
+            ->only(['foto', 'ijazah', 'sertifikasi', 'diklat', 'inpassing', 'mutasi', 'dokumen'])
+            ->sum('berhasil');
+
+        $msg = "Import selesai: {$total} file berhasil diproses, {$results['dilewati']} dilewati.";
 
         return response()->json([
             'success' => true,
-            'message' => "Import foto selesai: {$results['berhasil']} berhasil, {$results['tidak_ditemukan']} tidak ditemukan, {$results['dilewati']} dilewati.",
+            'message' => $msg,
             'data' => $results,
         ]);
     }
-
-
     /**
      * GET /guru/backup
      */

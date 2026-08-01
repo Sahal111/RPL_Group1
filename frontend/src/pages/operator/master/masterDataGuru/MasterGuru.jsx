@@ -1599,14 +1599,64 @@ function ModalImport({ open, onClose, queryClient }) {
               <span className="material-symbols-outlined text-info text-[18px] mt-0.5 shrink-0">
                 info
               </span>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Upload file <strong>.zip</strong> berisi foto guru. Nama file di
-                dalam ZIP harus sama dengan <strong>NUPTK guru</strong> (contoh:{" "}
-                <code className="bg-surface-container px-1 rounded">
-                  1234567890123456.jpg
-                </code>
-                ). Format: JPG, PNG.
-              </p>
+              <div className="text-xs text-text-secondary leading-relaxed space-y-2">
+                <p>
+                  Upload file <strong>.zip</strong> berisi foto dan/atau file
+                  dokumen guru. Susun file dalam folder sesuai jenisnya:
+                </p>
+                <div className="bg-surface-container rounded-lg p-2.5 font-mono text-[11px] leading-5">
+                  <div className="text-text-tertiary">📁 import-guru.zip</div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">foto-guru/</span>
+                  </div>
+                  <div className="pl-6">1234567890123456.jpg</div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">file-ijazah/</span>
+                  </div>
+                  <div className="pl-6">
+                    1234567890123456_
+                    <span className="text-warning">{"{id}"}</span>.pdf
+                  </div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">file-sertifikasi/</span>
+                  </div>
+                  <div className="pl-6">
+                    1234567890123456_
+                    <span className="text-warning">{"{id}"}</span>.pdf
+                  </div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">file-diklat/</span>
+                  </div>
+                  <div className="pl-6">
+                    1234567890123456_
+                    <span className="text-warning">{"{id}"}</span>.pdf
+                  </div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">file-inpassing/</span>
+                  </div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">file-mutasi/</span>
+                  </div>
+                  <div className="pl-3 text-text-tertiary">
+                    📁 <span className="text-primary">file-dokumen/</span>
+                  </div>
+                </div>
+                <p>
+                  Nama file:{" "}
+                  <code className="bg-surface-container px-1 rounded">
+                    NUPTK.ext
+                  </code>{" "}
+                  untuk foto,{" "}
+                  <code className="bg-surface-container px-1 rounded">
+                    NUPTK_id.ext
+                  </code>{" "}
+                  untuk dokumen. ID bisa dilihat dari kolom{" "}
+                  <em>File * (path)</em> di hasil export Excel. Format:{" "}
+                  <strong>JPG, PNG</strong> (foto) ·{" "}
+                  <strong>JPG, PNG, PDF</strong> (dokumen). Folder tidak wajib
+                  semua ada — cukup isi yang diperlukan saja.
+                </p>
+              </div>
             </div>
           )}
 
