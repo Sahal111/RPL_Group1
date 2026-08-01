@@ -2179,6 +2179,63 @@ function TabDokumen({ nuptk, guru }) {
       </span>
     );
   };
+  // ─── Status Badge ───
+  const STATUS_CONFIG = {
+    verified: {
+      label: "Verified",
+      cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      dot: "bg-emerald-500",
+    },
+    pending: {
+      label: "Pending",
+      cls: "bg-amber-50  text-amber-700  border-amber-200",
+      dot: "bg-amber-500",
+    },
+    ditolak: {
+      label: "Ditolak",
+      cls: "bg-red-50    text-red-700    border-red-200",
+      dot: "bg-red-500",
+    },
+    kadaluarsa: {
+      label: "Kadaluarsa",
+      cls: "bg-gray-100  text-gray-500   border-gray-200",
+      dot: "bg-gray-400",
+    },
+    belum: {
+      label: "Belum Upload",
+      cls: "bg-gray-100  text-gray-400   border-gray-200",
+      dot: "bg-gray-300",
+    },
+  };
+
+  const StatusBadge = ({ tgl_kadaluarsa, status }) => {
+    let key = status ?? "pending";
+    if (!status && tgl_kadaluarsa && new Date(tgl_kadaluarsa) < new Date())
+      key = "kadaluarsa";
+    const cfg = STATUS_CONFIG[key] ?? STATUS_CONFIG.pending;
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.cls}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+        {cfg.label}
+      </span>
+    );
+  };
+
+  // ─── Icon per jenis file ───
+  const iconByExt = (filePath) => {
+    if (!filePath)
+      return { icon: "description", cls: "text-gray-400 bg-gray-100" };
+    const ext = filePath.split(".").pop()?.toLowerCase();
+    if (ext === "pdf")
+      return { icon: "picture_as_pdf", cls: "text-red-500    bg-red-50" };
+    if (["jpg", "jpeg", "png", "webp"].includes(ext))
+      return { icon: "image", cls: "text-blue-500   bg-blue-50" };
+    if (["doc", "docx"].includes(ext))
+      return { icon: "article", cls: "text-blue-700   bg-blue-100" };
+    return { icon: "insert_drive_file", cls: "text-gray-500   bg-gray-100" };
+  };
 
   const DokumenForm = ({ defaultValues = {}, isPending, onClose }) => (
     <div className="space-y-4">
@@ -2306,400 +2363,548 @@ function TabDokumen({ nuptk, guru }) {
     </div>
   );
 
-  return (
-    <div className="space-y-6">
-      {/* ── SECTION 1: DOKUMEN UPLOAD MANUAL ── */}
-      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-6">
-          <SectionTitle
-            icon="folder_open"
-            label="Dokumen Terupload"
-            desc={`${dokumens.length} dokumen tersimpan`}
-          />
-          <button
-            onClick={() => setModalUpload(true)}
-            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              upload_file
-            </span>
-            Upload Dokumen
-          </button>
-        </div>
+  // ─── Hitung statistik dokumen untuk header ringkasan ───
+  const allDocFiles = [
+    ...dokumens.map((d) => ({ hasFile: !!d.file_path, status: d.status })),
+    ...pendidikans.map((p) => ({
+      hasFile: !!p.file_ijazah,
+      status: "verified",
+    })),
+    ...sertifikasis.map((s) => ({
+      hasFile: !!s.file_sertifikat,
+      status:
+        s.expired_at && new Date(s.expired_at) < new Date()
+          ? "kadaluarsa"
+          : "verified",
+    })),
+    ...inpassings.map((i) => ({ hasFile: !!i.file_sk, status: "verified" })),
+    ...diklats.map((d) => ({
+      hasFile: !!d.file_sertifikat,
+      status: "verified",
+    })),
+  ];
+  const totalDokumen = allDocFiles.length;
+  const sudahUpload = allDocFiles.filter((d) => d.hasFile).length;
+  const belumUpload = totalDokumen - sudahUpload;
+  const pctLengkap =
+    totalDokumen > 0 ? Math.round((sudahUpload / totalDokumen) * 100) : 0;
 
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <span className="material-symbols-outlined text-[36px] text-primary animate-spin">
-              progress_activity
+  // ─── Compact Document Card ───
+  const DocCard = ({
+    icon,
+    iconCls,
+    nama,
+    nomor,
+    tanggal,
+    size,
+    uploader,
+    status,
+    filePath,
+    onPreview,
+    onDownload,
+    onEdit,
+    onHapus,
+  }) => (
+    <div className="group relative flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-primary/30 transition-all duration-200 min-h-[90px]">
+      {/* Icon kolom kiri */}
+      <div
+        className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${iconCls}`}
+      >
+        <span className="material-symbols-outlined text-[18px]">{icon}</span>
+      </div>
+
+      {/* Info tengah */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
+          {nama}
+        </p>
+        {nomor && (
+          <p className="text-[11px] text-gray-400 font-mono truncate mt-0.5">
+            No. {nomor}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+          <StatusBadge status={status} />
+          {tanggal && (
+            <span className="text-[10px] text-gray-400">
+              {fmtDate(tanggal)}
+            </span>
+          )}
+          {size && (
+            <span className="text-[10px] text-gray-400">{fmtSize(size)}</span>
+          )}
+          {uploader && (
+            <span className="text-[10px] text-gray-400 truncate max-w-[100px]">
+              {uploader}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Action icons — muncul saat hover di desktop, selalu tampil di mobile */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 md:transition-opacity md:duration-200 max-md:opacity-100 flex-shrink-0">
+        {onPreview && (
+          <a
+            href={onPreview}
+            target="_blank"
+            rel="noreferrer"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            title="Preview"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              open_in_new
+            </span>
+          </a>
+        )}
+        {onDownload && (
+          <button
+            onClick={onDownload}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/8 transition-colors"
+            title="Download"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              download
+            </span>
+          </button>
+        )}
+        {onEdit && (
+          <button
+            onClick={onEdit}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            title="Edit"
+          >
+            <span className="material-symbols-outlined text-[16px]">edit</span>
+          </button>
+        )}
+        {onHapus && (
+          <button
+            onClick={onHapus}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            title="Hapus"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              delete
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // ─── Category Section dengan header + grid + empty state ───
+  const CategorySection = ({
+    icon,
+    iconCls,
+    title,
+    count,
+    onUpload,
+    children,
+    isEmpty,
+  }) => (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+      {/* Category header */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-50 bg-gray-50/60">
+        <div className="flex items-center gap-2.5">
+          <div
+            className={`w-7 h-7 rounded-md flex items-center justify-center ${iconCls}`}
+          >
+            <span className="material-symbols-outlined text-[15px]">
+              {icon}
             </span>
           </div>
-        ) : dokumens.length === 0 ? (
-          <div className="text-center py-12">
-            <span className="material-symbols-outlined text-[48px] text-text-secondary/30 block mb-3">
-              folder_open
+          <span className="text-sm font-semibold text-gray-800">{title}</span>
+          {count > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold">
+              {count}
             </span>
-            <p className="text-sm text-text-secondary font-medium">
-              Belum ada dokumen yang diunggah.
+          )}
+        </div>
+        {onUpload && (
+          <button
+            onClick={onUpload}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary/8 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[13px]">
+              upload
+            </span>
+            Upload
+          </button>
+        )}
+      </div>
+      {/* Content */}
+      <div className="p-4">
+        {isEmpty ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-gray-300">
+                folder_off
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 font-medium">
+              Belum ada dokumen
             </p>
-            <p className="text-xs text-text-secondary mt-1">
-              Klik <strong>Upload Dokumen</strong> untuk menambahkan.
-            </p>
+            {onUpload && (
+              <button
+                onClick={onUpload}
+                className="mt-1 px-3 py-1.5 rounded-lg border border-primary/25 text-primary text-[11px] font-semibold hover:bg-primary/8 transition-colors"
+              >
+                Upload Dokumen
+              </button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {dokumens.map((d) => (
-              <div
-                key={d.id}
-                className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="material-symbols-outlined text-primary text-[22px]">
-                    {iconByKategori(d.kategori)}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-text-primary truncate">
-                    {d.nama_dokumen ?? d.kategori}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                    {d.kategori && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-medium">
-                        {d.kategori}
-                      </span>
-                    )}
-                    {d.file_size && (
-                      <span className="text-xs text-text-secondary">
-                        {fmtSize(d.file_size)}
-                      </span>
-                    )}
-                  </div>
-                  {d.nomor_dokumen && (
-                    <p className="text-xs text-text-secondary font-mono mt-0.5">
-                      No: {d.nomor_dokumen}
-                    </p>
-                  )}
-                  {d.penerbit && (
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      {d.penerbit}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {d.tanggal_berlaku && (
-                      <span className="text-[10px] text-text-secondary">
-                        Berlaku: {fmtDate(d.tanggal_berlaku)}
-                      </span>
-                    )}
-                    <ExpBadge tgl={d.tanggal_kadaluarsa} />
-                  </div>
-                  {d.keterangan && (
-                    <p className="text-xs text-text-secondary italic mt-0.5 line-clamp-1">
-                      {d.keterangan}
-                    </p>
-                  )}
-                  <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => setModalEdit(d)}
-                      className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
-                      title="Edit"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        edit
-                      </span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleDownload(d.id, d.nama_dokumen ?? d.kategori)
-                      }
-                      className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                      title="Download"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        download
-                      </span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        confirm("Hapus dokumen ini?") &&
-                        deleteDokumen.mutate(d.id)
-                      }
-                      className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
-                      title="Hapus"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        delete
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
+            {children}
           </div>
         )}
       </div>
+    </div>
+  );
 
-      {/* ── SECTION 2: DOKUMEN IJAZAH (dari riwayat pendidikan) ── */}
-      {pendidikans.some((p) => p.file_ijazah) && (
-        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-          <SectionTitle
-            icon="school"
-            label="Dokumen Ijazah"
-            desc={`${pendidikans.filter((p) => p.file_ijazah).length} file dari riwayat pendidikan`}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {pendidikans
-              .filter((p) => p.file_ijazah)
-              .map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-blue-500 text-[22px]">
-                      description
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-primary truncate">
-                      Ijazah {p.jenjang} — {p.nama_sekolah}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">
-                        ijazah
-                      </span>
-                      {p.tahun_lulus && (
-                        <span className="text-xs text-text-secondary">
-                          {p.tahun_lulus}
-                        </span>
-                      )}
-                    </div>
-                    {p.no_ijazah && (
-                      <p className="text-xs text-text-secondary font-mono mt-0.5">
-                        No: {p.no_ijazah}
-                      </p>
-                    )}
-                    {p.prodi && (
-                      <p className="text-xs text-text-secondary mt-0.5 truncate">
-                        {[p.prodi, p.jurusan].filter(Boolean).join(" / ")}
-                      </p>
-                    )}
-                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a
-                        href={`${BASE_URL}/storage/${p.file_ijazah}`}
-                        target="_blank"
-                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Buka file"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          open_in_new
-                        </span>
-                      </a>
-                    </div>
-                  </div>
+  return (
+    <div className="space-y-5">
+      {/* ══ HEADER RINGKASAN DOKUMEN ══ */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 tracking-tight">
+              Kelengkapan Dokumen
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Ringkasan seluruh dokumen guru
+            </p>
+          </div>
+          {/* <button
+            onClick={() => setModalUpload(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-[15px]">
+              upload_file
+            </span>
+            Upload Dokumen
+          </button> */}
+        </div>
+
+        {/* Stat cards */}
+        {(() => {
+          // ── Opsi B: slot dokumen wajib yang diharapkan ada ──
+          const slotWajib = [
+            {
+              label: "KTP",
+              terpenuhi: dokumens.some((d) => d.kategori === "identitas"),
+            },
+            {
+              label: "Kartu Keluarga",
+              terpenuhi: dokumens.some(
+                (d) =>
+                  d.nama_dokumen?.toLowerCase().includes("kk") ||
+                  d.nama_dokumen?.toLowerCase().includes("kartu keluarga"),
+              ),
+            },
+            {
+              label: "Ijazah",
+              terpenuhi: pendidikans.some((p) => p.file_ijazah),
+            },
+            {
+              label: "Sertifikasi",
+              terpenuhi: sertifikasis.some((s) => s.file_sertifikat),
+            },
+            {
+              label: "SK Kepegawaian",
+              terpenuhi:
+                dokumens.some((d) => d.kategori === "kepegawaian") ||
+                inpassings.some((i) => i.file_sk),
+            },
+          ];
+          const belumWajib = slotWajib.filter((s) => !s.terpenuhi).length;
+
+          // ── Opsi A: hitung dokumen kadaluarsa ──
+          const kadaluarsaCount = [
+            ...dokumens.filter(
+              (d) =>
+                d.tanggal_kadaluarsa &&
+                new Date(d.tanggal_kadaluarsa) < new Date(),
+            ),
+            ...sertifikasis.filter(
+              (s) => s.expired_at && new Date(s.expired_at) < new Date(),
+            ),
+          ].length;
+
+          return (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="text-center p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <p className="text-2xl font-black text-gray-900">
+                    {totalDokumen}
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                    Total
+                  </p>
                 </div>
-              ))}
+                <div className="text-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                  <p className="text-2xl font-black text-emerald-600">
+                    {sudahUpload}
+                  </p>
+                  <p className="text-[10px] text-emerald-500 font-medium mt-0.5">
+                    Terupload
+                  </p>
+                </div>
+                <div
+                  className={`text-center p-3 rounded-xl border ${belumWajib > 0 ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"}`}
+                >
+                  <p
+                    className={`text-2xl font-black ${belumWajib > 0 ? "text-amber-600" : "text-gray-400"}`}
+                  >
+                    {belumWajib}
+                  </p>
+                  <p
+                    className={`text-[10px] font-medium mt-0.5 ${belumWajib > 0 ? "text-amber-500" : "text-gray-400"}`}
+                  >
+                    Belum Upload
+                  </p>
+                </div>
+                <div
+                  className={`text-center p-3 rounded-xl border ${kadaluarsaCount > 0 ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}
+                >
+                  <p
+                    className={`text-2xl font-black ${kadaluarsaCount > 0 ? "text-red-600" : "text-gray-400"}`}
+                  >
+                    {kadaluarsaCount}
+                  </p>
+                  <p
+                    className={`text-[10px] font-medium mt-0.5 ${kadaluarsaCount > 0 ? "text-red-500" : "text-gray-400"}`}
+                  >
+                    Kadaluarsa
+                  </p>
+                </div>
+              </div>
+
+              {/* Tooltip slot wajib yang belum — hanya tampil kalau ada yang kosong */}
+              {belumWajib > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {slotWajib
+                    .filter((s) => !s.terpenuhi)
+                    .map((s) => (
+                      <span
+                        key={s.label}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] text-amber-700 font-medium"
+                      >
+                        <span className="material-symbols-outlined text-[11px]">
+                          warning
+                        </span>
+                        {s.label}
+                      </span>
+                    ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
+
+        {/* Progress bar */}
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[11px] text-gray-400 font-medium">
+              Kelengkapan
+            </span>
+            <span className="text-[11px] font-bold text-primary">
+              {pctLengkap}%
+            </span>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all duration-700"
+              style={{ width: `${pctLengkap}%` }}
+            />
           </div>
         </div>
-      )}
+      </div>
 
-      {/* ── SECTION 3: DOKUMEN SERTIFIKASI ── */}
-      {sertifikasis.some((s) => s.file_sertifikat) && (
-        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-          <SectionTitle
-            icon="workspace_premium"
-            label="Dokumen Sertifikasi"
-            desc={`${sertifikasis.filter((s) => s.file_sertifikat).length} file dari data sertifikasi`}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {sertifikasis
-              .filter((s) => s.file_sertifikat)
-              .map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-purple-500 text-[22px]">
-                      workspace_premium
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-primary truncate">
-                      {s.jenis_sertifikasi}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-medium">
-                        sertifikasi
-                      </span>
-                      {s.tahun_sertifikasi && (
-                        <span className="text-xs text-text-secondary">
-                          {s.tahun_sertifikasi}
-                        </span>
-                      )}
-                    </div>
-                    {s.nrg && (
-                      <p className="text-xs text-text-secondary font-mono mt-0.5">
-                        NRG: {s.nrg}
-                      </p>
-                    )}
-                    {s.lptk && (
-                      <p className="text-xs text-text-secondary mt-0.5 truncate">
-                        {s.lptk}
-                      </p>
-                    )}
-                    <div className="mt-1">
-                      <ExpBadge tgl={s.expired_at} />
-                    </div>
-                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a
-                        href={`${BASE_URL}/storage/${s.file_sertifikat}`}
-                        target="_blank"
-                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Buka file"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          open_in_new
-                        </span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* ══ KATEGORI 1: DOKUMEN UPLOAD MANUAL ══ */}
+      <CategorySection
+        icon="folder_open"
+        iconCls="bg-primary/10 text-primary"
+        title="Dokumen Umum"
+        count={dokumens.length}
+        onUpload={() => setModalUpload(true)}
+        isEmpty={!isLoading && dokumens.length === 0}
+      >
+        {isLoading ? (
+          <div className="col-span-full flex justify-center py-8">
+            <span className="material-symbols-outlined text-[32px] text-primary animate-spin">
+              progress_activity
+            </span>
           </div>
-        </div>
-      )}
+        ) : (
+          dokumens.map((d) => {
+            const { icon, cls } = iconByExt(d.file_path);
+            return (
+              <DocCard
+                key={d.id}
+                icon={icon}
+                iconCls={cls}
+                nama={d.nama_dokumen ?? d.kategori}
+                nomor={d.nomor_dokumen}
+                tanggal={d.tanggal_dokumen ?? d.created_at}
+                size={d.file_size}
+                uploader={d.penerbit}
+                status={
+                  d.status ??
+                  (d.tanggal_kadaluarsa &&
+                  new Date(d.tanggal_kadaluarsa) < new Date()
+                    ? "kadaluarsa"
+                    : "pending")
+                }
+                filePath={d.file_path}
+                onPreview={
+                  d.file_path ? `${BASE_URL}/storage/${d.file_path}` : null
+                }
+                onDownload={() =>
+                  handleDownload(d.id, d.nama_dokumen ?? d.kategori)
+                }
+                onEdit={() => setModalEdit(d)}
+                onHapus={() =>
+                  confirm("Hapus dokumen ini?") && deleteDokumen.mutate(d.id)
+                }
+              />
+            );
+          })
+        )}
+      </CategorySection>
 
-      {/* ── SECTION 4: DOKUMEN INPASSING ── */}
-      {inpassings.some((i) => i.file_sk) && (
-        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-          <SectionTitle
-            icon="military_tech"
-            label="Dokumen SK Inpassing"
-            desc={`${inpassings.filter((i) => i.file_sk).length} file dari data inpassing`}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {inpassings
-              .filter((i) => i.file_sk)
-              .map((i) => (
-                <div
-                  key={i.id}
-                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-amber-500 text-[22px]">
-                      military_tech
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-primary truncate">
-                      SK Inpassing — {i.no_sk}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-medium">
-                        inpassing
-                      </span>
-                      {i.golongan_sesudah && (
-                        <span className="text-xs text-text-secondary font-mono">
-                          Gol. {i.golongan_sesudah}
-                        </span>
-                      )}
-                    </div>
-                    {i.jabatan_fungsional && (
-                      <p className="text-xs text-text-secondary mt-0.5 truncate">
-                        {i.jabatan_fungsional}
-                      </p>
-                    )}
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      {fmtDate(i.tanggal_sk)}
-                    </p>
-                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a
-                        href={`${BASE_URL}/storage/${i.file_sk}`}
-                        target="_blank"
-                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Buka file"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          open_in_new
-                        </span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+      {/* ══ KATEGORI 2: IJAZAH ══ */}
+      <CategorySection
+        icon="school"
+        iconCls="bg-blue-100 text-blue-600"
+        title="Ijazah & Pendidikan"
+        count={pendidikans.filter((p) => p.file_ijazah).length}
+        isEmpty={!pendidikans.some((p) => p.file_ijazah)}
+      >
+        {pendidikans
+          .filter((p) => p.file_ijazah)
+          .map((p) => (
+            <DocCard
+              key={p.id}
+              icon="description"
+              iconCls="bg-blue-100 text-blue-600"
+              nama={`Ijazah ${p.jenjang} — ${p.nama_sekolah}`}
+              nomor={p.no_ijazah}
+              tanggal={null}
+              size={null}
+              uploader={p.tahun_lulus ? `Lulus ${p.tahun_lulus}` : null}
+              status="verified"
+              filePath={p.file_ijazah}
+              onPreview={`${BASE_URL}/storage/${p.file_ijazah}`}
+              onDownload={null}
+              onEdit={null}
+              onHapus={null}
+            />
+          ))}
+      </CategorySection>
 
-      {/* ── SECTION 5: DOKUMEN DIKLAT ── */}
-      {diklats.some((d) => d.file_sertifikat) && (
-        <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
-          <SectionTitle
-            icon="cast_for_education"
-            label="Sertifikat Diklat & Pelatihan"
-            desc={`${diklats.filter((d) => d.file_sertifikat).length} file dari riwayat diklat`}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {diklats
-              .filter((d) => d.file_sertifikat)
-              .map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl border border-border-light group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-green-500 text-[22px]">
-                      cast_for_education
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-primary truncate">
-                      {d.nama_diklat}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">
-                        diklat
-                      </span>
-                      {d.tingkat && (
-                        <span className="text-xs text-text-secondary">
-                          {d.tingkat}
-                        </span>
-                      )}
-                      {d.jumlah_jam && (
-                        <span className="text-xs text-text-secondary">
-                          {d.jumlah_jam} JP
-                        </span>
-                      )}
-                    </div>
-                    {d.penyelenggara && (
-                      <p className="text-xs text-text-secondary mt-0.5 truncate">
-                        {d.penyelenggara}
-                      </p>
-                    )}
-                    {d.no_sertifikat && (
-                      <p className="text-xs text-text-secondary font-mono mt-0.5">
-                        No: {d.no_sertifikat}
-                      </p>
-                    )}
-                    <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a
-                        href={`${BASE_URL}/storage/${d.file_sertifikat}`}
-                        target="_blank"
-                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Buka file"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          open_in_new
-                        </span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
+      {/* ══ KATEGORI 3: SERTIFIKASI ══ */}
+      <CategorySection
+        icon="workspace_premium"
+        iconCls="bg-purple-100 text-purple-600"
+        title="Sertifikasi Guru"
+        count={sertifikasis.filter((s) => s.file_sertifikat).length}
+        isEmpty={!sertifikasis.some((s) => s.file_sertifikat)}
+      >
+        {sertifikasis
+          .filter((s) => s.file_sertifikat)
+          .map((s) => (
+            <DocCard
+              key={s.id}
+              icon="workspace_premium"
+              iconCls="bg-purple-100 text-purple-600"
+              nama={s.jenis_sertifikasi}
+              nomor={s.nrg ?? s.no_sertifikat}
+              tanggal={s.tanggal_terbit}
+              size={null}
+              uploader={s.lptk}
+              status={
+                s.expired_at && new Date(s.expired_at) < new Date()
+                  ? "kadaluarsa"
+                  : "verified"
+              }
+              filePath={s.file_sertifikat}
+              onPreview={`${BASE_URL}/storage/${s.file_sertifikat}`}
+              onDownload={null}
+              onEdit={null}
+              onHapus={null}
+            />
+          ))}
+      </CategorySection>
 
-      {/* Modal Upload */}
+      {/* ══ KATEGORI 4: SK INPASSING ══ */}
+      <CategorySection
+        icon="military_tech"
+        iconCls="bg-amber-100 text-amber-600"
+        title="SK Inpassing"
+        count={inpassings.filter((i) => i.file_sk).length}
+        isEmpty={!inpassings.some((i) => i.file_sk)}
+      >
+        {inpassings
+          .filter((i) => i.file_sk)
+          .map((i) => (
+            <DocCard
+              key={i.id}
+              icon="military_tech"
+              iconCls="bg-amber-100 text-amber-600"
+              nama={`SK Inpassing — ${i.no_sk}`}
+              nomor={i.no_sk}
+              tanggal={i.tanggal_sk}
+              size={null}
+              uploader={
+                i.jabatan_fungsional ??
+                (i.golongan_sesudah ? `Gol. ${i.golongan_sesudah}` : null)
+              }
+              status="verified"
+              filePath={i.file_sk}
+              onPreview={`${BASE_URL}/storage/${i.file_sk}`}
+              onDownload={null}
+              onEdit={null}
+              onHapus={null}
+            />
+          ))}
+      </CategorySection>
+
+      {/* ══ KATEGORI 5: DIKLAT & PELATIHAN ══ */}
+      <CategorySection
+        icon="cast_for_education"
+        iconCls="bg-emerald-100 text-emerald-600"
+        title="Sertifikat Diklat & Pelatihan"
+        count={diklats.filter((d) => d.file_sertifikat).length}
+        isEmpty={!diklats.some((d) => d.file_sertifikat)}
+      >
+        {diklats
+          .filter((d) => d.file_sertifikat)
+          .map((d) => (
+            <DocCard
+              key={d.id}
+              icon="cast_for_education"
+              iconCls="bg-emerald-100 text-emerald-600"
+              nama={d.nama_diklat}
+              nomor={d.no_sertifikat}
+              tanggal={d.tanggal_selesai ?? d.tanggal_mulai}
+              size={null}
+              uploader={[
+                d.penyelenggara,
+                d.jumlah_jam ? `${d.jumlah_jam} JP` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              status="verified"
+              filePath={d.file_sertifikat}
+              onPreview={`${BASE_URL}/storage/${d.file_sertifikat}`}
+              onDownload={null}
+              onEdit={null}
+              onHapus={null}
+            />
+          ))}
+      </CategorySection>
+
+      {/* ══ MODAL UPLOAD ══ */}
       {modalUpload && (
         <Modal title="Upload Dokumen" onClose={() => setModalUpload(false)}>
           <form onSubmit={handleUploadSubmit}>
@@ -2711,7 +2916,7 @@ function TabDokumen({ nuptk, guru }) {
         </Modal>
       )}
 
-      {/* Modal Edit */}
+      {/* ══ MODAL EDIT ══ */}
       {modalEdit && (
         <Modal title="Edit Dokumen" onClose={() => setModalEdit(null)}>
           <form onSubmit={handleEditSubmit}>
@@ -2723,6 +2928,12 @@ function TabDokumen({ nuptk, guru }) {
           </form>
         </Modal>
       )}
+
+      {/* ══ CSS INJECT — hover actions transition ══ */}
+      <style>{`
+        .doc-actions { opacity: 0; transition: opacity 0.2s; }
+        .doc-card:hover .doc-actions { opacity: 1; }
+      `}</style>
     </div>
   );
 }
