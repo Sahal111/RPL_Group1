@@ -3343,6 +3343,7 @@ class MasterDataGuruController extends Controller
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
 
+        try {
         $filePath  = $request->file('file')->getRealPath();
         $fileName  = $request->file('file')->getClientOriginalName();
         $allSheets = $this->parseMultiSheetXlsx($filePath);
@@ -3420,17 +3421,23 @@ class MasterDataGuruController extends Controller
             'ip_address'     => $request->ip(),
         ]);
 
-        return response()->json([
-            'success'       => true,
-            'batch_id'      => $batchId,
-            'total_baris'   => count($rows) + count($sample),
-            'sheets'        => array_map(fn($s) => $s['name'], $allSheets),
-            'headers'       => $headers,
-            'sample_rows'   => $sample,
-            'auto_mapping'  => $autoMapping,
-            'db_fields'     => $dbFields,
-            'dup_stats'     => $dupStats,
-        ]);
+            return response()->json([
+                'success' => true,
+                'batch_id' => $batchId,
+                'total_baris' => count($rows) + count($sample),
+                'sheets' => array_map(fn($s) => $s['name'], $allSheets),
+                'headers' => $headers,
+                'sample_rows' => $sample,
+                'auto_mapping' => $autoMapping,
+                'db_fields' => $dbFields,
+                'dup_stats' => $dupStats,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses file: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -3447,7 +3454,7 @@ class MasterDataGuruController extends Controller
 
         $log = GuruImportLog::where('batch_id', $request->batch_id)
             ->where('user_id', auth()->id())
-            ->where('status', 'preview')
+            ->whereNotIn('status', ['done', 'processing'])  // boleh retry, tapi jangan double-execute
             ->firstOrFail();
 
         $log->update([
@@ -3459,8 +3466,21 @@ class MasterDataGuruController extends Controller
 
         $startTime = microtime(true);
         $filePath = storage_path('app/imports/' . $log->batch_id . '.xlsx');
-        $allSheets = $this->parseMultiSheetXlsx($filePath);
 
+        // Cek file masih ada (bisa hilang kalau server restart atau storage clear)
+        if (!file_exists($filePath)) {
+            $log->update([
+                'status' => 'failed',
+                'finished_at' => now(),
+                'error_detail' => [['pesan' => 'File upload sudah tidak ada. Silakan upload ulang.']]
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'File sudah tidak ada di server. Silakan upload ulang dari awal.',
+            ], 422);
+        }
+
+        $allSheets = $this->parseMultiSheetXlsx($filePath);
         // ── Tentukan sheet utama ─────────────────────────────────────────
         $sheetUtama = null;
         foreach ($allSheets as $s) {
@@ -4939,7 +4959,7 @@ class MasterDataGuruController extends Controller
 
         $log->update(['progress_persen' => 95]);
     }
-    
+
     // ── Private: Multi-Sheet XLSX Parser ──────────────────────────────
     private function parseMultiSheetXlsx(string $filePath): array
     {

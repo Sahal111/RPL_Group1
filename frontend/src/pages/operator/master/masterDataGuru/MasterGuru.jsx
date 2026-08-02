@@ -1481,11 +1481,16 @@ function ModalImport({ open, onClose, queryClient }) {
     setLoading(true);
     try {
       if (importType === "excel") {
+        setBatchId(null); // reset dulu batchId lama
         const fd = new FormData();
         fd.append("file", file);
-        const res = await api.post("/operator/master-data/guru/import-preview", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const res = await api.post(
+          "/operator/master-data/guru/import-preview",
+          fd,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          },
+        );
         const d = res.data;
         setBatchId(d.batch_id);
         setPreview(d);
@@ -1498,16 +1503,32 @@ function ModalImport({ open, onClose, queryClient }) {
         // foto: langsung submit
         const fd = new FormData();
         fd.append("file", file);
-        const res = await api.post("/operator/master-data/guru/import-foto", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const res = await api.post(
+          "/operator/master-data/guru/import-foto",
+          fd,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          },
+        );
         setProgress({ status: "done", ...res.data.data });
         setStep("done");
         queryClient.invalidateQueries(["master-guru"]);
         toast.success(res.data.message);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message ?? "Gagal memproses file.");
+      const msg = err.response?.data?.message ?? "Gagal memulai import.";
+      const status = err.response?.status;
+      // 404 = file tidak ada di server, suruh upload ulang
+      if (status === 422 && msg.includes("tidak ada")) {
+        toast.error("File sudah tidak ada di server. Silakan upload ulang.");
+        setStep("upload");
+        setBatchId(null);
+        setFile(null);
+      } else {
+        toast.error(msg);
+        setStep("confirm");
+      }
+      setProgress(null);
     } finally {
       setLoading(false);
     }
@@ -1515,9 +1536,15 @@ function ModalImport({ open, onClose, queryClient }) {
 
   // ── Step 2: Execute import ─────────────────────────────────────────────────
   const handleExecute = async () => {
+    // Guard: pastikan batchId ada (preview harus sudah selesai)
+    if (importType === "excel" && !batchId) {
+      toast.error("Upload file terlebih dahulu.");
+      setStep("upload");
+      return;
+    }
+
     setLoading(true);
     setStep("progress");
-    // Tampilkan progress 0% dulu agar UI tidak blank
     setProgress({
       status: "processing",
       progress_persen: 0,
@@ -1525,7 +1552,6 @@ function ModalImport({ open, onClose, queryClient }) {
     });
     try {
       if (importType === "excel") {
-        // importExecute sekarang synchronous — langsung dapat hasil
         const res = await api.post(
           "/operator/master-data/guru/import-execute",
           {
