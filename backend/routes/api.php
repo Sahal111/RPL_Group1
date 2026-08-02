@@ -136,6 +136,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/guru/{nuptk}/dokumen', [MasterDataGuruController::class, 'uploadDokumen']);
             Route::post('/guru/{nuptk}/dokumen/{id}', [MasterDataGuruController::class, 'updateDokumen']);
             Route::delete('/guru/{nuptk}/dokumen/{id}', [MasterDataGuruController::class, 'destroyDokumen']);
+            // DMS — tambahan
+            Route::patch('/guru/{nuptk}/dokumen/{id}/approve', [MasterDataGuruController::class, 'approveDokumen']);
+            Route::patch('/guru/{nuptk}/dokumen/{id}/reject', [MasterDataGuruController::class, 'rejectDokumen']);
+            Route::get('/guru/{nuptk}/dokumen/{id}/versions', [MasterDataGuruController::class, 'getDokumenVersions']);
+            Route::get('/guru/{nuptk}/dokumen/{id}/logs', [MasterDataGuruController::class, 'getDokumenLogs']);
+            Route::get('/guru/{nuptk}/dokumen-bulk-download', [MasterDataGuruController::class, 'bulkDownload']);
 
             // Administrasi (rekening, BPJS, NPWP)
             Route::get('/guru/{nuptk}/administrasi', [MasterDataGuruController::class, 'getAdministrasi']);

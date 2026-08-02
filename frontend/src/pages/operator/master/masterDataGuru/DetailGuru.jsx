@@ -1998,30 +1998,304 @@ function TabKeluarga({ guru }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   Modal Riwayat Versi Dokumen
+   ══════════════════════════════════════════════════════════ */
+function ModalVersions({ dokumen, nuptk, baseUrl, onClose }) {
+  const { data: versions = [], isLoading } = useQuery({
+    queryKey: ["guru-dokumen-versions", dokumen.id],
+    queryFn: () =>
+      api
+        .get(
+          `/operator/master-data/guru/${nuptk}/dokumen/${dokumen.id}/versions`,
+        )
+        .then((r) => r.data.data),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm">Riwayat Versi</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {dokumen.nama_dokumen}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-4">
+          {isLoading ? (
+            <p className="text-sm text-gray-400 text-center py-8">Memuat...</p>
+          ) : versions.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">
+              Belum ada riwayat versi.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {versions.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] font-black text-primary">
+                      v{v.versi}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-800 truncate">
+                      {v.original_filename ?? `Versi ${v.versi}`}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {v.uploader?.name ?? "—"} ·{" "}
+                      {new Date(v.created_at).toLocaleDateString("id-ID")}
+                      {v.catatan && (
+                        <>
+                          {" "}
+                          · <em>{v.catatan}</em>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <a
+                    href={`${baseUrl}/storage/${v.file_path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                    title="Buka file versi ini"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">
+                      open_in_new
+                    </span>
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   Modal Audit Log Dokumen
+   ══════════════════════════════════════════════════════════ */
+function ModalAuditLog({ dokumen, nuptk, onClose }) {
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ["guru-dokumen-logs", dokumen.id],
+    queryFn: () =>
+      api
+        .get(`/operator/master-data/guru/${nuptk}/dokumen/${dokumen.id}/logs`)
+        .then((r) => r.data.data),
+  });
+
+  const aksiIcon = {
+    upload: { icon: "upload", cls: "text-blue-500   bg-blue-50" },
+    replace: { icon: "sync", cls: "text-amber-500  bg-amber-50" },
+    download: { icon: "download", cls: "text-gray-500   bg-gray-100" },
+    preview: { icon: "visibility", cls: "text-gray-500   bg-gray-100" },
+    approve: { icon: "check_circle", cls: "text-emerald-500 bg-emerald-50" },
+    reject: { icon: "cancel", cls: "text-red-500    bg-red-50" },
+    revisi: { icon: "edit_note", cls: "text-amber-600  bg-amber-50" },
+    delete: { icon: "delete", cls: "text-red-400    bg-red-50" },
+    restore: { icon: "restore", cls: "text-gray-500   bg-gray-100" },
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm">Audit Log</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {dokumen.nama_dokumen}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-4">
+          {isLoading ? (
+            <p className="text-sm text-gray-400 text-center py-8">Memuat...</p>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">
+              Belum ada aktivitas.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {logs.map((log) => {
+                const cfg = aksiIcon[log.aksi] ?? {
+                  icon: "info",
+                  cls: "text-gray-400 bg-gray-100",
+                };
+                return (
+                  <div key={log.id} className="flex items-start gap-3">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.cls}`}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">
+                        {cfg.icon}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0 py-0.5">
+                      <p className="text-xs font-semibold text-gray-800 capitalize">
+                        {log.aksi}
+                      </p>
+                      {log.keterangan && (
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                          {log.keterangan}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        {log.user?.name ?? "—"} ·{" "}
+                        {new Date(log.created_at).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    TAB 5 — Dokumen (lengkap: upload manual + ringkasan dari data pribadi)
    ══════════════════════════════════════════════════════════ */
 function TabDokumen({ nuptk, guru }) {
   const queryClient = useQueryClient();
   const [modalUpload, setModalUpload] = useState(false);
   const [modalEdit, setModalEdit] = useState(null);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [modalVersions, setModalVersions] = useState(null); // dokumen object
+  const [modalLogs, setModalLogs] = useState(null); // dokumen object
+  const [modalReject, setModalReject] = useState(null); // dokumen object
   const fileRef = useRef();
 
+  // ── Mutation: Approve ──
+  const approveDokumen = useMutation({
+    mutationFn: (id) =>
+      api.patch(`/operator/master-data/guru/${nuptk}/dokumen/${id}/approve`),
+    onSuccess: () => {
+      toast.success("Dokumen disetujui.");
+      queryClient.invalidateQueries(["guru-dokumen", nuptk]);
+    },
+    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal approve."),
+  });
+
+  // ── Mutation: Reject ──
+  const rejectDokumen = useMutation({
+    mutationFn: ({ id, alasan }) =>
+      api.patch(`/operator/master-data/guru/${nuptk}/dokumen/${id}/reject`, {
+        alasan,
+      }),
+    onSuccess: () => {
+      toast.success("Dokumen ditolak.");
+      queryClient.invalidateQueries(["guru-dokumen", nuptk]);
+      setModalReject(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal reject."),
+  });
+
   const KATEGORI_OPTS = [
-    { value: "identitas", label: "Identitas (KTP, KK, Paspor)" },
-    { value: "kepegawaian", label: "Kepegawaian (SK, Kontrak)" },
-    { value: "pendidikan", label: "Pendidikan (Ijazah, Transkrip)" },
-    { value: "sertifikasi", label: "Sertifikasi & Pelatihan" },
-    { value: "penghargaan", label: "Penghargaan" },
+    { value: "identitas", label: "Identitas" },
+    { value: "pendidikan", label: "Pendidikan" },
+    { value: "kepegawaian", label: "Kepegawaian" },
+    { value: "sertifikasi", label: "Sertifikasi" },
+    { value: "administrasi", label: "Administrasi" },
     { value: "lainnya", label: "Lainnya" },
   ];
 
-  const { data: dokumens = [], isLoading } = useQuery({
+  // Master jenis dokumen per kategori — match GuruDokumen::JENIS_WAJIB di backend
+  const JENIS_PER_KATEGORI = {
+    identitas: [
+      { value: "ktp", label: "KTP" },
+      { value: "kk", label: "Kartu Keluarga (KK)" },
+      { value: "npwp", label: "NPWP" },
+      { value: "pas_foto", label: "Pas Foto" },
+      { value: "karpeg", label: "KARPEG" },
+      { value: "karis", label: "KARIS" },
+      { value: "karsu", label: "KARSU" },
+      { value: "bpjs_kesehatan", label: "BPJS Kesehatan" },
+      { value: "bpjs_naker", label: "BPJS Ketenagakerjaan" },
+      { value: "paspor", label: "Paspor" },
+      { value: "lainnya", label: "Lainnya" },
+    ],
+    pendidikan: [
+      { value: "ijazah_sd", label: "Ijazah SD" },
+      { value: "ijazah_smp", label: "Ijazah SMP" },
+      { value: "ijazah_sma", label: "Ijazah SMA/SMK" },
+      { value: "ijazah_d3", label: "Ijazah D3" },
+      { value: "ijazah_s1", label: "Ijazah S1" },
+      { value: "transkrip_s1", label: "Transkrip S1" },
+      { value: "ijazah_s2", label: "Ijazah S2" },
+      { value: "transkrip_s2", label: "Transkrip S2" },
+      { value: "ijazah_s3", label: "Ijazah S3" },
+      { value: "penyetaraan", label: "Sertifikat Penyetaraan" },
+      { value: "lainnya", label: "Lainnya" },
+    ],
+    kepegawaian: [
+      { value: "sk_pengangkatan", label: "SK Pengangkatan" },
+      { value: "sk_yayasan", label: "SK Yayasan" },
+      { value: "sk_cpns", label: "SK CPNS" },
+      { value: "sk_pns", label: "SK PNS" },
+      { value: "sk_berkala", label: "SK Berkala" },
+      { value: "sk_pangkat", label: "SK Pangkat" },
+      { value: "sk_mutasi", label: "SK Mutasi" },
+      { value: "sk_tugas_tambahan", label: "SK Tugas Tambahan" },
+      { value: "sk_inpassing", label: "SK Inpassing" },
+      { value: "kontrak_kerja", label: "Kontrak Kerja" },
+      { value: "lainnya", label: "Lainnya" },
+    ],
+    sertifikasi: [
+      { value: "sertifikat_ppg", label: "Sertifikat PPG" },
+      { value: "sertifikat_diklat", label: "Sertifikat Diklat" },
+      { value: "sertifikat_workshop", label: "Sertifikat Workshop" },
+      { value: "sertifikat_seminar", label: "Sertifikat Seminar" },
+      { value: "sertifikat_kompetensi", label: "Sertifikat Kompetensi" },
+      { value: "lainnya", label: "Lainnya" },
+    ],
+    administrasi: [
+      { value: "pakta_integritas", label: "Pakta Integritas" },
+      { value: "surat_pernyataan", label: "Surat Pernyataan" },
+      { value: "surat_aktif", label: "Surat Aktif Mengajar" },
+      { value: "surat_tugas", label: "Surat Tugas" },
+      { value: "lainnya", label: "Lainnya" },
+    ],
+    lainnya: [{ value: "lainnya", label: "Dokumen Lainnya" }],
+  };
+  const { data: dokumenResponse, isLoading } = useQuery({
     queryKey: ["guru-dokumen", nuptk],
     queryFn: () =>
       api
         .get(`/operator/master-data/guru/${nuptk}/dokumen`)
-        .then((r) => r.data.data),
+        .then((r) => r.data),
   });
+
+  const dokumens = dokumenResponse?.data ?? [];
+  const statistik = dokumenResponse?.statistik ?? {
+    total: 0,
+    disetujui: 0,
+    menunggu: 0,
+    ditolak: 0,
+    revisi: 0,
+    kadaluarsa: 0,
+    persen: 0,
+  };
+  const checklist = dokumenResponse?.checklist ?? [];
 
   const uploadDokumen = useMutation({
     mutationFn: (fd) =>
@@ -2082,15 +2356,16 @@ function TabDokumen({ nuptk, guru }) {
     e.preventDefault();
     const f = e.target;
     const fd = new FormData();
-    fd.append("kategori", f.kategori.value);
-    fd.append("nama_dokumen", f.nama_dokumen.value);
-    fd.append("nomor_dokumen", f.nomor_dokumen.value);
-    fd.append("tanggal_dokumen", f.tanggal_dokumen.value);
-    fd.append("tanggal_berlaku", f.tanggal_berlaku.value);
-    fd.append("tanggal_kadaluarsa", f.tanggal_kadaluarsa.value);
-    fd.append("penerbit", f.penerbit.value);
-    fd.append("keterangan", f.keterangan.value);
-    if (f.file.files[0]) fd.append("file", f.file.files[0]);
+    fd.append("kategori", f.kategori?.value ?? "");
+    fd.append("jenis_dokumen", f.jenis_dokumen?.value ?? "");
+    fd.append("nama_dokumen", f.nama_dokumen?.value ?? "");
+    fd.append("nomor_dokumen", f.nomor_dokumen?.value ?? "");
+    fd.append("tanggal_dokumen", f.tanggal_dokumen?.value ?? "");
+    fd.append("tanggal_berlaku", f.tanggal_berlaku?.value ?? "");
+    fd.append("tanggal_kadaluarsa", f.tanggal_kadaluarsa?.value ?? "");
+    fd.append("penerbit", f.penerbit?.value ?? "");
+    fd.append("keterangan", f.keterangan?.value ?? "");
+    if (f.file?.files?.[0]) fd.append("file", f.file.files[0]);
     uploadDokumen.mutate(fd);
   };
 
@@ -2098,15 +2373,17 @@ function TabDokumen({ nuptk, guru }) {
     e.preventDefault();
     const f = e.target;
     const fd = new FormData();
-    fd.append("kategori", f.kategori.value);
-    fd.append("nama_dokumen", f.nama_dokumen.value);
-    fd.append("nomor_dokumen", f.nomor_dokumen.value);
-    fd.append("tanggal_dokumen", f.tanggal_dokumen.value);
-    fd.append("tanggal_berlaku", f.tanggal_berlaku.value);
-    fd.append("tanggal_kadaluarsa", f.tanggal_kadaluarsa.value);
-    fd.append("penerbit", f.penerbit.value);
-    fd.append("keterangan", f.keterangan.value);
-    if (f.file.files[0]) fd.append("file", f.file.files[0]);
+    fd.append("kategori", f.kategori?.value ?? "");
+    fd.append("jenis_dokumen", f.jenis_dokumen?.value ?? "");
+    fd.append("nama_dokumen", f.nama_dokumen?.value ?? "");
+    fd.append("nomor_dokumen", f.nomor_dokumen?.value ?? "");
+    fd.append("tanggal_dokumen", f.tanggal_dokumen?.value ?? "");
+    fd.append("tanggal_berlaku", f.tanggal_berlaku?.value ?? "");
+    fd.append("tanggal_kadaluarsa", f.tanggal_kadaluarsa?.value ?? "");
+    fd.append("penerbit", f.penerbit?.value ?? "");
+    fd.append("keterangan", f.keterangan?.value ?? "");
+    fd.append("catatan_versi", f.catatan_versi?.value ?? "");
+    if (f.file?.files?.[0]) fd.append("file", f.file.files[0]);
     editDokumen.mutate({ id: modalEdit.id, fd });
   };
 
@@ -2181,13 +2458,19 @@ function TabDokumen({ nuptk, guru }) {
   };
   // ─── Status Badge ───
   const STATUS_CONFIG = {
-    verified: {
-      label: "Verified",
+    // Value dari backend enum
+    disetujui: {
+      label: "Disetujui",
       cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
       dot: "bg-emerald-500",
     },
-    pending: {
-      label: "Pending",
+    menunggu_review: {
+      label: "Review",
+      cls: "bg-blue-50   text-blue-700   border-blue-200",
+      dot: "bg-blue-500",
+    },
+    perlu_revisi: {
+      label: "Perlu Revisi",
       cls: "bg-amber-50  text-amber-700  border-amber-200",
       dot: "bg-amber-500",
     },
@@ -2201,10 +2484,21 @@ function TabDokumen({ nuptk, guru }) {
       cls: "bg-gray-100  text-gray-500   border-gray-200",
       dot: "bg-gray-400",
     },
-    belum: {
+    belum_upload: {
       label: "Belum Upload",
       cls: "bg-gray-100  text-gray-400   border-gray-200",
       dot: "bg-gray-300",
+    },
+    // Legacy / fallback
+    verified: {
+      label: "Disetujui",
+      cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      dot: "bg-emerald-500",
+    },
+    pending: {
+      label: "Review",
+      cls: "bg-blue-50   text-blue-700   border-blue-200",
+      dot: "bg-blue-500",
     },
   };
 
@@ -2237,131 +2531,323 @@ function TabDokumen({ nuptk, guru }) {
     return { icon: "insert_drive_file", cls: "text-gray-500   bg-gray-100" };
   };
 
-  const DokumenForm = ({ defaultValues = {}, isPending, onClose }) => (
-    <div className="space-y-4">
-      <Field label="Kategori Dokumen" required>
-        <select
-          name="kategori"
-          required
-          defaultValue={defaultValues.kategori ?? ""}
-          className={inputCls}
-        >
-          <option value="">-- Pilih kategori --</option>
-          {KATEGORI_OPTS.map((k) => (
-            <option key={k.value} value={k.value}>
-              {k.label}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Nama Dokumen">
-        <input
-          name="nama_dokumen"
-          defaultValue={defaultValues.nama_dokumen ?? ""}
-          className={inputCls}
-          placeholder="Kosongkan untuk pakai nama kategori"
-        />
-      </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Nomor Dokumen">
-          <input
-            name="nomor_dokumen"
-            defaultValue={defaultValues.nomor_dokumen ?? ""}
-            className={inputCls}
-            placeholder="No. seri / nomor dokumen"
-          />
-        </Field>
-        <Field label="Tanggal Dokumen">
-          <input
-            name="tanggal_dokumen"
-            type="date"
-            defaultValue={defaultValues.tanggal_dokumen?.slice(0, 10) ?? ""}
-            className={inputCls}
-          />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Tanggal Berlaku">
-          <input
-            name="tanggal_berlaku"
-            type="date"
-            defaultValue={defaultValues.tanggal_berlaku?.slice(0, 10) ?? ""}
-            className={inputCls}
-          />
-        </Field>
-        <Field label="Tanggal Kadaluarsa">
-          <input
-            name="tanggal_kadaluarsa"
-            type="date"
-            defaultValue={defaultValues.tanggal_kadaluarsa?.slice(0, 10) ?? ""}
-            className={inputCls}
-          />
-        </Field>
-      </div>
-      <Field label="Penerbit / Instansi">
-        <input
-          name="penerbit"
-          defaultValue={defaultValues.penerbit ?? ""}
-          className={inputCls}
-          placeholder="Contoh: Dukcapil, Kemenag, dll."
-        />
-      </Field>
-      <Field label="Keterangan">
-        <textarea
-          name="keterangan"
-          rows={2}
-          defaultValue={defaultValues.keterangan ?? ""}
-          className={`${inputCls} resize-none`}
-          placeholder="Catatan tambahan (opsional)"
-        />
-      </Field>
-      <Field
-        label={
-          defaultValues.file_path
-            ? "Ganti File (opsional)"
-            : "File (PDF/JPG/PNG, maks 10MB)"
-        }
-        required={!defaultValues.file_path}
-      >
-        <input
-          ref={defaultValues.file_path ? undefined : fileRef}
-          name="file"
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          required={!defaultValues.file_path}
-          className="w-full text-sm text-text-secondary file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-        />
-        {defaultValues.file_path && (
-          <p className="text-xs text-text-secondary mt-1">
-            File saat ini:{" "}
-            <a
-              href={`${BASE_URL}/storage/${defaultValues.file_path}`}
-              target="_blank"
-              className="text-primary underline"
-            >
-              lihat
-            </a>
+  const DokumenForm = ({
+    defaultValues = {},
+    isPending,
+    onClose,
+    isEdit = false,
+  }) => {
+    const [selectedKategori, setSelectedKategori] = React.useState(
+      defaultValues.kategori ?? "",
+    );
+    const [dragOver, setDragOver] = React.useState(false);
+    const [previewFile, setPreviewFile] = React.useState(null);
+    const localFileRef = React.useRef();
+
+    const jenisOpts = JENIS_PER_KATEGORI[selectedKategori] ?? [];
+
+    const handleFilePick = (file) => {
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      setPreviewFile({
+        name: file.name,
+        url,
+        type: file.type,
+        size: file.size,
+      });
+    };
+
+    return (
+      <div className="space-y-0 divide-y divide-gray-100">
+        {/* ── SEKSI 1: Klasifikasi ── */}
+        <div className="pb-4 space-y-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-1">
+            Klasifikasi Dokumen
           </p>
-        )}
-      </Field>
-      <div className="flex gap-2 pt-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container text-sm font-medium transition-colors"
-        >
-          Batal
-        </button>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
-        >
-          {isPending ? "Menyimpan..." : "Simpan"}
-        </button>
+
+          {/* Kategori */}
+          <Field label="Kategori" required>
+            <select
+              name="kategori"
+              required
+              value={selectedKategori}
+              onChange={(e) => setSelectedKategori(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">-- Pilih Kategori --</option>
+              {KATEGORI_OPTS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          {/* Jenis Dokumen — dinamis berdasarkan kategori */}
+          {selectedKategori && (
+            <Field label="Jenis Dokumen" required>
+              <select
+                name="jenis_dokumen"
+                required
+                defaultValue={defaultValues.jenis_dokumen ?? ""}
+                className={inputCls}
+              >
+                <option value="">-- Pilih Jenis --</option>
+                {jenisOpts.map((j) => (
+                  <option key={j.value} value={j.value}>
+                    {j.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          {/* Nama Dokumen */}
+          <Field label="Nama Dokumen">
+            <input
+              name="nama_dokumen"
+              defaultValue={defaultValues.nama_dokumen ?? ""}
+              className={inputCls}
+              placeholder="Kosongkan untuk pakai jenis dokumen"
+            />
+          </Field>
+        </div>
+
+        {/* ── SEKSI 2: Detail Dokumen ── */}
+        <div className="py-4 space-y-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Detail Dokumen
+          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Nomor Dokumen">
+              <input
+                name="nomor_dokumen"
+                defaultValue={defaultValues.nomor_dokumen ?? ""}
+                className={inputCls}
+                placeholder="No. seri / nomor"
+              />
+            </Field>
+            <Field label="Tanggal Terbit">
+              <input
+                name="tanggal_dokumen"
+                type="date"
+                defaultValue={defaultValues.tanggal_dokumen?.slice(0, 10) ?? ""}
+                className={inputCls}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tanggal Berlaku">
+              <input
+                name="tanggal_berlaku"
+                type="date"
+                defaultValue={defaultValues.tanggal_berlaku?.slice(0, 10) ?? ""}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Tanggal Kadaluarsa">
+              <input
+                name="tanggal_kadaluarsa"
+                type="date"
+                defaultValue={
+                  defaultValues.tanggal_kadaluarsa?.slice(0, 10) ?? ""
+                }
+                className={inputCls}
+              />
+            </Field>
+          </div>
+
+          <Field label="Penerbit / Instansi">
+            <input
+              name="penerbit"
+              defaultValue={defaultValues.penerbit ?? ""}
+              className={inputCls}
+              placeholder="Dukcapil / Kemenag / Yayasan..."
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Keterangan">
+              <textarea
+                name="keterangan"
+                rows={2}
+                defaultValue={defaultValues.keterangan ?? ""}
+                className={`${inputCls} resize-none`}
+                placeholder="Catatan opsional"
+              />
+            </Field>
+            {isEdit && (
+              <Field label="Catatan Revisi">
+                <textarea
+                  name="catatan_versi"
+                  rows={2}
+                  className={`${inputCls} resize-none`}
+                  placeholder="Alasan ganti file (v. baru)"
+                />
+              </Field>
+            )}
+          </div>
+        </div>
+
+        {/* ── SEKSI 3: Upload File ── */}
+        <div className="py-4 space-y-3">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            {isEdit
+              ? "Ganti File (opsional — membuat versi baru)"
+              : "Upload File"}
+          </p>
+
+          {/* Drag & drop zone */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const file = e.dataTransfer.files[0];
+              if (file && localFileRef.current) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                localFileRef.current.files = dt.files;
+                handleFilePick(file);
+              }
+            }}
+            onClick={() => localFileRef.current?.click()}
+            className={`
+              relative cursor-pointer flex flex-col items-center justify-center gap-2
+              px-4 py-6 rounded-xl border-2 border-dashed transition-all duration-200
+              ${
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : previewFile
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-gray-200 bg-gray-50 hover:border-primary/50 hover:bg-primary/3"
+              }
+            `}
+          >
+            <input
+              ref={localFileRef}
+              name="file"
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              required={!isEdit && !defaultValues.file_path}
+              className="hidden"
+              onChange={(e) => handleFilePick(e.target.files[0])}
+            />
+            {previewFile ? (
+              <>
+                <span className="material-symbols-outlined text-[28px] text-emerald-500">
+                  check_circle
+                </span>
+                <p className="text-xs font-semibold text-emerald-700 truncate max-w-[90%]">
+                  {previewFile.name}
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  {fmtSize(previewFile.size)}
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[28px] text-gray-300">
+                  cloud_upload
+                </span>
+                <p className="text-xs font-medium text-gray-500">
+                  Drag & drop atau{" "}
+                  <span className="text-primary font-semibold">
+                    klik untuk pilih
+                  </span>
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  PDF, JPG, PNG — Maks. 10 MB
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Preview inline jika sudah ada file */}
+          {previewFile && previewFile.type === "application/pdf" && (
+            <div className="rounded-xl border border-gray-100 overflow-hidden h-40">
+              <iframe
+                src={previewFile.url}
+                className="w-full h-full"
+                title="Preview PDF"
+              />
+            </div>
+          )}
+          {previewFile && previewFile.type?.startsWith("image/") && (
+            <div className="rounded-xl border border-gray-100 overflow-hidden h-40 flex items-center justify-center bg-gray-50">
+              <img
+                src={previewFile.url}
+                alt="Preview"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          )}
+
+          {/* File existing (mode edit) */}
+          {isEdit && defaultValues.file_path && !previewFile && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50 border border-blue-100">
+              <span className="material-symbols-outlined text-[16px] text-blue-500">
+                attach_file
+              </span>
+              <p className="text-xs text-blue-700 flex-1 truncate">
+                File aktif:{" "}
+                <strong>
+                  {defaultValues.original_filename ?? "Lihat file"}
+                </strong>
+              </p>
+              <a
+                href={`${BASE_URL}/storage/${defaultValues.file_path}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary underline flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Buka
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* ── Tombol aksi ── */}
+        <div className="flex gap-2 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+          >
+            {isPending ? (
+              <>
+                <span className="material-symbols-outlined text-[16px] animate-spin">
+                  progress_activity
+                </span>
+                Menyimpan...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[16px]">
+                  save
+                </span>
+                {isEdit ? "Simpan Perubahan" : "Upload Dokumen"}
+              </>
+            )}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ─── Hitung statistik dokumen untuk header ringkasan ───
   const allDocFiles = [
@@ -2398,33 +2884,57 @@ function TabDokumen({ nuptk, guru }) {
     tanggal,
     size,
     uploader,
+    verifier,
     status,
+    versi,
+    isNearExpiry,
     filePath,
     onPreview,
     onDownload,
     onEdit,
     onHapus,
+    onApprove,
+    onReject,
+    onShowVersions,
+    onShowLogs,
+    rejectionReason,
   }) => (
-    <div className="group relative flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-primary/30 transition-all duration-200 min-h-[90px]">
-      {/* Icon kolom kiri */}
+    <div className="group relative flex items-start gap-3 px-4 py-3 bg-white rounded-xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:border-primary/30 transition-all duration-200">
+      {/* Icon */}
       <div
-        className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${iconCls}`}
+        className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center mt-0.5 ${iconCls}`}
       >
         <span className="material-symbols-outlined text-[18px]">{icon}</span>
       </div>
 
-      {/* Info tengah */}
+      {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
-          {nama}
-        </p>
+        <div className="flex items-start justify-between gap-1">
+          <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
+            {nama}
+          </p>
+          {versi > 1 && (
+            <span className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+              v{versi}
+            </span>
+          )}
+        </div>
         {nomor && (
           <p className="text-[11px] text-gray-400 font-mono truncate mt-0.5">
             No. {nomor}
           </p>
         )}
-        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+
+        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
           <StatusBadge status={status} />
+          {isNearExpiry && (
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold border bg-amber-50 text-amber-600 border-amber-200">
+              <span className="material-symbols-outlined text-[9px]">
+                timer
+              </span>
+              Segera Exp.
+            </span>
+          )}
           {tanggal && (
             <span className="text-[10px] text-gray-400">
               {fmtDate(tanggal)}
@@ -2433,59 +2943,135 @@ function TabDokumen({ nuptk, guru }) {
           {size && (
             <span className="text-[10px] text-gray-400">{fmtSize(size)}</span>
           )}
+        </div>
+
+        {/* Uploader & Verifier */}
+        <div className="flex flex-wrap gap-x-3 mt-1">
           {uploader && (
-            <span className="text-[10px] text-gray-400 truncate max-w-[100px]">
+            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+              <span className="material-symbols-outlined text-[10px]">
+                upload
+              </span>
               {uploader}
             </span>
           )}
+          {verifier && (
+            <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">
+              <span className="material-symbols-outlined text-[10px]">
+                verified
+              </span>
+              {verifier}
+            </span>
+          )}
         </div>
+
+        {/* Rejection reason */}
+        {rejectionReason && (
+          <p className="text-[10px] text-red-500 mt-1 line-clamp-1">
+            ✕ {rejectionReason}
+          </p>
+        )}
       </div>
 
-      {/* Action icons — muncul saat hover di desktop, selalu tampil di mobile */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 md:transition-opacity md:duration-200 max-md:opacity-100 flex-shrink-0">
-        {onPreview && (
-          <a
-            href={onPreview}
-            target="_blank"
-            rel="noreferrer"
-            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title="Preview"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              open_in_new
-            </span>
-          </a>
-        )}
-        {onDownload && (
-          <button
-            onClick={onDownload}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/8 transition-colors"
-            title="Download"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              download
-            </span>
-          </button>
-        )}
-        {onEdit && (
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            title="Edit"
-          >
-            <span className="material-symbols-outlined text-[16px]">edit</span>
-          </button>
-        )}
-        {onHapus && (
-          <button
-            onClick={onHapus}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-            title="Hapus"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              delete
-            </span>
-          </button>
+      {/* Actions — hover desktop */}
+      <div className="flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 md:transition-opacity md:duration-200 max-md:opacity-100 flex-shrink-0">
+        {/* Row 1: standard actions */}
+        <div className="flex items-center gap-0.5">
+          {onPreview && (
+            <a
+              href={onPreview}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Preview"
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                open_in_new
+              </span>
+            </a>
+          )}
+          {onDownload && (
+            <button
+              onClick={onDownload}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/8 transition-colors"
+              title="Download"
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                download
+              </span>
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              title="Edit / Ganti File"
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                edit
+              </span>
+            </button>
+          )}
+          {onHapus && (
+            <button
+              onClick={onHapus}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Hapus"
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                delete
+              </span>
+            </button>
+          )}
+        </div>
+        {/* Row 2: verifikasi + riwayat (hanya untuk dokumen upload manual) */}
+        {(onApprove || onReject || onShowVersions || onShowLogs) && (
+          <div className="flex items-center gap-0.5">
+            {onApprove && (
+              <button
+                onClick={onApprove}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                title="Setujui"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  check_circle
+                </span>
+              </button>
+            )}
+            {onReject && (
+              <button
+                onClick={onReject}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                title="Tolak"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  cancel
+                </span>
+              </button>
+            )}
+            {onShowVersions && (
+              <button
+                onClick={onShowVersions}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                title="Riwayat Versi"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  history
+                </span>
+              </button>
+            )}
+            {onShowLogs && (
+              <button
+                onClick={onShowLogs}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                title="Audit Log"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  receipt_long
+                </span>
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -2561,8 +3147,57 @@ function TabDokumen({ nuptk, guru }) {
     </div>
   );
 
+  // ── Dokumen yang akan/sudah expired (dari list upload manual) ──
+  const nearExpiryDocs = dokumens.filter(
+    (d) => d.is_near_expiry || d.is_expired,
+  );
+
   return (
     <div className="space-y-5">
+      {/* ══ BANNER NEAR-EXPIRY ══ */}
+      {nearExpiryDocs.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-[20px] text-amber-500 flex-shrink-0 mt-0.5">
+              notifications_active
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-amber-800">
+                {nearExpiryDocs.length} Dokumen Perlu Perhatian
+              </p>
+              <ul className="mt-1.5 space-y-1">
+                {nearExpiryDocs.slice(0, 5).map((d) => (
+                  <li key={d.id} className="flex items-center gap-2">
+                    <span
+                      className={`
+                      w-1.5 h-1.5 rounded-full flex-shrink-0
+                      ${d.is_expired ? "bg-red-500" : "bg-amber-400"}
+                    `}
+                    />
+                    <span className="text-[11px] text-amber-700 truncate">
+                      <strong>{d.nama_dokumen}</strong>
+                      {" — "}
+                      {d.is_expired ? (
+                        <span className="text-red-600 font-semibold">
+                          Sudah kadaluarsa
+                        </span>
+                      ) : (
+                        <span>Exp. {fmtDate(d.tanggal_kadaluarsa)}</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+                {nearExpiryDocs.length > 5 && (
+                  <li className="text-[10px] text-amber-600 ml-3.5">
+                    +{nearExpiryDocs.length - 5} dokumen lainnya
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══ HEADER RINGKASAN DOKUMEN ══ */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -2571,153 +3206,154 @@ function TabDokumen({ nuptk, guru }) {
               Kelengkapan Dokumen
             </h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              Ringkasan seluruh dokumen guru
+              Berdasarkan status verifikasi aktual
             </p>
           </div>
-          {/* <button
-            onClick={() => setModalUpload(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[15px]">
-              upload_file
-            </span>
-            Upload Dokumen
-          </button> */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowChecklist((v) => !v)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-[11px] font-medium hover:bg-gray-50 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[13px]">
+                checklist
+              </span>
+              Checklist
+            </button>
+            <button
+              onClick={() =>
+                window.open(
+                  `/api/operator/master-data/guru/${nuptk}/dokumen-bulk-download`,
+                  "_blank",
+                )
+              }
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-[11px] font-medium hover:bg-gray-50 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[13px]">
+                download
+              </span>
+              Bulk Download
+            </button>
+            <button
+              onClick={() => setModalUpload(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[15px]">
+                upload_file
+              </span>
+              Upload Dokumen
+            </button>
+          </div>
         </div>
 
-        {/* Stat cards */}
-        {(() => {
-          // ── Opsi B: slot dokumen wajib yang diharapkan ada ──
-          const slotWajib = [
+        {/* 6 Stat cards — dari backend */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+          {[
             {
-              label: "KTP",
-              terpenuhi: dokumens.some((d) => d.kategori === "identitas"),
+              label: "Total",
+              value: statistik.total,
+              bg: "bg-gray-50",
+              text: "text-gray-800",
+              border: "border-gray-100",
             },
             {
-              label: "Kartu Keluarga",
-              terpenuhi: dokumens.some(
-                (d) =>
-                  d.nama_dokumen?.toLowerCase().includes("kk") ||
-                  d.nama_dokumen?.toLowerCase().includes("kartu keluarga"),
-              ),
+              label: "Verified",
+              value: statistik.disetujui,
+              bg: "bg-emerald-50",
+              text: "text-emerald-700",
+              border: "border-emerald-100",
             },
             {
-              label: "Ijazah",
-              terpenuhi: pendidikans.some((p) => p.file_ijazah),
+              label: "Review",
+              value: statistik.menunggu,
+              bg: "bg-blue-50",
+              text: "text-blue-700",
+              border: "border-blue-100",
             },
             {
-              label: "Sertifikasi",
-              terpenuhi: sertifikasis.some((s) => s.file_sertifikat),
+              label: "Revisi",
+              value: statistik.revisi,
+              bg: "bg-amber-50",
+              text: "text-amber-700",
+              border: "border-amber-100",
             },
             {
-              label: "SK Kepegawaian",
-              terpenuhi:
-                dokumens.some((d) => d.kategori === "kepegawaian") ||
-                inpassings.some((i) => i.file_sk),
+              label: "Ditolak",
+              value: statistik.ditolak,
+              bg: "bg-red-50",
+              text: "text-red-700",
+              border: "border-red-100",
             },
-          ];
-          const belumWajib = slotWajib.filter((s) => !s.terpenuhi).length;
-
-          // ── Opsi A: hitung dokumen kadaluarsa ──
-          const kadaluarsaCount = [
-            ...dokumens.filter(
-              (d) =>
-                d.tanggal_kadaluarsa &&
-                new Date(d.tanggal_kadaluarsa) < new Date(),
-            ),
-            ...sertifikasis.filter(
-              (s) => s.expired_at && new Date(s.expired_at) < new Date(),
-            ),
-          ].length;
-
-          return (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="text-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                  <p className="text-2xl font-black text-gray-900">
-                    {totalDokumen}
-                  </p>
-                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                    Total
-                  </p>
-                </div>
-                <div className="text-center p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                  <p className="text-2xl font-black text-emerald-600">
-                    {sudahUpload}
-                  </p>
-                  <p className="text-[10px] text-emerald-500 font-medium mt-0.5">
-                    Terupload
-                  </p>
-                </div>
-                <div
-                  className={`text-center p-3 rounded-xl border ${belumWajib > 0 ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"}`}
-                >
-                  <p
-                    className={`text-2xl font-black ${belumWajib > 0 ? "text-amber-600" : "text-gray-400"}`}
-                  >
-                    {belumWajib}
-                  </p>
-                  <p
-                    className={`text-[10px] font-medium mt-0.5 ${belumWajib > 0 ? "text-amber-500" : "text-gray-400"}`}
-                  >
-                    Belum Upload
-                  </p>
-                </div>
-                <div
-                  className={`text-center p-3 rounded-xl border ${kadaluarsaCount > 0 ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"}`}
-                >
-                  <p
-                    className={`text-2xl font-black ${kadaluarsaCount > 0 ? "text-red-600" : "text-gray-400"}`}
-                  >
-                    {kadaluarsaCount}
-                  </p>
-                  <p
-                    className={`text-[10px] font-medium mt-0.5 ${kadaluarsaCount > 0 ? "text-red-500" : "text-gray-400"}`}
-                  >
-                    Kadaluarsa
-                  </p>
-                </div>
-              </div>
-
-              {/* Tooltip slot wajib yang belum — hanya tampil kalau ada yang kosong */}
-              {belumWajib > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {slotWajib
-                    .filter((s) => !s.terpenuhi)
-                    .map((s) => (
-                      <span
-                        key={s.label}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] text-amber-700 font-medium"
-                      >
-                        <span className="material-symbols-outlined text-[11px]">
-                          warning
-                        </span>
-                        {s.label}
-                      </span>
-                    ))}
-                </div>
-              )}
-            </>
-          );
-        })()}
+            {
+              label: "Expired",
+              value: statistik.kadaluarsa,
+              bg: "bg-gray-100",
+              text: "text-gray-500",
+              border: "border-gray-200",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className={`text-center p-2.5 rounded-xl ${s.bg} border ${s.border}`}
+            >
+              <p className={`text-xl font-black ${s.text}`}>{s.value}</p>
+              <p
+                className={`text-[9px] font-semibold mt-0.5 ${s.text} opacity-70`}
+              >
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
 
         {/* Progress bar */}
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-[11px] text-gray-400 font-medium">
-              Kelengkapan
+              Kelengkapan Disetujui
             </span>
             <span className="text-[11px] font-bold text-primary">
-              {pctLengkap}%
+              {statistik.persen}%
             </span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all duration-700"
-              style={{ width: `${pctLengkap}%` }}
+              style={{ width: `${statistik.persen}%` }}
             />
           </div>
         </div>
+
+        {/* Checklist panel — toggle */}
+        {showChecklist && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">
+              Dokumen Wajib
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+              {checklist.map((item) => (
+                <div
+                  key={item.jenis}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-50"
+                >
+                  {item.uploaded ? (
+                    <span className="material-symbols-outlined text-[14px] text-emerald-500 flex-shrink-0">
+                      check_circle
+                    </span>
+                  ) : (
+                    <span className="material-symbols-outlined text-[14px] text-gray-300 flex-shrink-0">
+                      radio_button_unchecked
+                    </span>
+                  )}
+                  <span
+                    className={`text-[11px] font-medium ${item.uploaded ? "text-gray-700" : "text-gray-400"}`}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══ KATEGORI 1: DOKUMEN UPLOAD MANUAL ══ */}
@@ -2743,19 +3379,19 @@ function TabDokumen({ nuptk, guru }) {
                 key={d.id}
                 icon={icon}
                 iconCls={cls}
-                nama={d.nama_dokumen ?? d.kategori}
+                nama={d.nama_dokumen ?? d.jenis_dokumen ?? d.kategori}
                 nomor={d.nomor_dokumen}
                 tanggal={d.tanggal_dokumen ?? d.created_at}
                 size={d.file_size}
-                uploader={d.penerbit}
+                uploader={d.uploader?.name ?? d.penerbit}
+                verifier={d.verifier?.name}
                 status={
-                  d.status ??
-                  (d.tanggal_kadaluarsa &&
-                  new Date(d.tanggal_kadaluarsa) < new Date()
-                    ? "kadaluarsa"
-                    : "pending")
+                  d.status ?? (d.is_expired ? "kadaluarsa" : "menunggu_review")
                 }
+                versi={d.versi ?? 1}
+                isNearExpiry={d.is_near_expiry}
                 filePath={d.file_path}
+                rejectionReason={d.rejection_reason}
                 onPreview={
                   d.file_path ? `${BASE_URL}/storage/${d.file_path}` : null
                 }
@@ -2766,6 +3402,10 @@ function TabDokumen({ nuptk, guru }) {
                 onHapus={() =>
                   confirm("Hapus dokumen ini?") && deleteDokumen.mutate(d.id)
                 }
+                onApprove={() => approveDokumen.mutate(d.id)}
+                onReject={() => setModalReject(d)}
+                onShowVersions={() => setModalVersions(d)}
+                onShowLogs={() => setModalLogs(d)}
               />
             );
           })
@@ -2918,15 +3558,95 @@ function TabDokumen({ nuptk, guru }) {
 
       {/* ══ MODAL EDIT ══ */}
       {modalEdit && (
-        <Modal title="Edit Dokumen" onClose={() => setModalEdit(null)}>
+        <Modal
+          title="Edit / Ganti File Dokumen"
+          onClose={() => setModalEdit(null)}
+        >
           <form onSubmit={handleEditSubmit}>
             <DokumenForm
               defaultValues={modalEdit}
               isPending={editDokumen.isPending}
               onClose={() => setModalEdit(null)}
+              isEdit={true}
             />
           </form>
         </Modal>
+      )}
+
+      {/* ══ MODAL REJECT ══ */}
+      {modalReject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-900 text-sm">Tolak Dokumen</h3>
+              <button
+                onClick={() => setModalReject(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  close
+                </span>
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-xs text-gray-500 mb-3">
+                Dokumen: <strong>{modalReject.nama_dokumen}</strong>
+              </p>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Alasan Penolakan <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="reject-reason"
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                placeholder="Jelaskan alasan penolakan..."
+              />
+            </div>
+            <div className="flex gap-2 px-5 py-4 border-t border-gray-100">
+              <button
+                onClick={() => setModalReject(null)}
+                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  const alasan = document
+                    .getElementById("reject-reason")
+                    ?.value?.trim();
+                  if (!alasan) {
+                    toast.error("Alasan wajib diisi.");
+                    return;
+                  }
+                  rejectDokumen.mutate({ id: modalReject.id, alasan });
+                }}
+                disabled={rejectDokumen.isPending}
+                className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60"
+              >
+                {rejectDokumen.isPending ? "Menolak..." : "Tolak"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL RIWAYAT VERSI ══ */}
+      {modalVersions && (
+        <ModalVersions
+          dokumen={modalVersions}
+          nuptk={nuptk}
+          baseUrl={BASE_URL}
+          onClose={() => setModalVersions(null)}
+        />
+      )}
+
+      {/* ══ MODAL AUDIT LOG ══ */}
+      {modalLogs && (
+        <ModalAuditLog
+          dokumen={modalLogs}
+          nuptk={nuptk}
+          onClose={() => setModalLogs(null)}
+        />
       )}
 
       {/* ══ CSS INJECT — hover actions transition ══ */}
@@ -3434,26 +4154,26 @@ function ModalMutasi({
   const collectPayload = (form) => {
     const val = (name) => form.elements[name]?.value ?? "";
     const file = (name) => form.elements[name]?.files?.[0] ?? null;
-   return {
-     jenis_mutasi: jenisDipilih,
-     jenis_keluar: jenisDipilih === "Keluar" ? val("jenis_keluar") : null,
-     sekolah_asal: val("sekolah_asal"),
-     npsn_asal: val("npsn_asal"),
-     sekolah_tujuan: val("sekolah_tujuan"),
-     npsn_tujuan: val("npsn_tujuan"),
-     jabatan_sebelum: val("jabatan_sebelum"),
-     jabatan_sesudah: val("jabatan_sesudah"),
-     tanggal_mutasi: val("tanggal_mutasi"),
-     tmt_mutasi: val("tmt_mutasi"),
-     tanggal_berakhir: val("tanggal_berakhir"),
-     no_sk: val("no_sk"),
-     tanggal_sk: val("tanggal_sk"),
-     instansi_penerbit_sk: val("instansi_penerbit_sk"),
-     status_kepegawaian: val("status_kepegawaian"),
-     alasan_mutasi: val("alasan_mutasi"),
-     keterangan: val("keterangan"),
-     file_sk: file("file_sk"),
-   };
+    return {
+      jenis_mutasi: jenisDipilih,
+      jenis_keluar: jenisDipilih === "Keluar" ? val("jenis_keluar") : null,
+      sekolah_asal: val("sekolah_asal"),
+      npsn_asal: val("npsn_asal"),
+      sekolah_tujuan: val("sekolah_tujuan"),
+      npsn_tujuan: val("npsn_tujuan"),
+      jabatan_sebelum: val("jabatan_sebelum"),
+      jabatan_sesudah: val("jabatan_sesudah"),
+      tanggal_mutasi: val("tanggal_mutasi"),
+      tmt_mutasi: val("tmt_mutasi"),
+      tanggal_berakhir: val("tanggal_berakhir"),
+      no_sk: val("no_sk"),
+      tanggal_sk: val("tanggal_sk"),
+      instansi_penerbit_sk: val("instansi_penerbit_sk"),
+      status_kepegawaian: val("status_kepegawaian"),
+      alasan_mutasi: val("alasan_mutasi"),
+      keterangan: val("keterangan"),
+      file_sk: file("file_sk"),
+    };
   };
 
   // ── Submit: tampilkan konfirmasi dulu ─────────────────────
@@ -4143,7 +4863,9 @@ function TabRiwayat({ nuptk, guru }) {
   const { data: cutis = [] } = useQuery({
     queryKey: ["guru-cuti", nuptk],
     queryFn: () =>
-      api.get(`/operator/master-data/guru/${nuptk}/cuti`).then((r) => r.data.data),
+      api
+        .get(`/operator/master-data/guru/${nuptk}/cuti`)
+        .then((r) => r.data.data),
     initialData: guru.cutis ?? [],
     initialDataUpdatedAt: 0,
   });
@@ -4151,11 +4873,17 @@ function TabRiwayat({ nuptk, guru }) {
   const saveCuti = useMutation({
     mutationFn: ({ data, id }) => {
       const fd = new FormData();
-      Object.entries(data).forEach(([k, v]) => v != null && v !== "" && fd.append(k, v));
+      Object.entries(data).forEach(
+        ([k, v]) => v != null && v !== "" && fd.append(k, v),
+      );
       return id
-        ? api.post(`/operator/master-data/guru/${nuptk}/cuti/${id}?_method=PUT`, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
+        ? api.post(
+            `/operator/master-data/guru/${nuptk}/cuti/${id}?_method=PUT`,
+            fd,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            },
+          )
         : api.post(`/operator/master-data/guru/${nuptk}/cuti`, fd, {
             headers: { "Content-Type": "multipart/form-data" },
           });
@@ -4167,7 +4895,8 @@ function TabRiwayat({ nuptk, guru }) {
       queryClient.invalidateQueries({ queryKey: ["master-guru"] });
       setModalCuti(null);
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal menyimpan."),
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menyimpan."),
   });
 
   const selesaiCuti = useMutation({
@@ -4179,7 +4908,8 @@ function TabRiwayat({ nuptk, guru }) {
       queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
       queryClient.invalidateQueries({ queryKey: ["master-guru"] });
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal memperbarui."),
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal memperbarui."),
   });
 
   const deleteCuti = useMutation({
@@ -4191,7 +4921,8 @@ function TabRiwayat({ nuptk, guru }) {
       queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
       queryClient.invalidateQueries({ queryKey: ["master-guru"] });
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal menghapus."),
+    onError: (e) =>
+      toast.error(e.response?.data?.message ?? "Gagal menghapus."),
   });
 
   const handleCutiSubmit = (e) => {
@@ -4200,15 +4931,15 @@ function TabRiwayat({ nuptk, guru }) {
     saveCuti.mutate({
       id: modalCuti?.id,
       data: {
-        jenis_cuti:      f.jenis_cuti.value,
-        tanggal_mulai:   f.tanggal_mulai.value,
+        jenis_cuti: f.jenis_cuti.value,
+        tanggal_mulai: f.tanggal_mulai.value,
         tanggal_selesai: f.tanggal_selesai.value,
-        no_sk:           f.no_sk.value,
-        tanggal_sk:      f.tanggal_sk.value,
+        no_sk: f.no_sk.value,
+        tanggal_sk: f.tanggal_sk.value,
         pejabat_pemberi: f.pejabat_pemberi.value,
-        alasan:          f.alasan.value,
-        keterangan:      f.keterangan.value,
-        file_sk:         f.file_sk.files[0] ?? null,
+        alasan: f.alasan.value,
+        keterangan: f.keterangan.value,
+        file_sk: f.file_sk.files[0] ?? null,
       },
     });
   };
@@ -4464,15 +5195,19 @@ function TabRiwayat({ nuptk, guru }) {
             {/* Status badge saat ini */}
             {(() => {
               const STATUS_COLOR = {
-                'Aktif':               'bg-success/10 text-success border-success/20',
-                'Keluar':              'bg-error/10 text-error border-error/20',
-                'Penugasan Sementara': 'bg-blue-100 text-blue-600 border-blue-200',
-                'Cuti':                'bg-warning/10 text-warning border-warning/20',
-                'Nonaktif':            'bg-surface-container text-text-secondary border-border-light',
+                Aktif: "bg-success/10 text-success border-success/20",
+                Keluar: "bg-error/10 text-error border-error/20",
+                "Penugasan Sementara":
+                  "bg-blue-100 text-blue-600 border-blue-200",
+                Cuti: "bg-warning/10 text-warning border-warning/20",
+                Nonaktif:
+                  "bg-surface-container text-text-secondary border-border-light",
               };
-              const s = guru.status_keaktifan ?? 'Aktif';
+              const s = guru.status_keaktifan ?? "Aktif";
               return (
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${STATUS_COLOR[s] ?? 'bg-surface-container text-text-secondary border-border-light'}`}>
+                <span
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${STATUS_COLOR[s] ?? "bg-surface-container text-text-secondary border-border-light"}`}
+                >
                   {s}
                 </span>
               );
@@ -4498,179 +5233,215 @@ function TabRiwayat({ nuptk, guru }) {
 
             {mutasis.map((m, idx) => {
               const META = {
-                Masuk:               { icon: 'login',      dot: 'bg-success',  badge: 'bg-success/10 text-success',          label: 'Mutasi Masuk' },
-                Keluar:              { icon: 'logout',     dot: 'bg-error',    badge: 'bg-error/10 text-error',              label: 'Mutasi Keluar' },
-                Internal:            { icon: 'swap_horiz', dot: 'bg-warning',  badge: 'bg-warning/10 text-warning',          label: 'Mutasi Internal' },
-                'Penugasan Sementara':{ icon: 'work',      dot: 'bg-blue-500', badge: 'bg-blue-100 text-blue-600',           label: 'Penugasan Sementara' },
-                'Kembali Bertugas':  { icon: 'undo',       dot: 'bg-primary',  badge: 'bg-primary/10 text-primary',          label: 'Kembali Bertugas' },
+                Masuk: {
+                  icon: "login",
+                  dot: "bg-success",
+                  badge: "bg-success/10 text-success",
+                  label: "Mutasi Masuk",
+                },
+                Keluar: {
+                  icon: "logout",
+                  dot: "bg-error",
+                  badge: "bg-error/10 text-error",
+                  label: "Mutasi Keluar",
+                },
+                Internal: {
+                  icon: "swap_horiz",
+                  dot: "bg-warning",
+                  badge: "bg-warning/10 text-warning",
+                  label: "Mutasi Internal",
+                },
+                "Penugasan Sementara": {
+                  icon: "work",
+                  dot: "bg-blue-500",
+                  badge: "bg-blue-100 text-blue-600",
+                  label: "Penugasan Sementara",
+                },
+                "Kembali Bertugas": {
+                  icon: "undo",
+                  dot: "bg-primary",
+                  badge: "bg-primary/10 text-primary",
+                  label: "Kembali Bertugas",
+                },
               };
-              const meta = META[m.jenis_mutasi] ?? { icon: 'circle', dot: 'bg-text-secondary', badge: 'bg-surface-container text-text-secondary', label: m.jenis_mutasi };
+              const meta = META[m.jenis_mutasi] ?? {
+                icon: "circle",
+                dot: "bg-text-secondary",
+                badge: "bg-surface-container text-text-secondary",
+                label: m.jenis_mutasi,
+              };
               const isLast = idx === mutasis.length - 1;
 
               return (
-                <div key={m.id} className={`relative mb-4 ${isLast ? '' : ''}`}>
+                <div key={m.id} className={`relative mb-4 ${isLast ? "" : ""}`}>
                   {/* Dot pada timeline */}
-                  <div className={`absolute -left-[1.35rem] top-4 w-3 h-3 rounded-full border-2 border-white ${meta.dot} shadow-sm z-10`} />
+                  <div
+                    className={`absolute -left-[1.35rem] top-4 w-3 h-3 rounded-full border-2 border-white ${meta.dot} shadow-sm z-10`}
+                  />
 
                   <div className="p-4 bg-surface-container-low rounded-xl border border-border-light">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      {/* Tahun — kecil di atas badge */}
-                      <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">
-                        {m.tanggal_mutasi ? new Date(m.tanggal_mutasi).getFullYear() : '—'}
-                      </p>
-
-                      {/* Baris 1: badge jenis + SK */}
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${meta.badge}`}>
-                          {meta.label}
-                        </span>
-                        {m.jenis_keluar && (
-                          <span className="text-[11px] text-text-secondary italic">
-                            · {m.jenis_keluar}
-                          </span>
-                        )}
-                        {m.jenis_mutasi === "Keluar" && (
-                          <span
-                            className="text-[11px] text-text-secondary italic"
-                            title="Jika guru ini kembali bertugas di sekolah ini, tambahkan riwayat Mutasi Masuk baru."
-                          >
-                            · Untuk mengaktifkan kembali, tambah Mutasi Masuk
-                          </span>
-                        )}
-                        {m.jenis_mutasi === "Penugasan Sementara" &&
-                          !m.tanggal_berakhir && (
-                            <span
-                              className="text-[11px] text-warning font-medium"
-                              title="Penugasan masih aktif. Tambah Kembali Bertugas untuk menutup."
-                            >
-                              · Masih aktif — tambah Kembali Bertugas jika sudah
-                              selesai
-                            </span>
-                          )}
-                        {m.no_sk && (
-                          <span className="text-[11px] text-text-secondary font-mono">
-                            SK: {m.no_sk}
-                          </span>
-                        )}
-                        {m.tanggal_sk && (
-                          <span className="text-[11px] text-text-secondary">
-                            {fmtDate(m.tanggal_sk)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Baris 2: Sekolah asal → tujuan */}
-                      {(m.sekolah_asal || m.sekolah_tujuan) && (
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-sm font-medium text-text-primary truncate">
-                            {m.sekolah_asal || "–"}
-                          </span>
-                          <span className="material-symbols-outlined text-[16px] text-text-secondary flex-shrink-0">
-                            arrow_forward
-                          </span>
-                          <span className="text-sm font-medium text-text-primary truncate">
-                            {m.sekolah_tujuan || "–"}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Baris 3: Jabatan sebelum → sesudah */}
-                      {(m.jabatan_sebelum || m.jabatan_sesudah) && (
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-xs text-text-secondary truncate">
-                            {m.jabatan_sebelum || "–"}
-                          </span>
-                          <span className="material-symbols-outlined text-[14px] text-text-secondary flex-shrink-0">
-                            arrow_forward
-                          </span>
-                          <span className="text-xs text-text-secondary truncate">
-                            {m.jabatan_sesudah || "–"}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Baris 4: Tanggal & TMT */}
-                      <div className="flex flex-wrap gap-3 mt-1">
-                        <span className="text-xs text-text-secondary">
-                          Tanggal Mutasi: <b>{fmtDate(m.tanggal_mutasi)}</b>
-                        </span>
-                        {m.tmt_mutasi && (
-                          <span className="text-xs text-text-secondary">
-                            TMT: <b>{fmtDate(m.tmt_mutasi)}</b>
-                          </span>
-                        )}
-                        {m.status_kepegawaian && (
-                          <span className="text-xs text-text-secondary">
-                            Status: <b>{m.status_kepegawaian}</b>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Baris 5: Instansi & Alasan */}
-                      {(m.instansi_penerbit_sk || m.alasan_mutasi) && (
-                        <div className="flex flex-wrap gap-3 mt-0.5">
-                          {m.instansi_penerbit_sk && (
-                            <span className="text-xs text-text-secondary">
-                              Penerbit: {m.instansi_penerbit_sk}
-                            </span>
-                          )}
-                          {m.alasan_mutasi && (
-                            <span className="text-xs text-text-secondary">
-                              Alasan: {m.alasan_mutasi}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Baris 6: Keterangan */}
-                      {m.keterangan && (
-                        <p className="text-xs text-text-secondary italic mt-0.5">
-                          {m.keterangan}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        {/* Tahun — kecil di atas badge */}
+                        <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">
+                          {m.tanggal_mutasi
+                            ? new Date(m.tanggal_mutasi).getFullYear()
+                            : "—"}
                         </p>
-                      )}
-                    </div>
 
-                    {/* Tombol aksi */}
-                    <div className="flex gap-1 flex-shrink-0 ml-1">
-                      {m.file_sk && (
+                        {/* Baris 1: badge jenis + SK */}
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${meta.badge}`}
+                          >
+                            {meta.label}
+                          </span>
+                          {m.jenis_keluar && (
+                            <span className="text-[11px] text-text-secondary italic">
+                              · {m.jenis_keluar}
+                            </span>
+                          )}
+                          {m.jenis_mutasi === "Keluar" && (
+                            <span
+                              className="text-[11px] text-text-secondary italic"
+                              title="Jika guru ini kembali bertugas di sekolah ini, tambahkan riwayat Mutasi Masuk baru."
+                            >
+                              · Untuk mengaktifkan kembali, tambah Mutasi Masuk
+                            </span>
+                          )}
+                          {m.jenis_mutasi === "Penugasan Sementara" &&
+                            !m.tanggal_berakhir && (
+                              <span
+                                className="text-[11px] text-warning font-medium"
+                                title="Penugasan masih aktif. Tambah Kembali Bertugas untuk menutup."
+                              >
+                                · Masih aktif — tambah Kembali Bertugas jika
+                                sudah selesai
+                              </span>
+                            )}
+                          {m.no_sk && (
+                            <span className="text-[11px] text-text-secondary font-mono">
+                              SK: {m.no_sk}
+                            </span>
+                          )}
+                          {m.tanggal_sk && (
+                            <span className="text-[11px] text-text-secondary">
+                              {fmtDate(m.tanggal_sk)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Baris 2: Sekolah asal → tujuan */}
+                        {(m.sekolah_asal || m.sekolah_tujuan) && (
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-sm font-medium text-text-primary truncate">
+                              {m.sekolah_asal || "–"}
+                            </span>
+                            <span className="material-symbols-outlined text-[16px] text-text-secondary flex-shrink-0">
+                              arrow_forward
+                            </span>
+                            <span className="text-sm font-medium text-text-primary truncate">
+                              {m.sekolah_tujuan || "–"}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Baris 3: Jabatan sebelum → sesudah */}
+                        {(m.jabatan_sebelum || m.jabatan_sesudah) && (
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-xs text-text-secondary truncate">
+                              {m.jabatan_sebelum || "–"}
+                            </span>
+                            <span className="material-symbols-outlined text-[14px] text-text-secondary flex-shrink-0">
+                              arrow_forward
+                            </span>
+                            <span className="text-xs text-text-secondary truncate">
+                              {m.jabatan_sesudah || "–"}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Baris 4: Tanggal & TMT */}
+                        <div className="flex flex-wrap gap-3 mt-1">
+                          <span className="text-xs text-text-secondary">
+                            Tanggal Mutasi: <b>{fmtDate(m.tanggal_mutasi)}</b>
+                          </span>
+                          {m.tmt_mutasi && (
+                            <span className="text-xs text-text-secondary">
+                              TMT: <b>{fmtDate(m.tmt_mutasi)}</b>
+                            </span>
+                          )}
+                          {m.status_kepegawaian && (
+                            <span className="text-xs text-text-secondary">
+                              Status: <b>{m.status_kepegawaian}</b>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Baris 5: Instansi & Alasan */}
+                        {(m.instansi_penerbit_sk || m.alasan_mutasi) && (
+                          <div className="flex flex-wrap gap-3 mt-0.5">
+                            {m.instansi_penerbit_sk && (
+                              <span className="text-xs text-text-secondary">
+                                Penerbit: {m.instansi_penerbit_sk}
+                              </span>
+                            )}
+                            {m.alasan_mutasi && (
+                              <span className="text-xs text-text-secondary">
+                                Alasan: {m.alasan_mutasi}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Baris 6: Keterangan */}
+                        {m.keterangan && (
+                          <p className="text-xs text-text-secondary italic mt-0.5">
+                            {m.keterangan}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Tombol aksi */}
+                      <div className="flex gap-1 flex-shrink-0 ml-1">
+                        {m.file_sk && (
+                          <button
+                            onClick={() =>
+                              downloadFile(m.file_sk, `SK_Mutasi_${m.id}`)
+                            }
+                            className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                            title="Download SK"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              download
+                            </span>
+                          </button>
+                        )}
                         <button
-                          onClick={() =>
-                            downloadFile(m.file_sk, `SK_Mutasi_${m.id}`)
-                          }
-                          className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                          title="Download SK"
+                          onClick={() => setModalMutasi(m)}
+                          className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
+                          title="Edit"
                         >
                           <span className="material-symbols-outlined text-[18px]">
-                            download
+                            edit
                           </span>
                         </button>
-                      )}
-                      <button
-                        onClick={() => setModalMutasi(m)}
-                        className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
-                        title="Edit"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          edit
-                        </span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          confirm("Hapus riwayat mutasi ini?") &&
-                          deleteMutasi.mutate(m.id)
-                        }
-                        className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
-                        title="Hapus"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          delete
-                        </span>
-                      </button>
+                        <button
+                          onClick={() =>
+                            confirm("Hapus riwayat mutasi ini?") &&
+                            deleteMutasi.mutate(m.id)
+                          }
+                          className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
+                          title="Hapus"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            delete
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
               );
             })}
           </div>
@@ -4699,7 +5470,7 @@ function TabRiwayat({ nuptk, guru }) {
           statusGuru={guru.status_keaktifan ?? "Aktif"}
         />
       )}
-{/* ── SECTION 2b: CUTI ── */}
+      {/* ── SECTION 2b: CUTI ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <SectionTitle
@@ -4768,7 +5539,8 @@ function TabRiwayat({ nuptk, guru }) {
                           calendar_month
                         </span>
                         <span className="text-sm font-medium text-text-primary">
-                          {fmtDate(c.tanggal_mulai)} — {fmtDate(c.tanggal_selesai)}
+                          {fmtDate(c.tanggal_mulai)} —{" "}
+                          {fmtDate(c.tanggal_selesai)}
                         </span>
                         <span className="text-xs text-text-secondary">
                           ({c.jumlah_hari} hari)
@@ -4802,8 +5574,9 @@ function TabRiwayat({ nuptk, guru }) {
                       {isAktif && (
                         <button
                           onClick={() =>
-                            confirm("Tandai cuti ini selesai? Status guru akan kembali Aktif.") &&
-                            selesaiCuti.mutate(c.id)
+                            confirm(
+                              "Tandai cuti ini selesai? Status guru akan kembali Aktif.",
+                            ) && selesaiCuti.mutate(c.id)
                           }
                           className="p-1.5 rounded-lg hover:bg-success/10 text-success transition-colors"
                           title="Tandai Selesai"
@@ -4815,7 +5588,9 @@ function TabRiwayat({ nuptk, guru }) {
                       )}
                       {c.file_sk && (
                         <button
-                          onClick={() => downloadFile(c.file_sk, `SK_Cuti_${c.id}`)}
+                          onClick={() =>
+                            downloadFile(c.file_sk, `SK_Cuti_${c.id}`)
+                          }
                           className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
                           title="Download SK"
                         >
@@ -4829,16 +5604,21 @@ function TabRiwayat({ nuptk, guru }) {
                         className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
                         title="Edit"
                       >
-                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                        <span className="material-symbols-outlined text-[18px]">
+                          edit
+                        </span>
                       </button>
                       <button
                         onClick={() =>
-                          confirm("Hapus data cuti ini?") && deleteCuti.mutate(c.id)
+                          confirm("Hapus data cuti ini?") &&
+                          deleteCuti.mutate(c.id)
                         }
                         className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
                         title="Hapus"
                       >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        <span className="material-symbols-outlined text-[18px]">
+                          delete
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -4855,7 +5635,9 @@ function TabRiwayat({ nuptk, guru }) {
               <div className="flex items-center justify-between px-6 py-4 border-b border-border-light flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-warning text-[18px]">beach_access</span>
+                    <span className="material-symbols-outlined text-warning text-[18px]">
+                      beach_access
+                    </span>
                   </div>
                   <h3 className="font-bold text-text-primary text-base">
                     {modalCuti === "add" ? "Tambah" : "Edit"} Data Cuti
@@ -4865,11 +5647,16 @@ function TabRiwayat({ nuptk, guru }) {
                   onClick={() => setModalCuti(null)}
                   className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <span className="material-symbols-outlined text-[20px]">
+                    close
+                  </span>
                 </button>
               </div>
 
-              <form onSubmit={handleCutiSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+              <form
+                onSubmit={handleCutiSubmit}
+                className="px-6 py-5 space-y-4 overflow-y-auto flex-1"
+              >
                 {/* Jenis Cuti */}
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1.5">
@@ -4882,8 +5669,17 @@ function TabRiwayat({ nuptk, guru }) {
                     className={inputCls}
                   >
                     <option value="">— Pilih Jenis Cuti —</option>
-                    {["Cuti Tahunan","Cuti Sakit","Cuti Bersalin","Cuti Alasan Penting","Cuti Besar","Lainnya"].map((j) => (
-                      <option key={j} value={j}>{j}</option>
+                    {[
+                      "Cuti Tahunan",
+                      "Cuti Sakit",
+                      "Cuti Bersalin",
+                      "Cuti Alasan Penting",
+                      "Cuti Besar",
+                      "Lainnya",
+                    ].map((j) => (
+                      <option key={j} value={j}>
+                        {j}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -4898,7 +5694,9 @@ function TabRiwayat({ nuptk, guru }) {
                       type="date"
                       name="tanggal_mulai"
                       required
-                      defaultValue={modalCuti?.tanggal_mulai?.toString().slice(0, 10) ?? ""}
+                      defaultValue={
+                        modalCuti?.tanggal_mulai?.toString().slice(0, 10) ?? ""
+                      }
                       className={inputCls}
                     />
                   </div>
@@ -4910,7 +5708,10 @@ function TabRiwayat({ nuptk, guru }) {
                       type="date"
                       name="tanggal_selesai"
                       required
-                      defaultValue={modalCuti?.tanggal_selesai?.toString().slice(0, 10) ?? ""}
+                      defaultValue={
+                        modalCuti?.tanggal_selesai?.toString().slice(0, 10) ??
+                        ""
+                      }
                       className={inputCls}
                     />
                   </div>
@@ -4919,7 +5720,9 @@ function TabRiwayat({ nuptk, guru }) {
                 {/* SK */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">No. SK</label>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      No. SK
+                    </label>
                     <input
                       name="no_sk"
                       placeholder="Nomor SK"
@@ -4928,11 +5731,15 @@ function TabRiwayat({ nuptk, guru }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">Tanggal SK</label>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Tanggal SK
+                    </label>
                     <input
                       type="date"
                       name="tanggal_sk"
-                      defaultValue={modalCuti?.tanggal_sk?.toString().slice(0, 10) ?? ""}
+                      defaultValue={
+                        modalCuti?.tanggal_sk?.toString().slice(0, 10) ?? ""
+                      }
                       className={inputCls}
                     />
                   </div>
@@ -4940,7 +5747,9 @@ function TabRiwayat({ nuptk, guru }) {
 
                 {/* Pejabat pemberi */}
                 <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">Pejabat Pemberi Cuti</label>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    Pejabat Pemberi Cuti
+                  </label>
                   <input
                     name="pejabat_pemberi"
                     placeholder="Nama pejabat / instansi"
@@ -4951,7 +5760,9 @@ function TabRiwayat({ nuptk, guru }) {
 
                 {/* Alasan */}
                 <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">Alasan</label>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    Alasan
+                  </label>
                   <textarea
                     name="alasan"
                     rows={2}
@@ -4981,7 +5792,9 @@ function TabRiwayat({ nuptk, guru }) {
 
                 {/* Keterangan */}
                 <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">Keterangan</label>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    Keterangan
+                  </label>
                   <textarea
                     name="keterangan"
                     rows={2}

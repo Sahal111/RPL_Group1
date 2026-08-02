@@ -11,6 +11,9 @@ use App\Models\GuruPendidikan;
 use App\Models\GuruSertifikasi;
 use App\Models\GuruJabatan;
 use App\Models\GuruDokumen;
+use App\Models\GuruDokumenVersion;
+use App\Models\GuruDokumenLog;
+use App\Services\GuruDokumenService;
 use App\Models\GuruRekening;
 use App\Models\GuruKompetensi;
 use App\Models\GuruDiklat;
@@ -788,7 +791,38 @@ class MasterDataGuruController extends Controller
     public function getDokumen($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->dokumens]);
+
+        $dokumens = $guru->dokumens()
+            ->with(['uploader:id,username,name', 'verifier:id,username,name'])
+            ->withCount('versions')
+            ->orderBy('kategori')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        // Statistik untuk header ringkasan
+        $service = app(GuruDokumenService::class);
+        $statistik = $service->getStatistik($guru->id);
+
+        // Slot wajib — jenis dokumen yang belum diupload
+        $uploaded = $dokumens->pluck('jenis_dokumen')->filter()->unique()->toArray();
+        $checklist = [];
+        foreach (GuruDokumen::JENIS_WAJIB as $kategori => $jenisMap) {
+            foreach ($jenisMap as $key => $label) {
+                $checklist[] = [
+                    'jenis' => $key,
+                    'label' => $label,
+                    'kategori' => $kategori,
+                    'uploaded' => in_array($key, $uploaded),
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $dokumens,
+            'statistik' => $statistik,
+            'checklist' => $checklist,
+        ]);
     }
 
     public function uploadDokumen(Request $request, $nuptk)
@@ -796,35 +830,41 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
-            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,penghargaan,lainnya',
+            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,administrasi,lainnya',
+            'jenis_dokumen' => 'nullable|string|max:80',
             'nama_dokumen' => 'nullable|string|max:150',
             'nomor_dokumen' => 'nullable|string|max:80',
             'tanggal_dokumen' => 'nullable|date',
             'tanggal_berlaku' => 'nullable|date',
-            'tanggal_kadaluarsa' => 'nullable|date',
+            'tanggal_kadaluarsa' => 'nullable|date|after_or_equal:tanggal_berlaku',
             'penerbit' => 'nullable|string|max:150',
             'keterangan' => 'nullable|string|max:500',
             'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        $file = $request->file('file');
-        $path = $file->store("guru-dokumen/{$guru->id}", 'public');
+        $service = app(GuruDokumenService::class);
+        $dokumen = $service->upload(
+            guruId: $guru->id,
+            data: [
+                'kategori' => $request->kategori,
+                'jenis_dokumen' => $request->jenis_dokumen,
+                'nama_dokumen' => $request->nama_dokumen ?? ($request->jenis_dokumen ?? $request->kategori),
+                'nomor_dokumen' => $request->nomor_dokumen,
+                'tanggal_dokumen' => $request->tanggal_dokumen,
+                'tanggal_berlaku' => $request->tanggal_berlaku,
+                'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
+                'penerbit' => $request->penerbit,
+                'keterangan' => $request->keterangan,
+            ],
+            file: $request->file('file'),
+            uploadedBy: auth()->id(),
+        );
 
-        $dokumen = $guru->dokumens()->create([
-            'kategori' => $request->kategori,
-            'nama_dokumen' => $request->nama_dokumen ?? $request->kategori,
-            'nomor_dokumen' => $request->nomor_dokumen,
-            'tanggal_dokumen' => $request->tanggal_dokumen,
-            'tanggal_berlaku' => $request->tanggal_berlaku,
-            'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
-            'penerbit' => $request->penerbit,
-            'keterangan' => $request->keterangan,
-            'file_path' => $path,
-            'file_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
-        ]);
-
-        return response()->json(['success' => true, 'message' => 'Dokumen berhasil diupload.', 'data' => $dokumen], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Dokumen berhasil diupload.',
+            'data' => $dokumen,
+        ], 201);
     }
 
     public function destroyDokumen($nuptk, $id)
@@ -840,39 +880,154 @@ class MasterDataGuruController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $dokumen = $guru->dokumens()->findOrFail($id);
+        $service = app(GuruDokumenService::class);
 
         $request->validate([
-            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,penghargaan,lainnya',
+            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,administrasi,lainnya',
+            'jenis_dokumen' => 'nullable|string|max:80',
             'nama_dokumen' => 'nullable|string|max:150',
             'nomor_dokumen' => 'nullable|string|max:80',
             'tanggal_dokumen' => 'nullable|date',
             'tanggal_berlaku' => 'nullable|date',
-            'tanggal_kadaluarsa' => 'nullable|date',
+            'tanggal_kadaluarsa' => 'nullable|date|after_or_equal:tanggal_berlaku',
             'penerbit' => 'nullable|string|max:150',
             'keterangan' => 'nullable|string|max:500',
+            'catatan_versi' => 'nullable|string|max:255',
             'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
-        $dokumen->kategori = $request->kategori;
-        $dokumen->nama_dokumen = $request->nama_dokumen ?? $request->kategori;
-        $dokumen->nomor_dokumen = $request->nomor_dokumen;
-        $dokumen->tanggal_dokumen = $request->tanggal_dokumen;
-        $dokumen->tanggal_berlaku = $request->tanggal_berlaku;
-        $dokumen->tanggal_kadaluarsa = $request->tanggal_kadaluarsa;
-        $dokumen->penerbit = $request->penerbit;
-        $dokumen->keterangan = $request->keterangan;
+        // Update metadata
+        $dokumen->update([
+            'kategori' => $request->kategori,
+            'jenis_dokumen' => $request->jenis_dokumen,
+            'nama_dokumen' => $request->nama_dokumen ?? $dokumen->nama_dokumen,
+            'nomor_dokumen' => $request->nomor_dokumen,
+            'tanggal_dokumen' => $request->tanggal_dokumen,
+            'tanggal_berlaku' => $request->tanggal_berlaku,
+            'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
+            'penerbit' => $request->penerbit,
+            'keterangan' => $request->keterangan,
+        ]);
 
+        // Jika ada file baru → versioning
         if ($request->hasFile('file')) {
-            Storage::disk('public')->delete($dokumen->file_path);
-            $file = $request->file('file');
-            $dokumen->file_path = $file->store("guru-dokumen/{$guru->id}", 'public');
-            $dokumen->file_type = $file->getMimeType();
-            $dokumen->file_size = $file->getSize();
+            $service->replace(
+                dokumen: $dokumen,
+                file: $request->file('file'),
+                uploadedBy: auth()->id(),
+                catatan: $request->catatan_versi,
+            );
         }
 
-        $dokumen->save();
+        return response()->json([
+            'success' => true,
+            'message' => 'Dokumen berhasil diperbarui.',
+            'data' => $dokumen->fresh(['uploader', 'verifier', 'versions']),
+        ]);
+    }
 
-        return response()->json(['success' => true, 'message' => 'Dokumen berhasil diperbarui.', 'data' => $dokumen]);
+    // ── BARU: Approve dokumen ──
+    public function approveDokumen(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+        $service = app(GuruDokumenService::class);
+
+        $updated = $service->approve($dokumen, auth()->id());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dokumen berhasil disetujui.',
+            'data' => $updated,
+        ]);
+    }
+
+    // ── BARU: Reject dokumen ──
+    public function rejectDokumen(Request $request, $nuptk, $id)
+    {
+        $request->validate([
+            'alasan' => 'required|string|max:500',
+        ]);
+
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+        $service = app(GuruDokumenService::class);
+
+        $updated = $service->reject($dokumen, auth()->id(), $request->alasan);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dokumen ditolak.',
+            'data' => $updated,
+        ]);
+    }
+
+    // ── BARU: Riwayat versi ──
+    public function getDokumenVersions($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $dokumen->versions()->with('uploader:id,username,name')->get(),
+        ]);
+    }
+
+    // ── BARU: Audit log per dokumen ──
+    public function getDokumenLogs($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $dokumen->logs()->with('user:id,username,name')->get(),
+        ]);
+    }
+
+    // ── BARU: Bulk download ZIP per guru ──
+    public function bulkDownload(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $query = $guru->dokumens()->whereNotNull('file_path');
+
+        // Filter per kategori jika ada
+        if ($request->has('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        $dokumens = $query->get();
+
+        if ($dokumens->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada dokumen.'], 404);
+        }
+
+        $zip = new \ZipArchive();
+        $filename = "Dokumen_{$guru->nama}_{$nuptk}_" . now()->format('Ymd') . '.zip';
+        $tmpPath = storage_path("app/tmp/{$filename}");
+
+        if (!is_dir(storage_path('app/tmp'))) {
+            mkdir(storage_path('app/tmp'), 0755, true);
+        }
+
+        if ($zip->open($tmpPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return response()->json(['message' => 'Gagal membuat ZIP.'], 500);
+        }
+
+        foreach ($dokumens as $dok) {
+            $fullPath = storage_path('app/public/' . $dok->file_path);
+            if (file_exists($fullPath)) {
+                $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+                $entryName = "{$dok->kategori}/{$dok->nama_dokumen}.{$ext}";
+                $zip->addFile($fullPath, $entryName);
+            }
+        }
+
+        $zip->close();
+
+        return response()->download($tmpPath, $filename)->deleteFileAfterSend(true);
     }
 
     // ────────────────────────────────────────────────────────
