@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-08-02 08:51:14 +0000
+# Generation Time: 2026-08-02 09:40:41 +0000
 # ************************************************************
 
 
@@ -558,6 +558,57 @@ VALUES
 UNLOCK TABLES;
 
 
+# Dump of table guru_dokumen_logs
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `guru_dokumen_logs`;
+
+CREATE TABLE `guru_dokumen_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `guru_dokumen_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `aksi` enum('upload','replace','download','preview','approve','reject','revisi','delete','restore') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `keterangan` text COLLATE utf8mb4_unicode_ci,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `guru_dokumen_logs_guru_dokumen_id_aksi_index` (`guru_dokumen_id`,`aksi`),
+  KEY `guru_dokumen_logs_user_id_index` (`user_id`),
+  CONSTRAINT `guru_dokumen_logs_guru_dokumen_id_foreign` FOREIGN KEY (`guru_dokumen_id`) REFERENCES `guru_dokumens` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `guru_dokumen_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+# Dump of table guru_dokumen_versions
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `guru_dokumen_versions`;
+
+CREATE TABLE `guru_dokumen_versions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `guru_dokumen_id` bigint unsigned NOT NULL,
+  `versi` tinyint unsigned NOT NULL,
+  `file_path` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_type` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `file_size` bigint unsigned DEFAULT NULL,
+  `file_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `uploaded_by` bigint unsigned DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `guru_dokumen_versions_guru_dokumen_id_versi_unique` (`guru_dokumen_id`,`versi`),
+  KEY `guru_dokumen_versions_uploaded_by_foreign` (`uploaded_by`),
+  KEY `guru_dokumen_versions_guru_dokumen_id_index` (`guru_dokumen_id`),
+  CONSTRAINT `guru_dokumen_versions_guru_dokumen_id_foreign` FOREIGN KEY (`guru_dokumen_id`) REFERENCES `guru_dokumens` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `guru_dokumen_versions_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
 # Dump of table guru_dokumens
 # ------------------------------------------------------------
 
@@ -576,24 +627,40 @@ CREATE TABLE `guru_dokumens` (
   `file_path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Path file dokumen yang diupload ke server',
   `file_type` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Tipe MIME file: application/pdf, image/jpeg, dll',
   `file_size` int unsigned DEFAULT NULL COMMENT 'Ukuran file dalam bytes',
+  `file_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_verified` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1=Dokumen sudah diverifikasi keasliannya oleh operator/kepsek',
+  `status` enum('belum_upload','menunggu_review','disetujui','ditolak','perlu_revisi','kadaluarsa') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'menunggu_review',
+  `jenis_dokumen` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `versi` tinyint unsigned NOT NULL DEFAULT '1',
+  `uploaded_by` bigint unsigned DEFAULT NULL,
+  `verified_by` bigint unsigned DEFAULT NULL,
+  `verified_at` timestamp NULL DEFAULT NULL,
+  `rejection_reason` text COLLATE utf8mb4_unicode_ci,
   `keterangan` text COLLATE utf8mb4_unicode_ci COMMENT 'Catatan tambahan tentang dokumen ini',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_gurudok_guru_id` (`guru_id`),
-  CONSTRAINT `fk_gurudok_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE
+  KEY `guru_dokumens_uploaded_by_foreign` (`uploaded_by`),
+  KEY `guru_dokumens_verified_by_foreign` (`verified_by`),
+  KEY `guru_dokumens_guru_id_status_index` (`guru_id`,`status`),
+  KEY `guru_dokumens_guru_id_kategori_jenis_dokumen_index` (`guru_id`,`kategori`,`jenis_dokumen`),
+  KEY `guru_dokumens_tanggal_kadaluarsa_index` (`tanggal_kadaluarsa`),
+  CONSTRAINT `fk_gurudok_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `guru_dokumens_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `guru_dokumens_verified_by_foreign` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dokumen resmi guru yang diupload (KTP, SK, ijazah, sertifikat, dll)';
 
 LOCK TABLES `guru_dokumens` WRITE;
 /*!40000 ALTER TABLE `guru_dokumens` DISABLE KEYS */;
 
-INSERT INTO `guru_dokumens` (`id`, `guru_id`, `kategori`, `nama_dokumen`, `nomor_dokumen`, `tanggal_dokumen`, `tanggal_berlaku`, `tanggal_kadaluarsa`, `penerbit`, `file_path`, `file_type`, `file_size`, `is_verified`, `keterangan`, `created_at`, `updated_at`, `deleted_at`)
+INSERT INTO `guru_dokumens` (`id`, `guru_id`, `kategori`, `nama_dokumen`, `nomor_dokumen`, `tanggal_dokumen`, `tanggal_berlaku`, `tanggal_kadaluarsa`, `penerbit`, `file_path`, `file_type`, `file_size`, `file_hash`, `original_filename`, `is_verified`, `status`, `jenis_dokumen`, `versi`, `uploaded_by`, `verified_by`, `verified_at`, `rejection_reason`, `keterangan`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,5,'identitas','ktp','1234567890','2026-07-04',NULL,NULL,'kemenag','guru-dokumen/5/5TgUmGpdCMXWwen3hDp9BwW8aI9xecXIvBNhfq6i.png','image/png',163147,0,'ghcvhgkghkcv','2026-07-29 15:09:25','2026-08-01 09:41:35',NULL),
-	(2,5,'identitas','identitas','0987654321','2026-07-05',NULL,NULL,'sdfcghvjb','guru-dokumen/5/X7MFqVDepTXdgh5vqFbRgbu0lqd1ozNSp9rS5ctS.png','image/png',296349,0,NULL,'2026-07-29 15:09:46','2026-07-29 15:09:46',NULL),
-	(3,5,'identitas','kartu keluaraga','678903564756',NULL,NULL,NULL,'dukcapil','guru-dokumen/5/795Qzf130Mnf8FpvOsJJ5BLHCFe27nDUQ8jldnUu.png','image/png',629954,0,'dsfsdfgerfg','2026-08-01 09:41:20','2026-08-01 09:41:20',NULL);
+	(1,5,'identitas','ktp','1234567890','2026-07-04',NULL,NULL,'kemenag','guru-dokumen/5/5TgUmGpdCMXWwen3hDp9BwW8aI9xecXIvBNhfq6i.png','image/png',163147,NULL,NULL,0,'menunggu_review',NULL,1,NULL,NULL,NULL,NULL,'ghcvhgkghkcv','2026-07-29 15:09:25','2026-08-01 09:41:35',NULL),
+	(2,5,'identitas','identitas','0987654321','2026-07-05',NULL,NULL,'sdfcghvjb','guru-dokumen/5/X7MFqVDepTXdgh5vqFbRgbu0lqd1ozNSp9rS5ctS.png','image/png',296349,NULL,NULL,0,'menunggu_review',NULL,1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 15:09:46','2026-07-29 15:09:46',NULL),
+	(3,5,'identitas','kartu keluaraga','678903564756',NULL,NULL,NULL,'dukcapil','guru-dokumen/5/795Qzf130Mnf8FpvOsJJ5BLHCFe27nDUQ8jldnUu.png','image/png',629954,NULL,NULL,0,'menunggu_review',NULL,1,NULL,NULL,NULL,NULL,'dsfsdfgerfg','2026-08-01 09:41:20','2026-08-01 09:41:20',NULL);
 
 /*!40000 ALTER TABLE `guru_dokumens` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1721,7 +1788,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-08-02 15:48:45',NULL,'2026-07-20 21:48:50','2026-08-02 15:48:45');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-08-02 16:40:05',NULL,'2026-07-20 21:48:50','2026-08-02 16:40:05');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
