@@ -226,6 +226,16 @@ class Guru extends Model
         return $this->hasMany(GuruMutasi::class, 'guru_id')->orderByDesc('tanggal_mutasi');
     }
 
+    public function cutis()
+    {
+        return $this->hasMany(GuruCuti::class, 'guru_id')->orderByDesc('tanggal_mulai');
+    }
+
+    public function sedangCuti(): bool
+    {
+        return $this->cutis()->aktif()->exists();
+    }
+    
     public function pkgs()
     {
         return $this->hasMany(GuruPkg::class, 'guru_id')->orderByDesc('tanggal_penilaian');

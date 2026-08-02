@@ -3191,6 +3191,9 @@ function ModalMutasi({
   const [jenisDipilih, setJenisDipilih] = useState(
     isAdd ? "" : (modalMutasi?.jenis_mutasi ?? ""),
   );
+  const [jenisKeluar, setJenisKeluar] = useState(
+    isAdd ? "" : (modalMutasi?.jenis_keluar ?? ""),
+  );
   const [analyzeResult, setAnalyzeResult] = useState(null);
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [showKonfirmasi, setShowKonfirmasi] = useState(false);
@@ -3298,8 +3301,12 @@ function ModalMutasi({
   const show = {
     sekolah_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
     npsn_asal: ["Masuk", "Penugasan Sementara"].includes(jenisDipilih),
-    sekolah_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
-    npsn_tujuan: ["Keluar", "Penugasan Sementara"].includes(jenisDipilih),
+    sekolah_tujuan:
+      ["Penugasan Sementara"].includes(jenisDipilih) ||
+      (jenisDipilih === "Keluar" && jenisKeluar === "Pindah Sekolah"),
+    npsn_tujuan:
+      ["Penugasan Sementara"].includes(jenisDipilih) ||
+      (jenisDipilih === "Keluar" && jenisKeluar === "Pindah Sekolah"),
     jabatan_sebelum: [
       "Masuk",
       "Keluar",
@@ -3427,25 +3434,26 @@ function ModalMutasi({
   const collectPayload = (form) => {
     const val = (name) => form.elements[name]?.value ?? "";
     const file = (name) => form.elements[name]?.files?.[0] ?? null;
-    return {
-      jenis_mutasi: jenisDipilih,
-      sekolah_asal: val("sekolah_asal"),
-      npsn_asal: val("npsn_asal"),
-      sekolah_tujuan: val("sekolah_tujuan"),
-      npsn_tujuan: val("npsn_tujuan"),
-      jabatan_sebelum: val("jabatan_sebelum"),
-      jabatan_sesudah: val("jabatan_sesudah"),
-      tanggal_mutasi: val("tanggal_mutasi"),
-      tmt_mutasi: val("tmt_mutasi"),
-      tanggal_berakhir: val("tanggal_berakhir"),
-      no_sk: val("no_sk"),
-      tanggal_sk: val("tanggal_sk"),
-      instansi_penerbit_sk: val("instansi_penerbit_sk"),
-      status_kepegawaian: val("status_kepegawaian"),
-      alasan_mutasi: val("alasan_mutasi"),
-      keterangan: val("keterangan"),
-      file_sk: file("file_sk"),
-    };
+   return {
+     jenis_mutasi: jenisDipilih,
+     jenis_keluar: jenisDipilih === "Keluar" ? val("jenis_keluar") : null,
+     sekolah_asal: val("sekolah_asal"),
+     npsn_asal: val("npsn_asal"),
+     sekolah_tujuan: val("sekolah_tujuan"),
+     npsn_tujuan: val("npsn_tujuan"),
+     jabatan_sebelum: val("jabatan_sebelum"),
+     jabatan_sesudah: val("jabatan_sesudah"),
+     tanggal_mutasi: val("tanggal_mutasi"),
+     tmt_mutasi: val("tmt_mutasi"),
+     tanggal_berakhir: val("tanggal_berakhir"),
+     no_sk: val("no_sk"),
+     tanggal_sk: val("tanggal_sk"),
+     instansi_penerbit_sk: val("instansi_penerbit_sk"),
+     status_kepegawaian: val("status_kepegawaian"),
+     alasan_mutasi: val("alasan_mutasi"),
+     keterangan: val("keterangan"),
+     file_sk: file("file_sk"),
+   };
   };
 
   // ── Submit: tampilkan konfirmasi dulu ─────────────────────
@@ -3579,6 +3587,43 @@ function ModalMutasi({
                 <p className="text-xs font-bold text-text-secondary uppercase tracking-widest">
                   Data Mutasi
                 </p>
+
+                {/* Jenis Keluar (hanya muncul saat Mutasi Keluar) */}
+                {jenisDipilih === "Keluar" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Jenis Keluar <span className="text-error">*</span>
+                    </label>
+                    <select
+                      className={cls}
+                      name="jenis_keluar"
+                      required
+                      defaultValue={
+                        isAdd ? "" : (modalMutasi?.jenis_keluar ?? "")
+                      }
+                      onChange={(e) => {
+                        // trigger re-render agar sekolah_tujuan muncul/sembunyi
+                        // pakai state kecil
+                        setJenisKeluar(e.target.value);
+                      }}
+                    >
+                      <option value="">— Pilih Jenis Keluar —</option>
+                      {[
+                        "Pindah Sekolah",
+                        "Mengundurkan Diri",
+                        "Pensiun",
+                        "Kontrak Berakhir",
+                        "Meninggal Dunia",
+                        "PHK",
+                        "Lainnya",
+                      ].map((j) => (
+                        <option key={j} value={j}>
+                          {j}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Sekolah Asal */}
                 {show.sekolah_asal && (
@@ -4092,6 +4137,82 @@ function TabRiwayat({ nuptk, guru }) {
     });
   };
 
+  /* ── Cuti query & mutations ── */
+  const [modalCuti, setModalCuti] = useState(null); // null | 'add' | object
+
+  const { data: cutis = [] } = useQuery({
+    queryKey: ["guru-cuti", nuptk],
+    queryFn: () =>
+      api.get(`/operator/master-data/guru/${nuptk}/cuti`).then((r) => r.data.data),
+    initialData: guru.cutis ?? [],
+    initialDataUpdatedAt: 0,
+  });
+
+  const saveCuti = useMutation({
+    mutationFn: ({ data, id }) => {
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => v != null && v !== "" && fd.append(k, v));
+      return id
+        ? api.post(`/operator/master-data/guru/${nuptk}/cuti/${id}?_method=PUT`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+        : api.post(`/operator/master-data/guru/${nuptk}/cuti`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+    },
+    onSuccess: () => {
+      toast.success("Data cuti disimpan.");
+      queryClient.invalidateQueries({ queryKey: ["guru-cuti", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["master-guru"] });
+      setModalCuti(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal menyimpan."),
+  });
+
+  const selesaiCuti = useMutation({
+    mutationFn: (id) =>
+      api.patch(`/operator/master-data/guru/${nuptk}/cuti/${id}/selesai`),
+    onSuccess: () => {
+      toast.success("Cuti ditandai selesai. Status guru kembali Aktif.");
+      queryClient.invalidateQueries({ queryKey: ["guru-cuti", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["master-guru"] });
+    },
+    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal memperbarui."),
+  });
+
+  const deleteCuti = useMutation({
+    mutationFn: (id) =>
+      api.delete(`/operator/master-data/guru/${nuptk}/cuti/${id}`),
+    onSuccess: () => {
+      toast.success("Data cuti dihapus.");
+      queryClient.invalidateQueries({ queryKey: ["guru-cuti", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["guru-detail", nuptk] });
+      queryClient.invalidateQueries({ queryKey: ["master-guru"] });
+    },
+    onError: (e) => toast.error(e.response?.data?.message ?? "Gagal menghapus."),
+  });
+
+  const handleCutiSubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    saveCuti.mutate({
+      id: modalCuti?.id,
+      data: {
+        jenis_cuti:      f.jenis_cuti.value,
+        tanggal_mulai:   f.tanggal_mulai.value,
+        tanggal_selesai: f.tanggal_selesai.value,
+        no_sk:           f.no_sk.value,
+        tanggal_sk:      f.tanggal_sk.value,
+        pejabat_pemberi: f.pejabat_pemberi.value,
+        alasan:          f.alasan.value,
+        keterangan:      f.keterangan.value,
+        file_sk:         f.file_sk.files[0] ?? null,
+      },
+    });
+  };
+
   /* ── Jabatan query & mutations ── */
   const { data: jabatans = [] } = useQuery({
     queryKey: ["guru-jabatan", nuptk],
@@ -4334,11 +4455,29 @@ function TabRiwayat({ nuptk, guru }) {
       {/* ── SECTION 2: MUTASI ── */}
       <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
-          <SectionTitle
-            icon="swap_horiz"
-            label="Riwayat Mutasi"
-            desc={`${mutasis.length} data tercatat`}
-          />
+          <div className="flex items-center gap-3">
+            <SectionTitle
+              icon="swap_horiz"
+              label="Riwayat Mutasi"
+              desc={`${mutasis.length} data tercatat`}
+            />
+            {/* Status badge saat ini */}
+            {(() => {
+              const STATUS_COLOR = {
+                'Aktif':               'bg-success/10 text-success border-success/20',
+                'Keluar':              'bg-error/10 text-error border-error/20',
+                'Penugasan Sementara': 'bg-blue-100 text-blue-600 border-blue-200',
+                'Cuti':                'bg-warning/10 text-warning border-warning/20',
+                'Nonaktif':            'bg-surface-container text-text-secondary border-border-light',
+              };
+              const s = guru.status_keaktifan ?? 'Aktif';
+              return (
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${STATUS_COLOR[s] ?? 'bg-surface-container text-text-secondary border-border-light'}`}>
+                  {s}
+                </span>
+              );
+            })()}
+          </div>
           <button
             onClick={() => setModalMutasi("add")}
             className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
@@ -4353,33 +4492,44 @@ function TabRiwayat({ nuptk, guru }) {
             Belum ada riwayat mutasi.
           </p>
         ) : (
-          <div className="space-y-3">
-            {mutasis.map((m) => {
-              const badgeColor =
-                m.jenis_mutasi === "Masuk"
-                  ? "bg-success/10 text-success"
-                  : m.jenis_mutasi === "Keluar"
-                    ? "bg-error/10 text-error"
-                    : m.jenis_mutasi === "Internal"
-                      ? "bg-warning/10 text-warning"
-                      : m.jenis_mutasi === "Penugasan Sementara"
-                        ? "bg-blue-100 text-blue-600"
-                        : "bg-surface-container text-text-secondary";
+          <div className="relative pl-8">
+            {/* Garis vertikal */}
+            <div className="absolute left-3.5 top-2 bottom-2 w-0.5 bg-border-light" />
+
+            {mutasis.map((m, idx) => {
+              const META = {
+                Masuk:               { icon: 'login',      dot: 'bg-success',  badge: 'bg-success/10 text-success',          label: 'Mutasi Masuk' },
+                Keluar:              { icon: 'logout',     dot: 'bg-error',    badge: 'bg-error/10 text-error',              label: 'Mutasi Keluar' },
+                Internal:            { icon: 'swap_horiz', dot: 'bg-warning',  badge: 'bg-warning/10 text-warning',          label: 'Mutasi Internal' },
+                'Penugasan Sementara':{ icon: 'work',      dot: 'bg-blue-500', badge: 'bg-blue-100 text-blue-600',           label: 'Penugasan Sementara' },
+                'Kembali Bertugas':  { icon: 'undo',       dot: 'bg-primary',  badge: 'bg-primary/10 text-primary',          label: 'Kembali Bertugas' },
+              };
+              const meta = META[m.jenis_mutasi] ?? { icon: 'circle', dot: 'bg-text-secondary', badge: 'bg-surface-container text-text-secondary', label: m.jenis_mutasi };
+              const isLast = idx === mutasis.length - 1;
 
               return (
-                <div
-                  key={m.id}
-                  className="p-4 bg-surface-container-low rounded-xl border border-border-light"
-                >
+                <div key={m.id} className={`relative mb-4 ${isLast ? '' : ''}`}>
+                  {/* Dot pada timeline */}
+                  <div className={`absolute -left-[1.35rem] top-4 w-3 h-3 rounded-full border-2 border-white ${meta.dot} shadow-sm z-10`} />
+
+                  <div className="p-4 bg-surface-container-low rounded-xl border border-border-light">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
+                      {/* Tahun — kecil di atas badge */}
+                      <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">
+                        {m.tanggal_mutasi ? new Date(m.tanggal_mutasi).getFullYear() : '—'}
+                      </p>
+
                       {/* Baris 1: badge jenis + SK */}
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span
-                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}
-                        >
-                          {m.jenis_mutasi}
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${meta.badge}`}>
+                          {meta.label}
                         </span>
+                        {m.jenis_keluar && (
+                          <span className="text-[11px] text-text-secondary italic">
+                            · {m.jenis_keluar}
+                          </span>
+                        )}
                         {m.jenis_mutasi === "Keluar" && (
                           <span
                             className="text-[11px] text-text-secondary italic"
@@ -4520,6 +4670,7 @@ function TabRiwayat({ nuptk, guru }) {
                     </div>
                   </div>
                 </div>
+              </div>
               );
             })}
           </div>
@@ -4548,6 +4699,319 @@ function TabRiwayat({ nuptk, guru }) {
           statusGuru={guru.status_keaktifan ?? "Aktif"}
         />
       )}
+{/* ── SECTION 2b: CUTI ── */}
+      <div className="bg-white rounded-[16px] border border-outline-variant/30 shadow-sm p-6">
+        <div className="flex items-center justify-between mb-6">
+          <SectionTitle
+            icon="beach_access"
+            label="Riwayat Cuti"
+            desc={`${cutis.length} data tercatat`}
+          />
+          <button
+            onClick={() => setModalCuti("add")}
+            className="px-3 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Tambah
+          </button>
+        </div>
+
+        {cutis.length === 0 ? (
+          <p className="text-sm text-text-secondary text-center py-8">
+            Belum ada riwayat cuti.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {cutis.map((c) => {
+              const isAktif =
+                c.status === "Disetujui" &&
+                c.tanggal_mulai <= new Date().toISOString().slice(0, 10) &&
+                c.tanggal_selesai >= new Date().toISOString().slice(0, 10);
+
+              return (
+                <div
+                  key={c.id}
+                  className={`p-4 rounded-xl border ${
+                    isAktif
+                      ? "bg-warning/5 border-warning/30"
+                      : "bg-surface-container-low border-border-light"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Baris 1: badge jenis + status */}
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-warning/10 text-warning">
+                          {c.jenis_cuti}
+                        </span>
+                        <span
+                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                            c.status === "Disetujui"
+                              ? "bg-blue-100 text-blue-600"
+                              : c.status === "Selesai"
+                                ? "bg-success/10 text-success"
+                                : "bg-error/10 text-error"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                        {isAktif && (
+                          <span className="text-[11px] text-warning font-medium animate-pulse">
+                            · Sedang berjalan
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Baris 2: periode */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="material-symbols-outlined text-[14px] text-text-secondary">
+                          calendar_month
+                        </span>
+                        <span className="text-sm font-medium text-text-primary">
+                          {fmtDate(c.tanggal_mulai)} — {fmtDate(c.tanggal_selesai)}
+                        </span>
+                        <span className="text-xs text-text-secondary">
+                          ({c.jumlah_hari} hari)
+                        </span>
+                      </div>
+
+                      {/* Baris 3: SK & pejabat */}
+                      <div className="flex flex-wrap gap-3 mt-1">
+                        {c.no_sk && (
+                          <span className="text-xs text-text-secondary font-mono">
+                            SK: {c.no_sk}
+                          </span>
+                        )}
+                        {c.pejabat_pemberi && (
+                          <span className="text-xs text-text-secondary">
+                            Pemberi: {c.pejabat_pemberi}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Baris 4: alasan & keterangan */}
+                      {(c.alasan || c.keterangan) && (
+                        <p className="text-xs text-text-secondary italic mt-0.5">
+                          {c.alasan || c.keterangan}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Tombol aksi */}
+                    <div className="flex gap-1 flex-shrink-0 ml-1">
+                      {isAktif && (
+                        <button
+                          onClick={() =>
+                            confirm("Tandai cuti ini selesai? Status guru akan kembali Aktif.") &&
+                            selesaiCuti.mutate(c.id)
+                          }
+                          className="p-1.5 rounded-lg hover:bg-success/10 text-success transition-colors"
+                          title="Tandai Selesai"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            check_circle
+                          </span>
+                        </button>
+                      )}
+                      {c.file_sk && (
+                        <button
+                          onClick={() => downloadFile(c.file_sk, `SK_Cuti_${c.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                          title="Download SK"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            download
+                          </span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setModalCuti(c)}
+                        className="p-1.5 rounded-lg hover:bg-surface-container text-text-secondary transition-colors"
+                        title="Edit"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          confirm("Hapus data cuti ini?") && deleteCuti.mutate(c.id)
+                        }
+                        className="p-1.5 rounded-lg hover:bg-error/10 text-error transition-colors"
+                        title="Hapus"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Modal Cuti */}
+        {modalCuti && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg border border-border-light max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border-light flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-warning text-[18px]">beach_access</span>
+                  </div>
+                  <h3 className="font-bold text-text-primary text-base">
+                    {modalCuti === "add" ? "Tambah" : "Edit"} Data Cuti
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setModalCuti(null)}
+                  className="p-1.5 rounded-lg text-text-secondary hover:bg-surface-container transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleCutiSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+                {/* Jenis Cuti */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    Jenis Cuti <span className="text-error">*</span>
+                  </label>
+                  <select
+                    name="jenis_cuti"
+                    required
+                    defaultValue={modalCuti?.jenis_cuti ?? ""}
+                    className={inputCls}
+                  >
+                    <option value="">— Pilih Jenis Cuti —</option>
+                    {["Cuti Tahunan","Cuti Sakit","Cuti Bersalin","Cuti Alasan Penting","Cuti Besar","Lainnya"].map((j) => (
+                      <option key={j} value={j}>{j}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Periode */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Tanggal Mulai <span className="text-error">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="tanggal_mulai"
+                      required
+                      defaultValue={modalCuti?.tanggal_mulai?.toString().slice(0, 10) ?? ""}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                      Tanggal Selesai <span className="text-error">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="tanggal_selesai"
+                      required
+                      defaultValue={modalCuti?.tanggal_selesai?.toString().slice(0, 10) ?? ""}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+
+                {/* SK */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">No. SK</label>
+                    <input
+                      name="no_sk"
+                      placeholder="Nomor SK"
+                      defaultValue={modalCuti?.no_sk ?? ""}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5">Tanggal SK</label>
+                    <input
+                      type="date"
+                      name="tanggal_sk"
+                      defaultValue={modalCuti?.tanggal_sk?.toString().slice(0, 10) ?? ""}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+
+                {/* Pejabat pemberi */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">Pejabat Pemberi Cuti</label>
+                  <input
+                    name="pejabat_pemberi"
+                    placeholder="Nama pejabat / instansi"
+                    defaultValue={modalCuti?.pejabat_pemberi ?? ""}
+                    className={inputCls}
+                  />
+                </div>
+
+                {/* Alasan */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">Alasan</label>
+                  <textarea
+                    name="alasan"
+                    rows={2}
+                    placeholder="Alasan pengajuan cuti"
+                    defaultValue={modalCuti?.alasan ?? ""}
+                    className={inputCls}
+                  />
+                </div>
+
+                {/* File SK */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">
+                    File SK (PDF/JPG/PNG, maks. 5 MB)
+                  </label>
+                  <input
+                    type="file"
+                    name="file_sk"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="text-sm text-text-secondary"
+                  />
+                  {modalCuti?.file_sk && (
+                    <p className="text-xs text-text-secondary mt-1 italic">
+                      File lama tersimpan. Upload baru untuk mengganti.
+                    </p>
+                  )}
+                </div>
+
+                {/* Keterangan */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5">Keterangan</label>
+                  <textarea
+                    name="keterangan"
+                    rows={2}
+                    placeholder="Catatan tambahan (opsional)"
+                    defaultValue={modalCuti?.keterangan ?? ""}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalCuti(null)}
+                    className="px-4 py-2 rounded-xl border border-border-light text-sm text-text-secondary hover:bg-surface-container transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saveCuti.isPending}
+                    className="px-5 py-2 bg-primary text-on-primary rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                  >
+                    {saveCuti.isPending ? "Menyimpan…" : "Simpan"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ── SECTION 3a: CARD JABATAN AKTIF ── */}
       {(() => {

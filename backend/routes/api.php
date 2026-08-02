@@ -7,6 +7,7 @@ use App\Http\Controllers\Absensi\AbsensiController;
 use App\Http\Controllers\Guru\GuruController;
 use App\Http\Controllers\Kepsek\KepsekController;
 use App\Http\Controllers\MasterData\MasterDataGuruController;
+use App\Http\Controllers\MasterData\GuruCutiController;
 use App\Http\Controllers\MasterData\MasterDataSiswaController;
 use App\Http\Controllers\MasterData\MasterDataOrtuController;
 use App\Http\Controllers\MasterData\MasterDataKelasController;
@@ -155,6 +156,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/guru/{nuptk}/diklat', [MasterDataGuruController::class, 'storeDiklat']);
             Route::put('/guru/{nuptk}/diklat/{id}', [MasterDataGuruController::class, 'updateDiklat']);
             Route::delete('/guru/{nuptk}/diklat/{id}', [MasterDataGuruController::class, 'destroyDiklat']);
+
+            // Cuti
+            Route::get('/guru/{nuptk}/cuti', [GuruCutiController::class, 'index']);
+            Route::post('/guru/{nuptk}/cuti', [GuruCutiController::class, 'store']);
+            Route::put('/guru/{nuptk}/cuti/{id}', [GuruCutiController::class, 'update']);
+            Route::post('/guru/{nuptk}/cuti/{id}', [GuruCutiController::class, 'update']); // fallback FormData
+            Route::patch('/guru/{nuptk}/cuti/{id}/selesai', [GuruCutiController::class, 'selesai']);
+            Route::delete('/guru/{nuptk}/cuti/{id}', [GuruCutiController::class, 'destroy']);
 
             // Mutasi
             Route::get('/guru/{nuptk}/mutasi', [MasterDataGuruController::class, 'getMutasi']);

@@ -230,6 +230,25 @@ class MutasiGuruService
             $errors[] = 'Guru tidak berstatus Aktif. Mutasi Keluar hanya bisa dilakukan pada guru yang sedang aktif.';
         }
 
+        // ── Validasi jenis_keluar ──────────────────────────────
+        $jenisKeluar = $input['jenis_keluar'] ?? null;
+        $validJenisKeluar = [
+            'Pindah Sekolah',
+            'Mengundurkan Diri',
+            'Pensiun',
+            'Kontrak Berakhir',
+            'Meninggal Dunia',
+            'PHK',
+            'Lainnya',
+        ];
+        if (empty($jenisKeluar)) {
+            $errors[] = 'Jenis Keluar wajib dipilih (Pindah Sekolah, Pensiun, dll).';
+        } elseif (!in_array($jenisKeluar, $validJenisKeluar)) {
+            $errors[] = "Jenis Keluar '{$jenisKeluar}' tidak valid.";
+        } elseif ($jenisKeluar === 'Pindah Sekolah' && empty($input['sekolah_tujuan'])) {
+            $errors[] = 'Sekolah Tujuan wajib diisi jika Jenis Keluar adalah Pindah Sekolah.';
+        }
+
         $sudahKeluar = $guru->mutasi()
             ->where('jenis_mutasi', 'Keluar')
             ->whereNull('tanggal_berakhir')
@@ -462,7 +481,13 @@ class MutasiGuruService
             $mutasi->update(['is_locked' => true]);
 
             // 4. Audit log
-            $this->auditLog($guru, $data['jenis_mutasi'], $mutasi->id);
+            $this->auditLog(
+                $guru,
+                $data['jenis_mutasi'],
+                $mutasi->id,
+                $data['status_sebelum'] ?? '',
+                $data['status_setelah'] ?? '',
+            );
 
             return $mutasi->fresh();
         });
@@ -536,13 +561,15 @@ class MutasiGuruService
 
     private function syncKembali(Guru $guru): void
     {
+        // Tutup cuti aktif jika ada (modul cuti terpisah)
+        (new \App\Services\GuruCutiService())->tutupCutiAktif($guru);
+
         $guru->update(['status_keaktifan' => 'Aktif', 'status_aktif' => true]);
         if ($guru->user_id) {
             $guru->user()->update(['is_active' => true]);
         }
     }
-
-    private function auditLog(Guru $guru, string $jenis, int $mutasiId): void
+    private function auditLog(Guru $guru, string $jenis, int $mutasiId, string $statusSebelum = '', string $statusSetelah = ''): void
     {
         try {
             ActivityLog::create([
@@ -550,7 +577,12 @@ class MutasiGuruService
                 'action' => 'mutasi_guru',
                 'module' => 'guru',
                 'subject_id' => $guru->id,
-                'keterangan' => "Mutasi {$jenis} untuk {$guru->nama_lengkap} (mutasi_id: {$mutasiId})",
+                'keterangan' => implode(' | ', array_filter([
+                    "Mutasi {$jenis} untuk {$guru->nama_lengkap}",
+                    $statusSebelum ? "Status: {$statusSebelum} → {$statusSetelah}" : null,
+                    "mutasi_id: {$mutasiId}",
+                    "IP: " . request()->ip(),
+                ])),
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'created_at' => now(),

@@ -14,8 +14,9 @@ class GuruMutasi extends Model
     protected $fillable = [
         'guru_id',
         'jenis_mutasi',
-        'status_sebelum',   // ← baru
-        'status_setelah',   // ← baru
+        'jenis_keluar',
+        'status_sebelum',
+        'status_setelah',
         'sekolah_asal',
         'npsn_asal',
         'sekolah_tujuan',

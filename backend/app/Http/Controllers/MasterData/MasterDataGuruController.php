@@ -82,6 +82,7 @@ class MasterDataGuruController extends Controller
             'rekenings',
             'kompetensi',
             'diklats',
+            'cutis',   // ← tambah ini
             'mutasi',
             'pkgs.tahunAjaran',
             'pkgs.semester',
@@ -135,7 +136,8 @@ class MasterDataGuruController extends Controller
             // Kepegawaian
             'jenis_ptk' => 'required|string|max:50',
             'status_kepegawaian' => 'required|in:PNS,PPPK,GTY,GTT,Honorer,Lainnya',
-            'status_keaktifan' => 'nullable|in:Aktif,Cuti,Pensiun,Mutasi,Keluar',
+            // 'Cuti' tidak diset manual — dikontrol oleh modul GuruCuti
+            'status_keaktifan' => 'nullable|in:Aktif,Pensiun,Mutasi,Keluar,Nonaktif',
             'tanggal_bergabung' => 'nullable|date',
             'tmt_pns' => 'nullable|date',
             'tmt_gty' => 'nullable|date',
@@ -1196,6 +1198,7 @@ class MasterDataGuruController extends Controller
 
         $request->validate([
             'jenis_mutasi' => 'required|in:Masuk,Keluar,Internal,Penugasan Sementara,Kembali Bertugas',
+            'jenis_keluar' => 'nullable|in:Pindah Sekolah,Mengundurkan Diri,Pensiun,Kontrak Berakhir,Meninggal Dunia,PHK,Lainnya',
             'tanggal_mutasi' => 'required|date',
             'sekolah_asal' => 'nullable|string|max:200',
             'npsn_asal' => 'nullable|string|max:10',
@@ -1228,6 +1231,7 @@ class MasterDataGuruController extends Controller
 
         $data = $request->only([
             'jenis_mutasi',
+            'jenis_keluar',   // ← tambah ini
             'sekolah_asal',
             'npsn_asal',
             'sekolah_tujuan',
@@ -1272,6 +1276,7 @@ class MasterDataGuruController extends Controller
 
         $request->validate([
             'jenis_mutasi' => 'required|in:Masuk,Keluar,Internal,Penugasan Sementara,Kembali Bertugas',
+            'jenis_keluar' => 'nullable|in:Pindah Sekolah,Mengundurkan Diri,Pensiun,Kontrak Berakhir,Meninggal Dunia,PHK,Lainnya',
             'tanggal_mutasi' => 'required|date',
             'sekolah_asal' => 'nullable|string|max:200',
             'npsn_asal' => 'nullable|string|max:10',
@@ -1303,6 +1308,7 @@ class MasterDataGuruController extends Controller
 
         $data = $request->only([
             'jenis_mutasi',
+            'jenis_keluar',   // ← tambah ini
             'sekolah_asal',
             'npsn_asal',
             'sekolah_tujuan',
@@ -1347,16 +1353,25 @@ class MasterDataGuruController extends Controller
         $mutasi = $guru->mutasi()->findOrFail($id);
         $jenis = $mutasi->jenis_mutasi;
 
-        // Cek apakah mutasi sudah dikunci (sudah mempengaruhi modul lain)
+        // Block hapus jika mutasi sudah terkunci (sudah mempengaruhi modul lain)
         if ($mutasi->is_locked) {
-            // Cek dampak sebelum izinkan hapus
-            $kelasWali = \App\Models\Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->count();
+            $kelasWali = \App\Models\Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->pluck('nama_kelas')->toArray();
             $mapelAktif = $guru->plotGuruMapels()->where('is_active', 1)->count();
 
-            $dampakAktif = $kelasWali + $mapelAktif;
+            $relasi = array_filter([
+                count($kelasWali) ? 'Wali Kelas: ' . implode(', ', $kelasWali) : null,
+                $mapelAktif ? "{$mapelAktif} penugasan mapel aktif" : null,
+            ]);
 
-            // Tetap izinkan hapus tapi return warning di response
-            // (hard delete diganti soft delete — model sudah pakai SoftDeletes)
+            if (count($relasi) > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mutasi tidak dapat dihapus karena masih mempengaruhi: ' . implode('; ', $relasi) . '. Lepaskan relasi terlebih dahulu.',
+                    'relasi' => $relasi,
+                ], 422);
+            }
+
+            // Tidak ada relasi aktif → izinkan hapus walau locked
         }
 
         if ($mutasi->file_sk)
