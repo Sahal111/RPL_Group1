@@ -3440,9 +3440,9 @@ class MasterDataGuruController extends Controller
     public function importExecute(Request $request)
     {
         $request->validate([
-            'batch_id'      => 'required|string|exists:guru_import_logs,batch_id',
+            'batch_id' => 'required|string|exists:guru_import_logs,batch_id',
             'column_mapping' => 'required|array',
-            'mode_duplikat'  => 'required|in:skip,replace,merge',
+            'mode_duplikat' => 'required|in:skip,replace,merge',
         ]);
 
         $log = GuruImportLog::where('batch_id', $request->batch_id)
@@ -3450,27 +3450,239 @@ class MasterDataGuruController extends Controller
             ->where('status', 'preview')
             ->firstOrFail();
 
-        // Update mapping dari user (mungkin berbeda dari auto-mapping)
         $log->update([
-            'status'         => 'pending',
+            'status' => 'processing',
             'column_mapping' => $request->column_mapping,
-            'mode_duplikat'  => $request->mode_duplikat,
+            'mode_duplikat' => $request->mode_duplikat,
+            'started_at' => now(),
         ]);
 
-        // Dispatch ke Queue
-        ProcessGuruImport::dispatch(
-            $log->batch_id,
-            'imports/' . $log->batch_id . '.xlsx',
-            $request->column_mapping,
-            $request->mode_duplikat,
-            auth()->id(),
-            $request->ip(),
-        );
+        $startTime = microtime(true);
+        $filePath = storage_path('app/imports/' . $log->batch_id . '.xlsx');
+        $allSheets = $this->parseMultiSheetXlsx($filePath);
+
+        // ── Tentukan sheet utama ─────────────────────────────────────────
+        $sheetUtama = null;
+        foreach ($allSheets as $s) {
+            if (strtolower($s['name']) === 'data utama') {
+                $sheetUtama = $s;
+                break;
+            }
+        }
+        $sheetUtama = $sheetUtama ?? ($allSheets[0] ?? null);
+
+        if (!$sheetUtama || empty($sheetUtama['rows'])) {
+            $log->update(['status' => 'failed', 'error_detail' => [['pesan' => 'Sheet "Data Utama" tidak ditemukan atau kosong.']], 'finished_at' => now()]);
+            return response()->json(['success' => false, 'message' => 'Sheet "Data Utama" tidak ditemukan atau kosong.'], 422);
+        }
+
+        $rows = $sheetUtama['rows'];
+        $headerRow = array_map('trim', array_shift($rows));
+        $mapping = $request->column_mapping;
+        $modeDup = $request->mode_duplikat;
+        $totalBaris = count($rows);
+
+        $log->update(['total_baris' => $totalBaris, 'progress_persen' => 5]);
+
+        $stats = ['insert' => 0, 'update' => 0, 'skip' => 0, 'gagal' => 0, 'errors' => [], 'relasi' => []];
+
+        // Helper: ambil nilai cell berdasarkan mapping
+        $getCell = function (array $row, string $dbField) use ($headerRow, $mapping): ?string {
+            $userHeader = array_search($dbField, $mapping);
+            if ($userHeader !== false) {
+                $idx = array_search($userHeader, $headerRow);
+                if ($idx !== false) {
+                    $val = trim($row[$idx] ?? '');
+                    return $val !== '' ? $val : null;
+                }
+            }
+            // Fallback: cari header yang nama-nya cocok setelah normalisasi
+            foreach ($headerRow as $i => $h) {
+                $norm = strtolower(preg_replace('/[^a-z0-9]/i', '', $h));
+                $target = strtolower(str_replace('_', '', $dbField));
+                if ($norm === $target) {
+                    $val = trim($row[$i] ?? '');
+                    return $val !== '' ? $val : null;
+                }
+            }
+            return null;
+        };
+
+        $parseDate = function (?string $val): ?string {
+            if (!$val)
+                return null;
+            try {
+                return \Carbon\Carbon::parse($val)->format('Y-m-d');
+            } catch (\Throwable) {
+                return null;
+            }
+        };
+
+        // ── Proses per-chunk ──────────────────────────────────────────────
+        $chunks = array_chunk($rows, 50);
+        $processed = 0;
+
+        foreach ($chunks as $chunk) {
+            DB::transaction(function () use ($chunk, $headerRow, $mapping, $modeDup, $getCell, $parseDate, &$stats, &$processed, $totalBaris, $log) {
+                foreach ($chunk as $rowIdx => $row) {
+                    $baris = $processed + $rowIdx + 2;
+
+                    // Skip baris kosong
+                    if (empty(array_filter($row, fn($v) => trim($v) !== '')))
+                        continue;
+
+                    $nuptk = $getCell($row, 'nuptk');
+                    $nip = $getCell($row, 'nip');
+                    $nik = $getCell($row, 'nik');
+                    $email = $getCell($row, 'email');
+                    $nama = $getCell($row, 'nama');
+
+                    if (!$nama) {
+                        $stats['gagal']++;
+                        $stats['errors'][] = "Baris {$baris}: Kolom 'nama' wajib diisi.";
+                        continue;
+                    }
+
+                    // ── Duplicate detection: NUPTK → NIP → NIK → Email ──
+                    $existing = null;
+                    if ($nuptk)
+                        $existing = Guru::where('nuptk', $nuptk)->first();
+                    if (!$existing && $nip)
+                        $existing = Guru::where('nip', $nip)->first();
+                    if (!$existing && $nik)
+                        $existing = Guru::where('nik', $nik)->first();
+                    if (!$existing && $email)
+                        $existing = Guru::where('email', $email)->first();
+
+                    if ($existing && $modeDup === 'skip') {
+                        $stats['skip']++;
+                        continue;
+                    }
+
+                    $payload = array_filter([
+                        'nuptk' => $nuptk,
+                        'nip' => $nip,
+                        'nip_lama' => $getCell($row, 'nip_lama'),
+                        'no_karpeg' => $getCell($row, 'no_karpeg'),
+                        'no_karis_karsu' => $getCell($row, 'no_karis_karsu'),
+                        'nik' => $nik,
+                        'no_kk' => $getCell($row, 'no_kk'),
+                        'nama' => $nama,
+                        'gelar_depan' => $getCell($row, 'gelar_depan'),
+                        'gelar_belakang' => $getCell($row, 'gelar_belakang'),
+                        'jenis_kelamin' => strtoupper($getCell($row, 'jenis_kelamin') ?? 'L'),
+                        'tempat_lahir' => $getCell($row, 'tempat_lahir'),
+                        'tanggal_lahir' => $parseDate($getCell($row, 'tanggal_lahir')),
+                        'agama' => $getCell($row, 'agama') ?? 'Islam',
+                        'golongan_darah' => $getCell($row, 'golongan_darah'),
+                        'kewarganegaraan' => $getCell($row, 'kewarganegaraan') ?? 'WNI',
+                        'status_hidup' => $getCell($row, 'status_hidup') ?? 'Aktif',
+                        'nama_ibu_kandung' => $getCell($row, 'nama_ibu_kandung'),
+                        'no_hp' => $getCell($row, 'no_hp') ?? '-',
+                        'no_wa' => $getCell($row, 'no_wa'),
+                        'email' => $email,
+                        'alamat_jalan' => $getCell($row, 'alamat_jalan'),
+                        'rt' => $getCell($row, 'rt'),
+                        'rw' => $getCell($row, 'rw'),
+                        'dusun' => $getCell($row, 'dusun'),
+                        'desa_kelurahan' => $getCell($row, 'desa_kelurahan'),
+                        'kecamatan' => $getCell($row, 'kecamatan'),
+                        'kota_kabupaten' => $getCell($row, 'kota_kabupaten'),
+                        'provinsi' => $getCell($row, 'provinsi'),
+                        'kode_pos' => $getCell($row, 'kode_pos'),
+                        'jenis_ptk' => $getCell($row, 'jenis_ptk') ?? 'Guru Kelas',
+                        'status_kepegawaian' => $getCell($row, 'status_kepegawaian') ?? 'GTT',
+                        'status_keaktifan' => $getCell($row, 'status_keaktifan') ?? 'Aktif',
+                        'tanggal_bergabung' => $parseDate($getCell($row, 'tanggal_bergabung')),
+                        'tmt_pns' => $parseDate($getCell($row, 'tmt_pns')),
+                        'tmt_gty' => $parseDate($getCell($row, 'tmt_gty')),
+                        'masa_kerja_tahun' => $getCell($row, 'masa_kerja_tahun'),
+                        'no_sk_pengangkatan' => $getCell($row, 'no_sk_pengangkatan'),
+                        'tgl_sk_pengangkatan' => $parseDate($getCell($row, 'tgl_sk_pengangkatan')),
+                        'instansi_pengangkat' => $getCell($row, 'instansi_pengangkat'),
+                    ], fn($v) => $v !== null);
+
+                    try {
+                        if ($existing) {
+                            if ($modeDup === 'merge') {
+                                $payload = array_filter($payload, fn($v) => $v !== null && $v !== '');
+                            }
+                            unset($payload['nuptk']);
+                            $existing->update($payload);
+                            $stats['update']++;
+                        } else {
+                            if (!$nuptk) {
+                                $stats['gagal']++;
+                                $stats['errors'][] = "Baris {$baris}: NUPTK wajib untuk data baru (nama: {$nama}).";
+                                continue;
+                            }
+                            Guru::create($payload);
+                            $stats['insert']++;
+                        }
+                    } catch (\Exception $e) {
+                        $stats['gagal']++;
+                        $stats['errors'][] = "Baris {$baris} ({$nama}): " . $e->getMessage();
+                    }
+                }
+
+                $processed += count($chunk);
+                $persen = $totalBaris > 0 ? (int) round($processed / $totalBaris * 85) + 5 : 90;
+                $log->update(['progress_persen' => $persen]);
+            });
+        }
+
+        // ── Proses sheet relasi (Keluarga, Pendidikan, dst) ──────────────
+        $this->importRelasiFromSheets($allSheets, $stats, $log);
+
+        // ── Selesai ───────────────────────────────────────────────────────
+        $durasi = round(microtime(true) - $startTime, 2);
+        $log->update([
+            'status' => 'done',
+            'jumlah_insert' => $stats['insert'],
+            'jumlah_update' => $stats['update'],
+            'jumlah_skip' => $stats['skip'],
+            'jumlah_gagal' => $stats['gagal'],
+            'error_detail' => $stats['errors'],
+            'statistik_relasi' => $stats['relasi'],
+            'progress_persen' => 100,
+            'durasi_detik' => $durasi,
+            'finished_at' => now(),
+        ]);
+
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'import',
+            'module' => 'guru',
+            'keterangan' => json_encode([
+                'batch_id' => $log->batch_id,
+                'insert' => $stats['insert'],
+                'update' => $stats['update'],
+                'skip' => $stats['skip'],
+                'gagal' => $stats['gagal'],
+                'durasi' => $durasi . 's',
+                'file' => $log->nama_file,
+            ]),
+            'ip_address' => $request->ip(),
+        ]);
+
+        // Bersihkan file temp
+        Storage::delete('imports/' . $log->batch_id . '.xlsx');
 
         return response()->json([
-            'success'  => true,
+            'success' => true,
             'batch_id' => $log->batch_id,
-            'message'  => 'Import dijadwalkan. Pantau progres via /guru/import-status/{batch_id}.',
+            'data' => [
+                'status' => 'done',
+                'progress_persen' => 100,
+                'total_baris' => $totalBaris,
+                'jumlah_insert' => $stats['insert'],
+                'jumlah_update' => $stats['update'],
+                'jumlah_skip' => $stats['skip'],
+                'jumlah_gagal' => $stats['gagal'],
+                'statistik_relasi' => $stats['relasi'],
+                'error_detail' => $stats['errors'],
+                'durasi_detik' => $durasi,
+            ],
         ]);
     }
 
@@ -4638,6 +4850,96 @@ class MasterDataGuruController extends Controller
         return ob_get_clean();
     }
 
+    private function importRelasiFromSheets(array $allSheets, array &$stats, GuruImportLog $log): void
+    {
+        $getSheet = function (string $name) use ($allSheets): ?array {
+            foreach ($allSheets as $s) {
+                if (strtolower($s['name']) === strtolower($name))
+                    return $s;
+            }
+            return null;
+        };
+
+        $parseDate = fn(?string $v): ?string => $v ? (function ($v) {
+            try {
+                return \Carbon\Carbon::parse($v)->format('Y-m-d'); } catch (\Throwable) {
+                return null; }
+        })($v) : null;
+
+        // ── Sheet: Keluarga & Anak ───────────────────────────────────────
+        $sheetKel = $getSheet('Keluarga & Anak');
+        if ($sheetKel && !empty($sheetKel['rows'])) {
+            $rows = $sheetKel['rows'];
+            $hRow = array_map('trim', array_shift($rows));
+            $hMap = array_flip($hRow);
+            $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+            foreach ($rows as $row) {
+                $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)') ?? $get($row, 'nuptk');
+                if (!$nuptk)
+                    continue;
+                $guru = Guru::where('nuptk', $nuptk)->first();
+                if (!$guru)
+                    continue;
+                try {
+                    if ($spk = $get($row, 'status_perkawinan')) {
+                        $guru->keluarga()->updateOrCreate(['guru_id' => $guru->id], array_filter([
+                            'status_perkawinan' => $spk,
+                            'nama_pasangan' => $get($row, 'nama_pasangan'),
+                            'nik_pasangan' => $get($row, 'nik_pasangan'),
+                            'pekerjaan_pasangan' => $get($row, 'pekerjaan_pasangan'),
+                            'jumlah_anak' => $get($row, 'jumlah_anak'),
+                        ], fn($v) => $v !== null));
+                        $stats['relasi']['keluarga'] = ($stats['relasi']['keluarga'] ?? 0) + 1;
+                    }
+                    if ($namaAnak = $get($row, 'nama_anak')) {
+                        $guru->anaks()->create(array_filter([
+                            'nama' => $namaAnak,
+                            'jenis_kelamin' => $get($row, 'jenis_kelamin_anak (L/P)'),
+                            'tanggal_lahir' => $parseDate($get($row, 'tanggal_lahir_anak (YYYY-MM-DD)')),
+                            'urutan' => $get($row, 'urutan_anak'),
+                        ], fn($v) => $v !== null));
+                        $stats['relasi']['anak'] = ($stats['relasi']['anak'] ?? 0) + 1;
+                    }
+                } catch (\Exception $e) {
+                    $stats['errors'][] = "Keluarga (NUPTK {$nuptk}): " . $e->getMessage();
+                }
+            }
+        }
+
+        // ── Sheet: Pendidikan ────────────────────────────────────────────
+        $sheetPend = $getSheet('Pendidikan');
+        if ($sheetPend && !empty($sheetPend['rows'])) {
+            $rows = $sheetPend['rows'];
+            $hRow = array_map('trim', array_shift($rows));
+            $hMap = array_flip($hRow);
+            $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+            foreach ($rows as $row) {
+                $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)') ?? $get($row, 'nuptk');
+                if (!$nuptk)
+                    continue;
+                $guru = Guru::where('nuptk', $nuptk)->first();
+                if (!$guru)
+                    continue;
+                try {
+                    $guru->pendidikans()->create(array_filter([
+                        'jenjang' => str_replace('-', '/', $get($row, 'jenjang (SD/SMP/SMA-SMK/D1/D2/D3/D4/S1/S2/S3)*') ?? $get($row, 'jenjang')),
+                        'nama_sekolah' => $get($row, 'nama_sekolah*') ?? $get($row, 'nama_sekolah'),
+                        'jurusan' => $get($row, 'jurusan'),
+                        'prodi' => $get($row, 'prodi'),
+                        'tahun_masuk' => $get($row, 'tahun_masuk'),
+                        'tahun_lulus' => $get($row, 'tahun_lulus'),
+                        'no_ijazah' => $get($row, 'no_ijazah'),
+                    ], fn($v) => $v !== null));
+                    $stats['relasi']['pendidikan'] = ($stats['relasi']['pendidikan'] ?? 0) + 1;
+                } catch (\Exception $e) {
+                    $stats['errors'][] = "Pendidikan (NUPTK {$nuptk}): " . $e->getMessage();
+                }
+            }
+        }
+
+        $log->update(['progress_persen' => 95]);
+    }
+    
     // ── Private: Multi-Sheet XLSX Parser ──────────────────────────────
     private function parseMultiSheetXlsx(string $filePath): array
     {
