@@ -92,8 +92,17 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/guru/{nuptk}/force-delete', [MasterDataGuruController::class, 'forceDelete']);
             // Import / Export / Backup (harus sebelum /{nuptk})
             Route::get('/guru/template', [MasterDataGuruController::class, 'downloadTemplate']);
-            Route::post('/guru/import', [MasterDataGuruController::class, 'import']);
+            // Import enterprise
+            Route::post('/guru/import', [MasterDataGuruController::class, 'import']);           // legacy — tetap ada
+            Route::post('/guru/import-preview', [MasterDataGuruController::class, 'importPreview']);
+            Route::post('/guru/import-execute', [MasterDataGuruController::class, 'importExecute']);
+            Route::post('/guru/import-zip', [MasterDataGuruController::class, 'importZip']);
             Route::post('/guru/import-foto', [MasterDataGuruController::class, 'importFoto']);
+            Route::get('/guru/import-status/{batchId}', [MasterDataGuruController::class, 'importStatus']);
+            Route::get('/guru/import-history', [MasterDataGuruController::class, 'importHistory']);
+            Route::get('/guru/import-error-report/{batchId}', [MasterDataGuruController::class, 'importErrorReport']);
+            Route::post('/guru/restore', [MasterDataGuruController::class, 'restoreBackup']);
+            // Export
             Route::get('/guru/export', [MasterDataGuruController::class, 'export']);
             Route::get('/guru/backup', [MasterDataGuruController::class, 'exportBackup']);
             // CRUD utama

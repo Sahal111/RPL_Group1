@@ -24,6 +24,11 @@ use App\Services\MutasiGuruService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Models\GuruImportLog;
+use App\Models\ActivityLog;
+use App\Jobs\ProcessGuruImport;
+use App\Jobs\ProcessGuruZipImport;
+use Illuminate\Support\Str;
 
 class MasterDataGuruController extends Controller
 {
@@ -3330,6 +3335,406 @@ class MasterDataGuruController extends Controller
         ]);
     }
 
+   /**
+     * POST /guru/import-preview
+     * Baca header + 5 baris pertama — tanpa menyimpan ke DB.
+     */
+    public function importPreview(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
+
+        $filePath  = $request->file('file')->getRealPath();
+        $fileName  = $request->file('file')->getClientOriginalName();
+        $allSheets = $this->parseMultiSheetXlsx($filePath);
+
+        if (empty($allSheets)) {
+            return response()->json(['success' => false, 'message' => 'File tidak bisa dibaca.'], 422);
+        }
+
+        // Simpan file sementara di storage
+        $batchId       = (string) Str::uuid();
+        $storedPath    = $request->file('file')->storeAs('imports', $batchId . '.xlsx');
+
+        // Ambil header & 5 baris pertama dari Sheet1
+        $sheetUtama = null;
+        foreach ($allSheets as $s) {
+            if (strtolower($s['name']) === 'data utama') { $sheetUtama = $s; break; }
+        }
+        $sheetUtama = $sheetUtama ?? $allSheets[0];
+
+        $rows    = $sheetUtama['rows'];
+        $headers = !empty($rows) ? array_map('trim', array_shift($rows)) : [];
+        $sample  = array_slice($rows, 0, 5);
+
+        // Auto-mapping: cari kecocokan header user dengan kolom DB
+        $dbFields = [
+            'nuptk', 'nip', 'nip_lama', 'no_karpeg', 'no_karis_karsu', 'nik', 'no_kk',
+            'nama', 'gelar_depan', 'gelar_belakang', 'jenis_kelamin', 'tempat_lahir',
+            'tanggal_lahir', 'agama', 'golongan_darah', 'kewarganegaraan', 'status_hidup',
+            'nama_ibu_kandung', 'no_hp', 'no_wa', 'email', 'alamat_jalan', 'rt', 'rw',
+            'dusun', 'desa_kelurahan', 'kecamatan', 'kota_kabupaten', 'provinsi', 'kode_pos',
+            'jenis_ptk', 'status_kepegawaian', 'status_keaktifan', 'tanggal_bergabung',
+            'tmt_pns', 'tmt_gty', 'masa_kerja_tahun', 'no_sk_pengangkatan',
+            'tgl_sk_pengangkatan', 'instansi_pengangkat',
+        ];
+
+        $autoMapping = [];
+        foreach ($headers as $userHeader) {
+            $normalized = strtolower(preg_replace('/[^a-z0-9]/i', '', $userHeader));
+            foreach ($dbFields as $dbField) {
+                $dbNorm = strtolower(str_replace('_', '', $dbField));
+                if ($normalized === $dbNorm || str_contains($normalized, $dbNorm)) {
+                    $autoMapping[$userHeader] = $dbField;
+                    break;
+                }
+            }
+        }
+
+        // Statistik duplicate detection (5 baris sample)
+        $dupStats = ['nuptk' => 0, 'nip' => 0, 'nik' => 0, 'email' => 0];
+        foreach ($sample as $row) {
+            $nuptkIdx = array_search($autoMapping['nuptk'] ?? 'nuptk', array_values($autoMapping));
+            foreach (['nuptk', 'nip', 'nik', 'email'] as $field) {
+                $header = array_search($field, $autoMapping);
+                if ($header !== false) {
+                    $idx = array_search($header, $headers);
+                    if ($idx !== false && !empty($row[$idx])) {
+                        if (Guru::where($field, trim($row[$idx]))->exists()) {
+                            $dupStats[$field]++;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Buat log dengan status 'preview'
+        GuruImportLog::create([
+            'user_id'        => auth()->id(),
+            'batch_id'       => $batchId,
+            'tipe'           => 'excel',
+            'nama_file'      => $fileName,
+            'status'         => 'preview',
+            'column_mapping' => $autoMapping,
+            'preview_data'   => ['headers' => $headers, 'rows' => $sample],
+            'total_baris'    => count($rows) + count($sample),
+            'ip_address'     => $request->ip(),
+        ]);
+
+        return response()->json([
+            'success'       => true,
+            'batch_id'      => $batchId,
+            'total_baris'   => count($rows) + count($sample),
+            'sheets'        => array_map(fn($s) => $s['name'], $allSheets),
+            'headers'       => $headers,
+            'sample_rows'   => $sample,
+            'auto_mapping'  => $autoMapping,
+            'db_fields'     => $dbFields,
+            'dup_stats'     => $dupStats,
+        ]);
+    }
+
+    /**
+     * POST /guru/import-execute
+     * Jalankan import via Queue berdasarkan batch_id dari preview.
+     */
+    public function importExecute(Request $request)
+    {
+        $request->validate([
+            'batch_id'      => 'required|string|exists:guru_import_logs,batch_id',
+            'column_mapping' => 'required|array',
+            'mode_duplikat'  => 'required|in:skip,replace,merge',
+        ]);
+
+        $log = GuruImportLog::where('batch_id', $request->batch_id)
+            ->where('user_id', auth()->id())
+            ->where('status', 'preview')
+            ->firstOrFail();
+
+        // Update mapping dari user (mungkin berbeda dari auto-mapping)
+        $log->update([
+            'status'         => 'pending',
+            'column_mapping' => $request->column_mapping,
+            'mode_duplikat'  => $request->mode_duplikat,
+        ]);
+
+        // Dispatch ke Queue
+        ProcessGuruImport::dispatch(
+            $log->batch_id,
+            'imports/' . $log->batch_id . '.xlsx',
+            $request->column_mapping,
+            $request->mode_duplikat,
+            auth()->id(),
+            $request->ip(),
+        );
+
+        return response()->json([
+            'success'  => true,
+            'batch_id' => $log->batch_id,
+            'message'  => 'Import dijadwalkan. Pantau progres via /guru/import-status/{batch_id}.',
+        ]);
+    }
+
+    /**
+     * POST /guru/import-zip
+     * Upload ZIP berisi Excel + foto + dokumen → proses via Queue.
+     */
+    public function importZip(Request $request)
+    {
+        $request->validate([
+            'file'         => 'required|file|mimes:zip|max:102400',
+            'mode_duplikat' => 'nullable|in:skip,replace,merge',
+        ]);
+
+        $batchId    = (string) Str::uuid();
+        $storedPath = $request->file('file')->storeAs('imports', $batchId . '.zip');
+        $fileName   = $request->file('file')->getClientOriginalName();
+
+        GuruImportLog::create([
+            'user_id'       => auth()->id(),
+            'batch_id'      => $batchId,
+            'tipe'          => 'zip',
+            'nama_file'     => $fileName,
+            'status'        => 'pending',
+            'mode_duplikat' => $request->mode_duplikat ?? 'replace',
+            'ip_address'    => $request->ip(),
+        ]);
+
+        ProcessGuruZipImport::dispatch(
+            $batchId,
+            'imports/' . $batchId . '.zip',
+            $request->mode_duplikat ?? 'replace',
+            auth()->id(),
+            $request->ip(),
+        );
+
+        return response()->json([
+            'success'  => true,
+            'batch_id' => $batchId,
+            'message'  => 'ZIP sedang diproses. Pantau via /guru/import-status/{batch_id}.',
+        ]);
+    }
+
+    /**
+     * GET /guru/import-status/{batchId}
+     * Polling progress realtime (SSE-friendly, bisa dipoll setiap 2 detik).
+     */
+    public function importStatus(string $batchId)
+    {
+        $log = GuruImportLog::where('batch_id', $batchId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'batch_id'         => $log->batch_id,
+                'status'           => $log->status,
+                'progress_persen'  => $log->progress_persen,
+                'total_baris'      => $log->total_baris,
+                'jumlah_insert'    => $log->jumlah_insert,
+                'jumlah_update'    => $log->jumlah_update,
+                'jumlah_skip'      => $log->jumlah_skip,
+                'jumlah_gagal'     => $log->jumlah_gagal,
+                'statistik_relasi' => $log->statistik_relasi,
+                'error_detail'     => $log->error_detail,
+                'durasi_detik'     => $log->durasi_detik,
+                'started_at'       => $log->started_at,
+                'finished_at'      => $log->finished_at,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /guru/import-history
+     * Riwayat semua import (10 terakhir).
+     */
+    public function importHistory()
+    {
+        $logs = GuruImportLog::with('user:id,name')
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn($l) => [
+                'batch_id'        => $l->batch_id,
+                'tipe'            => $l->tipe,
+                'nama_file'       => $l->nama_file,
+                'status'          => $l->status,
+                'mode_duplikat'   => $l->mode_duplikat,
+                'total_baris'     => $l->total_baris,
+                'jumlah_insert'   => $l->jumlah_insert,
+                'jumlah_update'   => $l->jumlah_update,
+                'jumlah_skip'     => $l->jumlah_skip,
+                'jumlah_gagal'    => $l->jumlah_gagal,
+                'durasi_detik'    => $l->durasi_detik,
+                'oleh'            => $l->user?->name,
+                'ip_address'      => $l->ip_address,
+                'created_at'      => $l->created_at,
+            ]);
+
+        return response()->json(['success' => true, 'data' => $logs]);
+    }
+
+    /**
+     * GET /guru/import-error-report/{batchId}
+     * Download laporan error sebagai Excel.
+     */
+    public function importErrorReport(string $batchId)
+    {
+        $log = GuruImportLog::where('batch_id', $batchId)->firstOrFail();
+
+        if (empty($log->error_detail)) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada error untuk batch ini.'], 404);
+        }
+
+        $headers = ['No', 'Keterangan Error'];
+        $rows    = array_map(fn($err, $i) => [$i + 1, is_array($err) ? ($err['pesan'] ?? json_encode($err)) : $err], $log->error_detail, array_keys($log->error_detail));
+
+        $sheets = [['name' => 'Error Report', 'headers' => $headers, 'rows' => $rows]];
+        $xlsx   = $this->buildMultiSheetXlsx($sheets);
+
+        return response($xlsx, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"error_import_{$batchId}.xlsx\"",
+        ]);
+    }
+
+    /**
+     * POST /guru/restore
+     * Restore dari backup ZIP — membaca manifest.json di dalamnya.
+     */
+    public function restoreBackup(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:zip|max:204800']);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($request->file('file')->getRealPath()) !== true) {
+            return response()->json(['success' => false, 'message' => 'ZIP tidak bisa dibuka.'], 422);
+        }
+
+        $results = ['restored' => 0, 'skipped' => 0, 'missing_files' => [], 'errors' => []];
+
+        // Cari Excel
+        $excelContent = null;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $ext  = strtolower(pathinfo($stat['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['xlsx', 'xls']) && !str_contains($stat['name'], '__MACOSX')) {
+                $excelContent = $zip->getFromIndex($i);
+                break;
+            }
+        }
+
+        if (!$excelContent) {
+            $zip->close();
+            return response()->json(['success' => false, 'message' => 'File Excel tidak ditemukan dalam ZIP.'], 422);
+        }
+
+        // Simpan dan parse Excel
+        $tmpPath = storage_path('app/imports/restore_' . time() . '.xlsx');
+        file_put_contents($tmpPath, $excelContent);
+        $allSheets = $this->parseMultiSheetXlsx($tmpPath);
+
+        // Proses Data Utama
+        $sheetUtama = null;
+        foreach ($allSheets as $s) {
+            if (strtolower($s['name']) === 'data utama') { $sheetUtama = $s; break; }
+        }
+        if ($sheetUtama && !empty($sheetUtama['rows'])) {
+            $rows      = $sheetUtama['rows'];
+            $headerRow = array_map('trim', array_shift($rows));
+            $headerMap = array_flip($headerRow);
+            $get       = fn($row, $key) => (($i = $headerMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+
+            foreach ($rows as $row) {
+                $nuptk = $get($row, 'NUPTK') ?? $get($row, 'nuptk*') ?? $get($row, 'nuptk');
+                $nama  = $get($row, 'Nama') ?? $get($row, 'nama*') ?? $get($row, 'nama');
+                if (!$nuptk || !$nama) continue;
+
+                try {
+                    $payload = array_filter([
+                        'nuptk' => $nuptk, 'nama' => $nama,
+                        'nip' => $get($row, 'NIP') ?? $get($row, 'nip'),
+                        'nik' => $get($row, 'NIK') ?? $get($row, 'nik'),
+                        'jenis_kelamin' => in_array($get($row, 'Jenis Kelamin'), ['Laki-laki', 'L']) ? 'L' : 'P',
+                        'jenis_ptk' => $get($row, 'Jenis PTK') ?? $get($row, 'jenis_ptk') ?? 'Guru Kelas',
+                        'status_kepegawaian' => $get($row, 'Status Kepegawaian') ?? $get($row, 'status_kepegawaian') ?? 'GTT',
+                        'status_keaktifan' => $get($row, 'Status Keaktifan') ?? $get($row, 'status_keaktifan') ?? 'Aktif',
+                        'no_hp' => $get($row, 'No. HP') ?? $get($row, 'no_hp') ?? '-',
+                        'agama' => $get($row, 'Agama') ?? $get($row, 'agama') ?? 'Islam',
+                        'tempat_lahir' => $get($row, 'Tempat Lahir') ?? $get($row, 'tempat_lahir'),
+                        'tanggal_lahir' => $get($row, 'Tanggal Lahir') ?? $get($row, 'tanggal_lahir'),
+                    ], fn($v) => $v !== null);
+
+                    $existing = Guru::where('nuptk', $nuptk)->first();
+                    if ($existing) {
+                        unset($payload['nuptk']);
+                        $existing->update($payload);
+                    } else {
+                        Guru::create($payload);
+                        $results['restored']++;
+                    }
+                } catch (\Exception $e) {
+                    $results['errors'][] = "NUPTK {$nuptk}: " . $e->getMessage();
+                }
+            }
+        }
+
+        // Restore file media dari ZIP
+        $folderMap = [
+            'foto-guru' => ['type' => 'foto'],
+            'file-ijazah' => ['type' => 'ijazah'],
+            'file-sertifikasi' => ['type' => 'sertifikasi'],
+            'file-diklat' => ['type' => 'diklat'],
+            'file-inpassing' => ['type' => 'inpassing'],
+            'file-mutasi' => ['type' => 'mutasi'],
+            'file-dokumen' => ['type' => 'dokumen'],
+        ];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat    = $zip->statIndex($i);
+            $zipName = $stat['name'];
+            $filename = basename($zipName);
+            $ext      = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+            if (substr($zipName, -1) === '/' || str_contains($zipName, '__MACOSX')) continue;
+            if (in_array($ext, ['xlsx', 'xls', 'txt', 'json'])) continue;
+
+            $parts     = explode('/', $zipName);
+            $folder    = count($parts) > 1 ? strtolower($parts[0]) : '';
+            if (!isset($folderMap[$folder])) continue;
+
+            $content = $zip->getFromIndex($i);
+            if ($content === false) {
+                $results['missing_files'][] = $zipName;
+                continue;
+            }
+
+            try {
+                Storage::disk('public')->put($folder . '/' . $filename, $content);
+                $results['restored']++;
+            } catch (\Exception $e) {
+                $results['errors'][] = "{$zipName}: " . $e->getMessage();
+            }
+        }
+
+        $zip->close();
+        if (file_exists($tmpPath)) unlink($tmpPath);
+
+        ActivityLog::create([
+            'user_id'    => auth()->id(),
+            'action'     => 'import',
+            'module'     => 'guru',
+            'keterangan' => json_encode(['tipe' => 'restore', ...$results]),
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Restore selesai: {$results['restored']} record/file dipulihkan, " . count($results['errors']) . " error.",
+            'data'    => $results,
+        ]);
+    }
+
     /**
      * POST /guru/import-foto
      */
@@ -4143,6 +4548,19 @@ class MasterDataGuruController extends Controller
         }
 
         $totalGuru = count($gurus);
+        $fileCount = $zip->numFiles;
+        $manifest = [
+            'versi' => '2.0',
+            'aplikasi' => 'SIAKAD MI Nurul Huda 3',
+            'tanggal' => now()->toIso8601String(),
+            'jumlah_guru' => $totalGuru,
+            'jumlah_file' => $fileCount,
+            'checksum_xlsx' => md5($xlsxBinary),
+            'dibuat_oleh' => auth()->user()?->name ?? 'system',
+            'format' => 'backup_v2',
+        ];
+        $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
         $zip->addFromString(
             'README.txt',
             "BACKUP DATA GURU - " . now()->format('d/m/Y H:i:s') . "\r\n"

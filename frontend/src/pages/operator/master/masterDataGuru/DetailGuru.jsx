@@ -2183,6 +2183,7 @@ function TabDokumen({ nuptk, guru }) {
   const [modalVersions, setModalVersions] = useState(null); // dokumen object
   const [modalLogs, setModalLogs] = useState(null); // dokumen object
   const [modalReject, setModalReject] = useState(null); // dokumen object
+  const [modalPreview, setModalPreview] = useState(null); // { url, nama }
   const fileRef = useRef();
 
   // ── Mutation: Approve ──
