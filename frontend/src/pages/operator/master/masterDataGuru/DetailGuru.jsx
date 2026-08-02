@@ -3183,6 +3183,7 @@ function ModalMutasi({
   guruInfo,
   lastMutasiKeluar,
   nuptk,
+  statusGuru, // ← baru
 }) {
   const isAdd = modalMutasi === "add";
 
@@ -3328,6 +3329,60 @@ function ModalMutasi({
       "Kembali Bertugas": "Tanggal Kembali Bertugas",
     }[jenisDipilih] ?? "Tanggal Mutasi";
 
+  // ── State Machine — jenis yang valid per status guru ────────
+  const STATE_TRANSITIONS = {
+    Aktif: ["Internal", "Penugasan Sementara", "Keluar"],
+    Keluar: ["Masuk"],
+    Mutasi: ["Masuk"], // nilai lama di DB
+    "Penugasan Sementara": ["Kembali Bertugas"],
+    Cuti: ["Kembali Bertugas"],
+    Nonaktif: ["Masuk"],
+    Pensiun: [],
+  };
+
+  const BLOCKED_REASON = {
+    Masuk: {
+      Aktif: "Guru sudah Aktif. Mutasi Masuk tidak diperlukan.",
+      "Penugasan Sementara":
+        "Guru sedang Penugasan Sementara. Lakukan Kembali Bertugas dulu.",
+      Cuti: "Guru sedang Cuti. Lakukan Kembali Bertugas dulu.",
+    },
+    Keluar: {
+      Keluar: "Guru sudah Mutasi Keluar.",
+      Mutasi: "Guru sudah Mutasi Keluar.",
+      "Penugasan Sementara":
+        "Guru sedang Penugasan Sementara. Kembali Bertugas dulu.",
+      Cuti: "Guru sedang Cuti.",
+      Nonaktif: "Guru Nonaktif.",
+    },
+    Internal: {
+      Keluar: "Guru sudah Mutasi Keluar. Lakukan Mutasi Masuk terlebih dahulu.",
+      Mutasi: "Guru sudah Mutasi Keluar. Lakukan Mutasi Masuk terlebih dahulu.",
+      "Penugasan Sementara": "Guru sedang Penugasan Sementara.",
+      Cuti: "Guru sedang Cuti.",
+      Nonaktif: "Guru Nonaktif.",
+    },
+    "Penugasan Sementara": {
+      Keluar: "Guru sudah Mutasi Keluar.",
+      Mutasi: "Guru sudah Mutasi Keluar.",
+      "Penugasan Sementara": "Guru sudah dalam Penugasan Sementara.",
+      Cuti: "Guru sedang Cuti.",
+      Nonaktif: "Guru Nonaktif.",
+    },
+    "Kembali Bertugas": {
+      Aktif: "Guru sudah Aktif. Tidak perlu Kembali Bertugas.",
+      Keluar: "Guru Mutasi Keluar. Gunakan Mutasi Masuk.",
+      Mutasi: "Guru Mutasi Keluar. Gunakan Mutasi Masuk.",
+      Nonaktif: "Guru Nonaktif. Gunakan Mutasi Masuk.",
+    },
+  };
+
+  const allowedJenis = STATE_TRANSITIONS[statusGuru] ?? [
+    "Internal",
+    "Penugasan Sementara",
+    "Keluar",
+  ];
+
   const jenisOptions = [
     {
       value: "Masuk",
@@ -3359,7 +3414,11 @@ function ModalMutasi({
       label: "Kembali Bertugas",
       sub: "Kembali setelah cuti / penugasan",
     },
-  ];
+  ].map((opt) => ({
+    ...opt,
+    allowed: allowedJenis.includes(opt.value),
+    blockedReason: BLOCKED_REASON[opt.value]?.[statusGuru] ?? null,
+  }));
 
   const cls =
     "w-full px-4 py-2.5 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm";
@@ -3445,32 +3504,67 @@ function ModalMutasi({
               <label className="block text-sm font-semibold text-text-primary mb-2">
                 Jenis Mutasi <span className="text-error">*</span>
               </label>
+              {/* Status badge */}
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="material-symbols-outlined text-[14px] text-text-secondary">
+                  info
+                </span>
+                <p className="text-xs text-text-secondary">
+                  Status guru saat ini:{" "}
+                  <span className="font-bold text-text-primary">
+                    {statusGuru}
+                  </span>
+                  {" — "}hanya mutasi yang sesuai yang dapat dipilih.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 gap-2">
-                {jenisOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => handleJenisClick(opt.value)}
-                    className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border text-left transition-all ${
-                      jenisDipilih === opt.value
-                        ? "border-primary bg-primary/8 ring-2 ring-primary/20"
-                        : "border-border-light bg-surface-container-lowest hover:border-primary/40"
-                    }`}
-                  >
-                    <span className="text-base flex-shrink-0">{opt.icon}</span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-text-primary">
-                        {opt.label}
-                      </p>
-                      <p className="text-xs text-text-secondary">{opt.sub}</p>
+                {jenisOptions.map((opt) => {
+                  const isSelected = jenisDipilih === opt.value;
+                  const isDisabled = !opt.allowed;
+
+                  return (
+                    <div key={opt.value} className="relative group">
+                      <button
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() =>
+                          !isDisabled && handleJenisClick(opt.value)
+                        }
+                        className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-xl border text-left transition-all ${
+                          isDisabled
+                            ? "border-border-light bg-surface-container opacity-40 cursor-not-allowed"
+                            : isSelected
+                              ? "border-primary bg-primary/8 ring-2 ring-primary/20"
+                              : "border-border-light bg-surface-container-lowest hover:border-primary/40"
+                        }`}
+                      >
+                        <span className="text-base flex-shrink-0">
+                          {opt.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-text-primary">
+                            {opt.label}
+                          </p>
+                          <p className="text-xs text-text-secondary">
+                            {isDisabled && opt.blockedReason
+                              ? opt.blockedReason
+                              : opt.sub}
+                          </p>
+                        </div>
+                        {isDisabled ? (
+                          <span className="material-symbols-outlined text-text-secondary text-[18px] ml-auto flex-shrink-0">
+                            block
+                          </span>
+                        ) : isSelected ? (
+                          <span className="material-symbols-outlined text-primary text-[18px] ml-auto flex-shrink-0">
+                            check_circle
+                          </span>
+                        ) : null}
+                      </button>
                     </div>
-                    {jenisDipilih === opt.value && (
-                      <span className="material-symbols-outlined text-primary text-[18px] ml-auto flex-shrink-0">
-                        check_circle
-                      </span>
-                    )}
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -4451,6 +4545,7 @@ function TabRiwayat({ nuptk, guru }) {
             ) ?? null
           }
           nuptk={nuptk}
+          statusGuru={guru.status_keaktifan ?? "Aktif"}
         />
       )}
 

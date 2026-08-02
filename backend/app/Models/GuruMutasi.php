@@ -14,6 +14,8 @@ class GuruMutasi extends Model
     protected $fillable = [
         'guru_id',
         'jenis_mutasi',
+        'status_sebelum',   // ← baru
+        'status_setelah',   // ← baru
         'sekolah_asal',
         'npsn_asal',
         'sekolah_tujuan',
@@ -30,6 +32,7 @@ class GuruMutasi extends Model
         'file_sk',
         'keterangan',
         'tanggal_berakhir',
+        'is_locked',        // ← baru
     ];
 
     protected $casts = [
@@ -37,6 +40,7 @@ class GuruMutasi extends Model
         'tmt_mutasi' => 'date',
         'tanggal_sk' => 'date',
         'tanggal_berakhir' => 'date',
+        'is_locked' => 'boolean', // ← baru
     ];
 
     public function guru()

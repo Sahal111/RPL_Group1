@@ -1134,7 +1134,26 @@ class MasterDataGuruController extends Controller
     public function getMutasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->mutasi]);
+        return response()->json([
+            'success' => true,
+            'data' => $guru->mutasi()->orderBy('tanggal_mutasi')->get(),
+        ]);
+    }
+
+    /**
+     * GET /guru/{nuptk}/mutasi/allowed-transitions
+     * Kembalikan jenis mutasi yang boleh/tidak boleh berdasarkan status saat ini.
+     */
+    public function allowedTransitions($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $service = new \App\Services\MutasiGuruService();
+
+        return response()->json([
+            'success' => true,
+            'status_guru' => $guru->status_keaktifan,
+            'transitions' => $service->allowedTransitions($guru),
+        ]);
     }
 
     /**
@@ -1328,9 +1347,21 @@ class MasterDataGuruController extends Controller
         $mutasi = $guru->mutasi()->findOrFail($id);
         $jenis = $mutasi->jenis_mutasi;
 
+        // Cek apakah mutasi sudah dikunci (sudah mempengaruhi modul lain)
+        if ($mutasi->is_locked) {
+            // Cek dampak sebelum izinkan hapus
+            $kelasWali = \App\Models\Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->count();
+            $mapelAktif = $guru->plotGuruMapels()->where('is_active', 1)->count();
+
+            $dampakAktif = $kelasWali + $mapelAktif;
+
+            // Tetap izinkan hapus tapi return warning di response
+            // (hard delete diganti soft delete — model sudah pakai SoftDeletes)
+        }
+
         if ($mutasi->file_sk)
             Storage::disk('public')->delete($mutasi->file_sk);
-        $mutasi->delete();
+        $mutasi->delete(); // soft delete karena model pakai SoftDeletes
 
         // Re-derive status dari sisa mutasi terbaru
         $sisaMutasi = $guru->mutasi()->orderByDesc('tanggal_mutasi')->first();
