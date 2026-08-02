@@ -2537,12 +2537,12 @@ function TabDokumen({ nuptk, guru }) {
     onClose,
     isEdit = false,
   }) => {
-    const [selectedKategori, setSelectedKategori] = React.useState(
+    const [selectedKategori, setSelectedKategori] = useState(
       defaultValues.kategori ?? "",
     );
-    const [dragOver, setDragOver] = React.useState(false);
-    const [previewFile, setPreviewFile] = React.useState(null);
-    const localFileRef = React.useRef();
+    const [dragOver, setDragOver] = useState(false);
+    const [previewFile, setPreviewFile] = useState(null);
+    const localFileRef = useRef();
 
     const jenisOpts = JENIS_PER_KATEGORI[selectedKategori] ?? [];
 
@@ -3220,12 +3220,22 @@ function TabDokumen({ nuptk, guru }) {
               Checklist
             </button>
             <button
-              onClick={() =>
-                window.open(
-                  `/api/operator/master-data/guru/${nuptk}/dokumen-bulk-download`,
-                  "_blank",
-                )
-              }
+              onClick={async () => {
+                try {
+                  const res = await api.get(
+                    `/operator/master-data/guru/${nuptk}/dokumen-bulk-download`,
+                    { responseType: "blob" },
+                  );
+                  const url = URL.createObjectURL(res.data);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `Dokumen_Guru_${nuptk}.zip`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch {
+                  toast.error("Gagal mendownload dokumen.");
+                }
+              }}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-[11px] font-medium hover:bg-gray-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[13px]">

@@ -830,7 +830,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         $request->validate([
-            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,administrasi,lainnya',
+            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,administrasi,penghargaan,lainnya',
             'jenis_dokumen' => 'nullable|string|max:80',
             'nama_dokumen' => 'nullable|string|max:150',
             'nomor_dokumen' => 'nullable|string|max:80',

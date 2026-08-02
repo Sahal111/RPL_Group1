@@ -205,6 +205,7 @@ Route::middleware('auth:sanctum')->group(function () {
             });
 
             Route::get('/guru/{nuptk}/dokumen/{id}/download', [MasterDataGuruController::class, 'downloadDokumen']);
+            Route::get('/guru/{nuptk}/dokumen-bulk-download', [MasterDataGuruController::class, 'bulkDownload']);
             Route::get('/guru/{nuptk}/file-download', [MasterDataGuruController::class, 'downloadFile']);
 
             // Siswa
