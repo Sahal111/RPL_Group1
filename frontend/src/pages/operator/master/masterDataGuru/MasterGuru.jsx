@@ -1517,29 +1517,58 @@ function ModalImport({ open, onClose, queryClient }) {
   const handleExecute = async () => {
     setLoading(true);
     setStep("progress");
+    // Tampilkan progress 0% dulu agar UI tidak blank
+    setProgress({
+      status: "processing",
+      progress_persen: 0,
+      total_baris: preview?.total_baris ?? 0,
+    });
     try {
       if (importType === "excel") {
-        const res = await api.post("/operator/master-data/guru/import-execute", {
-          batch_id:       batchId,
-          column_mapping: mapping,
-          mode_duplikat:  modeDuplikat,
-        });
-        startPolling(res.data.batch_id);
-        toast.success("Import dimulai. Memantau progres...");
+        // importExecute sekarang synchronous — langsung dapat hasil
+        const res = await api.post(
+          "/operator/master-data/guru/import-execute",
+          {
+            batch_id: batchId,
+            column_mapping: mapping,
+            mode_duplikat: modeDuplikat,
+          },
+        );
+        // Simulasikan progress bar naik saat response datang
+        setProgress({ status: "processing", progress_persen: 80 });
+        await new Promise((r) => setTimeout(r, 300));
+        setProgress(res.data.data);
+        setStep("done");
+        queryClient.invalidateQueries(["master-guru"]);
+        if ((res.data.data?.jumlah_gagal ?? 0) === 0) {
+          toast.success(
+            `Import selesai! ${res.data.data?.jumlah_insert ?? 0} baru, ${res.data.data?.jumlah_update ?? 0} update.`,
+          );
+        } else {
+          toast.error(
+            `Import selesai dengan ${res.data.data?.jumlah_gagal} error. Cek laporan.`,
+          );
+        }
       } else if (importType === "zip") {
+        // ZIP tetap async (file besar) — pakai polling
         const fd = new FormData();
         fd.append("file", file);
         fd.append("mode_duplikat", modeDuplikat);
-        const res = await api.post("/operator/master-data/guru/import-zip", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const res = await api.post(
+          "/operator/master-data/guru/import-zip",
+          fd,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          },
+        );
         setBatchId(res.data.batch_id);
         startPolling(res.data.batch_id);
-        toast.success("ZIP sedang diproses...");
+        toast.success("ZIP sedang diproses di background...");
       }
     } catch (err) {
       toast.error(err.response?.data?.message ?? "Gagal memulai import.");
       setStep("confirm");
+      setProgress(null);
     } finally {
       setLoading(false);
     }
