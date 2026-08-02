@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 9.6.0)
 # Database: db_minurulhuda3
-# Generation Time: 2026-08-02 09:40:41 +0000
+# Generation Time: 2026-08-02 13:13:32 +0000
 # ************************************************************
 
 
@@ -233,16 +233,6 @@ CREATE TABLE `cache` (
   KEY `idx_cache_expiration` (`expiration`) COMMENT 'Untuk prune (hapus) cache yang sudah expired'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Cache database driver Laravel. Pertimbangkan Redis untuk produksi';
 
-LOCK TABLES `cache` WRITE;
-/*!40000 ALTER TABLE `cache` DISABLE KEYS */;
-
-INSERT INTO `cache` (`key`, `value`, `expiration`)
-VALUES
-	('laravel-cache-5c785c036466adea360111aa28563bfd556b5fba','i:1;',1784558990),
-	('laravel-cache-5c785c036466adea360111aa28563bfd556b5fba:timer','i:1784558990;',1784558990);
-
-/*!40000 ALTER TABLE `cache` ENABLE KEYS */;
-UNLOCK TABLES;
 
 
 # Dump of table cache_locks
@@ -577,8 +567,23 @@ CREATE TABLE `guru_dokumen_logs` (
   KEY `guru_dokumen_logs_user_id_index` (`user_id`),
   CONSTRAINT `guru_dokumen_logs_guru_dokumen_id_foreign` FOREIGN KEY (`guru_dokumen_id`) REFERENCES `guru_dokumens` (`id`) ON DELETE CASCADE,
   CONSTRAINT `guru_dokumen_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+LOCK TABLES `guru_dokumen_logs` WRITE;
+/*!40000 ALTER TABLE `guru_dokumen_logs` DISABLE KEYS */;
+
+INSERT INTO `guru_dokumen_logs` (`id`, `guru_dokumen_id`, `user_id`, `aksi`, `keterangan`, `ip_address`, `user_agent`, `created_at`)
+VALUES
+	(1,4,1,'upload','Upload versi 1: Screenshot 2026-07-26 at 14.34.27.png','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:18:11'),
+	(2,4,1,'approve','Dokumen disetujui','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:18:36'),
+	(3,4,1,'approve','Dokumen disetujui','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:18:39'),
+	(4,4,1,'approve','Dokumen disetujui','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:18:40'),
+	(5,4,1,'reject','Ditolak: b ,jlbhjkbjklklbhji','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:19:36'),
+	(6,4,1,'approve','Dokumen disetujui','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:19:42'),
+	(7,4,1,'reject','Ditolak: fuityuyftrftuyfty','127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15','2026-08-02 17:19:48');
+
+/*!40000 ALTER TABLE `guru_dokumen_logs` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table guru_dokumen_versions
@@ -605,8 +610,17 @@ CREATE TABLE `guru_dokumen_versions` (
   KEY `guru_dokumen_versions_guru_dokumen_id_index` (`guru_dokumen_id`),
   CONSTRAINT `guru_dokumen_versions_guru_dokumen_id_foreign` FOREIGN KEY (`guru_dokumen_id`) REFERENCES `guru_dokumens` (`id`) ON DELETE CASCADE,
   CONSTRAINT `guru_dokumen_versions_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+LOCK TABLES `guru_dokumen_versions` WRITE;
+/*!40000 ALTER TABLE `guru_dokumen_versions` DISABLE KEYS */;
+
+INSERT INTO `guru_dokumen_versions` (`id`, `guru_dokumen_id`, `versi`, `file_path`, `file_type`, `file_size`, `file_hash`, `original_filename`, `uploaded_by`, `catatan`, `created_at`, `updated_at`)
+VALUES
+	(1,4,1,'guru-dokumen/5/7c24b1b4-52b6-478a-a01f-8faf7c626670.png','image/png',545820,'258f45bd372a848815417bc17d2775818ad03403e6ba59f74b19520d135814c6','Screenshot 2026-07-26 at 14.34.27.png',1,'Upload pertama','2026-08-02 17:18:11','2026-08-02 17:18:11');
+
+/*!40000 ALTER TABLE `guru_dokumen_versions` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table guru_dokumens
@@ -651,18 +665,64 @@ CREATE TABLE `guru_dokumens` (
   CONSTRAINT `fk_gurudok_guru` FOREIGN KEY (`guru_id`) REFERENCES `gurus` (`id`) ON DELETE CASCADE,
   CONSTRAINT `guru_dokumens_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `guru_dokumens_verified_by_foreign` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dokumen resmi guru yang diupload (KTP, SK, ijazah, sertifikat, dll)';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Dokumen resmi guru yang diupload (KTP, SK, ijazah, sertifikat, dll)';
 
 LOCK TABLES `guru_dokumens` WRITE;
 /*!40000 ALTER TABLE `guru_dokumens` DISABLE KEYS */;
 
 INSERT INTO `guru_dokumens` (`id`, `guru_id`, `kategori`, `nama_dokumen`, `nomor_dokumen`, `tanggal_dokumen`, `tanggal_berlaku`, `tanggal_kadaluarsa`, `penerbit`, `file_path`, `file_type`, `file_size`, `file_hash`, `original_filename`, `is_verified`, `status`, `jenis_dokumen`, `versi`, `uploaded_by`, `verified_by`, `verified_at`, `rejection_reason`, `keterangan`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,5,'identitas','ktp','1234567890','2026-07-04',NULL,NULL,'kemenag','guru-dokumen/5/5TgUmGpdCMXWwen3hDp9BwW8aI9xecXIvBNhfq6i.png','image/png',163147,NULL,NULL,0,'menunggu_review',NULL,1,NULL,NULL,NULL,NULL,'ghcvhgkghkcv','2026-07-29 15:09:25','2026-08-01 09:41:35',NULL),
-	(2,5,'identitas','identitas','0987654321','2026-07-05',NULL,NULL,'sdfcghvjb','guru-dokumen/5/X7MFqVDepTXdgh5vqFbRgbu0lqd1ozNSp9rS5ctS.png','image/png',296349,NULL,NULL,0,'menunggu_review',NULL,1,NULL,NULL,NULL,NULL,NULL,'2026-07-29 15:09:46','2026-07-29 15:09:46',NULL),
-	(3,5,'identitas','kartu keluaraga','678903564756',NULL,NULL,NULL,'dukcapil','guru-dokumen/5/795Qzf130Mnf8FpvOsJJ5BLHCFe27nDUQ8jldnUu.png','image/png',629954,NULL,NULL,0,'menunggu_review',NULL,1,NULL,NULL,NULL,NULL,'dsfsdfgerfg','2026-08-01 09:41:20','2026-08-01 09:41:20',NULL);
+	(4,5,'identitas','ktp','34526790823457890','2026-08-02','2026-08-07','2026-08-25','jhdshfjhdf','guru-dokumen/5/7c24b1b4-52b6-478a-a01f-8faf7c626670.png','image/png',545820,'258f45bd372a848815417bc17d2775818ad03403e6ba59f74b19520d135814c6','Screenshot 2026-07-26 at 14.34.27.png',0,'ditolak','ktp',1,1,1,'2026-08-02 17:19:48','fuityuyftrftuyfty','dsfsiufgigwiuyer','2026-08-02 17:18:11','2026-08-02 17:19:48',NULL);
 
 /*!40000 ALTER TABLE `guru_dokumens` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
+# Dump of table guru_import_logs
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `guru_import_logs`;
+
+CREATE TABLE `guru_import_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `batch_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'UUID unik per sesi import',
+  `tipe` enum('excel','zip','backup_restore') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'excel',
+  `nama_file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('pending','preview','processing','done','failed','rolled_back') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `mode_duplikat` enum('skip','replace','merge') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'replace',
+  `total_baris` int NOT NULL DEFAULT '0',
+  `jumlah_insert` int NOT NULL DEFAULT '0',
+  `jumlah_update` int NOT NULL DEFAULT '0',
+  `jumlah_skip` int NOT NULL DEFAULT '0',
+  `jumlah_gagal` int NOT NULL DEFAULT '0',
+  `progress_persen` int NOT NULL DEFAULT '0',
+  `error_detail` json DEFAULT NULL COMMENT 'Array error per baris',
+  `statistik_relasi` json DEFAULT NULL COMMENT 'Jumlah per sheet/tabel',
+  `preview_data` json DEFAULT NULL COMMENT 'Sample 5 baris untuk preview',
+  `column_mapping` json DEFAULT NULL COMMENT 'Mapping header user → kolom DB',
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `durasi_detik` float DEFAULT NULL,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `finished_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `guru_import_logs_batch_id_unique` (`batch_id`),
+  KEY `guru_import_logs_batch_id_index` (`batch_id`),
+  KEY `guru_import_logs_status_index` (`status`),
+  KEY `guru_import_logs_user_id_index` (`user_id`),
+  CONSTRAINT `guru_import_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+LOCK TABLES `guru_import_logs` WRITE;
+/*!40000 ALTER TABLE `guru_import_logs` DISABLE KEYS */;
+
+INSERT INTO `guru_import_logs` (`id`, `user_id`, `batch_id`, `tipe`, `nama_file`, `status`, `mode_duplikat`, `total_baris`, `jumlah_insert`, `jumlah_update`, `jumlah_skip`, `jumlah_gagal`, `progress_persen`, `error_detail`, `statistik_relasi`, `preview_data`, `column_mapping`, `ip_address`, `durasi_detik`, `started_at`, `finished_at`, `created_at`, `updated_at`)
+VALUES
+	(1,1,'d430d491-dfdf-4ef9-b5e4-ef5317c1d2ad','excel','data_guru.xlsx','pending','replace',10,0,0,0,0,0,NULL,NULL,'{\"rows\": [[\"1\", \"1234567890123456\", \"199001012015011001\", \"3201010101900001\", \"Drs. Ahmad Fauzi, M.Pd\", \"Drs.\", \"M.Pd\", \"Laki-laki\", \"Bogor\", \"01/01/1990\", \"Islam\", \"-\", \"08123456789\", \"08123456789\", \"ahmad@email.com\", \"Guru Kelas\", \"PNS\", \"Aktif\", \"01/01/2015\", \"01/01/2015\", \"Jl. Raya No. 10\", \"001\", \"002\", \"Cibuluh\", \"Bogor Utara\", \"Kota Bogor\", \"Jawa Barat\", \"16152\", \"Tidak Ada\", \"0\", \"0\", \"0\", \"-\"], [\"2\", \"1111111111111111\", \"-\", \"-\", \"Kepala Sekolah Test\", \"-\", \"-\", \"Laki-laki\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"Kepala Sekolah\", \"-\", \"Aktif\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"Tidak Ada\", \"0\", \"0\", \"0\", \"-\"], [\"3\", \"0987654321123456\", \"780935466789356423\", \"1243708945236789\", \"Dr. Muhammad Sahal Anwar Hadi, S.Kom\", \"Dr.\", \"S.Kom\", \"Laki-laki\", \"Bogor\", \"12/11/2006\", \"Islam\", \"-\", \"085811723878\", \"085811723878\", \"sahalanwarhadi25@gmail.com\", \"Guru Kelas\", \"PNS\", \"Aktif\", \"22/06/2026\", \"24/06/2026\", \"jl kencana rt 01 rw 02 kel kencana kec. tanah sareal kota bogor\", \"001\", \"002\", \"kencana\", \"tanah sareal\", \"kota bogor\", \"jawa barat\", \"12345\", \"Tidak Ada\", \"1\", \"1\", \"2\", \"yxooIiTH0phZlSoEQI5krHQUAwdQYPgppISVXaSP.jpg\"], [\"4\", \"9876543210987654\", \"-\", \"3201020202910002\", \"Siti Rahayu, S.Pd\", \"-\", \"S.Pd\", \"Perempuan\", \"Depok\", \"02/02/1991\", \"Islam\", \"-\", \"08987654321\", \"08987654321\", \"siti@email.com\", \"Guru Mapel\", \"GTT\", \"Aktif\", \"01/07/2018\", \"-\", \"Jl. Margonda No. 5\", \"003\", \"001\", \"Beji\", \"Beji\", \"Kota Depok\", \"Jawa Barat\", \"16424\", \"Tidak Ada\", \"0\", \"0\", \"0\", \"-\"], [\"5\", \"3333333333333333\", \"-\", \"-\", \"Wali Kelas Test\", \"-\", \"-\", \"Laki-laki\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"Guru Kelas\", \"-\", \"Aktif\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"-\", \"1-A\", \"0\", \"0\", \"0\", \"-\"]], \"headers\": [\"No\", \"NUPTK\", \"NIP\", \"NIK\", \"Nama Lengkap\", \"Gelar Depan\", \"Gelar Belakang\", \"Jenis Kelamin\", \"Tempat Lahir\", \"Tanggal Lahir\", \"Agama\", \"Status Perkawinan\", \"No. HP\", \"No. WA\", \"Email\", \"Jenis PTK\", \"Status Kepegawaian\", \"Status Keaktifan\", \"Tanggal Bergabung\", \"TMT PNS\", \"Alamat Jalan\", \"RT\", \"RW\", \"Desa/Kelurahan\", \"Kecamatan\", \"Kabupaten/Kota\", \"Provinsi\", \"Kode Pos\", \"Wali Kelas\", \"Jml Sertifikasi\", \"Jml Pendidikan\", \"Jml Jabatan\", \"File Foto\"]}','{\"RT\": \"rt\", \"RW\": \"rw\", \"NIK\": \"nik\", \"NIP\": \"nip\", \"Agama\": \"agama\", \"Email\": \"email\", \"NUPTK\": \"nuptk\", \"No. HP\": \"no_hp\", \"No. WA\": \"no_wa\", \"TMT PNS\": \"tmt_pns\", \"Kode Pos\": \"kode_pos\", \"Provinsi\": \"provinsi\", \"Jenis PTK\": \"jenis_ptk\", \"Kecamatan\": \"kecamatan\", \"Gelar Depan\": \"gelar_depan\", \"Alamat Jalan\": \"alamat_jalan\", \"Nama Lengkap\": \"nama\", \"Tempat Lahir\": \"tempat_lahir\", \"Jenis Kelamin\": \"jenis_kelamin\", \"Tanggal Lahir\": \"tanggal_lahir\", \"Desa/Kelurahan\": \"desa_kelurahan\", \"Gelar Belakang\": \"gelar_belakang\", \"Jml Sertifikasi\": \"rt\", \"Status Keaktifan\": \"status_keaktifan\", \"Tanggal Bergabung\": \"tanggal_bergabung\", \"Status Kepegawaian\": \"status_kepegawaian\"}','127.0.0.1',NULL,NULL,NULL,'2026-08-02 20:10:26','2026-08-02 20:10:54');
+
+/*!40000 ALTER TABLE `guru_import_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
 
@@ -1223,8 +1283,17 @@ CREATE TABLE `jobs` (
   `created_at` int unsigned NOT NULL COMMENT 'Unix timestamp kapan job di-dispatch',
   PRIMARY KEY (`id`),
   KEY `idx_jobs_queue` (`queue`) COMMENT 'Worker filter berdasarkan nama queue'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Antrian job background Laravel. Untuk proses berat seperti generate PDF, kirim email massal';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Antrian job background Laravel. Untuk proses berat seperti generate PDF, kirim email massal';
 
+LOCK TABLES `jobs` WRITE;
+/*!40000 ALTER TABLE `jobs` DISABLE KEYS */;
+
+INSERT INTO `jobs` (`id`, `queue`, `payload`, `attempts`, `reserved_at`, `available_at`, `created_at`)
+VALUES
+	(1,'default','{\"uuid\":\"2ac75a81-cd51-4d91-a81c-ebc5f4d55942\",\"displayName\":\"App\\\\Jobs\\\\ProcessGuruImport\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":1,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":300,\"retryUntil\":null,\"data\":{\"commandName\":\"App\\\\Jobs\\\\ProcessGuruImport\",\"command\":\"O:26:\\\"App\\\\Jobs\\\\ProcessGuruImport\\\":6:{s:35:\\\"\\u0000App\\\\Jobs\\\\ProcessGuruImport\\u0000batchId\\\";s:36:\\\"d430d491-dfdf-4ef9-b5e4-ef5317c1d2ad\\\";s:42:\\\"\\u0000App\\\\Jobs\\\\ProcessGuruImport\\u0000storedFilePath\\\";s:49:\\\"imports\\/d430d491-dfdf-4ef9-b5e4-ef5317c1d2ad.xlsx\\\";s:41:\\\"\\u0000App\\\\Jobs\\\\ProcessGuruImport\\u0000columnMapping\\\";a:26:{s:5:\\\"NUPTK\\\";s:5:\\\"nuptk\\\";s:3:\\\"NIP\\\";s:3:\\\"nip\\\";s:3:\\\"NIK\\\";s:3:\\\"nik\\\";s:12:\\\"Nama Lengkap\\\";s:4:\\\"nama\\\";s:11:\\\"Gelar Depan\\\";s:11:\\\"gelar_depan\\\";s:14:\\\"Gelar Belakang\\\";s:14:\\\"gelar_belakang\\\";s:13:\\\"Jenis Kelamin\\\";s:13:\\\"jenis_kelamin\\\";s:12:\\\"Tempat Lahir\\\";s:12:\\\"tempat_lahir\\\";s:13:\\\"Tanggal Lahir\\\";s:13:\\\"tanggal_lahir\\\";s:5:\\\"Agama\\\";s:5:\\\"agama\\\";s:6:\\\"No. HP\\\";s:5:\\\"no_hp\\\";s:6:\\\"No. WA\\\";s:5:\\\"no_wa\\\";s:5:\\\"Email\\\";s:5:\\\"email\\\";s:9:\\\"Jenis PTK\\\";s:9:\\\"jenis_ptk\\\";s:18:\\\"Status Kepegawaian\\\";s:18:\\\"status_kepegawaian\\\";s:16:\\\"Status Keaktifan\\\";s:16:\\\"status_keaktifan\\\";s:17:\\\"Tanggal Bergabung\\\";s:17:\\\"tanggal_bergabung\\\";s:7:\\\"TMT PNS\\\";s:7:\\\"tmt_pns\\\";s:12:\\\"Alamat Jalan\\\";s:12:\\\"alamat_jalan\\\";s:2:\\\"RT\\\";s:2:\\\"rt\\\";s:2:\\\"RW\\\";s:2:\\\"rw\\\";s:14:\\\"Desa\\/Kelurahan\\\";s:14:\\\"desa_kelurahan\\\";s:9:\\\"Kecamatan\\\";s:9:\\\"kecamatan\\\";s:8:\\\"Provinsi\\\";s:8:\\\"provinsi\\\";s:8:\\\"Kode Pos\\\";s:8:\\\"kode_pos\\\";s:15:\\\"Jml Sertifikasi\\\";s:2:\\\"rt\\\";}s:40:\\\"\\u0000App\\\\Jobs\\\\ProcessGuruImport\\u0000modeDuplikat\\\";s:7:\\\"replace\\\";s:34:\\\"\\u0000App\\\\Jobs\\\\ProcessGuruImport\\u0000userId\\\";i:1;s:37:\\\"\\u0000App\\\\Jobs\\\\ProcessGuruImport\\u0000ipAddress\\\";s:9:\\\"127.0.0.1\\\";}\",\"batchId\":null},\"createdAt\":1785676254,\"delay\":null}',0,NULL,1785676254,1785676254);
+
+/*!40000 ALTER TABLE `jobs` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table kalender_akademiks
@@ -1788,7 +1857,7 @@ LOCK TABLES `personal_access_tokens` WRITE;
 
 INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`)
 VALUES
-	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-08-02 16:40:05',NULL,'2026-07-20 21:48:50','2026-08-02 16:40:05');
+	(13,'App\\Models\\User',1,'auth_token','819b58cf91da9c9773e0a4486dd2033dec3d948fcf5c79720e9344cba0b4e9e6','[\"*\"]','2026-08-02 20:13:27',NULL,'2026-07-20 21:48:50','2026-08-02 20:13:27');
 
 /*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
