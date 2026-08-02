@@ -3546,7 +3546,12 @@ function TabDokumen({ nuptk, guru }) {
                 .join(" · ")}
               status="verified"
               filePath={d.file_sertifikat}
-              onPreview={`${BASE_URL}/storage/${d.file_sertifikat}`}
+              onPreview={() =>
+                setModalPreview({
+                  url: `${BASE_URL}/storage/${d.file_sertifikat}`,
+                  nama: d.nama_diklat,
+                })
+              }
               onDownload={null}
               onEdit={null}
               onHapus={null}
@@ -3581,6 +3586,15 @@ function TabDokumen({ nuptk, guru }) {
             />
           </form>
         </Modal>
+      )}
+
+      {/* ══ MODAL PREVIEW ══ */}
+      {modalPreview && (
+        <ModalPreview
+          url={modalPreview.url}
+          nama={modalPreview.nama}
+          onClose={() => setModalPreview(null)}
+        />
       )}
 
       {/* ══ MODAL REJECT ══ */}
