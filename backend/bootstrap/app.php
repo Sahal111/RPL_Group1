@@ -14,11 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
         ]);
-        
-        // Enable CORS for API routes
+
+        // Middleware yang dijalankan di semua API request — urutan penting:
+        // 1. CORS dulu supaya preflight request langsung dihandle
+        // 2. TenantMiddleware set school_id sebelum auth dan query apapun
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\TenantMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -28,7 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Data tidak valid.',
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => 'Data yang dikirim tidak valid.',
                     'errors' => $e->errors(),
                 ], 422);
             }
@@ -39,7 +44,19 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
+                    'code' => 'NOT_FOUND',
                     'message' => 'Data tidak ditemukan.',
+                ], 404);
+            }
+        });
+
+        // Route not found → 404
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Endpoint tidak ditemukan.',
                 ], 404);
             }
         });
@@ -49,18 +66,32 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Kamu belum login. Silakan login terlebih dahulu.',
+                    'code' => 'UNAUTHENTICATED',
+                    'message' => 'Sesi kamu sudah berakhir. Silakan login kembali.',
                 ], 401);
             }
         });
 
-        // Unauthorized (403)
+        // Forbidden → 403
         $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Akses ditolak.',
+                    'code' => 'FORBIDDEN',
+                    'message' => 'Kamu tidak memiliki izin untuk melakukan tindakan ini.',
                 ], 403);
+            }
+        });
+
+        // Rate limit → 429
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'TOO_MANY_REQUESTS',
+                    'message' => 'Terlalu banyak percobaan. Coba lagi dalam beberapa saat.',
+                    'retry_after' => $e->getHeaders()['Retry-After'] ?? 60,
+                ], 429);
             }
         });
 

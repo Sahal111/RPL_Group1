@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\SchoolScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Guru extends Model
 {
@@ -84,8 +86,14 @@ class Guru extends Model
     ];
     protected static function booted(): void
     {
-        // Saat guru baru dibuat — isi created_by
+        // Multi-tenant: otomatis filter school_id di semua query
+        static::addGlobalScope(new SchoolScope);
+
+        // Saat guru baru dibuat — isi ulid + created_by
         static::creating(function (Guru $guru) {
+            // Auto-generate ulid sebagai public identifier
+            $guru->ulid ??= (string) Str::ulid();
+
             if (empty($guru->created_by) && auth()->check()) {
                 $guru->created_by = auth()->id();
             }
@@ -110,7 +118,7 @@ class Guru extends Model
             }
         });
     }
-    
+
     // ── Accessor ─────────────────────────────────────────────
 
     public function getNamaLengkapAttribute(): string
@@ -235,7 +243,7 @@ class Guru extends Model
     {
         return $this->cutis()->aktif()->exists();
     }
-    
+
     public function pkgs()
     {
         return $this->hasMany(GuruPkg::class, 'guru_id')->orderByDesc('tanggal_penilaian');
