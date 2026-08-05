@@ -103,28 +103,28 @@ return new class extends Migration
         });
 
         // ── JOBS ─────────────────────────────────────────────────────
-        Schema::create('jobs', function (Blueprint $table) {
-            $table->id();
-            $table->string('queue', 255)->comment('Nama queue/antrian');
-            $table->longText('payload')->comment('Job yang di-serialize');
-            $table->unsignedTinyInteger('attempts')->comment('Berapa kali sudah dicoba diproses');
-            $table->unsignedInteger('reserved_at')->nullable()->comment('Unix timestamp mulai diambil worker');
-            $table->unsignedInteger('available_at')->comment('Unix timestamp job boleh diproses');
-            $table->unsignedInteger('created_at')->comment('Unix timestamp job di-dispatch');
+        // Schema::create('jobs', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('queue', 255)->comment('Nama queue/antrian');
+        //     $table->longText('payload')->comment('Job yang di-serialize');
+        //     $table->unsignedTinyInteger('attempts')->comment('Berapa kali sudah dicoba diproses');
+        //     $table->unsignedInteger('reserved_at')->nullable()->comment('Unix timestamp mulai diambil worker');
+        //     $table->unsignedInteger('available_at')->comment('Unix timestamp job boleh diproses');
+        //     $table->unsignedInteger('created_at')->comment('Unix timestamp job di-dispatch');
 
-            $table->index('queue', 'idx_jobs_queue');
-        });
+        //     $table->index('queue', 'idx_jobs_queue');
+        // });
 
         // ── FAILED_JOBS ──────────────────────────────────────────────
-        Schema::create('failed_jobs', function (Blueprint $table) {
-            $table->id();
-            $table->string('uuid', 255)->unique('uq_failedjobs_uuid')->comment('UUID unik job');
-            $table->text('connection')->comment('Driver queue yang dipakai');
-            $table->text('queue')->comment('Nama antrian saat job gagal');
-            $table->longText('payload')->comment('Data job lengkap untuk debugging');
-            $table->longText('exception')->comment('Stack trace exception');
-            $table->timestamp('failed_at')->useCurrent()->comment('Kapan job dinyatakan gagal');
-        });
+        // Schema::create('failed_jobs', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('uuid', 255)->unique('uq_failedjobs_uuid')->comment('UUID unik job');
+        //     $table->text('connection')->comment('Driver queue yang dipakai');
+        //     $table->text('queue')->comment('Nama antrian saat job gagal');
+        //     $table->longText('payload')->comment('Data job lengkap untuk debugging');
+        //     $table->longText('exception')->comment('Stack trace exception');
+        //     $table->timestamp('failed_at')->useCurrent()->comment('Kapan job dinyatakan gagal');
+        // });
 
         // ── ACTIVITY_LOGS ────────────────────────────────────────────
         Schema::create('activity_logs', function (Blueprint $table) {
@@ -149,8 +149,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('activity_logs');
-        Schema::dropIfExists('failed_jobs');
-        Schema::dropIfExists('jobs');
+        // Schema::dropIfExists('failed_jobs');
+        // Schema::dropIfExists('jobs');
         Schema::dropIfExists('cache_locks');
         Schema::dropIfExists('cache');
         Schema::dropIfExists('sessions');

@@ -27,7 +27,7 @@ return new class extends Migration {
         // Karena guru sekolah A dan guru sekolah B boleh punya email yang sama
         Schema::table('users', function (Blueprint $table) {
             // Drop index lama
-            $table->dropUnique(['email']);
+            $table->dropUnique('uq_users_email');
 
             // Unique per sekolah
             $table->unique(['school_id', 'email'], 'uq_users_email_school');
@@ -38,13 +38,17 @@ return new class extends Migration {
 
         // ── ROLES ────────────────────────────────────────────────────
 
-        // roles.id sekarang tinyint (max 255) — perlu diubah ke bigint
-        // karena setiap sekolah bisa punya role sendiri dan jumlahnya bisa banyak
+        // Drop FK dulu sebelum ubah tipe kolom
+        DB::statement('ALTER TABLE user_roles DROP FOREIGN KEY fk_user_roles_role');
+
+        // roles.id: tinyint → bigint
         DB::statement('ALTER TABLE roles MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT');
 
-        // Ubah role_id di user_roles juga (sebelum tambah FK baru)
+        // Sesuaikan role_id di user_roles
         DB::statement('ALTER TABLE user_roles MODIFY COLUMN role_id BIGINT UNSIGNED NOT NULL');
 
+        // Pasang kembali FK
+        DB::statement('ALTER TABLE user_roles ADD CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE');
         Schema::table('roles', function (Blueprint $table) {
             $table->foreignId('school_id')
                 ->nullable()
@@ -60,7 +64,7 @@ return new class extends Migration {
 
             // Slug unik per sekolah (bukan global)
             // Drop unique lama dulu
-            $table->dropUnique(['slug']);
+            $table->dropUnique('uq_roles_slug');
             $table->unique(['school_id', 'slug'], 'uq_roles_slug_school');
             $table->index('school_id', 'idx_roles_school');
         });
