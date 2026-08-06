@@ -8,6 +8,19 @@ use App\Http\Requests\Guru\UpdateGuruRequest;
 use App\Http\Requests\Guru\UploadFotoGuruRequest;
 use App\Http\Requests\Guru\UpdateKeluargaRequest;
 use App\Http\Requests\Guru\StoreKontakDaruratRequest;
+use App\Http\Requests\Guru\StorePendidikanRequest;
+use App\Http\Requests\Guru\StoreSertifikasiRequest;
+use App\Http\Requests\Guru\StoreInpassingRequest;
+use App\Http\Requests\Guru\UploadDokumenRequest;
+use App\Http\Requests\Guru\RejectDokumenRequest;
+use App\Http\Requests\Guru\UpdateAdministrasiRequest;
+use App\Http\Requests\Guru\StoreKompetensiRequest;
+use App\Http\Requests\Guru\StorePenugasanRequest;
+use App\Http\Requests\Guru\StoreDiklatRequest;
+use App\Http\Requests\Guru\StoreMutasiRequest;
+use App\Http\Requests\Guru\StorePkgRequest;
+use App\Http\Requests\Guru\KoreksiNuptkRequest;
+use App\Http\Requests\Guru\StoreJabatanRequest;
 use App\Models\Guru;
 use App\Models\GuruAnak;
 use App\Models\GuruKontakDarurat;
@@ -365,7 +378,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->pendidikans]);
     }
 
-    public function storePendidikan(Request $request, $nuptk)
+    public function storePendidikan(StorePendidikanRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -391,7 +404,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Riwayat pendidikan ditambahkan.', 'data' => $pendidikan], 201);
     }
 
-    public function updatePendidikan(Request $request, $nuptk, $id)
+    public function updatePendidikan(StorePendidikanRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $pendidikan = $guru->pendidikans()->findOrFail($id);
@@ -440,7 +453,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->sertifikasis]);
     }
 
-    public function storeSertifikasi(Request $request, $nuptk)
+    public function storeSertifikasi(StoreSertifikasiRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -477,7 +490,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Sertifikasi dihapus.']);
     }
 
-    public function updateSertifikasi(Request $request, $nuptk, $id)
+    public function updateSertifikasi(StoreSertifikasiRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $sert = $guru->sertifikasis()->findOrFail($id);
@@ -516,7 +529,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->inpassings]);
     }
 
-    public function storeInpassing(Request $request, $nuptk)
+    public function storeInpassing(StoreInpassingRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -540,7 +553,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Data inpassing ditambahkan.', 'data' => $inpassing], 201);
     }
 
-    public function updateInpassing(Request $request, $nuptk, $id)
+    public function updateInpassing(StoreInpassingRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $inpassing = $guru->inpassings()->findOrFail($id);
@@ -618,7 +631,7 @@ class MasterDataGuruController extends Controller
         ]);
     }
 
-    public function uploadDokumen(Request $request, $nuptk)
+    public function uploadDokumen(UploadDokumenRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -669,7 +682,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Dokumen dihapus.']);
     }
 
-    public function updateDokumen(Request $request, $nuptk, $id)
+    public function updateDokumen(UploadDokumenRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $dokumen = $guru->dokumens()->findOrFail($id);
@@ -736,7 +749,7 @@ class MasterDataGuruController extends Controller
     }
 
     // ── BARU: Reject dokumen ──
-    public function rejectDokumen(Request $request, $nuptk, $id)
+    public function rejectDokumen(RejectDokumenRequest $request, $nuptk, $id)
     {
         $request->validate([
             'alasan' => 'required|string|max:500',
@@ -833,7 +846,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->rekenings]);
     }
 
-    public function updateAdministrasi(Request $request, $nuptk)
+    public function updateAdministrasi(UpdateAdministrasiRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -879,7 +892,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->kompetensi]);
     }
 
-    public function storeKompetensi(Request $request, $nuptk)
+    public function storeKompetensi(StoreKompetensiRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -895,7 +908,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Kompetensi ditambahkan.', 'data' => $data], 201);
     }
 
-    public function updateKompetensi(Request $request, $nuptk, $id)
+    public function updateKompetensi(StoreKompetensiRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $komp = $guru->kompetensi()->findOrFail($id);
@@ -937,7 +950,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
 
-    public function storePenugasan(Request $request, $nuptk)
+    public function storePenugasan(StorePenugasanRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -1007,7 +1020,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->diklats]);
     }
 
-    public function storeDiklat(Request $request, $nuptk)
+    public function storeDiklat(StoreDiklatRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -1036,7 +1049,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Riwayat pelatihan ditambahkan.', 'data' => $diklat], 201);
     }
 
-    public function updateDiklat(Request $request, $nuptk, $id)
+    public function updateDiklat(StoreDiklatRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $diklat = $guru->diklats()->findOrFail($id);
@@ -1134,7 +1147,7 @@ class MasterDataGuruController extends Controller
         ], $status);
     }
 
-    public function storeMutasi(Request $request, $nuptk)
+    public function storeMutasi(StoreMutasiRequest $request, $nuptk)
     {
         $guru = Guru::with([
             'user',
@@ -1211,7 +1224,7 @@ class MasterDataGuruController extends Controller
         ], 201);
     }
 
-    public function updateMutasi(Request $request, $nuptk, $id)
+    public function updateMutasi(StoreMutasiRequest $request, $nuptk, $id)
     {
         $guru = Guru::with([
             'user',
@@ -1352,7 +1365,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->pkgs()->with(['tahunAjaran', 'semester', 'penilai:id,name'])->get()]);
     }
 
-    public function storePkg(Request $request, $nuptk)
+    public function storePkg(StorePkgRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -1410,7 +1423,7 @@ class MasterDataGuruController extends Controller
             'message' => 'Verifikasi data guru dibatalkan.',
         ]);
     }
-    public function koreksiNuptk(Request $request, $nuptk)
+    public function koreksiNuptk(KoreksiNuptkRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -1455,7 +1468,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->jabatans]);
     }
 
-    public function storeJabatan(Request $request, $nuptk)
+    public function storeJabatan(StoreJabatanRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
@@ -1514,7 +1527,7 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'message' => 'Riwayat jabatan ditambahkan.', 'data' => $jabatan], 201);
     }
 
-    public function updateJabatan(Request $request, $nuptk, $id)
+    public function updateJabatan(StoreJabatanRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $jabatan = $guru->jabatans()->findOrFail($id);
