@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Guru\StoreGuruRequest;
+use App\Http\Requests\Guru\UpdateGuruRequest;
+use App\Http\Requests\Guru\UploadFotoGuruRequest;
+use App\Http\Requests\Guru\UpdateKeluargaRequest;
+use App\Http\Requests\Guru\StoreKontakDaruratRequest;
 use App\Models\Guru;
 use App\Models\GuruAnak;
 use App\Models\GuruKontakDarurat;
@@ -105,199 +110,19 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru]);
     }
 
-    public function store(Request $request)
+    public function store(StoreGuruRequest $request)
     {
-        $request->validate([
-            // Identitas wajib
-            'nuptk' => 'required|string|max:16|unique:gurus,nuptk',
-            'nip' => 'nullable|string|max:18|unique:gurus,nip',
-            'nip_lama' => 'nullable|string|max:9',
-            'no_karis_karsu' => 'nullable|string|max:20',
-            'nik' => 'nullable|string|max:16|unique:gurus,nik',
-            'no_kk' => 'nullable|string|max:16',
-            'no_karpeg' => 'nullable|string|max:20',
-            'nama' => 'required|string|max:100',
-            'gelar_depan' => 'nullable|string|max:30',
-            'gelar_belakang' => 'nullable|string|max:50',
-            'jenis_kelamin' => 'required|in:L,P',
-            'tempat_lahir' => 'required|string|max:60',
-            'tanggal_lahir' => 'required|date',
-            'agama' => 'required|in:Islam,Kristen Protestan,Kristen Katolik,Hindu,Buddha,Konghucu,Lainnya',
-            'kewarganegaraan' => 'nullable|string|max:30',
-            'status_hidup' => 'nullable|in:Aktif,Meninggal',
-            'nama_ibu_kandung' => 'nullable|string|max:100',
-            'golongan_darah' => 'nullable|in:A,B,AB,O,A+,A-,B+,B-,AB+,AB-,O+,O-',
-            // Kontak
-            'no_hp' => 'required|string|max:20',
-            'no_wa' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:100|unique:gurus,email',
-            // Alamat
-            'alamat_jalan' => 'nullable|string|max:255',
-            'rt' => 'nullable|string|max:5',
-            'rw' => 'nullable|string|max:5',
-            'dusun' => 'nullable|string|max:100',
-            'desa_kelurahan' => 'nullable|string|max:60',
-            'kecamatan' => 'nullable|string|max:60',
-            'kota_kabupaten' => 'nullable|string|max:60',
-            'provinsi' => 'nullable|string|max:60',
-            'kode_pos' => 'nullable|string|max:10',
-            // Kepegawaian
-            'jenis_ptk' => 'required|string|max:50',
-            'status_kepegawaian' => 'required|in:PNS,PPPK,GTY,GTT,Honorer,Lainnya',
-            // 'Cuti' tidak diset manual — dikontrol oleh modul GuruCuti
-            'status_keaktifan' => 'nullable|in:Aktif,Pensiun,Mutasi,Keluar,Nonaktif',
-            'tanggal_bergabung' => 'nullable|date',
-            'tmt_pns' => 'nullable|date',
-            'tmt_gty' => 'nullable|date',
-            'no_sk_pengangkatan' => 'nullable|string|max:80',
-            'tgl_sk_pengangkatan' => 'nullable|date',
-            'instansi_pengangkat' => 'nullable|string|max:150',
-            'masa_kerja_tahun' => 'nullable|integer|min:0|max:50',
-        ]);
+        $guru = Guru::create($request->validated());
 
-        $guru = Guru::create($request->only([
-            'nuptk',
-            'nip',
-            'nip_lama',
-            'no_karis_karsu',
-            'nik',
-            'no_kk',
-            'no_karpeg',
-            'nama',
-            'gelar_depan',
-            'gelar_belakang',
-            'jenis_kelamin',
-            'tempat_lahir',
-            'tanggal_lahir',
-            'agama',
-            'kewarganegaraan',
-            'status_hidup',
-            'nama_ibu_kandung',
-            'golongan_darah',
-            'no_hp',
-            'no_wa',
-            'email',
-            'alamat_jalan',
-            'rt',
-            'rw',
-            'dusun',
-            'desa_kelurahan',
-            'kecamatan',
-            'kota_kabupaten',
-            'provinsi',
-            'kode_pos',
-            'jenis_ptk',
-            'status_kepegawaian',
-            'status_keaktifan',
-            'tanggal_bergabung',
-            'tmt_pns',
-            'tmt_gty',
-            'no_sk_pengangkatan',
-            'tgl_sk_pengangkatan',
-            'instansi_pengangkat',
-            'masa_kerja_tahun',
-        ]));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data guru berhasil ditambahkan.',
-            'data' => $guru,
-        ], 201);
+        return $this->created($guru, 'Data guru berhasil ditambahkan.');
     }
 
-    public function update(Request $request, $nuptk)
+    public function update(UpdateGuruRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $guru->update($request->validated());
 
-        $request->validate([
-            'nip' => "nullable|string|max:18|unique:gurus,nip,{$guru->id}",
-            'nip_lama' => 'nullable|string|max:9',
-            'no_karis_karsu' => 'nullable|string|max:20',
-            'nik' => "nullable|string|max:16|unique:gurus,nik,{$guru->id}",
-            'no_kk' => 'nullable|string|max:16',
-            'no_karpeg' => 'nullable|string|max:20',
-            'email' => "nullable|email|max:100|unique:gurus,email,{$guru->id}",
-            'nama' => 'required|string|max:100',
-            'gelar_depan' => 'nullable|string|max:30',
-            'gelar_belakang' => 'nullable|string|max:50',
-            'jenis_kelamin' => 'required|in:L,P',
-            'tempat_lahir' => 'required|string|max:60',
-            'tanggal_lahir' => 'required|date',
-            'agama' => 'required|in:Islam,Kristen Protestan,Kristen Katolik,Hindu,Buddha,Konghucu,Lainnya',
-            'kewarganegaraan' => 'nullable|string|max:30',
-            'status_hidup' => 'nullable|in:Aktif,Meninggal',
-            'nama_ibu_kandung' => 'nullable|string|max:100',
-            'golongan_darah' => 'nullable|in:A,B,AB,O,A+,A-,B+,B-,AB+,AB-,O+,O-',
-            'no_hp' => 'required|string|max:20',
-            'no_wa' => 'nullable|string|max:20',
-            'alamat_jalan' => 'nullable|string|max:255',
-            'rt' => 'nullable|string|max:5',
-            'rw' => 'nullable|string|max:5',
-            'dusun' => 'nullable|string|max:100',
-            'desa_kelurahan' => 'nullable|string|max:60',
-            'kecamatan' => 'nullable|string|max:60',
-            'kota_kabupaten' => 'nullable|string|max:60',
-            'provinsi' => 'nullable|string|max:60',
-            'kode_pos' => 'nullable|string|max:10',
-            'jenis_ptk' => 'required|string|max:50',
-            'status_kepegawaian' => 'required|in:PNS,PPPK,GTY,GTT,Honorer,Lainnya',
-            'status_keaktifan' => 'nullable|in:Aktif,Cuti,Pensiun,Mutasi,Keluar',
-            'tanggal_bergabung' => 'nullable|date',
-            'tmt_pns' => 'nullable|date',
-            'tmt_gty' => 'nullable|date',
-            'no_sk_pengangkatan' => 'nullable|string|max:80',
-            'tgl_sk_pengangkatan' => 'nullable|date',
-            'instansi_pengangkat' => 'nullable|string|max:150',
-            'masa_kerja_tahun' => 'nullable|integer|min:0|max:50',
-        ]);
-
-        $guru->update($request->only([
-            'nip',
-            'nip_lama',
-            'no_karis_karsu',
-            'nik',
-            'no_kk',
-            'no_karpeg',
-            'email',
-            'nama',
-            'gelar_depan',
-            'gelar_belakang',
-            'jenis_kelamin',
-            'tempat_lahir',
-            'tanggal_lahir',
-            'agama',
-            'kewarganegaraan',
-            'status_hidup',
-            'nama_ibu_kandung',
-            'golongan_darah',
-            'no_hp',
-            'no_wa',
-            'alamat_jalan',
-            'rt',
-            'rw',
-            'dusun',
-            'desa_kelurahan',
-            'kecamatan',
-            'kota_kabupaten',
-            'provinsi',
-            'kode_pos',
-            'jenis_ptk',
-            'status_kepegawaian',
-            'status_keaktifan',
-            'tanggal_bergabung',
-            'tmt_pns',
-            'tmt_gty',
-            'no_sk_pengangkatan',
-            'tgl_sk_pengangkatan',
-            'instansi_pengangkat',
-            'masa_kerja_tahun',
-        ]));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data guru berhasil diperbarui.',
-            'data' => $guru,
-        ]);
+        return $this->success($guru, 'Data guru berhasil diperbarui.');
     }
 
     public function destroy($nuptk)
@@ -420,23 +245,21 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $aktivitas]);
     }
 
-    public function uploadFoto(Request $request, $nuptk)
+    public function uploadFoto(UploadFotoGuruRequest $request, $nuptk)
     {
-        $request->validate(['foto' => 'required|image|mimes:jpg,jpeg,png|max:2048']);
-
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
-        if ($guru->foto)
+        if ($guru->foto) {
             Storage::disk('public')->delete($guru->foto);
+        }
 
         $path = $request->file('foto')->store('foto-guru', 'public');
         $guru->update(['foto' => $path]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Foto berhasil diupload.',
-            'data' => ['foto_url' => asset('storage/' . $path)],
-        ]);
+        return $this->success(
+            ['foto_url' => asset('storage/' . $path)],
+            'Foto berhasil diupload.'
+        );
     }
 
     // ────────────────────────────────────────────────────────
@@ -455,26 +278,11 @@ class MasterDataGuruController extends Controller
         ]);
     }
 
-    public function updateKeluarga(Request $request, $nuptk)
+    public function updateKeluarga(UpdateKeluargaRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
-        $request->validate([
-            'status_perkawinan' => 'nullable|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
-            'nama_pasangan' => 'nullable|string|max:150',
-            'nik_pasangan' => 'nullable|string|max:16',
-            'pekerjaan_pasangan' => 'nullable|string|max:100',
-            'jumlah_anak' => 'nullable|integer|min:0',
-            'anaks' => 'nullable|array',
-            'anaks.*.id' => 'nullable|integer|exists:guru_anaks,id',
-            'anaks.*.nama' => 'required_with:anaks|string|max:150',
-            'anaks.*.jenis_kelamin' => 'nullable|in:L,P',
-            'anaks.*.tanggal_lahir' => 'nullable|date',
-            'anaks.*.urutan' => 'nullable|integer|min:1',
-        ]);
-
         DB::transaction(function () use ($request, $guru) {
-            // Upsert data keluarga
             $guru->keluarga()->updateOrCreate(
                 ['guru_id' => $guru->id],
                 [
@@ -482,11 +290,10 @@ class MasterDataGuruController extends Controller
                     'nama_pasangan' => $request->nama_pasangan,
                     'nik_pasangan' => $request->nik_pasangan,
                     'pekerjaan_pasangan' => $request->pekerjaan_pasangan,
-                    'jumlah_anak' => $request->jumlah_anak ?? 0,  // ← default 0
+                    'jumlah_anak' => $request->jumlah_anak ?? 0,
                 ]
             );
 
-            // Sync data anak — hapus yang lama, insert ulang
             if ($request->has('anaks')) {
                 $guru->anaks()->delete();
                 foreach ($request->anaks as $i => $anak) {
@@ -501,10 +308,7 @@ class MasterDataGuruController extends Controller
             }
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data keluarga berhasil diperbarui.',
-        ]);
+        return $this->success(message: 'Data keluarga berhasil diperbarui.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -517,47 +321,31 @@ class MasterDataGuruController extends Controller
         return response()->json(['success' => true, 'data' => $guru->kontakDarurat]);
     }
 
-    public function storeKontakDarurat(Request $request, $nuptk)
+    public function storeKontakDarurat(StoreKontakDaruratRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
-        $request->validate([
-            'nama' => 'required|string|max:150',
-            'hubungan' => 'required|string|max:50',
-            'no_hp' => 'required|string|max:20',
-            'alamat' => 'nullable|string|max:255',
-            'is_primary' => 'nullable|boolean',
-        ]);
 
         if ($request->is_primary) {
             $guru->kontakDarurat()->update(['is_primary' => 0]);
         }
 
-        $data = $guru->kontakDarurat()->create($request->only(['nama', 'hubungan', 'no_hp', 'alamat', 'is_primary']));
+        $data = $guru->kontakDarurat()->create($request->validated());
 
-        return response()->json(['success' => true, 'message' => 'Kontak darurat ditambahkan.', 'data' => $data], 201);
+        return $this->created($data, 'Kontak darurat ditambahkan.');
     }
 
-    public function updateKontakDarurat(Request $request, $nuptk, $id)
+    public function updateKontakDarurat(StoreKontakDaruratRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $kontak = $guru->kontakDarurat()->findOrFail($id);
-
-        $request->validate([
-            'nama' => 'required|string|max:150',
-            'hubungan' => 'required|string|max:50',
-            'no_hp' => 'required|string|max:20',
-            'alamat' => 'nullable|string|max:255',
-            'is_primary' => 'nullable|boolean',
-        ]);
 
         if ($request->is_primary) {
             $guru->kontakDarurat()->where('id', '!=', $id)->update(['is_primary' => 0]);
         }
 
-        $kontak->update($request->only(['nama', 'hubungan', 'no_hp', 'alamat', 'is_primary']));
+        $kontak->update($request->validated());
 
-        return response()->json(['success' => true, 'message' => 'Kontak darurat diperbarui.', 'data' => $kontak]);
+        return $this->success($kontak, 'Kontak darurat diperbarui.');
     }
 
     public function destroyKontakDarurat($nuptk, $id)
@@ -3335,7 +3123,7 @@ class MasterDataGuruController extends Controller
         ]);
     }
 
-   /**
+    /**
      * POST /guru/import-preview
      * Baca header + 5 baris pertama — tanpa menyimpan ke DB.
      */
@@ -3344,82 +3132,117 @@ class MasterDataGuruController extends Controller
         $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
 
         try {
-        $filePath  = $request->file('file')->getRealPath();
-        $fileName  = $request->file('file')->getClientOriginalName();
-        $allSheets = $this->parseMultiSheetXlsx($filePath);
+            $filePath = $request->file('file')->getRealPath();
+            $fileName = $request->file('file')->getClientOriginalName();
+            $allSheets = $this->parseMultiSheetXlsx($filePath);
 
-        if (empty($allSheets)) {
-            return response()->json(['success' => false, 'message' => 'File tidak bisa dibaca.'], 422);
-        }
+            if (empty($allSheets)) {
+                return response()->json(['success' => false, 'message' => 'File tidak bisa dibaca.'], 422);
+            }
 
-        // Simpan file sementara di storage
-        $batchId       = (string) Str::uuid();
-        $storedPath    = $request->file('file')->storeAs('imports', $batchId . '.xlsx');
+            // Simpan file sementara di storage
+            $batchId = (string) Str::uuid();
+            $storedPath = $request->file('file')->storeAs('imports', $batchId . '.xlsx');
 
-        // Ambil header & 5 baris pertama dari Sheet1
-        $sheetUtama = null;
-        foreach ($allSheets as $s) {
-            if (strtolower($s['name']) === 'data utama') { $sheetUtama = $s; break; }
-        }
-        $sheetUtama = $sheetUtama ?? $allSheets[0];
-
-        $rows    = $sheetUtama['rows'];
-        $headers = !empty($rows) ? array_map('trim', array_shift($rows)) : [];
-        $sample  = array_slice($rows, 0, 5);
-
-        // Auto-mapping: cari kecocokan header user dengan kolom DB
-        $dbFields = [
-            'nuptk', 'nip', 'nip_lama', 'no_karpeg', 'no_karis_karsu', 'nik', 'no_kk',
-            'nama', 'gelar_depan', 'gelar_belakang', 'jenis_kelamin', 'tempat_lahir',
-            'tanggal_lahir', 'agama', 'golongan_darah', 'kewarganegaraan', 'status_hidup',
-            'nama_ibu_kandung', 'no_hp', 'no_wa', 'email', 'alamat_jalan', 'rt', 'rw',
-            'dusun', 'desa_kelurahan', 'kecamatan', 'kota_kabupaten', 'provinsi', 'kode_pos',
-            'jenis_ptk', 'status_kepegawaian', 'status_keaktifan', 'tanggal_bergabung',
-            'tmt_pns', 'tmt_gty', 'masa_kerja_tahun', 'no_sk_pengangkatan',
-            'tgl_sk_pengangkatan', 'instansi_pengangkat',
-        ];
-
-        $autoMapping = [];
-        foreach ($headers as $userHeader) {
-            $normalized = strtolower(preg_replace('/[^a-z0-9]/i', '', $userHeader));
-            foreach ($dbFields as $dbField) {
-                $dbNorm = strtolower(str_replace('_', '', $dbField));
-                if ($normalized === $dbNorm || str_contains($normalized, $dbNorm)) {
-                    $autoMapping[$userHeader] = $dbField;
+            // Ambil header & 5 baris pertama dari Sheet1
+            $sheetUtama = null;
+            foreach ($allSheets as $s) {
+                if (strtolower($s['name']) === 'data utama') {
+                    $sheetUtama = $s;
                     break;
                 }
             }
-        }
+            $sheetUtama = $sheetUtama ?? $allSheets[0];
 
-        // Statistik duplicate detection (5 baris sample)
-        $dupStats = ['nuptk' => 0, 'nip' => 0, 'nik' => 0, 'email' => 0];
-        foreach ($sample as $row) {
-            $nuptkIdx = array_search($autoMapping['nuptk'] ?? 'nuptk', array_values($autoMapping));
-            foreach (['nuptk', 'nip', 'nik', 'email'] as $field) {
-                $header = array_search($field, $autoMapping);
-                if ($header !== false) {
-                    $idx = array_search($header, $headers);
-                    if ($idx !== false && !empty($row[$idx])) {
-                        if (Guru::where($field, trim($row[$idx]))->exists()) {
-                            $dupStats[$field]++;
+            $rows = $sheetUtama['rows'];
+            $headers = !empty($rows) ? array_map('trim', array_shift($rows)) : [];
+            $sample = array_slice($rows, 0, 5);
+
+            // Auto-mapping: cari kecocokan header user dengan kolom DB
+            $dbFields = [
+                'nuptk',
+                'nip',
+                'nip_lama',
+                'no_karpeg',
+                'no_karis_karsu',
+                'nik',
+                'no_kk',
+                'nama',
+                'gelar_depan',
+                'gelar_belakang',
+                'jenis_kelamin',
+                'tempat_lahir',
+                'tanggal_lahir',
+                'agama',
+                'golongan_darah',
+                'kewarganegaraan',
+                'status_hidup',
+                'nama_ibu_kandung',
+                'no_hp',
+                'no_wa',
+                'email',
+                'alamat_jalan',
+                'rt',
+                'rw',
+                'dusun',
+                'desa_kelurahan',
+                'kecamatan',
+                'kota_kabupaten',
+                'provinsi',
+                'kode_pos',
+                'jenis_ptk',
+                'status_kepegawaian',
+                'status_keaktifan',
+                'tanggal_bergabung',
+                'tmt_pns',
+                'tmt_gty',
+                'masa_kerja_tahun',
+                'no_sk_pengangkatan',
+                'tgl_sk_pengangkatan',
+                'instansi_pengangkat',
+            ];
+
+            $autoMapping = [];
+            foreach ($headers as $userHeader) {
+                $normalized = strtolower(preg_replace('/[^a-z0-9]/i', '', $userHeader));
+                foreach ($dbFields as $dbField) {
+                    $dbNorm = strtolower(str_replace('_', '', $dbField));
+                    if ($normalized === $dbNorm || str_contains($normalized, $dbNorm)) {
+                        $autoMapping[$userHeader] = $dbField;
+                        break;
+                    }
+                }
+            }
+
+            // Statistik duplicate detection (5 baris sample)
+            $dupStats = ['nuptk' => 0, 'nip' => 0, 'nik' => 0, 'email' => 0];
+            foreach ($sample as $row) {
+                $nuptkIdx = array_search($autoMapping['nuptk'] ?? 'nuptk', array_values($autoMapping));
+                foreach (['nuptk', 'nip', 'nik', 'email'] as $field) {
+                    $header = array_search($field, $autoMapping);
+                    if ($header !== false) {
+                        $idx = array_search($header, $headers);
+                        if ($idx !== false && !empty($row[$idx])) {
+                            if (Guru::where($field, trim($row[$idx]))->exists()) {
+                                $dupStats[$field]++;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Buat log dengan status 'preview'
-        GuruImportLog::create([
-            'user_id'        => auth()->id(),
-            'batch_id'       => $batchId,
-            'tipe'           => 'excel',
-            'nama_file'      => $fileName,
-            'status'         => 'preview',
-            'column_mapping' => $autoMapping,
-            'preview_data'   => ['headers' => $headers, 'rows' => $sample],
-            'total_baris'    => count($rows) + count($sample),
-            'ip_address'     => $request->ip(),
-        ]);
+            // Buat log dengan status 'preview'
+            GuruImportLog::create([
+                'user_id' => auth()->id(),
+                'batch_id' => $batchId,
+                'tipe' => 'excel',
+                'nama_file' => $fileName,
+                'status' => 'preview',
+                'column_mapping' => $autoMapping,
+                'preview_data' => ['headers' => $headers, 'rows' => $sample],
+                'total_baris' => count($rows) + count($sample),
+                'ip_address' => $request->ip(),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -3713,22 +3536,22 @@ class MasterDataGuruController extends Controller
     public function importZip(Request $request)
     {
         $request->validate([
-            'file'         => 'required|file|mimes:zip|max:102400',
+            'file' => 'required|file|mimes:zip|max:102400',
             'mode_duplikat' => 'nullable|in:skip,replace,merge',
         ]);
 
-        $batchId    = (string) Str::uuid();
+        $batchId = (string) Str::uuid();
         $storedPath = $request->file('file')->storeAs('imports', $batchId . '.zip');
-        $fileName   = $request->file('file')->getClientOriginalName();
+        $fileName = $request->file('file')->getClientOriginalName();
 
         GuruImportLog::create([
-            'user_id'       => auth()->id(),
-            'batch_id'      => $batchId,
-            'tipe'          => 'zip',
-            'nama_file'     => $fileName,
-            'status'        => 'pending',
+            'user_id' => auth()->id(),
+            'batch_id' => $batchId,
+            'tipe' => 'zip',
+            'nama_file' => $fileName,
+            'status' => 'pending',
             'mode_duplikat' => $request->mode_duplikat ?? 'replace',
-            'ip_address'    => $request->ip(),
+            'ip_address' => $request->ip(),
         ]);
 
         ProcessGuruZipImport::dispatch(
@@ -3740,9 +3563,9 @@ class MasterDataGuruController extends Controller
         );
 
         return response()->json([
-            'success'  => true,
+            'success' => true,
             'batch_id' => $batchId,
-            'message'  => 'ZIP sedang diproses. Pantau via /guru/import-status/{batch_id}.',
+            'message' => 'ZIP sedang diproses. Pantau via /guru/import-status/{batch_id}.',
         ]);
     }
 
@@ -3758,20 +3581,20 @@ class MasterDataGuruController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'batch_id'         => $log->batch_id,
-                'status'           => $log->status,
-                'progress_persen'  => $log->progress_persen,
-                'total_baris'      => $log->total_baris,
-                'jumlah_insert'    => $log->jumlah_insert,
-                'jumlah_update'    => $log->jumlah_update,
-                'jumlah_skip'      => $log->jumlah_skip,
-                'jumlah_gagal'     => $log->jumlah_gagal,
+            'data' => [
+                'batch_id' => $log->batch_id,
+                'status' => $log->status,
+                'progress_persen' => $log->progress_persen,
+                'total_baris' => $log->total_baris,
+                'jumlah_insert' => $log->jumlah_insert,
+                'jumlah_update' => $log->jumlah_update,
+                'jumlah_skip' => $log->jumlah_skip,
+                'jumlah_gagal' => $log->jumlah_gagal,
                 'statistik_relasi' => $log->statistik_relasi,
-                'error_detail'     => $log->error_detail,
-                'durasi_detik'     => $log->durasi_detik,
-                'started_at'       => $log->started_at,
-                'finished_at'      => $log->finished_at,
+                'error_detail' => $log->error_detail,
+                'durasi_detik' => $log->durasi_detik,
+                'started_at' => $log->started_at,
+                'finished_at' => $log->finished_at,
             ],
         ]);
     }
@@ -3787,20 +3610,20 @@ class MasterDataGuruController extends Controller
             ->limit(20)
             ->get()
             ->map(fn($l) => [
-                'batch_id'        => $l->batch_id,
-                'tipe'            => $l->tipe,
-                'nama_file'       => $l->nama_file,
-                'status'          => $l->status,
-                'mode_duplikat'   => $l->mode_duplikat,
-                'total_baris'     => $l->total_baris,
-                'jumlah_insert'   => $l->jumlah_insert,
-                'jumlah_update'   => $l->jumlah_update,
-                'jumlah_skip'     => $l->jumlah_skip,
-                'jumlah_gagal'    => $l->jumlah_gagal,
-                'durasi_detik'    => $l->durasi_detik,
-                'oleh'            => $l->user?->name,
-                'ip_address'      => $l->ip_address,
-                'created_at'      => $l->created_at,
+                'batch_id' => $l->batch_id,
+                'tipe' => $l->tipe,
+                'nama_file' => $l->nama_file,
+                'status' => $l->status,
+                'mode_duplikat' => $l->mode_duplikat,
+                'total_baris' => $l->total_baris,
+                'jumlah_insert' => $l->jumlah_insert,
+                'jumlah_update' => $l->jumlah_update,
+                'jumlah_skip' => $l->jumlah_skip,
+                'jumlah_gagal' => $l->jumlah_gagal,
+                'durasi_detik' => $l->durasi_detik,
+                'oleh' => $l->user?->name,
+                'ip_address' => $l->ip_address,
+                'created_at' => $l->created_at,
             ]);
 
         return response()->json(['success' => true, 'data' => $logs]);
@@ -3819,13 +3642,13 @@ class MasterDataGuruController extends Controller
         }
 
         $headers = ['No', 'Keterangan Error'];
-        $rows    = array_map(fn($err, $i) => [$i + 1, is_array($err) ? ($err['pesan'] ?? json_encode($err)) : $err], $log->error_detail, array_keys($log->error_detail));
+        $rows = array_map(fn($err, $i) => [$i + 1, is_array($err) ? ($err['pesan'] ?? json_encode($err)) : $err], $log->error_detail, array_keys($log->error_detail));
 
         $sheets = [['name' => 'Error Report', 'headers' => $headers, 'rows' => $rows]];
-        $xlsx   = $this->buildMultiSheetXlsx($sheets);
+        $xlsx = $this->buildMultiSheetXlsx($sheets);
 
         return response($xlsx, 200, [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => "attachment; filename=\"error_import_{$batchId}.xlsx\"",
         ]);
     }
@@ -3849,7 +3672,7 @@ class MasterDataGuruController extends Controller
         $excelContent = null;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $stat = $zip->statIndex($i);
-            $ext  = strtolower(pathinfo($stat['name'], PATHINFO_EXTENSION));
+            $ext = strtolower(pathinfo($stat['name'], PATHINFO_EXTENSION));
             if (in_array($ext, ['xlsx', 'xls']) && !str_contains($stat['name'], '__MACOSX')) {
                 $excelContent = $zip->getFromIndex($i);
                 break;
@@ -3869,22 +3692,27 @@ class MasterDataGuruController extends Controller
         // Proses Data Utama
         $sheetUtama = null;
         foreach ($allSheets as $s) {
-            if (strtolower($s['name']) === 'data utama') { $sheetUtama = $s; break; }
+            if (strtolower($s['name']) === 'data utama') {
+                $sheetUtama = $s;
+                break;
+            }
         }
         if ($sheetUtama && !empty($sheetUtama['rows'])) {
-            $rows      = $sheetUtama['rows'];
+            $rows = $sheetUtama['rows'];
             $headerRow = array_map('trim', array_shift($rows));
             $headerMap = array_flip($headerRow);
-            $get       = fn($row, $key) => (($i = $headerMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
+            $get = fn($row, $key) => (($i = $headerMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
 
             foreach ($rows as $row) {
                 $nuptk = $get($row, 'NUPTK') ?? $get($row, 'nuptk*') ?? $get($row, 'nuptk');
-                $nama  = $get($row, 'Nama') ?? $get($row, 'nama*') ?? $get($row, 'nama');
-                if (!$nuptk || !$nama) continue;
+                $nama = $get($row, 'Nama') ?? $get($row, 'nama*') ?? $get($row, 'nama');
+                if (!$nuptk || !$nama)
+                    continue;
 
                 try {
                     $payload = array_filter([
-                        'nuptk' => $nuptk, 'nama' => $nama,
+                        'nuptk' => $nuptk,
+                        'nama' => $nama,
                         'nip' => $get($row, 'NIP') ?? $get($row, 'nip'),
                         'nik' => $get($row, 'NIK') ?? $get($row, 'nik'),
                         'jenis_kelamin' => in_array($get($row, 'Jenis Kelamin'), ['Laki-laki', 'L']) ? 'L' : 'P',
@@ -3923,17 +3751,20 @@ class MasterDataGuruController extends Controller
         ];
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
-            $stat    = $zip->statIndex($i);
+            $stat = $zip->statIndex($i);
             $zipName = $stat['name'];
             $filename = basename($zipName);
-            $ext      = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-            if (substr($zipName, -1) === '/' || str_contains($zipName, '__MACOSX')) continue;
-            if (in_array($ext, ['xlsx', 'xls', 'txt', 'json'])) continue;
+            if (substr($zipName, -1) === '/' || str_contains($zipName, '__MACOSX'))
+                continue;
+            if (in_array($ext, ['xlsx', 'xls', 'txt', 'json']))
+                continue;
 
-            $parts     = explode('/', $zipName);
-            $folder    = count($parts) > 1 ? strtolower($parts[0]) : '';
-            if (!isset($folderMap[$folder])) continue;
+            $parts = explode('/', $zipName);
+            $folder = count($parts) > 1 ? strtolower($parts[0]) : '';
+            if (!isset($folderMap[$folder]))
+                continue;
 
             $content = $zip->getFromIndex($i);
             if ($content === false) {
@@ -3950,12 +3781,13 @@ class MasterDataGuruController extends Controller
         }
 
         $zip->close();
-        if (file_exists($tmpPath)) unlink($tmpPath);
+        if (file_exists($tmpPath))
+            unlink($tmpPath);
 
         ActivityLog::create([
-            'user_id'    => auth()->id(),
-            'action'     => 'import',
-            'module'     => 'guru',
+            'user_id' => auth()->id(),
+            'action' => 'import',
+            'module' => 'guru',
             'keterangan' => json_encode(['tipe' => 'restore', ...$results]),
             'ip_address' => $request->ip(),
         ]);
@@ -3963,7 +3795,7 @@ class MasterDataGuruController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Restore selesai: {$results['restored']} record/file dipulihkan, " . count($results['errors']) . " error.",
-            'data'    => $results,
+            'data' => $results,
         ]);
     }
 
