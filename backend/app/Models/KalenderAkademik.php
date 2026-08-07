@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 
 class KalenderAkademik extends Model
 {
+    use HasSchoolScope;
+
     protected $table = 'kalender_akademiks';
 
     protected $fillable = [
+        'school_id',
         'tahun_ajaran_id',
         'judul',
         'deskripsi',

@@ -46,7 +46,7 @@ class RoleMiddleware
         // Izinkan akses kalau SALAH SATU role user cocok dengan role yang diizinkan route ini.
         $userSlugs = $user->roles->pluck('slug');
 
-        if ($userSlugs->intersect($roles)->isNotEmpty()) {
+        if ($userSlugs->contains('super_operator') || $userSlugs->intersect($roles)->isNotEmpty()) {
             return $next($request);
         }
 

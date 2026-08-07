@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
+use App\Traits\HasUlid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Siswa extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope, HasUlid;
 
     protected $table = 'siswas';
     public $incrementing = true;
@@ -15,6 +18,10 @@ class Siswa extends Model
     public $timestamps = true;
 
     protected $fillable = [
+        'school_id',
+        'ulid',
+        'national_ids',
+        'address_details',
         'user_id',
         'nisn',
         'nis',
@@ -58,6 +65,8 @@ class Siswa extends Model
     ];
 
     protected $casts = [
+        'national_ids' => 'array',
+        'address_details' => 'array',
         'anak_ke' => 'integer',
         'jumlah_saudara' => 'integer',
         'tingkat' => 'integer',
@@ -79,10 +88,17 @@ class Siswa extends Model
     public static function generateKodeAnak(): string
     {
         do {
-            $kode = strtoupper(\Illuminate\Support\Str::random(10));
+            $kode = strtoupper(Str::random(10));
         } while (static::where('kode_anak', $kode)->exists());
 
         return $kode;
+    }
+
+    // ── Local Scope ──────────────────────────────────────────
+
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'aktif');
     }
 
     // ── Relasi ──────────────────────────────────────────────
@@ -97,7 +113,6 @@ class Siswa extends Model
         return $this->hasMany(RiwayatKelas::class, 'siswa_id');
     }
 
-    // Alias backward-compat
     public function kelas()
     {
         return $this->riwayatKelas();

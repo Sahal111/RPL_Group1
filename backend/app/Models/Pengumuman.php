@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pengumuman extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope;
 
     protected $table = 'pengumumans';
 
     protected $fillable = [
+        'school_id',
         'judul',
         'konten',
         'kategori',

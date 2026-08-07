@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Absensi extends Model
 {
+    use HasSchoolScope;
+
     protected $table = 'absensis';
 
     protected $fillable = [
+        'school_id',
         'siswa_id',
         'kelas_id',
         'jadwal_id',

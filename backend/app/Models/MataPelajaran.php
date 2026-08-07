@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 
 class MataPelajaran extends Model
 {
+    use HasSchoolScope;
+
     protected $table = 'mapels';
     protected $primaryKey = 'id';
     public $timestamps = true;
 
     protected $fillable = [
+        'school_id',
         'kode',
         'nama_mapel',
         'kelompok',
@@ -27,6 +31,11 @@ class MataPelajaran extends Model
         'tingkat' => 'string',
         'urutan_rapor' => 'integer',
     ];
+
+    public function scopeAktif($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     // ── Relasi ──────────────────────────────────────────────
 

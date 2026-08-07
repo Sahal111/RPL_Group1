@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Kelas extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope;
 
     protected $table = 'kelas';
     protected $primaryKey = 'id';
@@ -15,6 +16,7 @@ class Kelas extends Model
     protected $keyType = 'int';
 
     protected $fillable = [
+        'school_id',
         'tahun_ajaran_id',
         'semester_id',
         'nama_kelas',
@@ -31,6 +33,11 @@ class Kelas extends Model
         'tingkat' => 'integer',
         'kapasitas' => 'integer',
     ];
+
+    public function scopeAktif($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     // ── Relasi ──────────────────────────────────────────────
 

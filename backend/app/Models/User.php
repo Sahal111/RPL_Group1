@@ -2,19 +2,21 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\SchoolScope;
+use App\Traits\HasSchoolScope;
+use App\Traits\HasUlid;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, SoftDeletes;
+    use HasApiTokens, SoftDeletes, HasSchoolScope, HasUlid;
 
     protected $table = 'users';
 
     protected $fillable = [
+        'global_user_id',
         'school_id',
         'ulid',
         'name',
@@ -36,17 +38,14 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
-    // ── Boot ─────────────────────────────────────────────────
+    // ── Global User Relation ─────────────────────────────────
 
-    protected static function booted(): void
+    public function globalUser(): BelongsTo
     {
-        static::addGlobalScope(new SchoolScope);
-
-        static::creating(function (User $model) {
-            $model->ulid ??= (string) Str::ulid();
-        });
+        return $this->belongsTo(GlobalUser::class, 'global_user_id');
     }
 
     // ── Roles (many-to-many) ─────────────────────────────────
@@ -54,7 +53,6 @@ class User extends Authenticatable
     public function roles()
     {
         return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
-        // ponytail: removed withTimestamps() because user_roles lacks updated_at
     }
 
     public function getRoleSlug(): ?string
@@ -73,10 +71,6 @@ class User extends Authenticatable
         return $this->roles->contains('slug', $slug);
     }
 
-    /**
-     * Cek apakah user punya permission tertentu.
-     * Permission di-cache di property supaya tidak query DB berulang kali dalam satu request.
-     */
     public function hasPermission(string $slug): bool
     {
         return $this->getAllPermissions()->contains('slug', $slug);
@@ -93,20 +87,15 @@ class User extends Authenticatable
             ->unique('slug');
     }
 
-    // ── Relasi school ─────────────────────────────────────────
+    // ── Local Scope ──────────────────────────────────────────
 
-    public function school()
+    public function scopeAktif($query)
     {
-        return $this->belongsTo(School::class);
+        return $query->where('is_active', true);
     }
 
     // ── Accessor ─────────────────────────────────────────────
 
-    /**
-     * Alias 'nama_lengkap' → kolom 'name' di tabel users.
-     * Banyak controller lama memakai $user->nama_lengkap; accessor ini
-     * mencegah error tanpa harus ganti semua controller sekaligus.
-     */
     public function getNamaLengkapAttribute(): string
     {
         return $this->name ?? '';
@@ -136,7 +125,6 @@ class User extends Authenticatable
 
     public function waliKelasProfile()
     {
-        // Wali kelas diakses via tabel wali_kelas join guru
         return $this->hasOneThrough(UserWaliKelas::class, Guru::class, 'user_id', 'guru_id', 'id', 'id');
     }
 }

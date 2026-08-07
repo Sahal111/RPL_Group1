@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\SchoolScope;
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
+    use HasSchoolScope;
+
     protected $table = 'roles';
 
     protected $fillable = [
@@ -23,13 +25,6 @@ class Role extends Model
         'is_system' => 'boolean',
     ];
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new SchoolScope);
-    }
-
-    // ── Relasi ──────────────────────────────────────────────
-
     public function users()
     {
         return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'user_id');
@@ -40,8 +35,8 @@ class Role extends Model
         return $this->belongsToMany(Permission::class, 'role_permissions', 'role_id', 'permission_id');
     }
 
-    public function school()
+    public function scopeAktif($query)
     {
-        return $this->belongsTo(School::class);
+        return $query->where('is_active', true);
     }
 }

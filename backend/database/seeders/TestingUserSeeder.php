@@ -103,6 +103,23 @@ class TestingUserSeeder extends Seeder
             ]);
         };
 
+        // Ensure super_admin role exists in roles table
+        $saRoleId = DB::table('roles')->where('school_id', $schoolId)->where('slug', 'super_admin')->value('id');
+        if (!$saRoleId) {
+            $saRoleId = DB::table('roles')->insertGetId([
+                'school_id' => $schoolId,
+                'slug' => 'super_admin',
+                'nama' => 'Global Super Admin (Developer)',
+                'is_system' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        // ── SUPER ADMIN (DEVELOPER / PLATFORM OWNER) ─────────────────
+        $userId = $makeUser(['name' => 'Global Super Admin (Developer)', 'username' => 'superadmin', 'email' => 'superadmin@platform.id', 'password' => Hash::make('superadmin123')]);
+        $assignRole($userId, 'super_admin');
+
         // ── OPERATOR ────────────────────────────────────────────────
         $userId = $makeUser(['name' => 'Operator Test', 'username' => 'operator', 'email' => 'operator@test.id', 'password' => Hash::make('operator123')]);
         $assignRole($userId, 'operator');

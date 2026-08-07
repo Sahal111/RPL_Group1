@@ -2,21 +2,26 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\SchoolScope;
+use App\Traits\HasSchoolScope;
+use App\Traits\HasUlid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Guru extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope, HasUlid;
 
     protected $table = 'gurus';
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
     protected $appends = ['nama_lengkap'];
+
     protected $fillable = [
+        'school_id',
+        'ulid',
+        'national_ids',
+        'address_details',
         // Identitas
         'user_id',
         'nuptk',
@@ -75,6 +80,8 @@ class Guru extends Model
     ];
 
     protected $casts = [
+        'national_ids' => 'array',
+        'address_details' => 'array',
         'status_aktif' => 'boolean',
         'is_verified' => 'boolean',
         'tanggal_lahir' => 'date',
@@ -84,39 +91,42 @@ class Guru extends Model
         'tgl_sk_pengangkatan' => 'date',
         'verified_at' => 'datetime',
     ];
+
     protected static function booted(): void
     {
-        // Multi-tenant: otomatis filter school_id di semua query
-        static::addGlobalScope(new SchoolScope);
-
-        // Saat guru baru dibuat — isi ulid + created_by
         static::creating(function (Guru $guru) {
-            // Auto-generate ulid sebagai public identifier
-            $guru->ulid ??= (string) Str::ulid();
-
             if (empty($guru->created_by) && auth()->check()) {
                 $guru->created_by = auth()->id();
             }
-            // is_verified default 0 sudah dari DB, tapi eksplisitkan
             if (!isset($guru->is_verified)) {
                 $guru->is_verified = false;
             }
         });
 
-        // Saat data guru diupdate — isi updated_by
         static::updating(function (Guru $guru) {
             if (auth()->check()) {
                 $guru->updated_by = auth()->id();
             }
         });
 
-        // Saat guru di-soft delete — isi deleted_by
         static::deleting(function (Guru $guru) {
             if (auth()->check()) {
                 $guru->deleted_by = auth()->id();
-                $guru->saveQuietly(); // save deleted_by dulu sebelum soft delete
+                $guru->saveQuietly();
             }
         });
+    }
+
+    // ── Local Scopes ─────────────────────────────────────────
+
+    public function scopeAktif($query)
+    {
+        return $query->where('status_aktif', true);
+    }
+
+    public function scopeVerified($query)
+    {
+        return $query->where('is_verified', true);
     }
 
     // ── Accessor ─────────────────────────────────────────────
@@ -142,7 +152,7 @@ class Guru extends Model
         return $this->hasMany(Kelas::class, 'wali_kelas_id');
     }
 
-    public function kelas() // alias backward-compat
+    public function kelas()
     {
         return $this->kelasWali();
     }

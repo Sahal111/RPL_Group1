@@ -33,7 +33,7 @@ class SchoolScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        $schoolId = app('current_school_id');
+        $schoolId = app()->bound('current_school_id') ? app('current_school_id') : null;
 
         if ($schoolId) {
             $builder->where($model->getTable() . '.school_id', $schoolId);

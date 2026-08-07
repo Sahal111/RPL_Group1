@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Semester extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope;
 
     protected $table = 'semesters';
 
     protected $fillable = [
+        'school_id',
         'tahun_ajaran_id',
         'nama',
         'tgl_mulai',

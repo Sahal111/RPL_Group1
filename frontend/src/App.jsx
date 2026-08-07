@@ -84,6 +84,14 @@ import DashboardBendahara from "./pages/bendahara/DashboardBendahara";
 import AdminPpdbLayout from "./pages/adminppdb/AdminPpdbLayout";
 import DashboardAdminPpdb from "./pages/adminppdb/DashboardAdminPpdb";
 
+// Global Super Admin (Developer SaaS Platform Owner)
+import SuperAdminLayout from "./pages/superadmin/SuperAdminLayout";
+import DashboardSuperAdmin from "./pages/superadmin/DashboardSuperAdmin";
+
+// Siswa
+import SiswaLayout from "./pages/siswa/SiswaLayout";
+import DashboardSiswa from "./pages/siswa/DashboardSiswa";
+
 export default function App() {
   return (
     <Routes>
@@ -96,11 +104,35 @@ export default function App() {
       <Route path="/register-ortu" element={<RegisterOrtuPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
+      {/* Global Super Admin (Developer SaaS Owner) */}
+      <Route
+        path="/superadmin"
+        element={
+          <ProtectedRoute roles={["super_admin"]}>
+            <SuperAdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardSuperAdmin />} />
+      </Route>
+
+      {/* Siswa */}
+      <Route
+        path="/siswa"
+        element={
+          <ProtectedRoute roles={["siswa"]}>
+            <SiswaLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardSiswa />} />
+      </Route>
+
       {/* Operator */}
       <Route
         path="/operator"
         element={
-          <ProtectedRoute roles={["operator"]}>
+          <ProtectedRoute roles={["operator", "super_operator"]}>
             <OperatorLayout />
           </ProtectedRoute>
         }

@@ -31,10 +31,13 @@ export default function LoginPage() {
 
       // Redirect berdasarkan role
       const redirectMap = {
+        super_admin: "/superadmin",
         operator: "/operator",
+        super_operator: "/operator",
         guru: "/guru",
         kepsek: "/kepsek",
         ortu: "/ortu",
+        siswa: "/siswa",
         wali_kelas: "/walikelas",
         bendahara: "/bendahara",
         admin_ppdb: "/adminppdb",

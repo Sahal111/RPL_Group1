@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\SchoolScope;
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Permission extends Model
 {
+    use HasSchoolScope;
+
     protected $table = 'permissions';
 
     protected $fillable = [
@@ -17,20 +19,8 @@ class Permission extends Model
         'deskripsi',
     ];
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new SchoolScope);
-    }
-
-    // ── Relasi ──────────────────────────────────────────────
-
     public function roles()
     {
         return $this->belongsToMany(Role::class, 'role_permissions', 'permission_id', 'role_id');
-    }
-
-    public function school()
-    {
-        return $this->belongsTo(School::class);
     }
 }

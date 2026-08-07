@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 
 class JadwalPelajaran extends Model
 {
+    use HasSchoolScope;
+
     protected $table = 'jadwals';
 
     protected $fillable = [
-        'plot_id',      // FK ke plot_guru_mapels.id
+        'school_id',
+        'plot_id',
         'kelas_id',
         'guru_id',
         'mapel_id',
@@ -25,6 +29,11 @@ class JadwalPelajaran extends Model
         'is_active' => 'boolean',
         'jam_ke' => 'integer',
     ];
+
+    public function scopeAktif($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     // ── Relasi ──────────────────────────────────────────────
 
@@ -43,17 +52,16 @@ class JadwalPelajaran extends Model
         return $this->belongsTo(Guru::class, 'guru_id');
     }
 
-    // Alias — controller memanggil with('gurus'), ini agar tidak error
     public function gurus()
     {
         return $this->guru();
     }
+
     public function mataPelajaran()
     {
         return $this->belongsTo(MataPelajaran::class, 'mapel_id');
     }
 
-    // Alias
     public function mapel()
     {
         return $this->mataPelajaran();

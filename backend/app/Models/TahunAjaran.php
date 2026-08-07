@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TahunAjaran extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope;
 
     protected $table = 'tahun_ajarans';
 
     protected $fillable = [
-        'tahun',       // format: "2025/2026"
+        'school_id',
+        'tahun',
         'is_active',
     ];
 

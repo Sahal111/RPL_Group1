@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Guru\GuruDokumenController;
+use App\Http\Controllers\Guru\GuruKepegawaianController;
+use App\Http\Controllers\Guru\GuruProfileController;
 use App\Http\Controllers\MasterData\GuruCutiController;
 use App\Http\Controllers\MasterData\JadwalPelajaranController;
 use App\Http\Controllers\MasterData\MasterDataGuruController;
@@ -16,7 +19,7 @@ Route::middleware(['auth:sanctum', 'role:operator'])->prefix('operator/master-da
     // ── GURU ──────────────────────────────────────────────────────────────────
 
     // List, stats, utility
-    Route::get('/guru', [MasterDataGuruController::class, 'index']);
+    Route::get('/guru', [GuruProfileController::class, 'index']);
     Route::get('/guru/stats', [MasterDataGuruController::class, 'stats']);
     Route::get('/guru/dropdown', [MasterDataGuruController::class, 'dropdown']);
     Route::get('/guru/perhatian-detail', [MasterDataGuruController::class, 'perhatianDetail']);
@@ -44,12 +47,21 @@ Route::middleware(['auth:sanctum', 'role:operator'])->prefix('operator/master-da
     Route::get('/guru/backup', [MasterDataGuruController::class, 'exportBackup']);
     Route::post('/guru/restore', [MasterDataGuruController::class, 'restoreBackup']);
 
-    // CRUD utama (setelah semua route statis di atas agar tidak konflik dengan {nuptk})
-    Route::post('/guru', [MasterDataGuruController::class, 'store']);
-    Route::get('/guru/{nuptk}', [MasterDataGuruController::class, 'show']);
-    Route::put('/guru/{nuptk}', [MasterDataGuruController::class, 'update']);
-    Route::delete('/guru/{nuptk}', [MasterDataGuruController::class, 'destroy']);
+    // CRUD utama (GuruProfileController)
+    Route::post('/guru', [GuruProfileController::class, 'store']);
+    Route::get('/guru/{id}', [GuruProfileController::class, 'show']);
+    Route::put('/guru/{id}', [GuruProfileController::class, 'update']);
+    Route::delete('/guru/{id}', [GuruProfileController::class, 'destroy']);
     Route::post('/guru/{nuptk}/foto', [MasterDataGuruController::class, 'uploadFoto']);
+
+    // DMS Dokumen (GuruDokumenController)
+    Route::get('/guru/{guruId}/dokumen-dms', [GuruDokumenController::class, 'index']);
+    Route::post('/guru/{guruId}/dokumen-dms', [GuruDokumenController::class, 'store']);
+    Route::patch('/guru/dokumen-dms/{dokumenId}/verify', [GuruDokumenController::class, 'verify']);
+    Route::delete('/guru/dokumen-dms/{dokumenId}', [GuruDokumenController::class, 'destroy']);
+
+    // Kepegawaian (GuruKepegawaianController)
+    Route::put('/guru/{guruId}/kepegawaian-detail', [GuruKepegawaianController::class, 'updateKepegawaian']);
 
     // Keluarga
     Route::get('/guru/{nuptk}/keluarga', [MasterDataGuruController::class, 'getKeluarga']);
