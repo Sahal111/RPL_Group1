@@ -88,7 +88,7 @@ class MasterDataGuruController extends Controller
             ->orderBy('nama')
             ->paginate($request->per_page ?? 15);
 
-        return response()->json(['success' => true, 'data' => $query]);
+        return $this->success($query);
     }
 
     public function show($nuptk)
@@ -120,7 +120,7 @@ class MasterDataGuruController extends Controller
             'jadwals.kelas:id,nama_kelas',
         ])->where('nuptk', $nuptk)->firstOrFail();
 
-        return response()->json(['success' => true, 'data' => $guru]);
+        return $this->success($guru);
     }
 
     public function store(StoreGuruRequest $request)
@@ -143,15 +143,16 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
         if ($guru->user()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Guru ini memiliki akun login. Hapus akun loginnya terlebih dahulu.',
-            ], 422);
+            return $this->error(
+                'Guru ini memiliki akun login. Hapus akun loginnya terlebih dahulu.',
+                'CONFLICT',
+                422
+            );
         }
 
         $guru->delete();
 
-        return response()->json(['success' => true, 'message' => 'Data guru berhasil dihapus.']);
+        return $this->success(message: 'Data guru berhasil dihapus.');
     }
 
     public function dropdown()
@@ -160,7 +161,7 @@ class MasterDataGuruController extends Controller
             ->orderBy('nama')
             ->get(['id', 'nama', 'nuptk', 'jenis_ptk', 'gelar_depan', 'gelar_belakang']);
 
-        return response()->json(['success' => true, 'data' => $data]);
+        return $this->success($data);
     }
 
     public function stats()
@@ -185,17 +186,15 @@ class MasterDataGuruController extends Controller
         // Filter — hanya tampilkan yang count > 0
         $perhatian = array_values(array_filter($kelengkapan, fn($item) => $item['count'] > 0));
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total' => $total,
-                'aktif' => Guru::where('status_keaktifan', 'Aktif')->count(),
-                'nonaktif' => Guru::whereIn('status_keaktifan', ['Cuti', 'Pensiun', 'Mutasi', 'Keluar'])->count(),
-                'bersertifikasi' => Guru::whereHas('sertifikasis')->count(),
-                'wali_kelas' => Guru::whereHas('waliKelas', fn($q) => $q->where('is_active', 1))->count(),
-                'jumlah_mapel' => \App\Models\PlotGuruMapel::distinct('mapel_id')->count('mapel_id'),
-                'perhatian' => $perhatian, // ← array dinamis, hanya yang count > 0
-            ]
+        return $this->success([
+            'total' => $total,
+            'aktif' => Guru::where('status_keaktifan', 'Aktif')->count(),
+            'nonaktif' => Guru::whereIn('status_keaktifan', ['Cuti', 'Pensiun', 'Mutasi', 'Keluar'])->count(),
+            'bersertifikasi' => Guru::whereHas('sertifikasis')->count(),
+            'wali_kelas' => Guru::whereHas('waliKelas', fn($q) => $q->where('is_active', 1))->count(),
+            'jumlah_mapel' => \App\Models\PlotGuruMapel::distinct('mapel_id')->count('mapel_id'),
+            'perhatian' => $perhatian, // ← array dinamis, hanya yang count > 0
+
         ]);
     }
     public function perhatianDetail(Request $request)
@@ -219,7 +218,7 @@ class MasterDataGuruController extends Controller
             default => $query->whereRaw('1=0'),
         };
 
-        return response()->json(['success' => true, 'data' => $query->get()->append('nama_lengkap')]);
+        return $this->success($query->get()->append('nama_lengkap'));
     }
 
     public function tanpaPenugasan()
@@ -237,7 +236,7 @@ class MasterDataGuruController extends Controller
             ->get()
             ->append('nama_lengkap');
 
-        return response()->json(['success' => true, 'data' => $gurus]);
+        return $this->success($gurus);
     }
 
     public function aktivitasTerkini()
@@ -255,7 +254,7 @@ class MasterDataGuruController extends Controller
                 return $g;
             });
 
-        return response()->json(['success' => true, 'data' => $aktivitas]);
+        return $this->success($aktivitas);
     }
 
     public function uploadFoto(UploadFotoGuruRequest $request, $nuptk)
@@ -282,12 +281,9 @@ class MasterDataGuruController extends Controller
     public function getKeluarga($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'keluarga' => $guru->keluarga,
-                'anaks' => $guru->anaks,
-            ],
+        return $this->success([
+            'keluarga' => $guru->keluarga,
+            'anaks' => $guru->anaks,
         ]);
     }
 
@@ -331,7 +327,7 @@ class MasterDataGuruController extends Controller
     public function getKontakDarurat($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->kontakDarurat]);
+        return $this->success($guru->kontakDarurat);
     }
 
     public function storeKontakDarurat(StoreKontakDaruratRequest $request, $nuptk)
@@ -365,7 +361,7 @@ class MasterDataGuruController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $guru->kontakDarurat()->findOrFail($id)->delete();
-        return response()->json(['success' => true, 'message' => 'Kontak darurat dihapus.']);
+        return $this->success(message: 'Kontak darurat dihapus.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -375,7 +371,7 @@ class MasterDataGuruController extends Controller
     public function getPendidikan($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->pendidikans]);
+        return $this->success($guru->pendidikans);
     }
 
     public function storePendidikan(StorePendidikanRequest $request, $nuptk)
@@ -401,7 +397,7 @@ class MasterDataGuruController extends Controller
 
         $pendidikan = $guru->pendidikans()->create($data);
 
-        return response()->json(['success' => true, 'message' => 'Riwayat pendidikan ditambahkan.', 'data' => $pendidikan], 201);
+        return $this->created($pendidikan, 'Riwayat pendidikan ditambahkan.');
     }
 
     public function updatePendidikan(StorePendidikanRequest $request, $nuptk, $id)
@@ -430,7 +426,7 @@ class MasterDataGuruController extends Controller
 
         $pendidikan->update($data);
 
-        return response()->json(['success' => true, 'message' => 'Riwayat pendidikan diperbarui.', 'data' => $pendidikan]);
+        return $this->success($pendidikan, 'Riwayat pendidikan diperbarui.');
     }
 
     public function destroyPendidikan($nuptk, $id)
@@ -440,7 +436,7 @@ class MasterDataGuruController extends Controller
         if ($pendidikan->file_ijazah)
             Storage::disk('public')->delete($pendidikan->file_ijazah);
         $pendidikan->delete();
-        return response()->json(['success' => true, 'message' => 'Riwayat pendidikan dihapus.']);
+        return $this->success(message: 'Riwayat pendidikan dihapus.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -450,7 +446,7 @@ class MasterDataGuruController extends Controller
     public function getSertifikasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->sertifikasis]);
+        return $this->success($guru->sertifikasis);
     }
 
     public function storeSertifikasi(StoreSertifikasiRequest $request, $nuptk)
@@ -477,7 +473,7 @@ class MasterDataGuruController extends Controller
 
         $sert = $guru->sertifikasis()->create($data);
 
-        return response()->json(['success' => true, 'message' => 'Sertifikasi ditambahkan.', 'data' => $sert], 201);
+        return $this->created($sert, 'Sertifikasi ditambahkan.');
     }
 
     public function destroySertifikasi($nuptk, $id)
@@ -487,7 +483,7 @@ class MasterDataGuruController extends Controller
         if ($sert->file_sertifikat)
             Storage::disk('public')->delete($sert->file_sertifikat);
         $sert->delete();
-        return response()->json(['success' => true, 'message' => 'Sertifikasi dihapus.']);
+        return $this->success(message: 'Sertifikasi dihapus.');
     }
 
     public function updateSertifikasi(StoreSertifikasiRequest $request, $nuptk, $id)
@@ -516,7 +512,7 @@ class MasterDataGuruController extends Controller
         }
 
         $sert->update($data);
-        return response()->json(['success' => true, 'message' => 'Sertifikasi diperbarui.', 'data' => $sert]);
+        return $this->success($sert, 'Sertifikasi diperbarui.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -526,7 +522,7 @@ class MasterDataGuruController extends Controller
     public function getInpassing($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->inpassings]);
+        return $this->success($guru->inpassings);
     }
 
     public function storeInpassing(StoreInpassingRequest $request, $nuptk)
@@ -550,7 +546,7 @@ class MasterDataGuruController extends Controller
         }
 
         $inpassing = $guru->inpassings()->create($data);
-        return response()->json(['success' => true, 'message' => 'Data inpassing ditambahkan.', 'data' => $inpassing], 201);
+        return $this->created($inpassing, 'Data inpassing ditambahkan.');
     }
 
     public function updateInpassing(StoreInpassingRequest $request, $nuptk, $id)
@@ -577,7 +573,7 @@ class MasterDataGuruController extends Controller
         }
 
         $inpassing->update($data);
-        return response()->json(['success' => true, 'message' => 'Data inpassing diperbarui.', 'data' => $inpassing]);
+        return $this->success($inpassing, 'Data inpassing diperbarui.');
     }
 
     public function destroyInpassing($nuptk, $id)
@@ -587,7 +583,7 @@ class MasterDataGuruController extends Controller
         if ($inpassing->file_sk)
             Storage::disk('public')->delete($inpassing->file_sk);
         $inpassing->delete();
-        return response()->json(['success' => true, 'message' => 'Data inpassing dihapus.']);
+        return $this->success(message: 'Data inpassing dihapus.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -623,9 +619,8 @@ class MasterDataGuruController extends Controller
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $dokumens,
+        return $this->success([
+            'dokumens'  => $dokumens,
             'statistik' => $statistik,
             'checklist' => $checklist,
         ]);
@@ -666,11 +661,7 @@ class MasterDataGuruController extends Controller
             uploadedBy: auth()->id(),
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dokumen berhasil diupload.',
-            'data' => $dokumen,
-        ], 201);
+        return $this->created($dokumen, 'Dokumen berhasil diupload.');
     }
 
     public function destroyDokumen($nuptk, $id)
@@ -679,7 +670,7 @@ class MasterDataGuruController extends Controller
         $dokumen = $guru->dokumens()->findOrFail($id);
         Storage::disk('public')->delete($dokumen->file_path);
         $dokumen->delete();
-        return response()->json(['success' => true, 'message' => 'Dokumen dihapus.']);
+        return $this->success(message: 'Dokumen dihapus.');
     }
 
     public function updateDokumen(UploadDokumenRequest $request, $nuptk, $id)
@@ -725,11 +716,7 @@ class MasterDataGuruController extends Controller
             );
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dokumen berhasil diperbarui.',
-            'data' => $dokumen->fresh(['uploader', 'verifier', 'versions']),
-        ]);
+        return $this->success($dokumen->fresh(['uploader', 'verifier', 'versions']), 'Dokumen berhasil diperbarui.');
     }
 
     // ── BARU: Approve dokumen ──
@@ -741,11 +728,7 @@ class MasterDataGuruController extends Controller
 
         $updated = $service->approve($dokumen, auth()->id());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dokumen berhasil disetujui.',
-            'data' => $updated,
-        ]);
+        return $this->success($updated, 'Dokumen berhasil disetujui.');
     }
 
     // ── BARU: Reject dokumen ──
@@ -761,11 +744,7 @@ class MasterDataGuruController extends Controller
 
         $updated = $service->reject($dokumen, auth()->id(), $request->alasan);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dokumen ditolak.',
-            'data' => $updated,
-        ]);
+        return $this->success($updated, 'Dokumen ditolak.');
     }
 
     // ── BARU: Riwayat versi ──
@@ -774,10 +753,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $dokumen = $guru->dokumens()->findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'data' => $dokumen->versions()->with('uploader:id,username,name')->get(),
-        ]);
+        return $this->success($dokumen->versions()->with('uploader:id,username,name')->get());
     }
 
     // ── BARU: Audit log per dokumen ──
@@ -786,10 +762,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $dokumen = $guru->dokumens()->findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'data' => $dokumen->logs()->with('user:id,username,name')->get(),
-        ]);
+        return $this->success($dokumen->logs()->with('user:id,username,name')->get());
     }
 
     // ── BARU: Bulk download ZIP per guru ──
@@ -807,7 +780,7 @@ class MasterDataGuruController extends Controller
         $dokumens = $query->get();
 
         if ($dokumens->isEmpty()) {
-            return response()->json(['message' => 'Tidak ada dokumen.'], 404);
+            return $this->notFound('Tidak ada dokumen.');
         }
 
         $zip = new \ZipArchive();
@@ -819,7 +792,7 @@ class MasterDataGuruController extends Controller
         }
 
         if ($zip->open($tmpPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return response()->json(['message' => 'Gagal membuat ZIP.'], 500);
+            return $this->error('Gagal membuat ZIP.', 'SERVER_ERROR', 500);
         }
 
         foreach ($dokumens as $dok) {
@@ -843,7 +816,7 @@ class MasterDataGuruController extends Controller
     public function getAdministrasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->rekenings]);
+        return $this->success($guru->rekenings);
     }
 
     public function updateAdministrasi(UpdateAdministrasiRequest $request, $nuptk)
@@ -879,7 +852,7 @@ class MasterDataGuruController extends Controller
             ])
         );
 
-        return response()->json(['success' => true, 'message' => 'Data administrasi diperbarui.', 'data' => $rekening]);
+        return $this->success($rekening, 'Data administrasi diperbarui.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -889,7 +862,7 @@ class MasterDataGuruController extends Controller
     public function getKompetensi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->kompetensi]);
+        return $this->success($guru->kompetensi);
     }
 
     public function storeKompetensi(StoreKompetensiRequest $request, $nuptk)
@@ -905,7 +878,7 @@ class MasterDataGuruController extends Controller
 
         $data = $guru->kompetensi()->create($request->only(['jenis', 'nama', 'tingkat', 'keterangan']));
 
-        return response()->json(['success' => true, 'message' => 'Kompetensi ditambahkan.', 'data' => $data], 201);
+        return $this->created($data, 'Kompetensi ditambahkan.');
     }
 
     public function updateKompetensi(StoreKompetensiRequest $request, $nuptk, $id)
@@ -921,14 +894,14 @@ class MasterDataGuruController extends Controller
         ]);
 
         $komp->update($request->only(['jenis', 'nama', 'tingkat', 'keterangan']));
-        return response()->json(['success' => true, 'message' => 'Kompetensi diperbarui.', 'data' => $komp]);
+        return $this->success($komp, 'Kompetensi diperbarui.');
     }
 
     public function destroyKompetensi($nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $guru->kompetensi()->findOrFail($id)->delete();
-        return response()->json(['success' => true, 'message' => 'Kompetensi dihapus.']);
+        return $this->success(message: 'Kompetensi dihapus.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -947,7 +920,7 @@ class MasterDataGuruController extends Controller
             ])
             ->orderByDesc('tahun_ajaran_id')
             ->get();
-        return response()->json(['success' => true, 'data' => $data]);
+        return $this->success($data);
     }
 
     public function storePenugasan(StorePenugasanRequest $request, $nuptk)
@@ -970,10 +943,7 @@ class MasterDataGuruController extends Controller
             ->exists();
 
         if ($exists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Penugasan ini sudah ada untuk semester yang dipilih.',
-            ], 422);
+            return $this->conflict('Penugasan ini sudah ada untuk semester yang dipilih.');
         }
 
         $plot = PlotGuruMapel::create([
@@ -986,16 +956,12 @@ class MasterDataGuruController extends Controller
             'is_active' => true,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Penugasan berhasil ditambahkan.',
-            'data' => $plot->load([
-                'mapel:id,kode,nama_mapel,kelompok',
-                'kelas:id,nama_kelas,tingkat',
-                'tahunAjaran:id,tahun',
-                'semester:id,nama',
-            ]),
-        ], 201);
+        return $this->created($plot->load([
+            'mapel:id,kode,nama_mapel,kelompok',
+            'kelas:id,nama_kelas,tingkat',
+            'tahunAjaran:id,tahun',
+            'semester:id,nama',
+        ]), 'Penugasan berhasil ditambahkan.');
     }
 
     public function destroyPenugasan($nuptk, $id)
@@ -1007,7 +973,7 @@ class MasterDataGuruController extends Controller
         \App\Models\JadwalPelajaran::where('plot_id', $plot->id)->delete();
         $plot->delete();
 
-        return response()->json(['success' => true, 'message' => 'Penugasan dihapus beserta jadwalnya.']);
+        return $this->success(message: 'Penugasan dihapus beserta jadwalnya.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -1017,7 +983,7 @@ class MasterDataGuruController extends Controller
     public function getDiklat($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->diklats]);
+        return $this->success($guru->diklats);
     }
 
     public function storeDiklat(StoreDiklatRequest $request, $nuptk)
@@ -1046,7 +1012,7 @@ class MasterDataGuruController extends Controller
 
         $diklat = $guru->diklats()->create($data);
 
-        return response()->json(['success' => true, 'message' => 'Riwayat pelatihan ditambahkan.', 'data' => $diklat], 201);
+        return $this->created($diklat, 'Riwayat pelatihan ditambahkan.');
     }
 
     public function updateDiklat(StoreDiklatRequest $request, $nuptk, $id)
@@ -1077,7 +1043,7 @@ class MasterDataGuruController extends Controller
         }
 
         $diklat->update($data);
-        return response()->json(['success' => true, 'message' => 'Riwayat pelatihan diperbarui.', 'data' => $diklat]);
+        return $this->success($diklat, 'Riwayat pelatihan diperbarui.');
     }
 
     public function destroyDiklat($nuptk, $id)
@@ -1087,7 +1053,7 @@ class MasterDataGuruController extends Controller
         if ($diklat->file_sertifikat)
             Storage::disk('public')->delete($diklat->file_sertifikat);
         $diklat->delete();
-        return response()->json(['success' => true, 'message' => 'Riwayat pelatihan dihapus.']);
+        return $this->success(message: 'Riwayat pelatihan dihapus.');
     }
 
     /// ────────────────────────────────────────────────────────
@@ -1097,10 +1063,7 @@ class MasterDataGuruController extends Controller
     public function getMutasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json([
-            'success' => true,
-            'data' => $guru->mutasi()->orderBy('tanggal_mutasi')->get(),
-        ]);
+        return $this->success($guru->mutasi()->orderBy('tanggal_mutasi')->get());
     }
 
     /**
@@ -1112,8 +1075,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $service = new \App\Services\MutasiGuruService();
 
-        return response()->json([
-            'success' => true,
+        return $this->success([
             'status_guru' => $guru->status_keaktifan,
             'transitions' => $service->allowedTransitions($guru),
         ]);
@@ -1143,7 +1105,7 @@ class MasterDataGuruController extends Controller
 
         return response()->json([
             'success' => $status === 200,
-            'data' => $result,
+            'data'    => $result,
         ], $status);
     }
 
@@ -1183,11 +1145,10 @@ class MasterDataGuruController extends Controller
         $validation = $service->analyze($guru, $request->all());
 
         if (count($validation['errors']) > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => $validation['errors'][0],
-                'errors' => $validation['errors'],
-            ], 422);
+            return $this->validationError(
+                ['mutasi' => $validation['errors']],
+                $validation['errors'][0]
+            );
         }
 
         $data = $request->only([
@@ -1217,11 +1178,7 @@ class MasterDataGuruController extends Controller
 
         $mutasi = $service->execute($guru, $data);
 
-        return response()->json([
-            'success' => true,
-            'message' => "Mutasi {$data['jenis_mutasi']} berhasil disimpan dan sistem telah disinkronkan.",
-            'data' => $mutasi,
-        ], 201);
+        return $this->created($mutasi, "Mutasi {$data['jenis_mutasi']} berhasil disimpan dan sistem telah disinkronkan.");
     }
 
     public function updateMutasi(StoreMutasiRequest $request, $nuptk, $id)
@@ -1260,11 +1217,10 @@ class MasterDataGuruController extends Controller
         $validation = $service->analyze($guru, array_merge($request->all(), ['mutasi_id' => $id]));
 
         if (count($validation['errors']) > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => $validation['errors'][0],
-                'errors' => $validation['errors'],
-            ], 422);
+            return $this->validationError(
+                ['mutasi' => $validation['errors']],
+                $validation['errors'][0]
+            );
         }
 
         $data = $request->only([
@@ -1301,11 +1257,7 @@ class MasterDataGuruController extends Controller
             $mutasi->update($data);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Riwayat mutasi diperbarui.',
-            'data' => $mutasi->fresh(),
-        ]);
+        return $this->success($mutasi->fresh(), 'Riwayat mutasi diperbarui.');
     }
 
     public function destroyMutasi($nuptk, $id)
@@ -1325,11 +1277,11 @@ class MasterDataGuruController extends Controller
             ]);
 
             if (count($relasi) > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Mutasi tidak dapat dihapus karena masih mempengaruhi: ' . implode('; ', $relasi) . '. Lepaskan relasi terlebih dahulu.',
-                    'relasi' => $relasi,
-                ], 422);
+                return $this->error(
+                    'Mutasi tidak dapat dihapus karena masih mempengaruhi: ' . implode('; ', $relasi) . '. Lepaskan relasi terlebih dahulu.',
+                    'CONFLICT',
+                    422
+                );
             }
 
             // Tidak ada relasi aktif → izinkan hapus walau locked
@@ -1352,7 +1304,7 @@ class MasterDataGuruController extends Controller
             $guru->update(['status_keaktifan' => 'Aktif']);
         }
 
-        return response()->json(['success' => true, 'message' => 'Riwayat mutasi dihapus.']);
+        return $this->success(message: 'Riwayat mutasi dihapus.');
     }
 
     // ────────────────────────────────────────────────────────
@@ -1362,7 +1314,7 @@ class MasterDataGuruController extends Controller
     public function getPkg($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->pkgs()->with(['tahunAjaran', 'semester', 'penilai:id,name'])->get()]);
+        return $this->success($guru->pkgs()->with(['tahunAjaran', 'semester', 'penilai:id,name'])->get());
     }
 
     public function storePkg(StorePkgRequest $request, $nuptk)
@@ -1389,7 +1341,7 @@ class MasterDataGuruController extends Controller
             ]
         );
 
-        return response()->json(['success' => true, 'message' => 'PKG berhasil disimpan.', 'data' => $pkg]);
+        return $this->success($pkg, 'PKG berhasil disimpan.');
     }
 
     public function verifikasi($nuptk)
@@ -1402,10 +1354,7 @@ class MasterDataGuruController extends Controller
             'verified_by' => auth()->id(),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data guru berhasil diverifikasi.',
-        ]);
+        return $this->success(message: 'Data guru berhasil diverifikasi.');
     }
 
     public function batalVerifikasi($nuptk)
@@ -1418,10 +1367,7 @@ class MasterDataGuruController extends Controller
             'verified_by' => null,
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Verifikasi data guru dibatalkan.',
-        ]);
+        return $this->success(message: 'Verifikasi data guru dibatalkan.');
     }
     public function koreksiNuptk(KoreksiNuptkRequest $request, $nuptk)
     {
@@ -1451,11 +1397,10 @@ class MasterDataGuruController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "NUPTK berhasil dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}.",
-            'data' => ['nuptk_baru' => $request->nuptk_baru],
-        ]);
+        return $this->success(
+            ['nuptk_baru' => $request->nuptk_baru],
+            "NUPTK berhasil dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}."
+        );
     }
 
     // ────────────────────────────────────────────────────────
@@ -1465,7 +1410,7 @@ class MasterDataGuruController extends Controller
     public function getJabatan($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        return response()->json(['success' => true, 'data' => $guru->jabatans]);
+        return $this->success($guru->jabatans);
     }
 
     public function storeJabatan(StoreJabatanRequest $request, $nuptk)
@@ -1524,7 +1469,7 @@ class MasterDataGuruController extends Controller
 
         $jabatan = $guru->jabatans()->create($data);
 
-        return response()->json(['success' => true, 'message' => 'Riwayat jabatan ditambahkan.', 'data' => $jabatan], 201);
+        return $this->created($jabatan, 'Riwayat jabatan ditambahkan.');
     }
 
     public function updateJabatan(StoreJabatanRequest $request, $nuptk, $id)
@@ -1583,7 +1528,7 @@ class MasterDataGuruController extends Controller
 
         $jabatan->update($data);
 
-        return response()->json(['success' => true, 'message' => 'Riwayat jabatan diperbarui.', 'data' => $jabatan]);
+        return $this->success($jabatan, 'Riwayat jabatan diperbarui.');
     }
 
     public function destroyJabatan($nuptk, $id)
@@ -1591,7 +1536,7 @@ class MasterDataGuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $jabatan = $guru->jabatans()->findOrFail($id);
         $jabatan->delete(); // soft delete
-        return response()->json(['success' => true, 'message' => 'Riwayat jabatan dihapus.']);
+        return $this->success(message: 'Riwayat jabatan dihapus.');
     }
 
     public function downloadDokumen($nuptk, $id)
@@ -1602,7 +1547,7 @@ class MasterDataGuruController extends Controller
         $path = storage_path('app/public/' . $dokumen->file_path);
 
         if (!file_exists($path)) {
-            return response()->json(['message' => 'File tidak ditemukan.'], 404);
+            return $this->notFound('File tidak ditemukan.');
         }
 
         return response()->download(
@@ -1619,13 +1564,13 @@ class MasterDataGuruController extends Controller
         $namaFile = $request->query('nama', 'dokumen');
 
         if (!$filePath) {
-            return response()->json(['message' => 'Path tidak ditemukan.'], 400);
+            return $this->error('Path tidak ditemukan.', 'NOT_FOUND', 400);
         }
 
         $fullPath = storage_path('app/public/' . $filePath);
 
         if (!file_exists($fullPath)) {
-            return response()->json(['message' => 'File tidak ditemukan.'], 404);
+            return $this->notFound('File tidak ditemukan.');
         }
 
         $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
@@ -2043,7 +1988,7 @@ class MasterDataGuruController extends Controller
 
         $allSheets = $this->parseMultiSheetXlsx($request->file('file')->getRealPath());
         if (empty($allSheets)) {
-            return response()->json(['success' => false, 'message' => 'File kosong atau tidak bisa dibaca.'], 422);
+            return $this->error('File kosong atau tidak bisa dibaca.', 'VALIDATION_ERROR', 422);
         }
 
         // Helper: ambil sheet by name (case-insensitive) atau by index
@@ -3150,7 +3095,7 @@ class MasterDataGuruController extends Controller
             $allSheets = $this->parseMultiSheetXlsx($filePath);
 
             if (empty($allSheets)) {
-                return response()->json(['success' => false, 'message' => 'File tidak bisa dibaca.'], 422);
+                return $this->error('File tidak bisa dibaca.', 'VALIDATION_ERROR', 422);
             }
 
             // Simpan file sementara di storage
@@ -3329,7 +3274,7 @@ class MasterDataGuruController extends Controller
 
         if (!$sheetUtama || empty($sheetUtama['rows'])) {
             $log->update(['status' => 'failed', 'error_detail' => [['pesan' => 'Sheet "Data Utama" tidak ditemukan atau kosong.']], 'finished_at' => now()]);
-            return response()->json(['success' => false, 'message' => 'Sheet "Data Utama" tidak ditemukan atau kosong.'], 422);
+            return $this->error('Sheet "Data Utama" tidak ditemukan atau kosong.', 'VALIDATION_ERROR', 422);
         }
 
         $rows = $sheetUtama['rows'];
@@ -3639,7 +3584,7 @@ class MasterDataGuruController extends Controller
                 'created_at' => $l->created_at,
             ]);
 
-        return response()->json(['success' => true, 'data' => $logs]);
+        return $this->success($logs);
     }
 
     /**
@@ -3651,7 +3596,7 @@ class MasterDataGuruController extends Controller
         $log = GuruImportLog::where('batch_id', $batchId)->firstOrFail();
 
         if (empty($log->error_detail)) {
-            return response()->json(['success' => false, 'message' => 'Tidak ada error untuk batch ini.'], 404);
+            return $this->notFound('Tidak ada error untuk batch ini.');
         }
 
         $headers = ['No', 'Keterangan Error'];
@@ -3676,7 +3621,7 @@ class MasterDataGuruController extends Controller
 
         $zip = new \ZipArchive();
         if ($zip->open($request->file('file')->getRealPath()) !== true) {
-            return response()->json(['success' => false, 'message' => 'ZIP tidak bisa dibuka.'], 422);
+            return $this->error('ZIP tidak bisa dibuka.', 'VALIDATION_ERROR', 422);
         }
 
         $results = ['restored' => 0, 'skipped' => 0, 'missing_files' => [], 'errors' => []];
@@ -3694,7 +3639,7 @@ class MasterDataGuruController extends Controller
 
         if (!$excelContent) {
             $zip->close();
-            return response()->json(['success' => false, 'message' => 'File Excel tidak ditemukan dalam ZIP.'], 422);
+            return $this->error('File Excel tidak ditemukan dalam ZIP.', 'VALIDATION_ERROR', 422);
         }
 
         // Simpan dan parse Excel
@@ -3821,7 +3766,7 @@ class MasterDataGuruController extends Controller
 
         $zip = new \ZipArchive();
         if ($zip->open($request->file('file')->getRealPath()) !== true) {
-            return response()->json(['success' => false, 'message' => 'File ZIP tidak bisa dibuka.'], 422);
+            return $this->error('File ZIP tidak bisa dibuka.', 'VALIDATION_ERROR', 422);
         }
 
         $results = [
