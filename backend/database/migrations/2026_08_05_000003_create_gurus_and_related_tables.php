@@ -4,13 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         // ── GURUS ────────────────────────────────────────────────────
         Schema::create('gurus', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('user_id')->nullable()
                 ->comment('NULL jika guru belum punya akun login')
                 ->constrained('users')->nullOnDelete();
@@ -73,7 +77,12 @@ return new class extends Migration
 
         // ── GURU_JABATANS ────────────────────────────────────────────
         Schema::create('guru_jabatans', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->string('jenis_jabatan', 20)->nullable();
             $table->string('jenis_pengangkatan', 50)->nullable();
@@ -104,7 +113,12 @@ return new class extends Migration
 
         // ── GURU_PENDIDIKANS ─────────────────────────────────────────
         Schema::create('guru_pendidikans', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->enum('jenjang', ['SD', 'SMP', 'SMA/SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3', 'Lainnya'])
                 ->comment('Jenjang pendidikan formal sesuai kode Dapodik');
@@ -123,7 +137,12 @@ return new class extends Migration
 
         // ── GURU_SERTIFIKASIS ────────────────────────────────────────
         Schema::create('guru_sertifikasis', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->string('jenis_sertifikasi', 80)->comment('Jalur: PPG|PLPG|Portofolio|PPG Dalam Jabatan|PPG Prajabatan');
             $table->string('no_sertifikat', 60)->comment('Nomor sertifikat pendidik dari LPTK');
@@ -142,7 +161,12 @@ return new class extends Migration
 
         // ── GURU_INPASSINGS ──────────────────────────────────────────
         Schema::create('guru_inpassings', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')
                 ->comment('FK ke gurus.id. Guru non-PNS yang mendapat inpassing')
                 ->constrained('gurus')->cascadeOnDelete();
@@ -162,7 +186,12 @@ return new class extends Migration
 
         // ── GURU_DIKLATS ─────────────────────────────────────────────
         Schema::create('guru_diklats', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->string('nama_diklat', 200)->comment('Nama lengkap pelatihan/diklat yang diikuti');
             $table->string('penyelenggara', 150)->nullable()->comment('Kemenag, Kemdikbud, P4TK, LPMP, Yayasan, dll');
@@ -183,7 +212,12 @@ return new class extends Migration
 
         // ── GURU_KELUARGAS ───────────────────────────────────────────
         Schema::create('guru_keluargas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')
                 ->comment('FK ke gurus.id. One-to-one')
                 ->constrained('gurus')->cascadeOnDelete();
@@ -240,7 +274,12 @@ return new class extends Migration
 
         // ── GURU_REKENINGS ───────────────────────────────────────────
         Schema::create('guru_rekenings', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->string('nama_bank', 60)->comment('BRI, BNI, Mandiri, BSI, BTN, dll');
             $table->string('no_rekening', 30)->comment('Nomor rekening tujuan transfer gaji');
@@ -265,8 +304,13 @@ return new class extends Migration
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->enum('jenis_mutasi', ['Masuk', 'Keluar', 'Internal', 'Penugasan Sementara', 'Kembali Bertugas']);
             $table->enum('jenis_keluar', [
-                'Pindah Sekolah', 'Mengundurkan Diri', 'Pensiun',
-                'Kontrak Berakhir', 'Meninggal Dunia', 'PHK', 'Lainnya',
+                'Pindah Sekolah',
+                'Mengundurkan Diri',
+                'Pensiun',
+                'Kontrak Berakhir',
+                'Meninggal Dunia',
+                'PHK',
+                'Lainnya',
             ])->nullable();
             $table->string('status_sebelum', 50)->nullable()->comment('Status guru sebelum mutasi diproses');
             $table->string('status_setelah', 50)->nullable()->comment('Status guru sesudah mutasi diproses');
@@ -299,8 +343,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('guru_id')->constrained('gurus')->cascadeOnDelete();
             $table->enum('jenis_cuti', [
-                'Cuti Tahunan', 'Cuti Sakit', 'Cuti Bersalin',
-                'Cuti Alasan Penting', 'Cuti Besar', 'Lainnya',
+                'Cuti Tahunan',
+                'Cuti Sakit',
+                'Cuti Bersalin',
+                'Cuti Alasan Penting',
+                'Cuti Besar',
+                'Lainnya',
             ]);
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
@@ -320,7 +368,12 @@ return new class extends Migration
 
         // ── GURU_ABSENSIS ────────────────────────────────────────────
         Schema::create('guru_absensis', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->date('tanggal')->comment('Satu guru satu record per hari');
             $table->time('jam_masuk')->nullable()->comment('Jam datang/check-in');
@@ -359,7 +412,12 @@ return new class extends Migration
 
         // ── GURU_DOKUMENS ────────────────────────────────────────────
         Schema::create('guru_dokumens', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('guru_id')->comment('FK ke gurus.id')->constrained('gurus')->cascadeOnDelete();
             $table->enum('kategori', ['identitas', 'kepegawaian', 'pendidikan', 'sertifikasi', 'penghargaan', 'lainnya'])
                 ->comment('Kategori dokumen untuk pengelompokan di UI');
@@ -376,8 +434,12 @@ return new class extends Migration
             $table->string('original_filename', 255)->nullable();
             $table->boolean('is_verified')->default(false)->comment('1=Sudah diverifikasi operator/kepsek');
             $table->enum('status', [
-                'belum_upload', 'menunggu_review', 'disetujui',
-                'ditolak', 'perlu_revisi', 'kadaluarsa',
+                'belum_upload',
+                'menunggu_review',
+                'disetujui',
+                'ditolak',
+                'perlu_revisi',
+                'kadaluarsa',
             ])->default('menunggu_review');
             $table->string('jenis_dokumen', 80)->nullable();
             $table->unsignedTinyInteger('versi')->default(1);
@@ -401,8 +463,15 @@ return new class extends Migration
             $table->foreignId('guru_dokumen_id')->constrained('guru_dokumens')->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('aksi', [
-                'upload', 'replace', 'download', 'preview',
-                'approve', 'reject', 'revisi', 'delete', 'restore',
+                'upload',
+                'replace',
+                'download',
+                'preview',
+                'approve',
+                'reject',
+                'revisi',
+                'delete',
+                'restore',
             ]);
             $table->text('keterangan')->nullable();
             $table->string('ip_address', 45)->nullable();
@@ -433,7 +502,12 @@ return new class extends Migration
 
         // ── GURU_IMPORT_LOGS ─────────────────────────────────────────
         Schema::create('guru_import_logs', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('batch_id', 36)->unique('guru_import_logs_batch_id_unique')->comment('UUID unik per sesi import');
             $table->enum('tipe', ['excel', 'zip', 'backup_restore'])->default('excel');

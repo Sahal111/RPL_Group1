@@ -4,13 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         // ── ABSENSIS ─────────────────────────────────────────────────
         Schema::create('absensis', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')
                 ->comment('FK ke siswas.id')
                 ->constrained('siswas')->cascadeOnDelete();
@@ -49,7 +53,12 @@ return new class extends Migration
 
         // ── NILAIS ───────────────────────────────────────────────────
         Schema::create('nilais', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->foreignId('plot_id')
                 ->comment('FK ke plot_guru_mapels.id. Tau nilai dari guru siapa, mapel apa, kelas apa')
@@ -80,7 +89,12 @@ return new class extends Migration
 
         // ── NILAI_AKHIRS ─────────────────────────────────────────────
         Schema::create('nilai_akhirs', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->foreignId('plot_id')
                 ->comment('FK ke plot_guru_mapels.id. Tau ini nilai dari mapel apa')
@@ -106,7 +120,12 @@ return new class extends Migration
 
         // ── RAPORS ───────────────────────────────────────────────────
         Schema::create('rapors', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->foreignId('kelas_id')->nullable()
                 ->comment('FK ke kelas.id. Snapshot kelas siswa saat rapor diterbitkan')
@@ -146,7 +165,12 @@ return new class extends Migration
 
         // ── CATATAN_WALIS ────────────────────────────────────────────
         Schema::create('catatan_walis', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')
                 ->comment('FK ke siswas.id. Siswa yang dicatat')
                 ->constrained('siswas')->cascadeOnDelete();

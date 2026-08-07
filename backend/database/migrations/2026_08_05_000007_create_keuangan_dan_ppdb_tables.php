@@ -4,13 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         // ── JENIS_TAGIHANS ────────────────────────────────────────────
         Schema::create('jenis_tagihans', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->string('nama_tagihan', 150)
                 ->comment('SPP Bulanan, Dana Komite, Seragam, Buku LKS, Infaq');
             $table->enum('kategori', ['spp', 'bos', 'komite', 'ppdb', 'lainnya'])->default('spp')
@@ -33,7 +37,12 @@ return new class extends Migration
 
         // ── TAGIHANS ─────────────────────────────────────────────────
         Schema::create('tagihans', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')
                 ->comment('FK ke siswas.id. Tagihan ditujukan untuk siswa siapa')
                 ->constrained('siswas')->cascadeOnDelete();
@@ -66,7 +75,12 @@ return new class extends Migration
 
         // ── PEMBAYARANS ──────────────────────────────────────────────
         Schema::create('pembayarans', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('tagihan_id')
                 ->comment('FK ke tagihans.id. Pembayaran ini untuk tagihan mana')
                 ->constrained('tagihans')->restrict();
@@ -95,7 +109,12 @@ return new class extends Migration
 
         // ── CALON_SISWAS ─────────────────────────────────────────────
         Schema::create('calon_siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('tahun_ajaran_id')
                 ->comment('FK ke tahun_ajarans.id. PPDB untuk tahun ajaran mana')
                 ->constrained('tahun_ajarans')->cascadeOnDelete();
@@ -127,7 +146,12 @@ return new class extends Migration
 
         // ── BERKAS_PENDAFTARS ─────────────────────────────────────────
         Schema::create('berkas_pendaftars', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('calon_siswa_id')
                 ->comment('FK ke calon_siswas.id')
                 ->constrained('calon_siswas')->cascadeOnDelete();
@@ -145,7 +169,12 @@ return new class extends Migration
 
         // ── PEMBAYARAN_PPDB ───────────────────────────────────────────
         Schema::create('pembayaran_ppdb', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('calon_siswa_id')
                 ->comment('FK ke calon_siswas.id')
                 ->constrained('calon_siswas')->cascadeOnDelete();

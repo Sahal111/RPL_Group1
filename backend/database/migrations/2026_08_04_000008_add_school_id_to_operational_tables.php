@@ -101,33 +101,32 @@ return new class extends Migration {
 
         // Khusus tahun_ajarans: ubah unique key tahun → composite (school_id, tahun)
         // Karena dua sekolah boleh punya tahun ajaran dengan nilai yang sama
+        // Guard: skip jika uq_tahun_ajaran_school sudah ada (dibuat oleh 000002)
         if (Schema::hasTable('tahun_ajarans') && Schema::hasColumn('tahun_ajarans', 'school_id')) {
-            Schema::table('tahun_ajarans', function (Blueprint $table) {
-                // Drop unique lama
-                try {
-                    $table->dropUnique('uq_tahun_ajaran');
-                } catch (\Exception $e) {
-                    // Mungkin nama indexnya beda — skip
-                }
+            $existingComposite = \Illuminate\Support\Facades\DB::select(
+                "SHOW INDEX FROM `tahun_ajarans` WHERE Key_name = 'uq_tahun_ajaran_school'"
+            );
+            if (empty($existingComposite)) {
+                Schema::table('tahun_ajarans', function (Blueprint $table) {
+                    // Drop unique lama
+                    try {
+                        $table->dropUnique('uq_tahun_ajaran');
+                    } catch (\Exception $e) {
+                        // Mungkin nama indexnya beda — skip
+                    }
 
-                // Unique baru per sekolah
-                $table->unique(['school_id', 'tahun'], 'uq_tahun_ajaran_school');
-            });
+                    // Unique baru per sekolah
+                    $table->unique(['school_id', 'tahun'], 'uq_tahun_ajaran_school');
+                });
+            }
         }
     }
 
     public function down(): void
     {
-        // Kembalikan unique key tahun_ajarans
-        if (Schema::hasTable('tahun_ajarans')) {
-            Schema::table('tahun_ajarans', function (Blueprint $table) {
-                try {
-                    $table->dropUnique('uq_tahun_ajaran_school');
-                } catch (\Exception $e) {
-                }
-                $table->unique('tahun', 'uq_tahun_ajaran');
-            });
-        }
+        // Kembalikan unique key tahun_ajarans — hanya jika 000002 belum mengelolanya
+        // (000002 membuat uq_tahun_ajaran_school, jadi kita skip di sini)
+        // Tidak ada tindakan rollback unique key di sini.
 
         // Hapus school_id dari semua tabel
         foreach (array_reverse($this->tables) as $table => $indexName) {

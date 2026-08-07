@@ -16,7 +16,11 @@ class DatabaseSeeder extends Seeder
                 // 2. Data akademik dev
             TahunAjaranSeeder::class,
 
-                // 3. Akun testing semua role (hanya untuk development)
+                // 3. Data master (menggantikan ENUM): status kepegawaian, jenis cuti,
+                //    akun kas default, kategori buku
+            MasterDataSeeder::class,
+
+                // 4. Akun testing semua role (hanya untuk development)
             TestingUserSeeder::class,
         ]);
     }

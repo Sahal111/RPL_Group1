@@ -4,24 +4,31 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         // ── TAHUN_AJARANS ────────────────────────────────────────────
         Schema::create('tahun_ajarans', function (Blueprint $table) {
             $table->id();
-            $table->string('tahun', 9)->unique('uq_tahun_ajaran')->comment('Format: YYYY/YYYY. Contoh: 2025/2026');
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id. NULL = global (legacy)')
+                ->constrained('schools')->cascadeOnDelete();
+            $table->string('tahun', 9)->comment('Format: YYYY/YYYY. Contoh: 2025/2026');
             $table->boolean('is_active')->default(false)->comment('1=Tahun ajaran berjalan. HANYA SATU yang aktif');
             $table->timestamps();
             $table->softDeletes()->comment('Tidak boleh hapus tahun ajaran yang sudah punya data');
 
+            $table->unique(['school_id', 'tahun'], 'uq_tahun_ajaran_school');
+            $table->index('school_id', 'idx_tahun_ajarans_school');
             $table->index('is_active', 'idx_ta_is_active');
         });
 
         // ── SEMESTERS ────────────────────────────────────────────────
         Schema::create('semesters', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id. NULL = global (legacy)')
+                ->constrained('schools')->cascadeOnDelete();
             $table->foreignId('tahun_ajaran_id')
                 ->comment('FK ke tahun_ajarans.id')
                 ->constrained('tahun_ajarans')->cascadeOnDelete();
@@ -33,6 +40,7 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['tahun_ajaran_id', 'nama'], 'uq_semester_ta_nama');
+            $table->index('school_id', 'idx_semesters_school');
         });
 
         // ── PENGATURANS ──────────────────────────────────────────────

@@ -101,7 +101,7 @@ return new class extends Migration {
         if (Schema::hasTable('tagihans') && !Schema::hasColumn('tagihans', 'currency_code')) {
             Schema::table('tagihans', function (Blueprint $table) {
                 $table->char('currency_code', 3)->default('IDR')
-                    ->after('nominal')
+                    ->after('nominal_bersih')
                     ->comment('ISO 4217 — diambil dari school_settings saat tagihan dibuat');
             });
         }

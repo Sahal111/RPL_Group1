@@ -4,13 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         // ── SISWAS ───────────────────────────────────────────────────
         Schema::create('siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('user_id')->nullable()
                 ->comment('Akun login siswa. Opsional')
                 ->constrained('users')->nullOnDelete();
@@ -68,7 +72,12 @@ return new class extends Migration
 
         // ── DATA_TAMBAHAN_SISWAS ─────────────────────────────────────
         Schema::create('data_tambahan_siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')
                 ->comment('FK ke siswas.id. One-to-one')
                 ->constrained('siswas')->cascadeOnDelete();
@@ -96,7 +105,12 @@ return new class extends Migration
 
         // ── PROGRAM_KESEJAHTERAAN_SISWAS ─────────────────────────────
         Schema::create('program_kesejahteraan_siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')
                 ->comment('FK ke siswas.id. One-to-one')
                 ->constrained('siswas')->cascadeOnDelete();
@@ -114,7 +128,12 @@ return new class extends Migration
 
         // ── ORANG_TUAS ───────────────────────────────────────────────
         Schema::create('orang_tuas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('user_id')->nullable()
                 ->comment('Akun login orang tua (opsional). Diisi saat ortu ingin monitor via portal')
                 ->constrained('users')->nullOnDelete();
@@ -132,8 +151,18 @@ return new class extends Migration
             $table->enum('kewarganegaraan', ['WNI', 'WNA'])->default('WNI');
             $table->string('kebutuhan_khusus', 50)->nullable()->comment('Kondisi khusus orang tua (kode Dapodik)');
             $table->enum('pendidikan', [
-                'Tidak Sekolah', 'SD', 'SMP', 'SMA/SMK',
-                'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3', 'Lainnya',
+                'Tidak Sekolah',
+                'SD',
+                'SMP',
+                'SMA/SMK',
+                'D1',
+                'D2',
+                'D3',
+                'D4',
+                'S1',
+                'S2',
+                'S3',
+                'Lainnya',
             ])->nullable()->comment('Pendidikan terakhir sesuai kode Dapodik');
             $table->string('pekerjaan', 100)->nullable()->comment('Petani, Pedagang, PNS, Buruh, dll');
             $table->enum('penghasilan', [
@@ -169,7 +198,12 @@ return new class extends Migration
 
         // ── PERKEMBANGAN_SISWAS ──────────────────────────────────────
         Schema::create('perkembangan_siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->foreignId('tahun_ajaran_id')->nullable()
                 ->comment('FK ke tahun_ajarans.id')
@@ -189,7 +223,12 @@ return new class extends Migration
 
         // ── RIWAYAT_KELAS ────────────────────────────────────────────
         Schema::create('riwayat_kelas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->foreignId('kelas_id')->nullable()
                 ->comment('FK ke kelas.id. NULL jika kelas sudah dihapus')
@@ -205,9 +244,16 @@ return new class extends Migration
             $table->date('tanggal_masuk')->nullable();
             $table->date('tanggal_keluar')->nullable()->comment('NULL jika masih di kelas ini');
             $table->enum('jenis_perubahan', [
-                'masuk_baru', 'naik_kelas', 'turun_kelas', 'pindah_kelas',
-                'mutasi_masuk', 'mutasi_keluar', 'lulus', 'nonaktif',
-                'masuk_kembali', 'meninggal',
+                'masuk_baru',
+                'naik_kelas',
+                'turun_kelas',
+                'pindah_kelas',
+                'mutasi_masuk',
+                'mutasi_keluar',
+                'lulus',
+                'nonaktif',
+                'masuk_kembali',
+                'meninggal',
             ])->nullable()->comment('Alasan perubahan kelas/status. Penting untuk rekap kesiswaan');
             $table->text('catatan')->nullable();
             $table->timestamps();
@@ -220,7 +266,12 @@ return new class extends Migration
 
         // ── MUTASI_SISWAS ────────────────────────────────────────────
         Schema::create('mutasi_siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id. Siswa yang mengalami mutasi')->constrained('siswas')->cascadeOnDelete();
             $table->enum('jenis_mutasi', ['masuk', 'keluar', 'lulus', 'nonaktif', 'meninggal'])
                 ->comment('masuk=pindah dari sekolah lain, keluar=pindah keluar, lulus=tamat');
@@ -240,12 +291,24 @@ return new class extends Migration
 
         // ── BERKAS_SISWAS ────────────────────────────────────────────
         Schema::create('berkas_siswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->enum('jenis_berkas', [
-                'kartu_keluarga', 'akte_kelahiran', 'ktp_orang_tua', 'pas_foto',
-                'ijazah_sebelumnya', 'rapor_sekolah_asal', 'surat_keterangan_sehat',
-                'kip_pkh_kks', 'surat_mutasi', 'lainnya',
+                'kartu_keluarga',
+                'akte_kelahiran',
+                'ktp_orang_tua',
+                'pas_foto',
+                'ijazah_sebelumnya',
+                'rapor_sekolah_asal',
+                'surat_keterangan_sehat',
+                'kip_pkh_kks',
+                'surat_mutasi',
+                'lainnya',
             ])->comment('Kategori berkas untuk memastikan kelengkapan dokumen');
             $table->string('nama_file_asli', 255)->comment('Nama file asli saat diupload (untuk tampilan UI)');
             $table->string('nama_file_sistem', 255)->comment('Nama file di server (UUID/hash untuk keamanan)');
@@ -263,7 +326,12 @@ return new class extends Migration
 
         // ── PRESTASIS ────────────────────────────────────────────────
         Schema::create('prestasis', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->string('nama', 200)->comment('Nama/judul kompetisi atau prestasi yang diraih');
             $table->enum('jenis', ['Akademik', 'Non-Akademik', 'Olahraga', 'Seni', 'Lainnya'])->nullable();
@@ -281,7 +349,12 @@ return new class extends Migration
 
         // ── BEASISWAS ────────────────────────────────────────────────
         Schema::create('beasiswas', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->string('nama', 150)->comment('Nama program beasiswa: PIP, BPIB, Beasiswa Hafidz, dll');
             $table->string('jenis', 60)->nullable()->comment('PIP|BPIB|Swasta|Pemerintah Daerah|Yayasan|Lainnya');
@@ -298,7 +371,12 @@ return new class extends Migration
 
         // ── SISWA_EKSKULS ────────────────────────────────────────────
         Schema::create('siswa_ekskuls', function (Blueprint $table) {
+
             $table->id();
+            $table->foreignId('school_id')->nullable()
+                ->comment('FK ke schools.id')
+                ->constrained('schools')->cascadeOnDelete();
+
             $table->foreignId('siswa_id')->comment('FK ke siswas.id')->constrained('siswas')->cascadeOnDelete();
             $table->foreignId('ekskul_id')->comment('FK ke ekskuls.id')->constrained('ekskuls')->cascadeOnDelete();
             $table->foreignId('tahun_ajaran_id')->comment('FK ke tahun_ajarans.id')->constrained('tahun_ajarans')->cascadeOnDelete();
