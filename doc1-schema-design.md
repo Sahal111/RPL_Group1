@@ -20,12 +20,19 @@ Isolasi antar tenant dijamin di level aplikasi, bukan level database.
 Tabel ini shared antar semua tenant. Data di sini bukan milik satu sekolah.
 
 ```
+global_users            -- autentikasi & identitas sentral
+global_user_schools    -- lookup mapping user global <-> sekolah
+platform_admins         -- admin platform level SaaS
 plans                   -- paket langganan (Basic, Pro, Enterprise)
 plan_features           -- fitur yang tersedia per paket
+saas_coupons            -- kupon diskon langganan
+saas_coupon_usages      -- riwayat klaim kupon
+master_school_types     -- jenis/tipe sekolah global (SD, MI, K12_INT)
+master_blood_types      -- golongan darah universal
 schools                 -- daftar tenant/sekolah
 school_subscriptions    -- langganan sekolah ke plan tertentu
 school_domains          -- domain/subdomain per sekolah
-personal_access_tokens  -- token Sanctum (sudah ada school_id via user)
+personal_access_tokens  -- token Sanctum
 password_reset_tokens
 cache / cache_locks
 sessions
@@ -33,10 +40,14 @@ jobs / failed_jobs
 migrations
 ```
 
-### Tabel PLATFORM (school_id nullable — milik platform, dikopi ke tenant)
+### Tabel REFERENCE / MASTER DATA (school_id NULLABLE)
+Milik platform (default) tetapi bisa di-override oleh sekolah tertentu.
 ```
-permission_templates    -- template permission default saat sekolah baru dibuat
-role_templates          -- template role default (operator, guru, kepsek, dll)
+master_religions        -- agama
+master_education_levels -- jenjang pendidikan
+master_status_kepegawaians -- status kepegawaian
+master_jenis_cutis      -- jenis cuti
+master_marital_statuses -- status pernikahan
 ```
 
 ### Tabel OPERASIONAL (wajib school_id NOT NULL)

@@ -149,42 +149,44 @@ return new class extends Migration {
         // Komentar di users menyebut "NULL hanya untuk platform_admins
         // (dihandle terpisah)" tapi tabelnya belum ada.
         // ═══════════════════════════════════════════════════════════════
-        Schema::create('platform_admins', function (Blueprint $table) {
-            $table->id();
+        if (!Schema::hasTable('platform_admins')) {
+            Schema::create('platform_admins', function (Blueprint $table) {
+                $table->id();
 
-            $table->foreignId('user_id')->unique()
-                ->comment('FK ke users.id. Akun login platform admin (school_id = NULL di users)')
-                ->constrained('users')
-                ->cascadeOnDelete();
+                $table->foreignId('user_id')->unique()
+                    ->comment('FK ke users.id. Akun login platform admin (school_id = NULL di users)')
+                    ->constrained('users')
+                    ->cascadeOnDelete();
 
-            $table->string('nama', 150)
-                ->comment('Nama lengkap admin platform');
+                $table->string('nama', 150)
+                    ->comment('Nama lengkap admin platform');
 
-            $table->string('jabatan', 100)->nullable()
-                ->comment('Jabatan: Super Admin, Support Engineer, Billing Admin, dll');
+                $table->string('jabatan', 100)->nullable()
+                    ->comment('Jabatan: Super Admin, Support Engineer, Billing Admin, dll');
 
-            $table->enum('level', ['super', 'support', 'billing', 'readonly'])
-                ->default('support')
-                ->comment('super=akses penuh, support=lihat data sekolah, billing=kelola invoice, readonly=dashboard saja');
+                $table->enum('level', ['super', 'support', 'billing', 'readonly'])
+                    ->default('support')
+                    ->comment('super=akses penuh, support=lihat data sekolah, billing=kelola invoice, readonly=dashboard saja');
 
-            $table->json('akses_modul')->nullable()
-                ->comment('Array modul jika level bukan super: ["schools","billing","notifications"]');
+                $table->json('akses_modul')->nullable()
+                    ->comment('Array modul jika level bukan super: ["schools","billing","notifications"]');
 
-            $table->boolean('is_active')->default(true);
-            $table->timestamp('last_login_at')->nullable();
-            $table->string('last_login_ip', 45)->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamp('last_login_at')->nullable();
+                $table->string('last_login_ip', 45)->nullable();
 
-            $table->foreignId('dibuat_oleh')->nullable()
-                ->comment('FK ke platform_admins.id. Siapa yang menambahkan admin ini')
-                ->constrained('platform_admins')
-                ->nullOnDelete();
+                $table->foreignId('dibuat_oleh')->nullable()
+                    ->comment('FK ke platform_admins.id. Siapa yang menambahkan admin ini')
+                    ->constrained('platform_admins')
+                    ->nullOnDelete();
 
-            $table->timestamps();
-            $table->softDeletes();
+                $table->timestamps();
+                $table->softDeletes();
 
-            $table->index('level', 'idx_padmin_level');
-            $table->index('is_active', 'idx_padmin_active');
-        });
+                $table->index('level', 'idx_padmin_level');
+                $table->index('is_active', 'idx_padmin_active');
+            });
+        }
 
 
         // ═══════════════════════════════════════════════════════════════

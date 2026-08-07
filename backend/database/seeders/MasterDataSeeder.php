@@ -74,6 +74,64 @@ class MasterDataSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('✅ MasterDataSeeder: status kepegawaian, jenis cuti, akun kas, dan kategori buku berhasil di-seed.');
+        // ── Master Religions ─────────────────────────────────────────
+        DB::table('master_religions')->insertOrIgnore([
+            ['school_id' => null, 'code' => 'islam', 'name' => 'Islam', 'display_order' => 1, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'christianity', 'name' => 'Christianity (Protestant)', 'display_order' => 2, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'catholicism', 'name' => 'Catholicism', 'display_order' => 3, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'hinduism', 'name' => 'Hinduism', 'display_order' => 4, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'buddhism', 'name' => 'Buddhism', 'display_order' => 5, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'confucianism', 'name' => 'Confucianism', 'display_order' => 6, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'judaism', 'name' => 'Judaism', 'display_order' => 7, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'other', 'name' => 'Other / Unspecified', 'display_order' => 99, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        // ── Master Education Levels ──────────────────────────────────
+        DB::table('master_education_levels')->insertOrIgnore([
+            ['school_id' => null, 'code' => 'primary', 'name' => 'Primary / Elementary School', 'country_code' => 'GLOBAL', 'display_order' => 1, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'junior_high', 'name' => 'Junior High / Middle School', 'country_code' => 'GLOBAL', 'display_order' => 2, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'senior_high', 'name' => 'Senior High / High School', 'country_code' => 'GLOBAL', 'display_order' => 3, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'vocational', 'name' => 'Vocational High School', 'country_code' => 'GLOBAL', 'display_order' => 4, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'associate', 'name' => 'Associate Degree / Diploma', 'country_code' => 'GLOBAL', 'display_order' => 5, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'bachelor', 'name' => "Bachelor's Degree (S1)", 'country_code' => 'GLOBAL', 'display_order' => 6, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'master', 'name' => "Master's Degree (S2)", 'country_code' => 'GLOBAL', 'display_order' => 7, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'doctorate', 'name' => 'Doctorate / PhD (S3)', 'country_code' => 'GLOBAL', 'display_order' => 8, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        // ── Master Marital Statuses ──────────────────────────────────
+        DB::table('master_marital_statuses')->insertOrIgnore([
+            ['school_id' => null, 'code' => 'single', 'name' => 'Single / Unmarried', 'display_order' => 1, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'married', 'name' => 'Married', 'display_order' => 2, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'divorced', 'name' => 'Divorced', 'display_order' => 3, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['school_id' => null, 'code' => 'widowed', 'name' => 'Widowed', 'display_order' => 4, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        // ── Master School Types ─────────────────────────────────────
+        DB::table('master_school_types')->insertOrIgnore([
+            ['code' => 'SD', 'name' => 'Sekolah Dasar (SD)', 'country_code' => 'ID', 'education_level' => 'primary', 'display_order' => 1, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'MI', 'name' => 'Madrasah Ibtidaiyah (MI)', 'country_code' => 'ID', 'education_level' => 'primary', 'display_order' => 2, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'SMP', 'name' => 'Sekolah Menengah Pertama (SMP)', 'country_code' => 'ID', 'education_level' => 'junior_high', 'display_order' => 3, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'MTS', 'name' => 'Madrasah Tsanawiyah (MTs)', 'country_code' => 'ID', 'education_level' => 'junior_high', 'display_order' => 4, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'SMA', 'name' => 'Sekolah Menengah Atas (SMA)', 'country_code' => 'ID', 'education_level' => 'senior_high', 'display_order' => 5, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'MA', 'name' => 'Madrasah Aliyah (MA)', 'country_code' => 'ID', 'education_level' => 'senior_high', 'display_order' => 6, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'SMK', 'name' => 'Sekolah Menengah Kejuruan (SMK)', 'country_code' => 'ID', 'education_level' => 'vocational', 'display_order' => 7, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'K12_INT', 'name' => 'International K-12 Academy', 'country_code' => 'GLOBAL', 'education_level' => 'k12', 'display_order' => 8, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        // ── Master Blood Types ──────────────────────────────────────
+        DB::table('master_blood_types')->insertOrIgnore([
+            ['code' => 'A+', 'name' => 'A Positive', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'A-', 'name' => 'A Negative', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'B+', 'name' => 'B Positive', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'B-', 'name' => 'B Negative', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'AB+', 'name' => 'AB Positive', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'AB-', 'name' => 'AB Negative', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'O+', 'name' => 'O Positive', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'O-', 'name' => 'O Negative', 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'UNKNOWN', 'name' => 'Unknown', 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        $this->command->info('✅ MasterDataSeeder: status kepegawaian, jenis cuti, akun kas, kategori buku, agama, jenjang pendidikan, status pernikahan, jenis sekolah, & golongan darah berhasil di-seed.');
     }
 }
+
