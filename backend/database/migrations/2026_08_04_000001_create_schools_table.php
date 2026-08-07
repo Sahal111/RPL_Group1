@@ -12,7 +12,29 @@ return new class extends Migration {
             $table->char('ulid', 26)->unique()->comment('Public identifier — jangan expose integer id ke luar');
             $table->string('nama', 150)->comment('Nama resmi sekolah');
             $table->string('npsn', 10)->nullable()->unique()->comment('Nomor Pokok Sekolah Nasional');
-            $table->enum('jenis', ['MI', 'MTs', 'MA', 'SD', 'SMP', 'SMA', 'SMK'])->default('MI');
+            // jenis: tipe kelembagaan (negeri/swasta/berbasis agama)
+            $table->enum('jenis', [
+                // Madrasah (Kemenag)
+                'MI',
+                'MTs',
+                'MA',
+                'MAK',
+                // Umum (Kemdikbud)
+                'SD',
+                'SMP',
+                'SMA',
+                'SMK',
+                // Lainnya
+                'SDLB',
+                'SMPLB',
+                'SMALB',
+                'SLB',
+            ])->default('MI');
+
+            // jenjang: level pendidikan — untuk filter fitur yang tersedia per jenjang
+            // (SD/MI punya kelas 1-6, SMP/MTs 7-9, SMA/MA 10-12)
+            $table->enum('jenjang', ['dasar', 'menengah_pertama', 'menengah_atas'])->default('dasar')
+                ->comment('dasar=SD/MI, menengah_pertama=SMP/MTs, menengah_atas=SMA/MA/SMK');
             $table->enum('status', ['active', 'suspended', 'trial', 'cancelled'])->default('trial');
             $table->timestamp('trial_ends_at')->nullable()->comment('Kapan masa trial berakhir');
             $table->string('logo', 255)->nullable();

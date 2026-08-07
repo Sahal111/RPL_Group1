@@ -113,6 +113,7 @@ class SchoolSeeder extends Seeder
             ['slug' => 'wali_kelas', 'nama' => 'Wali Kelas', 'is_system' => true],
             ['slug' => 'bendahara', 'nama' => 'Bendahara', 'is_system' => true],
             ['slug' => 'ortu', 'nama' => 'Orang Tua', 'is_system' => true],
+            ['slug' => 'siswa', 'nama' => 'Siswa', 'is_system' => true],
             ['slug' => 'admin_ppdb', 'nama' => 'Admin PPDB', 'is_system' => true],
         ];
 
@@ -256,6 +257,16 @@ class SchoolSeeder extends Seeder
             ['slug' => 'pengaturan.update', 'nama' => 'Edit Pengaturan', 'modul' => 'pengaturan'],
             ['slug' => 'pengaturan.rbac.manage', 'nama' => 'Kelola Role & Permission', 'modul' => 'pengaturan'],
 
+            // siswa portal — hak akses siswa ke data dirinya sendiri
+            ['slug' => 'siswa_portal.profil.view', 'nama' => 'Lihat Profil Diri', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.profil.update', 'nama' => 'Update Profil Diri', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.absensi.view', 'nama' => 'Lihat Absensi Diri', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.nilai.view', 'nama' => 'Lihat Nilai Diri', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.jadwal.view', 'nama' => 'Lihat Jadwal Pelajaran', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.pengumuman.view', 'nama' => 'Lihat Pengumuman', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.tagihan.view', 'nama' => 'Lihat Tagihan SPP', 'modul' => 'siswa_portal'],
+            ['slug' => 'siswa_portal.rapor.view', 'nama' => 'Lihat Rapor', 'modul' => 'siswa_portal'],
+
             // laporan
             ['slug' => 'laporan.guru.view', 'nama' => 'Laporan Guru', 'modul' => 'laporan'],
             ['slug' => 'laporan.siswa.view', 'nama' => 'Laporan Siswa', 'modul' => 'laporan'],
@@ -398,6 +409,19 @@ class SchoolSeeder extends Seeder
                 'master_data.siswa.view',
                 'absensi.view_kelas_sendiri',
                 'pengumuman.view',
+                'siswa_portal.tagihan.view',
+                'siswa_portal.rapor.view',
+            ],
+
+            'siswa' => [
+                'siswa_portal.profil.view',
+                'siswa_portal.profil.update',
+                'siswa_portal.absensi.view',
+                'siswa_portal.nilai.view',
+                'siswa_portal.jadwal.view',
+                'siswa_portal.pengumuman.view',
+                'siswa_portal.tagihan.view',
+                'siswa_portal.rapor.view',
             ],
 
             'admin_ppdb' => [

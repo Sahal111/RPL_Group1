@@ -7,143 +7,124 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
+/**
+ * Seed akun testing untuk semua role.
+ * Harus dijalankan SETELAH SchoolSeeder + TahunAjaranSeeder.
+ *
+ * Akun yang dibuat:
+ *   operator   / operator123
+ *   kepsek     / kepsek123
+ *   guru       / guru123
+ *   walikelas  / walikelas123
+ *   bendahara  / bendahara123
+ *   ortu       / ortu123
+ *   siswa      / siswa123
+ *   adminppdb  / adminppdb123
+ */
 class TestingUserSeeder extends Seeder
 {
     public function run(): void
     {
         $now = Carbon::now();
+        $schoolId = DB::table('schools')->value('id');
 
-        // 1. Get TA, Semester, and Kelas IDs
-        $taId = DB::table('tahun_ajarans')->where('tahun', '2026/2027')->value('id');
-        if (!$taId) {
-            $taId = DB::table('tahun_ajarans')->insertGetId([
-                'tahun' => '2026/2027',
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
+        if (!$schoolId) {
+            $this->command->warn('TestingUserSeeder: tidak ada school — jalankan SchoolSeeder dulu.');
+            return;
         }
 
-        $smtId = DB::table('semesters')->where('tahun_ajaran_id', $taId)->where('nama', 'Ganjil')->value('id');
-        if (!$smtId) {
-            $smtId = DB::table('semesters')->insertGetId([
-                'tahun_ajaran_id' => $taId,
-                'nama' => 'Ganjil',
+        $taId = DB::table('tahun_ajarans')
+            ->where('school_id', $schoolId)
+            ->where('tahun', '2026/2027')
+            ->value('id');
+
+        $smtId = DB::table('semesters')
+            ->where('school_id', $schoolId)
+            ->where('tahun_ajaran_id', $taId)
+            ->where('nama', 'Ganjil')
+            ->value('id');
+
+        $kelasId = DB::table('kelas')
+            ->where('school_id', $schoolId)
+            ->where('tahun_ajaran_id', $taId)
+            ->value('id');
+
+        // Helper: buat user jika belum ada
+        $makeUser = function (array $data) use ($now, $schoolId): int {
+            $exists = DB::table('users')
+                ->where('school_id', $schoolId)
+                ->where('username', $data['username'])
+                ->value('id');
+
+            if ($exists) {
+                return $exists;
+            }
+
+            return DB::table('users')->insertGetId(array_merge([
+                'school_id' => $schoolId,
                 'is_active' => 1,
                 'created_at' => $now,
-                'updated_at' => $now
-            ]);
-        }
+                'updated_at' => $now,
+            ], $data));
+        };
 
-        $kelasId = DB::table('kelas')->where('tahun_ajaran_id', $taId)->value('id');
-        if (!$kelasId) {
-            $kelasId = DB::table('kelas')->insertGetId([
-                'tahun_ajaran_id' => $taId,
-                'semester_id' => $smtId,
-                'nama_kelas' => '1-A',
-                'tingkat' => 1,
-                'kurikulum' => 'Merdeka',
-                'kapasitas' => 32,
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-        }
+        // Helper: assign role
+        $assignRole = function (int $userId, string $roleSlug) use ($now, $schoolId): void {
+            $roleId = DB::table('roles')
+                ->where('school_id', $schoolId)
+                ->where('slug', $roleSlug)
+                ->value('id');
 
-        // Helper untuk assign role
-        $assignRole = function ($userId, $roleSlug) use ($now) {
-            $roleId = DB::table('roles')->where('slug', $roleSlug)->value('id');
             if ($roleId) {
                 DB::table('user_roles')->insertOrIgnore([
                     'user_id' => $userId,
                     'role_id' => $roleId,
-                    'created_at' => $now
+                    'created_at' => $now,
                 ]);
             }
         };
 
-        // 2. SEED KEPSEK
-        $kepsekUserExists = DB::table('users')->where('username', 'kepsek')->exists();
-        if (!$kepsekUserExists) {
-            $userId = DB::table('users')->insertGetId([
-                'name' => 'Kepala Sekolah Test',
-                'username' => 'kepsek',
-                'email' => 'kepsek@minurulhuda3.sch.id',
-                'password' => Hash::make('kepsek123'),
-                'is_active' => 1,
+        // Helper: buat guru record
+        $makeGuru = function (int $userId, string $nuptk, string $nama, string $jk, string $ptk) use ($now, $schoolId): int {
+            $exists = DB::table('gurus')->where('school_id', $schoolId)->where('nuptk', $nuptk)->value('id');
+            if ($exists)
+                return $exists;
+
+            return DB::table('gurus')->insertGetId([
+                'school_id' => $schoolId,
+                'user_id' => $userId,
+                'nuptk' => $nuptk,
+                'nama' => $nama,
+                'jenis_kelamin' => $jk,
+                'jenis_ptk' => $ptk,
+                'status_aktif' => 1,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
-            $assignRole($userId, 'kepsek');
+        };
 
-            // Guru record for Kepsek
-            $guruId = DB::table('gurus')->insertGetId([
-                'user_id' => $userId,
-                'nuptk' => '1111111111111111',
-                'nama' => 'Kepala Sekolah Test',
-                'jenis_kelamin' => 'L',
-                'jenis_ptk' => 'Kepala Sekolah',
-                'status_aktif' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-        }
+        // ── OPERATOR ────────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Operator Test', 'username' => 'operator', 'email' => 'operator@test.id', 'password' => Hash::make('operator123')]);
+        $assignRole($userId, 'operator');
 
-        // 3. SEED GURU
-        $guruUserExists = DB::table('users')->where('username', 'guru')->exists();
-        if (!$guruUserExists) {
-            $userId = DB::table('users')->insertGetId([
-                'name' => 'Guru Pengajar Test',
-                'username' => 'guru',
-                'email' => 'guru@minurulhuda3.sch.id',
-                'password' => Hash::make('guru123'),
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-            $assignRole($userId, 'guru');
+        // ── KEPSEK ──────────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Kepala Sekolah Test', 'username' => 'kepsek', 'email' => 'kepsek@test.id', 'password' => Hash::make('kepsek123')]);
+        $assignRole($userId, 'kepsek');
+        $makeGuru($userId, '1111111111111111', 'Kepala Sekolah Test', 'L', 'Kepala Sekolah');
 
-            // Guru record
-            $guruId = DB::table('gurus')->insertGetId([
-                'user_id' => $userId,
-                'nuptk' => '2222222222222222',
-                'nama' => 'Guru Pengajar Test',
-                'jenis_kelamin' => 'P',
-                'jenis_ptk' => 'Guru Kelas',
-                'status_aktif' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-        }
+        // ── GURU ─────────────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Guru Pengajar Test', 'username' => 'guru', 'email' => 'guru@test.id', 'password' => Hash::make('guru123')]);
+        $assignRole($userId, 'guru');
+        $makeGuru($userId, '2222222222222222', 'Guru Pengajar Test', 'P', 'Guru Kelas');
 
-        // 4. SEED WALI KELAS
-        $walikelasUserExists = DB::table('users')->where('username', 'walikelas')->exists();
-        if (!$walikelasUserExists) {
-            $userId = DB::table('users')->insertGetId([
-                'name' => 'Wali Kelas Test',
-                'username' => 'walikelas',
-                'email' => 'walikelas@minurulhuda3.sch.id',
-                'password' => Hash::make('walikelas123'),
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-            $assignRole($userId, 'wali_kelas');
+        // ── WALI KELAS ───────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Wali Kelas Test', 'username' => 'walikelas', 'email' => 'walikelas@test.id', 'password' => Hash::make('walikelas123')]);
+        $assignRole($userId, 'wali_kelas');
+        $guruId = $makeGuru($userId, '3333333333333333', 'Wali Kelas Test', 'L', 'Guru Kelas');
 
-            // Guru record
-            $guruId = DB::table('gurus')->insertGetId([
-                'user_id' => $userId,
-                'nuptk' => '3333333333333333',
-                'nama' => 'Wali Kelas Test',
-                'jenis_kelamin' => 'L',
-                'jenis_ptk' => 'Guru Kelas',
-                'status_aktif' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-
-            // Assign wali kelas
+        if ($kelasId) {
             DB::table('wali_kelas')->insertOrIgnore([
+                'school_id' => $schoolId,
                 'guru_id' => $guruId,
                 'kelas_id' => $kelasId,
                 'tahun_ajaran_id' => $taId,
@@ -151,119 +132,119 @@ class TestingUserSeeder extends Seeder
                 'no_sk' => 'SK-WALIKELAS-01',
                 'is_active' => 1,
                 'created_at' => $now,
-                'updated_at' => $now
+                'updated_at' => $now,
             ]);
         }
 
-        // 5. SEED BENDAHARA
-        $bendaharaUserExists = DB::table('users')->where('username', 'bendahara')->exists();
-        if (!$bendaharaUserExists) {
-            $userId = DB::table('users')->insertGetId([
-                'name' => 'Bendahara Test',
-                'username' => 'bendahara',
-                'email' => 'bendahara@minurulhuda3.sch.id',
-                'password' => Hash::make('bendahara123'),
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-            $assignRole($userId, 'bendahara');
+        // ── BENDAHARA ────────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Bendahara Test', 'username' => 'bendahara', 'email' => 'bendahara@test.id', 'password' => Hash::make('bendahara123')]);
+        $assignRole($userId, 'bendahara');
+        $guruId = $makeGuru($userId, '4444444444444444', 'Bendahara Test', 'P', 'Guru Kelas');
 
-            // Guru record for bendahara
-            $guruId = DB::table('gurus')->insertGetId([
-                'user_id' => $userId,
-                'nuptk' => '4444444444444444',
-                'nama' => 'Bendahara Test',
-                'jenis_kelamin' => 'P',
-                'jenis_ptk' => 'Guru Kelas',
-                'status_aktif' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
+        DB::table('bendaharas')->insertOrIgnore([
+            'school_id' => $schoolId,
+            'user_id' => $userId,
+            'guru_id' => $guruId,
+            'jenis_bendahara' => 'SPP',
+            'no_sk' => 'SK-BENDAHARA-01',
+            'is_active' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
 
-            // Bendahara record
-            DB::table('bendaharas')->insertOrIgnore([
-                'user_id' => $userId,
-                'guru_id' => $guruId,
-                'jenis_bendahara' => 'SPP',
-                'no_sk' => 'SK-BENDAHARA-01',
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-        }
+        // ── ORTU ─────────────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Orang Tua Test', 'username' => 'ortu', 'email' => 'ortu@test.id', 'password' => Hash::make('ortu123')]);
+        $assignRole($userId, 'ortu');
 
-        // 6. SEED ORANG TUA
-        $ortuUserExists = DB::table('users')->where('username', 'ortu')->exists();
-        if (!$ortuUserExists) {
-            $userId = DB::table('users')->insertGetId([
-                'name' => 'Orang Tua Test',
-                'username' => 'ortu',
-                'email' => 'ortu@minurulhuda3.sch.id',
-                'password' => Hash::make('ortu123'),
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-            $assignRole($userId, 'ortu');
+        $ortuId = DB::table('orang_tuas')
+            ->where('school_id', $schoolId)
+            ->where('user_id', $userId)
+            ->value('id');
 
-            // Ortu record
+        if (!$ortuId) {
             $ortuId = DB::table('orang_tuas')->insertGetId([
+                'school_id' => $schoolId,
                 'user_id' => $userId,
                 'nama' => 'Orang Tua Test',
                 'hubungan' => 'Ayah',
                 'status' => 'Kandung',
                 'no_hp' => '081234567890',
                 'created_at' => $now,
-                'updated_at' => $now
+                'updated_at' => $now,
+            ]);
+        }
+
+        // Buat siswa anak ortu
+        $anakOrtuId = DB::table('siswas')
+            ->where('school_id', $schoolId)
+            ->where('nisn', '1234567890')
+            ->value('id');
+
+        if (!$anakOrtuId) {
+            $anakOrtuId = DB::table('siswas')->insertGetId([
+                'school_id' => $schoolId,
+                'nisn' => '1234567890',
+                'nama' => 'Siswa Anak Ortu Test',
+                'jenis_kelamin' => 'L',
+                'status' => 'aktif',
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
 
-            // Also seed a student child if none exists
-            $siswaId = DB::table('siswas')->where('nisn', '1234567890')->value('id');
-            if (!$siswaId) {
-                $siswaId = DB::table('siswas')->insertGetId([
-                    'nisn' => '1234567890',
-                    'nama' => 'Siswa Test Anak Ortu',
-                    'jenis_kelamin' => 'L',
-                    'status' => 'aktif',
-                    'created_at' => $now,
-                    'updated_at' => $now
-                ]);
-
-                // Assign student to class
+            if ($kelasId) {
                 DB::table('riwayat_kelas')->insertOrIgnore([
+                    'school_id' => $schoolId,
+                    'siswa_id' => $anakOrtuId,
+                    'kelas_id' => $kelasId,
+                    'jenis_perubahan' => 'masuk',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
+        DB::table('orang_tua_siswa')->insertOrIgnore([
+            'orang_tua_id' => $ortuId,
+            'siswa_id' => $anakOrtuId,
+        ]);
+
+        // ── SISWA ─────────────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Siswa Test', 'username' => 'siswa', 'email' => 'siswa@test.id', 'password' => Hash::make('siswa123')]);
+        $assignRole($userId, 'siswa');
+
+        $siswaId = DB::table('siswas')
+            ->where('school_id', $schoolId)
+            ->where('nisn', '9999999999')
+            ->value('id');
+
+        if (!$siswaId) {
+            $siswaId = DB::table('siswas')->insertGetId([
+                'school_id' => $schoolId,
+                'user_id' => $userId,
+                'nisn' => '9999999999',
+                'nama' => 'Siswa Test',
+                'jenis_kelamin' => 'L',
+                'status' => 'aktif',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            if ($kelasId) {
+                DB::table('riwayat_kelas')->insertOrIgnore([
+                    'school_id' => $schoolId,
                     'siswa_id' => $siswaId,
                     'kelas_id' => $kelasId,
                     'jenis_perubahan' => 'masuk',
                     'created_at' => $now,
-                    'updated_at' => $now
+                    'updated_at' => $now,
                 ]);
             }
-
-            // Bind child to parent
-            DB::table('orang_tua_siswa')->insertOrIgnore([
-                'orang_tua_id' => $ortuId,
-                'siswa_id' => $siswaId,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
         }
 
-        // 7. SEED ADMIN PPDB
-        $adminppdbUserExists = DB::table('users')->where('username', 'adminppdb')->exists();
-        if (!$adminppdbUserExists) {
-            $userId = DB::table('users')->insertGetId([
-                'name' => 'Admin PPDB Test',
-                'username' => 'adminppdb',
-                'email' => 'adminppdb@minurulhuda3.sch.id',
-                'password' => Hash::make('adminppdb123'),
-                'is_active' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-            $assignRole($userId, 'admin_ppdb');
-        }
+        // ── ADMIN PPDB ───────────────────────────────────────────────
+        $userId = $makeUser(['name' => 'Admin PPDB Test', 'username' => 'adminppdb', 'email' => 'adminppdb@test.id', 'password' => Hash::make('adminppdb123')]);
+        $assignRole($userId, 'admin_ppdb');
 
-        echo "Testing accounts seeded successfully!\n";
+        $this->command->info('TestingUserSeeder selesai. Akun: operator/kepsek/guru/walikelas/bendahara/ortu/siswa/adminppdb (semua password: [role]123)');
     }
 }

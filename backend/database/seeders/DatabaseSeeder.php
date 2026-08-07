@@ -13,14 +13,11 @@ class DatabaseSeeder extends Seeder
                 //    Harus jalan paling pertama karena semua tabel lain FK ke schools
             SchoolSeeder::class,
 
-            // 2. Data akademik dev (hanya untuk development)
-            // TahunAjaranSeeder::class,
+                // 2. Data akademik dev
+            TahunAjaranSeeder::class,
 
-            // 3. Data user dev lainnya (sudah ada super_operator dari SchoolSeeder)
-            // OperatorSeeder::class,
-
-            // 4. Data dummy lain
-            // PengumumanSeeder::class,
+                // 3. Akun testing semua role (hanya untuk development)
+            TestingUserSeeder::class,
         ]);
     }
 }

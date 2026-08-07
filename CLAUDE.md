@@ -36,6 +36,7 @@
 | `kepsek` | Kepala Sekolah | Monitoring, data guru & siswa (read-only), kalender, pengumuman |
 | `wali_kelas` | Wali Kelas | Placeholder dashboard — scope fitur belum final |
 | `bendahara` | Bendahara | Placeholder dashboard — scope fitur belum final |
+| `siswa` | Siswa | Portal siswa — lihat absensi diri, nilai, jadwal, tagihan, rapor |
 | `admin_ppdb` | Admin PPDB | Placeholder dashboard — scope fitur belum final |
 
 > Role disimpan di tabel `roles` (kolom: `id`, `slug`, `nama`, `deskripsi`, `is_active`).
@@ -128,6 +129,7 @@
   - `walikelas` / `walikelas123`
   - `bendahara` / `bendahara123`
   - `ortu` / `ortu123`
+  - `siswa` / `siswa123`
   - `adminppdb` / `adminppdb123`
 
 ---

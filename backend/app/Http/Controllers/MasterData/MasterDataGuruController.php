@@ -620,7 +620,7 @@ class MasterDataGuruController extends Controller
         }
 
         return $this->success([
-            'dokumens'  => $dokumens,
+            'dokumens' => $dokumens,
             'statistik' => $statistik,
             'checklist' => $checklist,
         ]);
@@ -1101,12 +1101,11 @@ class MasterDataGuruController extends Controller
         $result = $service->analyze($guru, $request->all());
 
         // errors → 422 agar frontend bisa bedain valid/invalid
-        $status = count($result['errors']) > 0 ? 422 : 200;
+        if (count($result['errors']) > 0) {
+            return $this->error('Data mutasi tidak valid.', 'VALIDATION_ERROR', 422, $result);
+        }
 
-        return response()->json([
-            'success' => $status === 200,
-            'data'    => $result,
-        ], $status);
+        return $this->success($result);
     }
 
     public function storeMutasi(StoreMutasiRequest $request, $nuptk)
@@ -2572,12 +2571,11 @@ class MasterDataGuruController extends Controller
             ->map(fn($v, $k) => "{$v} {$k}")
             ->join(', ');
 
-        return response()->json([
-            'success' => true,
-            'message' => "Import selesai: {$results['berhasil']} guru ditambahkan, {$results['diperbarui']} diperbarui, {$results['gagal']} gagal."
-                . ($relasiMsg ? " Relasi: {$relasiMsg}." : ''),
-            'data' => $results,
-        ]);
+        return $this->success(
+            $results,
+            "Import selesai: {$results['berhasil']} guru ditambahkan, {$results['diperbarui']} diperbarui, {$results['gagal']} gagal."
+            . ($relasiMsg ? " Relasi: {$relasiMsg}." : '')
+        );
     }
 
     /**
@@ -3202,8 +3200,7 @@ class MasterDataGuruController extends Controller
                 'ip_address' => $request->ip(),
             ]);
 
-            return response()->json([
-                'success' => true,
+            return $this->success([
                 'batch_id' => $batchId,
                 'total_baris' => count($rows) + count($sample),
                 'sheets' => array_map(fn($s) => $s['name'], $allSheets),
@@ -3214,10 +3211,7 @@ class MasterDataGuruController extends Controller
                 'dup_stats' => $dupStats,
             ]);
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memproses file: ' . $e->getMessage(),
-            ], 500);
+            return $this->error('Gagal memproses file: ' . $e->getMessage());
         }
     }
 
@@ -3255,10 +3249,7 @@ class MasterDataGuruController extends Controller
                 'finished_at' => now(),
                 'error_detail' => [['pesan' => 'File upload sudah tidak ada. Silakan upload ulang.']]
             ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'File sudah tidak ada di server. Silakan upload ulang dari awal.',
-            ], 422);
+            return $this->error('File sudah tidak ada di server. Silakan upload ulang dari awal.', 'NOT_FOUND', 422);
         }
 
         $allSheets = $this->parseMultiSheetXlsx($filePath);
@@ -3469,21 +3460,18 @@ class MasterDataGuruController extends Controller
         // Bersihkan file temp
         Storage::delete('imports/' . $log->batch_id . '.xlsx');
 
-        return response()->json([
-            'success' => true,
+        return $this->success([
             'batch_id' => $log->batch_id,
-            'data' => [
-                'status' => 'done',
-                'progress_persen' => 100,
-                'total_baris' => $totalBaris,
-                'jumlah_insert' => $stats['insert'],
-                'jumlah_update' => $stats['update'],
-                'jumlah_skip' => $stats['skip'],
-                'jumlah_gagal' => $stats['gagal'],
-                'statistik_relasi' => $stats['relasi'],
-                'error_detail' => $stats['errors'],
-                'durasi_detik' => $durasi,
-            ],
+            'status' => 'done',
+            'progress_persen' => 100,
+            'total_baris' => $totalBaris,
+            'jumlah_insert' => $stats['insert'],
+            'jumlah_update' => $stats['update'],
+            'jumlah_skip' => $stats['skip'],
+            'jumlah_gagal' => $stats['gagal'],
+            'statistik_relasi' => $stats['relasi'],
+            'error_detail' => $stats['errors'],
+            'durasi_detik' => $durasi,
         ]);
     }
 
@@ -3520,11 +3508,10 @@ class MasterDataGuruController extends Controller
             $request->ip(),
         );
 
-        return response()->json([
-            'success' => true,
-            'batch_id' => $batchId,
-            'message' => 'ZIP sedang diproses. Pantau via /guru/import-status/{batch_id}.',
-        ]);
+        return $this->success(
+            ['batch_id' => $batchId],
+            'ZIP sedang diproses. Pantau via /guru/import-status/{batch_id}.'
+        );
     }
 
     /**
@@ -3537,23 +3524,20 @@ class MasterDataGuruController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'batch_id' => $log->batch_id,
-                'status' => $log->status,
-                'progress_persen' => $log->progress_persen,
-                'total_baris' => $log->total_baris,
-                'jumlah_insert' => $log->jumlah_insert,
-                'jumlah_update' => $log->jumlah_update,
-                'jumlah_skip' => $log->jumlah_skip,
-                'jumlah_gagal' => $log->jumlah_gagal,
-                'statistik_relasi' => $log->statistik_relasi,
-                'error_detail' => $log->error_detail,
-                'durasi_detik' => $log->durasi_detik,
-                'started_at' => $log->started_at,
-                'finished_at' => $log->finished_at,
-            ],
+        return $this->success([
+            'batch_id' => $log->batch_id,
+            'status' => $log->status,
+            'progress_persen' => $log->progress_persen,
+            'total_baris' => $log->total_baris,
+            'jumlah_insert' => $log->jumlah_insert,
+            'jumlah_update' => $log->jumlah_update,
+            'jumlah_skip' => $log->jumlah_skip,
+            'jumlah_gagal' => $log->jumlah_gagal,
+            'statistik_relasi' => $log->statistik_relasi,
+            'error_detail' => $log->error_detail,
+            'durasi_detik' => $log->durasi_detik,
+            'started_at' => $log->started_at,
+            'finished_at' => $log->finished_at,
         ]);
     }
 
@@ -3750,11 +3734,10 @@ class MasterDataGuruController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "Restore selesai: {$results['restored']} record/file dipulihkan, " . count($results['errors']) . " error.",
-            'data' => $results,
-        ]);
+        return $this->success(
+            $results,
+            "Restore selesai: {$results['restored']} record/file dipulihkan, " . count($results['errors']) . " error."
+        );
     }
 
     /**
@@ -4001,11 +3984,7 @@ class MasterDataGuruController extends Controller
 
         $msg = "Import selesai: {$total} file berhasil diproses, {$results['dilewati']} dilewati.";
 
-        return response()->json([
-            'success' => true,
-            'message' => $msg,
-            'data' => $results,
-        ]);
+        return $this->success($results, $msg);
     }
     /**
      * GET /guru/backup
