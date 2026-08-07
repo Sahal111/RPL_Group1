@@ -2,12 +2,21 @@
 
 ---
 
-## Model
+## Model (Multi-Tier Otorisasi)
 
+### 1. Platform Super Admin Level (`platform_admins`)
+User global terdaftar di `global_users` dengan role platform:
+- `super_admin`: Akses penuh arsitektur platform SaaS
+- `admin`: Manajemen operasional & kupon/diskon
+- `support`: Impersonasi tenant (`last_tenant_id`) & support tiket
+- `billing`: Manajemen invoice, tax rate, dan transaksi
+- `readonly`: Audit log platform
+
+### 2. Tenant Level (Per-Sekolah)
 ```
 School → Role (per-tenant) → Permission (per-tenant)
                 ↑
-              User (punya satu atau lebih role)
+              Global User (mapped via global_user_schools)
 ```
 
 Setiap sekolah punya role dan permission sendiri.

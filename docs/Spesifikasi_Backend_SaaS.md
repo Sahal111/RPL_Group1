@@ -22,8 +22,10 @@ Sistem database yang dirancang adalah *Single Database, Multi-Tenant*. Laravel a
 *   Sistem tabel `school_domains` mengharuskan penanganan routing dinamis.
 *   Konfigurasi *Route Group* di Laravel harus mengecek host/domain yang mengakses (misal `{subdomain}.siakad.id`), lalu mencari ID sekolah terkait di database untuk di-inject ke dalam *Global Scope* sebelum request diproses lebih lanjut oleh controller.
 
-### D. Billing, SaaS Engine, & Background Jobs
+### D. Billing, SaaS Engine, Coupons & Background Jobs
 *   **Task Scheduling (Cron Jobs):** Wajib dikonfigurasi di server untuk menjalankan pengecekan status langganan (`school_subscriptions`). Script cron ini berjalan harian untuk mengubah status sekolah yang *grace period*-nya sudah habis menjadi tidak aktif.
+*   **Kupon & Diskon (`saas_coupons`):** Dukungan validasi promo percentage/fixed_amount, pembatasan klaim per tenant via `saas_coupon_usages`.
+*   **Kalkulasi Pajak & Invoice:** Tagihan (`saas_invoices`) menyimpan `tax_rate` (misal 0.1100 untuk PPN 11%) dan menghitung harga bersih serta total secara presisi.
 *   **Queue & Worker (Horizon/Redis):** Proses berat seperti *Snapshot Usage Harian* (`tenant_usage_snapshots`), pengiriman Email/WhatsApp tagihan (`saas_invoices`), dan generate report harus dijalankan secara *asynchronous* melalui Laravel Queues agar tidak membebani API response.
 *   **Payment Gateway Webhook:** Buat endpoint khusus dan aman (dengan verifikasi signature) untuk menerima callback dari payment gateway (Midtrans, Stripe, dll) guna memproses otomatis tabel `saas_payments`.
 

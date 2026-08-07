@@ -373,14 +373,51 @@ class GuruResource extends JsonResource
 
 ---
 
-## Route Naming Convention
+---
 
+## Endpoint Modules (Ringkasan Route API v1)
+
+### 1. Global Auth & Tenant Lookup
 ```
-GET    /api/v1/guru                → guru.index
-POST   /api/v1/guru                → guru.store
-GET    /api/v1/guru/{nuptk}        → guru.show
-PUT    /api/v1/guru/{nuptk}        → guru.update
-DELETE /api/v1/guru/{nuptk}        → guru.destroy
+POST   /api/v1/auth/login                  → auth.login (mengembalikan list sekolah milik user)
+GET    /api/v1/auth/tenants                → auth.tenants (list sekolah yang dapat diakses)
+POST   /api/v1/auth/switch-tenant          → auth.switch-tenant (ganti context school_id)
+POST   /api/v1/auth/logout                 → auth.logout
+```
+
+### 2. Master Reference & Lookup Data (Dynamic Shared/Tenant)
+```
+GET    /api/v1/master/religions            → master.religions.index (default platform + override sekolah)
+GET    /api/v1/master/education-levels     → master.education-levels.index
+GET    /api/v1/master/status-kepegawaian   → master.status-kepegawaian.index
+GET    /api/v1/master/jenis-cuti           → master.jenis-cuti.index
+GET    /api/v1/master/marital-statuses     → master.marital-statuses.index
+```
+
+### 3. SaaS Subscriptions, Invoices & Coupons
+```
+GET    /api/v1/saas/plans                  → saas.plans.index
+GET    /api/v1/saas/subscription           → saas.subscription.show
+POST   /api/v1/saas/coupons/validate       → saas.coupons.validate
+GET    /api/v1/saas/invoices               → saas.invoices.index
+```
+
+### 4. LMS (Learning Management System)
+```
+GET    /api/v1/lms/courses                 → lms.courses.index
+POST   /api/v1/lms/courses                 → lms.courses.store
+GET    /api/v1/lms/courses/{id}/assignments→ lms.assignments.index
+POST   /api/v1/lms/assignments/{id}/submit → lms.assignments.submit
+GET    /api/v1/lms/quizzes                 → lms.quizzes.index
+```
+
+### 5. Master Data Operasional
+```
+GET    /api/v1/guru                        → guru.index
+POST   /api/v1/guru                        → guru.store
+GET    /api/v1/guru/{nuptk}                → guru.show
+PUT    /api/v1/guru/{nuptk}                → guru.update
+DELETE /api/v1/guru/{nuptk}                → guru.destroy
 
 GET    /api/v1/guru/{nuptk}/dokumen          → guru.dokumen.index
 POST   /api/v1/guru/{nuptk}/dokumen          → guru.dokumen.store

@@ -7,7 +7,7 @@
 ### 1. Setiap tabel operasional WAJIB punya `school_id`
 
 ```sql
--- ✅ BENAR
+-- ✅ BENAR (Tabel Operasional)
 CREATE TABLE gurus (
   id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   school_id BIGINT UNSIGNED NOT NULL,   -- ← wajib, kolom kedua setelah id
@@ -15,12 +15,25 @@ CREATE TABLE gurus (
   CONSTRAINT fk_gurus_school FOREIGN KEY (school_id) REFERENCES schools(id)
 );
 
--- ❌ SALAH — tidak ada school_id
-CREATE TABLE gurus (
-  id   BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nama VARCHAR(150) NOT NULL,
+-- ✅ BENAR (Tabel Master Reference / Shared Data)
+-- school_id NULLABLE: NULL = default platform, non-NULL = custom override per sekolah
+CREATE TABLE master_religions (
+  id        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NULL,
+  code      VARCHAR(30) NOT NULL,
+  name      VARCHAR(100) NOT NULL,
   ...
 );
+```
+
+### 1b. Kolom JSON untuk Fleksibilitas Internasional (i18n)
+
+Untuk field yang bervariasi antar negara (seperti NIK/NUPTK/SSN/Tax ID dan detail alamat RT/RW/State), gunakan kolom `JSON`:
+
+```sql
+-- Kolom fleksibel pada gurus / siswas
+`national_ids`    JSON NULL COMMENT '{"nik":"...","nuptk":"...","ssn":"..."}',
+`address_details` JSON NULL COMMENT '{"rt":"01","rw":"02","dusun":"..."}'
 ```
 
 ### 2. Audit Fields Wajib di Tabel Utama

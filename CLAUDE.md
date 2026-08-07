@@ -26,22 +26,27 @@
 
 ---
 
-## 👥 Role yang Ada di Sistem
+## 👥 Platform & Tenant Multi-Tier Access Model
 
+### Platform Super Admin (`platform_admins`)
+- User terdaftar di `global_users` dan dikoneksikan ke `platform_admins`.
+- Level access: `super_admin`, `admin`, `support` (impersonasi via `last_tenant_id`), `billing`, `readonly`.
+
+### Tenant Roles (Per-Sekolah di tabel `roles`)
 | Slug | Nama | Keterangan |
 |------|------|------------|
+| `super_operator` | Operator Utama | Akses penuh ke semua fitur sekolah |
 | `operator` | Operator / Admin | Manajemen akun, master data, pengumuman, galeri |
-| `guru` | Guru | Dashboard, input absensi, rekap, jadwal, profil |
-| `ortu` | Orang Tua / Wali | Pantau absensi anak, pengumuman, profil |
+| `guru` | Guru | Dashboard, input absensi, rekap, jadwal, LMS, profil |
+| `ortu` | Orang Tua / Wali | Pantau absensi anak, tagihan, pengumuman, profil |
 | `kepsek` | Kepala Sekolah | Monitoring, data guru & siswa (read-only), kalender, pengumuman |
-| `wali_kelas` | Wali Kelas | Placeholder dashboard — scope fitur belum final |
-| `bendahara` | Bendahara | Placeholder dashboard — scope fitur belum final |
-| `siswa` | Siswa | Portal siswa — lihat absensi diri, nilai, jadwal, tagihan, rapor |
-| `admin_ppdb` | Admin PPDB | Placeholder dashboard — scope fitur belum final |
+| `wali_kelas` | Wali Kelas | Dashboard & manajemen wali kelas |
+| `bendahara` | Bendahara | Keuangan & pembayaran |
+| `siswa` | Siswa | Portal siswa — lihat absensi diri, nilai, LMS, jadwal, tagihan |
+| `admin_ppdb` | Admin PPDB | Modul PPDB — pendaftaran & seleksi |
 
-> Role disimpan di tabel `roles` (kolom: `id`, `slug`, `nama`, `deskripsi`, `is_active`).
-> Relasi user ↔ role lewat pivot `user_roles`. Role check pakai slug langsung — tidak ada mapping ID hardcode di middleware.
-> Role baru cukup INSERT ke tabel `roles` tanpa perlu ubah `RoleMiddleware.php`.
+> **Global User Multi-Tenant**: Autentikasi utama tersimpan di `global_users`. Mapping ke sekolah disimpan di `global_user_schools`.
+> **Master Reference Data**: Tabel `master_religions`, `master_education_levels`, `master_status_kepegawaians`, `master_jenis_cutis`, `master_marital_statuses`, `master_school_types`, `master_blood_types`, `akun_kass`, `kategori_bukus` mendukung default platform (`school_id = NULL`) dan custom override sekolah.
 
 ---
 

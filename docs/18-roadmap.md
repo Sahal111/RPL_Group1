@@ -24,18 +24,23 @@ Project sudah punya fondasi yang berjalan:
 
 ---
 
-## Phase 0 — Fondasi Multi-Tenant
-*Target: sebelum fitur baru apapun*
+## Phase 0 — Fondasi Multi-Tenant & Database Overhaul
+*Target: Fondasi Global SaaS & Multi-Tenancy (COMPLETED)*
 
-- [ ] Tambah kolom `school_id` ke semua tabel operasional
-- [ ] Buat tabel `schools`, `school_settings`, `school_domains`
-- [ ] Buat `SchoolScope` (Global Scope)
-- [ ] Buat `TenantMiddleware`
-- [ ] Ganti `RoleMiddleware` dengan `PermissionMiddleware`
-- [ ] Buat tabel `permissions` dan `role_permissions`
-- [ ] Buat `SchoolProvisioningService` (seed role + permission saat sekolah baru)
-- [ ] Update `users` table: `school_id`, `ulid`
-- [ ] Update `roles` table: `school_id`, ganti `TINYINT` id jadi `BIGINT`
+- [x] Tambah kolom `school_id` ke semua tabel operasional
+- [x] Buat tabel `schools`, `school_settings`, `school_domains`
+- [x] Buat `global_users`, `global_user_schools`, `platform_admins` (Global Auth Lookup)
+- [x] Buat Master Reference Tables: `master_religions`, `master_education_levels`, `master_status_kepegawaians`, `master_jenis_cutis`, `master_marital_statuses`, `master_school_types`, `master_blood_types` (`school_id` NULLABLE)
+- [x] Buat Kupon & Diskon Billing: `saas_coupons`, `saas_coupon_usages`, `tax_rate` di `saas_invoices`
+- [x] Buat LMS Tables (`lms_courses`, `lms_quizzes`, dll), Notification Engine (`saas_notifications`), & Backups (`tenant_backups`)
+- [x] Tambah kolom JSON Fleksibel i18n (`national_ids`, `address_details`) di `gurus` & `siswas`
+- [x] Buat `SchoolScope` (Global Scope)
+- [x] Buat `TenantMiddleware`
+- [x] Ganti `RoleMiddleware` dengan `PermissionMiddleware`
+- [x] Buat tabel `permissions` dan `role_permissions`
+- [x] Buat `SchoolProvisioningService` (seed role + permission saat sekolah baru)
+- [x] Update `users` table: `school_id`, `ulid`, `global_user_id`
+- [x] Update `roles` table: `school_id`, ganti `TINYINT` id jadi `BIGINT`
 
 ---
 

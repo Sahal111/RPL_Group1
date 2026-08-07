@@ -4,18 +4,29 @@
 
 ---
 
-## Model RBAC
+## Model RBAC Multi-Tier (Platform & Tenant)
 
+Sistem menggunakan otorisasi **2 Tingkat (Multi-Tier)**:
+
+### 1. Platform Level Authorization (`platform_admins`)
+Untuk pengelola platform SaaS (Global Super Admin), terpisah dari data tenant:
+- **`super_admin`**: Akses penuh ke seluruh konfigurasi SaaS, tenant management, billing, dan database migration.
+- **`admin`**: Manajemen sekolah, pengawasan langganan, dan manajemen promo/coupon.
+- **`support`**: Mode baca & impersonasi tenant (`last_tenant_id`) untuk bantuan teknis.
+- **`billing`**: Kelola tagihan, invoice PPN/tax, refund, dan paket langganan.
+- **`readonly`**: Auditing & reporting platform secara umum.
+
+### 2. Tenant Level Authorization (Per-Sekolah)
 ```
 School (tenant)
   └── Role (per sekolah, bisa dikustomisasi)
         └── Permission (per sekolah, per modul)
-              └── User (punya satu atau lebih role)
+              └── Global User (mapped ke tenant via global_user_schools)
 ```
 
 Setiap sekolah punya **role dan permission sendiri**.
 Saat sekolah baru didaftarkan, sistem otomatis seed role dan permission default
-dari template (tabel `role_templates` dan `permission_templates`).
+dari template.
 Setelah itu, operator sekolah bisa tambah/hapus/edit sesuai kebutuhan.
 
 ---

@@ -46,13 +46,20 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## Code of Conduct
+## 🚀 SIAKAD Enterprise SaaS Backend
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Tugas UAS RPL 1 - Service Backend berbasis **Laravel 12.x** dengan Arsitektur **Single Database Multi-Tenant**.
 
-## Security Vulnerabilities
+### 🛠️ Fitur Arsitektur & Database Backend
+- **Global Auth Lookup**: Autentikasi terpusat (`global_users`) dengan lookup multi-sekolah (`global_user_schools`).
+- **Multi-Tenant Isolation**: Laravel `SchoolScope` menyuntikkan `school_id` secara otomatis di semua query operasional.
+- **Platform Admin Level**: Hierarki Super Admin platform (`platform_admins`) dengan level `super_admin`, `admin`, `support`, `billing`, `readonly`, serta impersonasi tenant.
+- **Master Reference Tables**: Reference data (`master_religions`, `master_education_levels`, `master_status_kepegawaians`, `master_jenis_cutis`, `master_marital_statuses`, `master_school_types`, `master_blood_types`) dengan `school_id` nullable untuk shared platform default & custom override.
+- **Fleksibilitas Internasional (i18n)**: Kolom `national_ids` & `address_details` berbasis `JSON` pada `gurus` dan `siswas`.
+- **SaaS Billing & Subscriptions**: Sistem kupon diskon (`saas_coupons`, `saas_coupon_usages`), invoice dengan PPN/tax (`tax_rate`), dan snapshot penggunaan.
+- **Sub-sistem LMS & Notifikasi**: Tabel LMS (`lms_courses`, `lms_quizzes`, dll), SaaS notification engine (`saas_notifications`), system audit logs, & backup tenant (`tenant_backups`).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
 ## License
 

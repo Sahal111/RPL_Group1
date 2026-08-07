@@ -242,19 +242,109 @@ CREATE TABLE user_roles (
 );
 ```
 
-### 10. platform_admins (BARU — Super Admin platform, bukan tenant)
+### 10. global_users & global_user_schools (Global Auth & Multi-Tenant Lookup)
 ```sql
-CREATE TABLE platform_admins (
-  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name       VARCHAR(150) NOT NULL,
-  email      VARCHAR(150) NOT NULL UNIQUE,
-  password   VARCHAR(255) NOT NULL,
-  is_active  TINYINT(1) NOT NULL DEFAULT 1,
-  created_at TIMESTAMP NULL,
-  updated_at TIMESTAMP NULL,
-  deleted_at TIMESTAMP NULL
+CREATE TABLE global_users (
+  id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  ulid            CHAR(26) NOT NULL UNIQUE,
+  name            VARCHAR(150) NOT NULL,
+  email           VARCHAR(150) NOT NULL UNIQUE,
+  password        VARCHAR(255) NOT NULL,
+  is_active       TINYINT(1) NOT NULL DEFAULT 1,
+  created_at      TIMESTAMP NULL,
+  updated_at      TIMESTAMP NULL
+);
+
+CREATE TABLE global_user_schools (
+  id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  global_user_id  BIGINT UNSIGNED NOT NULL,
+  school_id       BIGINT UNSIGNED NOT NULL,
+  is_default      TINYINT(1) NOT NULL DEFAULT 0,
+  last_accessed_at TIMESTAMP NULL,
+  created_at      TIMESTAMP NULL,
+  updated_at      TIMESTAMP NULL,
+
+  UNIQUE KEY uq_gus_user_school (global_user_id, school_id),
+  CONSTRAINT fk_gus_user FOREIGN KEY (global_user_id) REFERENCES global_users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_gus_school FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
 );
 ```
+
+### 11. platform_admins (Super Admin platform, bukan tenant)
+```sql
+CREATE TABLE platform_admins (
+  id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  global_user_id      BIGINT UNSIGNED NOT NULL UNIQUE,
+  level               VARCHAR(20) NOT NULL DEFAULT 'support', -- super_admin | admin | support | billing | readonly
+  last_tenant_id      BIGINT UNSIGNED NULL,                  -- untuk impersonasi sekolah
+  last_impersonate_at TIMESTAMP NULL,
+  is_active           TINYINT(1) NOT NULL DEFAULT 1,
+  created_at          TIMESTAMP NULL,
+  updated_at          TIMESTAMP NULL,
+
+  CONSTRAINT fk_pa_global_user FOREIGN KEY (global_user_id) REFERENCES global_users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_pa_last_tenant FOREIGN KEY (last_tenant_id) REFERENCES schools(id) ON DELETE SET NULL
+);
+```
+
+### 12. Master Reference & Internationalization (school_id NULLABLE / Shared)
+```sql
+-- master_religions, master_education_levels, master_status_kepegawaians,
+-- master_jenis_cutis, master_marital_statuses, master_school_types, master_blood_types
+-- Memungkinkan override per sekolah (school_id tidak NULL) atau menggunakan default platform (school_id NULL).
+
+-- Contoh: master_religions
+CREATE TABLE master_religions (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id     BIGINT UNSIGNED NULL,
+  code          VARCHAR(30) NOT NULL,
+  name          VARCHAR(100) NOT NULL,
+  display_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  is_active     TINYINT(1) NOT NULL DEFAULT 1,
+  created_at    TIMESTAMP NULL,
+  updated_at    TIMESTAMP NULL,
+
+  UNIQUE KEY uq_religions_school_code (school_id, code),
+  CONSTRAINT fk_religions_school FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+);
+```
+
+### 13. SaaS Billing, Subscriptions & Coupons
+```sql
+CREATE TABLE saas_coupons (
+  id                    BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  code                  VARCHAR(30) NOT NULL UNIQUE,
+  type                  ENUM('percentage','fixed_amount') NOT NULL DEFAULT 'percentage',
+  value                 DECIMAL(12,2) NOT NULL,
+  currency_code         CHAR(3) NOT NULL DEFAULT 'USD',
+  max_uses              INT UNSIGNED NULL,
+  max_uses_per_school   INT UNSIGNED NOT NULL DEFAULT 1,
+  valid_from            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  valid_until           TIMESTAMP NULL,
+  is_active             TINYINT(1) NOT NULL DEFAULT 1,
+  created_at            TIMESTAMP NULL,
+  updated_at            TIMESTAMP NULL
+);
+
+CREATE TABLE saas_coupon_usages (
+  id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  coupon_id       BIGINT UNSIGNED NOT NULL,
+  school_id       BIGINT UNSIGNED NOT NULL,
+  subscription_id BIGINT UNSIGNED NULL,
+  discount_applied DECIMAL(12,2) NOT NULL,
+  used_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_cu_coupon FOREIGN KEY (coupon_id) REFERENCES saas_coupons(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cu_school FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+);
+
+-- saas_invoices dilengkapi kolom tax_rate (DECIMAL 5,4 e.g. 0.1100 untuk 11% PPN)
+```
+
+### 14. LMS & Sub-Sistem Notifikasi Global
+- **LMS Tables**: `lms_courses`, `lms_modules`, `lms_assignments`, `lms_submissions`, `lms_quizzes`, `lms_questions`, `lms_quiz_attempts` (semua dengan `school_id NOT NULL`).
+- **Notification Sub-System**: `saas_notifications`, `saas_notification_templates` (support Email, WA, Push Notification).
+- **System Audit & Backups**: `system_logs`, `tenant_backups`.
 
 ---
 

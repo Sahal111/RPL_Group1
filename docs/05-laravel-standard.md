@@ -242,10 +242,12 @@ class Guru extends Model
 
     // 3. Cast untuk tipe data yang tepat
     protected $casts = [
-        'tanggal_lahir'   => 'date',
+        'tanggal_lahir'     => 'date',
         'tanggal_bergabung' => 'date',
-        'is_verified'     => 'boolean',
-        'status_aktif'    => 'boolean',
+        'is_verified'       => 'boolean',
+        'status_aktif'      => 'boolean',
+        'national_ids'      => 'array',  // JSON fleksibel NIK/NUPTK/SSN
+        'address_details'   => 'array',  // JSON fleksibel detail alamat
     ];
 
     // 4. Append accessor yang sering dipakai
