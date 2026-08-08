@@ -8,7 +8,6 @@ use App\Http\Requests\Guru\StoreGuruRequest;
 use App\Http\Requests\Guru\UpdateGuruRequest;
 use App\Http\Requests\Guru\UploadFotoGuruRequest;
 use App\Models\Guru;
-use App\Models\PlotGuruMapel;
 use App\Models\Semester;
 use App\Models\TahunAjaran;
 use App\Services\GuruService;
@@ -165,31 +164,9 @@ class GuruController extends Controller
 
     public function stats()
     {
-        $kelengkapan = [
-            ['field' => 'foto', 'label' => 'Foto belum diupload', 'count' => Guru::whereNull('foto')->orWhere('foto', '')->count()],
-            ['field' => 'nik', 'label' => 'NIK belum diisi', 'count' => Guru::whereNull('nik')->orWhere('nik', '')->count()],
-            ['field' => 'email', 'label' => 'Email belum diisi', 'count' => Guru::whereNull('email')->orWhere('email', '')->count()],
-            ['field' => 'no_kk', 'label' => 'No. KK belum diisi', 'count' => Guru::whereNull('no_kk')->orWhere('no_kk', '')->count()],
-            ['field' => 'golongan_darah', 'label' => 'Golongan darah belum diisi', 'count' => Guru::whereNull('golongan_darah')->orWhere('golongan_darah', '')->count()],
-            ['field' => 'nama_ibu_kandung', 'label' => 'Nama ibu kandung belum diisi', 'count' => Guru::whereNull('nama_ibu_kandung')->orWhere('nama_ibu_kandung', '')->count()],
-            ['field' => 'tanggal_bergabung', 'label' => 'Tanggal bergabung belum diisi', 'count' => Guru::whereNull('tanggal_bergabung')->count()],
-            ['field' => 'rekening', 'label' => 'Rekening bank belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_rekening')->where('no_rekening', '!=', ''))->count()],
-            ['field' => 'npwp', 'label' => 'NPWP belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('npwp')->where('npwp', '!=', ''))->count()],
-            ['field' => 'bpjs_kesehatan', 'label' => 'BPJS Kesehatan belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_bpjs_kesehatan')->where('no_bpjs_kesehatan', '!=', ''))->count()],
-            ['field' => 'bpjs_ketenagakerjaan', 'label' => 'BPJS Ketenagakerjaan belum diisi', 'count' => Guru::whereDoesntHave('rekenings', fn($q) => $q->whereNotNull('no_bpjs_ketenagakerjaan')->where('no_bpjs_ketenagakerjaan', '!=', ''))->count()],
-        ];
+        $this->authorize('viewAny', Guru::class);
 
-        $perhatian = array_values(array_filter($kelengkapan, fn($item) => $item['count'] > 0));
-
-        return $this->success([
-            'total' => Guru::count(),
-            'aktif' => Guru::where('status_keaktifan', 'Aktif')->count(),
-            'nonaktif' => Guru::whereIn('status_keaktifan', ['Cuti', 'Pensiun', 'Mutasi', 'Keluar'])->count(),
-            'bersertifikasi' => Guru::whereHas('sertifikasis')->count(),
-            'wali_kelas' => Guru::whereHas('waliKelas', fn($q) => $q->where('is_active', 1))->count(),
-            'jumlah_mapel' => PlotGuruMapel::distinct('mapel_id')->count('mapel_id'),
-            'perhatian' => $perhatian,
-        ]);
+        return $this->success($this->service->stats());
     }
 
     public function perhatianDetail(Request $request)
@@ -236,20 +213,9 @@ class GuruController extends Controller
 
     public function aktivitasTerkini()
     {
-        $aktivitas = Guru::select('id', 'nuptk', 'nama', 'gelar_depan', 'gelar_belakang', 'jenis_ptk', 'foto', 'updated_at', 'updated_by')
-            ->whereNotNull('updated_at')
-            ->orderByDesc('updated_at')
-            ->limit(5)
-            ->get()
-            ->append('nama_lengkap')
-            ->map(function ($g) {
-                $g->updated_by_nama = $g->updated_by
-                    ? optional(User::find($g->updated_by))->name
-                    : null;
-                return $g;
-            });
+        $this->authorize('viewAny', Guru::class);
 
-        return $this->success($aktivitas);
+        return $this->success($this->service->aktivitasTerkini());
     }
 
     // ────────────────────────────────────────
