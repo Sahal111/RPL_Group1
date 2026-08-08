@@ -25,4 +25,15 @@ class UpdateKelasRequest extends FormRequest
             'is_active' => 'boolean',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'nama_kelas.required' => 'Nama kelas wajib diisi.',
+            'tingkat.required' => 'Tingkat kelas wajib dipilih.',
+            'tingkat.in' => 'Tingkat kelas harus antara 1–6.',
+            'kapasitas.required' => 'Kapasitas kelas wajib diisi.',
+            'kapasitas.max' => 'Kapasitas kelas maksimal 60 siswa.',
+        ];
+    }
 }

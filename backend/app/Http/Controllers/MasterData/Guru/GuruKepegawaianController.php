@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\MasterData\Guru;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Guru\StorePendidikanRequest;
-use App\Http\Requests\Guru\StoreSertifikasiRequest;
-use App\Http\Requests\Guru\StoreInpassingRequest;
 use App\Http\Requests\Guru\StoreDiklatRequest;
+use App\Http\Requests\Guru\StoreInpassingRequest;
 use App\Http\Requests\Guru\StoreJabatanRequest;
+use App\Http\Requests\Guru\StorePendidikanRequest;
 use App\Http\Requests\Guru\StorePkgRequest;
+use App\Http\Requests\Guru\StoreSertifikasiRequest;
 use App\Models\Guru;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,25 +21,12 @@ class GuruKepegawaianController extends Controller
     public function getPendidikan($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
         return $this->success($guru->pendidikans);
     }
 
     public function storePendidikan(StorePendidikanRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
-        $request->validate([
-            'jenjang' => 'required|in:SD,SMP,SMA/SMK,D1,D2,D3,D4,S1,S2,S3',
-            'nama_sekolah' => 'required|string|max:200',
-            'jurusan' => 'nullable|string|max:100',
-            'prodi' => 'nullable|string|max:100',
-            'tahun_masuk' => 'nullable|integer|min:1950|max:' . date('Y'),
-            'tahun_lulus' => 'nullable|integer|min:1950|max:' . (date('Y') + 1),
-            'no_ijazah' => 'nullable|string|max:80',
-            'file_ijazah' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
         $data = $request->only(['jenjang', 'nama_sekolah', 'jurusan', 'prodi', 'tahun_masuk', 'tahun_lulus', 'no_ijazah']);
 
         if ($request->hasFile('file_ijazah')) {
@@ -47,27 +34,13 @@ class GuruKepegawaianController extends Controller
                 ->store("guru-dokumen/{$guru->id}/ijazah", 'public');
         }
 
-        $pendidikan = $guru->pendidikans()->create($data);
-
-        return $this->created($pendidikan, 'Riwayat pendidikan ditambahkan.');
+        return $this->created($guru->pendidikans()->create($data), 'Riwayat pendidikan ditambahkan.');
     }
 
     public function updatePendidikan(StorePendidikanRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $pendidikan = $guru->pendidikans()->findOrFail($id);
-
-        $request->validate([
-            'jenjang' => 'required|in:SD,SMP,SMA/SMK,D1,D2,D3,D4,S1,S2,S3',
-            'nama_sekolah' => 'required|string|max:200',
-            'jurusan' => 'nullable|string|max:100',
-            'prodi' => 'nullable|string|max:100',
-            'tahun_masuk' => 'nullable|integer|min:1950|max:' . date('Y'),
-            'tahun_lulus' => 'nullable|integer|min:1950|max:' . (date('Y') + 1),
-            'no_ijazah' => 'nullable|string|max:80',
-            'file_ijazah' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
         $data = $request->only(['jenjang', 'nama_sekolah', 'jurusan', 'prodi', 'tahun_masuk', 'tahun_lulus', 'no_ijazah']);
 
         if ($request->hasFile('file_ijazah')) {
@@ -79,7 +52,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $pendidikan->update($data);
-
         return $this->success($pendidikan, 'Riwayat pendidikan diperbarui.');
     }
 
@@ -93,7 +65,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $pendidikan->delete();
-
         return $this->success(message: 'Riwayat pendidikan dihapus.');
     }
 
@@ -104,26 +75,12 @@ class GuruKepegawaianController extends Controller
     public function getSertifikasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
         return $this->success($guru->sertifikasis);
     }
 
     public function storeSertifikasi(StoreSertifikasiRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
-        $request->validate([
-            'jenis_sertifikasi' => 'required|string|max:100',
-            'no_sertifikat' => 'nullable|string|max:80',
-            'nrg' => 'nullable|string|max:20',
-            'tahun_sertifikasi' => 'nullable|integer|min:1990|max:' . date('Y'),
-            'lptk' => 'nullable|string|max:200',
-            'bidang_studi' => 'nullable|string|max:100',
-            'tanggal_terbit' => 'nullable|date',
-            'expired_at' => 'nullable|date|after:tanggal_terbit',
-            'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
         $data = $request->only(['jenis_sertifikasi', 'no_sertifikat', 'nrg', 'tahun_sertifikasi', 'lptk', 'bidang_studi', 'tanggal_terbit', 'expired_at']);
 
         if ($request->hasFile('file_sertifikat')) {
@@ -131,28 +88,13 @@ class GuruKepegawaianController extends Controller
                 ->store("guru-dokumen/{$guru->id}/sertifikasi", 'public');
         }
 
-        $sert = $guru->sertifikasis()->create($data);
-
-        return $this->created($sert, 'Sertifikasi ditambahkan.');
+        return $this->created($guru->sertifikasis()->create($data), 'Sertifikasi ditambahkan.');
     }
 
     public function updateSertifikasi(StoreSertifikasiRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $sert = $guru->sertifikasis()->findOrFail($id);
-
-        $request->validate([
-            'jenis_sertifikasi' => 'required|string|max:100',
-            'no_sertifikat' => 'nullable|string|max:80',
-            'nrg' => 'nullable|string|max:20',
-            'tahun_sertifikasi' => 'nullable|integer|min:1990|max:' . date('Y'),
-            'lptk' => 'nullable|string|max:200',
-            'bidang_studi' => 'nullable|string|max:100',
-            'tanggal_terbit' => 'nullable|date',
-            'expired_at' => 'nullable|date|after:tanggal_terbit',
-            'file_sertifikat' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
         $data = $request->only(['jenis_sertifikasi', 'no_sertifikat', 'nrg', 'tahun_sertifikasi', 'lptk', 'bidang_studi', 'tanggal_terbit', 'expired_at']);
 
         if ($request->hasFile('file_sertifikat')) {
@@ -164,7 +106,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $sert->update($data);
-
         return $this->success($sert, 'Sertifikasi diperbarui.');
     }
 
@@ -178,7 +119,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $sert->delete();
-
         return $this->success(message: 'Sertifikasi dihapus.');
     }
 
@@ -189,24 +129,12 @@ class GuruKepegawaianController extends Controller
     public function getInpassing($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
         return $this->success($guru->inpassings);
     }
 
     public function storeInpassing(StoreInpassingRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
-        $request->validate([
-            'no_sk' => 'required|string|max:100',
-            'tanggal_sk' => 'required|date',
-            'tmt_inpassing' => 'required|date',
-            'golongan_sesudah' => 'nullable|string|max:10',
-            'jabatan_fungsional' => 'nullable|string|max:100',
-            'angka_kredit' => 'nullable|numeric|min:0',
-            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
         $data = $request->only(['no_sk', 'tanggal_sk', 'tmt_inpassing', 'golongan_sesudah', 'jabatan_fungsional', 'angka_kredit']);
 
         if ($request->hasFile('file_sk')) {
@@ -214,26 +142,13 @@ class GuruKepegawaianController extends Controller
                 ->store("guru-dokumen/{$guru->id}/inpassing", 'public');
         }
 
-        $inpassing = $guru->inpassings()->create($data);
-
-        return $this->created($inpassing, 'Data inpassing ditambahkan.');
+        return $this->created($guru->inpassings()->create($data), 'Data inpassing ditambahkan.');
     }
 
     public function updateInpassing(StoreInpassingRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $inpassing = $guru->inpassings()->findOrFail($id);
-
-        $request->validate([
-            'no_sk' => 'required|string|max:100',
-            'tanggal_sk' => 'required|date',
-            'tmt_inpassing' => 'required|date',
-            'golongan_sesudah' => 'nullable|string|max:10',
-            'jabatan_fungsional' => 'nullable|string|max:100',
-            'angka_kredit' => 'nullable|numeric|min:0',
-            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ]);
-
         $data = $request->only(['no_sk', 'tanggal_sk', 'tmt_inpassing', 'golongan_sesudah', 'jabatan_fungsional', 'angka_kredit']);
 
         if ($request->hasFile('file_sk')) {
@@ -245,7 +160,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $inpassing->update($data);
-
         return $this->success($inpassing, 'Data inpassing diperbarui.');
     }
 
@@ -259,7 +173,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $inpassing->delete();
-
         return $this->success(message: 'Data inpassing dihapus.');
     }
 
@@ -288,39 +201,15 @@ class GuruKepegawaianController extends Controller
         'is_current',
     ];
 
-    private array $jabatanRules = [
-        'jenis_jabatan' => 'required|in:Struktural,Fungsional,Tambahan',
-        'jenis_pengangkatan' => 'nullable|in:Pengangkatan Baru,Promosi,Mutasi,Rotasi,Perpanjangan,Pelaksana Tugas (Plt)',
-        'jabatan' => 'required|string|max:100',
-        'unit_kerja' => 'nullable|string|max:150',
-        'instansi_pengangkat' => 'nullable|string|max:150',
-        'golongan' => 'nullable|string|max:10',
-        'pangkat' => 'nullable|string|max:60',
-        'status_kepegawaian' => 'nullable|in:CPNS,PNS,PPPK,GTY,GTT,Honorer,Kontrak',
-        'no_sk' => 'nullable|string|max:80',
-        'tanggal_sk' => 'nullable|date',
-        'pejabat_penandatangan' => 'nullable|string|max:100',
-        'tmt_jabatan' => 'nullable|date',
-        'tanggal_selesai' => 'nullable|date|after_or_equal:tmt_jabatan',
-        'masa_berlaku' => 'nullable|date',
-        'alasan_berakhir' => 'nullable|in:Mutasi,Promosi,Habis Masa Jabatan,Mengundurkan Diri,Pensiun,Lainnya',
-        'status_jabatan' => 'nullable|in:Aktif,Berakhir,Nonaktif,Mutasi,Pensiun',
-        'uraian_tugas' => 'nullable|string|max:500',
-        'is_current' => 'boolean',
-    ];
-
     public function getJabatan($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
         return $this->success($guru->jabatans);
     }
 
     public function storeJabatan(StoreJabatanRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        $request->validate($this->jabatanRules);
-
         $data = $request->only($this->jabatanFields);
         $data['created_by'] = auth()->id();
         $data['updated_by'] = auth()->id();
@@ -329,17 +218,13 @@ class GuruKepegawaianController extends Controller
             $guru->jabatans()->update(['is_current' => false]);
         }
 
-        $jabatan = $guru->jabatans()->create($data);
-
-        return $this->created($jabatan, 'Riwayat jabatan ditambahkan.');
+        return $this->created($guru->jabatans()->create($data), 'Riwayat jabatan ditambahkan.');
     }
 
     public function updateJabatan(StoreJabatanRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $jabatan = $guru->jabatans()->findOrFail($id);
-        $request->validate($this->jabatanRules);
-
         $data = $request->only($this->jabatanFields);
         $data['updated_by'] = auth()->id();
 
@@ -348,7 +233,6 @@ class GuruKepegawaianController extends Controller
         }
 
         $jabatan->update($data);
-
         return $this->success($jabatan, 'Riwayat jabatan diperbarui.');
     }
 
@@ -356,7 +240,6 @@ class GuruKepegawaianController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $guru->jabatans()->findOrFail($id)->delete();
-
         return $this->success(message: 'Riwayat jabatan dihapus.');
     }
 
@@ -371,19 +254,7 @@ class GuruKepegawaianController extends Controller
     public function storeDiklat(StoreDiklatRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
-        $data = $request->only([
-            'nama_diklat',
-            'penyelenggara',
-            'jenis',
-            'tingkat',
-            'tanggal_mulai',
-            'tanggal_selesai',
-            'jumlah_jam',
-            'peran',
-            'no_sertifikat',
-            'keterangan',
-        ]);
+        $data = $request->only(['nama_diklat', 'penyelenggara', 'jenis', 'tingkat', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_jam', 'peran', 'no_sertifikat', 'keterangan']);
 
         if ($request->hasFile('file_sertifikat')) {
             $data['file_sertifikat'] = $request->file('file_sertifikat')
@@ -397,19 +268,7 @@ class GuruKepegawaianController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $diklat = $guru->diklats()->findOrFail($id);
-
-        $data = $request->only([
-            'nama_diklat',
-            'penyelenggara',
-            'jenis',
-            'tingkat',
-            'tanggal_mulai',
-            'tanggal_selesai',
-            'jumlah_jam',
-            'peran',
-            'no_sertifikat',
-            'keterangan',
-        ]);
+        $data = $request->only(['nama_diklat', 'penyelenggara', 'jenis', 'tingkat', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_jam', 'peran', 'no_sertifikat', 'keterangan']);
 
         if ($request->hasFile('file_sertifikat')) {
             if ($diklat->file_sertifikat) {

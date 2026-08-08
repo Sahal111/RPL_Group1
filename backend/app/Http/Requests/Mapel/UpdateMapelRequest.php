@@ -6,8 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateMapelRequest extends FormRequest
 {
-    private const KELOMPOK_VALID = ['A - Wajib', 'B - Wajib', 'C - Muatan Lokal', 'Pengembangan Diri', 'Ekstrakurikuler', 'Lainnya'];
-    private const KURIKULUM_VALID = ['Kurikulum 2013', 'Kurikulum Merdeka', 'Keduanya'];
+    public const KELOMPOK_VALID = ['A - Wajib', 'B - Wajib', 'C - Muatan Lokal', 'Pengembangan Diri', 'Ekstrakurikuler', 'Lainnya'];
+    public const KURIKULUM_VALID = ['Kurikulum 2013', 'Kurikulum Merdeka', 'Keduanya'];
 
     public function authorize(): bool
     {
@@ -16,7 +16,7 @@ class UpdateMapelRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('id');
+        $id = $this->route('id') ?? $this->route('mapel');
 
         return [
             'kode' => "required|string|max:20|unique:mapels,kode,{$id}",
@@ -27,6 +27,20 @@ class UpdateMapelRequest extends FormRequest
             'jam_per_minggu' => 'required|integer|min:1|max:40',
             'kurikulum' => 'required|in:' . implode(',', self::KURIKULUM_VALID),
             'is_active' => 'boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'kode.required' => 'Kode mata pelajaran wajib diisi.',
+            'kode.unique' => 'Kode mata pelajaran sudah digunakan.',
+            'nama_mapel.required' => 'Nama mata pelajaran wajib diisi.',
+            'kelompok.required' => 'Kelompok mata pelajaran wajib dipilih.',
+            'kelompok.in' => 'Kelompok mata pelajaran tidak valid.',
+            'jam_per_minggu.required' => 'Jam per minggu wajib diisi.',
+            'kurikulum.required' => 'Kurikulum wajib dipilih.',
+            'kurikulum.in' => 'Kurikulum tidak valid.',
         ];
     }
 }

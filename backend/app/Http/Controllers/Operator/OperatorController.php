@@ -3,6 +3,15 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Operator\AttachAnakOrtuRequest;
+use App\Http\Requests\Operator\CreateBendaharaUserRequest;
+use App\Http\Requests\Operator\CreateGuruUserRequest;
+use App\Http\Requests\Operator\CreateOrtuUserRequest;
+use App\Http\Requests\Operator\CreateUserRequest;
+use App\Http\Requests\Operator\CreateWaliKelasUserRequest;
+use App\Http\Requests\Operator\ResetPasswordRequest;
+use App\Http\Requests\Operator\UpdateKodeRegistrasiRequest;
+use App\Http\Requests\Operator\UpdateOrtuRequest;
 use App\Models\User;
 use App\Models\UserBendahara;
 use App\Models\UserWaliKelas;
@@ -35,10 +44,8 @@ class OperatorController extends Controller
         ]);
     }
 
-    public function updateKodeRegistrasi(Request $request)
+    public function updateKodeRegistrasi(UpdateKodeRegistrasiRequest $request)
     {
-        $request->validate(['kode_registrasi' => 'required|string|max:20']);
-
         \App\Models\Pengaturan::updateOrCreate(
             ['key' => 'kode_registrasi_ortu'],
             ['value' => $request->kode_registrasi]
@@ -73,15 +80,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // BUAT AKUN OPERATOR
     // -------------------------------------------------------
-    public function createOperator(Request $request)
+    public function createOperator(CreateUserRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:150',
-        ]);
-
         $user = DB::transaction(function () use ($request) {
             $user = User::create([
                 'name' => $request->nama,
@@ -101,16 +101,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // BUAT AKUN GURU
     // -------------------------------------------------------
-    public function createGuru(Request $request)
+    public function createGuru(CreateGuruUserRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:150',
-            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
-        ]);
-
         $sudahAda = \App\Models\Guru::where('nuptk', $request->nuptk)->whereNotNull('user_id')->exists();
         if ($sudahAda) {
             return response()->json(['success' => false, 'message' => 'NUPTK ini sudah terdaftar akun guru.'], 422);
@@ -135,16 +127,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // BUAT AKUN KEPSEK
     // -------------------------------------------------------
-    public function createKepsek(Request $request)
+    public function createKepsek(CreateGuruUserRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:150',
-            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
-        ]);
-
         $sudahAda = \App\Models\Guru::where('nuptk', $request->nuptk)->whereNotNull('user_id')->exists();
         if ($sudahAda) {
             return response()->json(['success' => false, 'message' => 'NUPTK ini sudah terdaftar akun kepsek.'], 422);
@@ -169,18 +153,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // BUAT AKUN ORTU
     // -------------------------------------------------------
-    public function createOrtu(Request $request)
+    public function createOrtu(CreateOrtuUserRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:150',
-            'no_hp' => 'nullable|string|max:20',
-            'nisn' => 'required|string|max:10|exists:siswas,nisn',
-            'hubungan' => 'required|in:Ayah,Ibu,Wali',
-        ]);
-
         $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->firstOrFail();
 
         $user = DB::transaction(function () use ($request, $siswa) {
@@ -216,19 +190,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // BUAT AKUN BENDAHARA
     // -------------------------------------------------------
-    public function createBendahara(Request $request)
+    public function createBendahara(CreateBendaharaUserRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:150',
-            'no_hp' => 'nullable|string|max:20',
-            'jabatan' => 'nullable|string|max:100',
-            'no_sk' => 'nullable|string|max:80',
-            'tmt_jabatan' => 'nullable|date',
-        ]);
-
         DB::transaction(function () use ($request) {
             $user = User::create([
                 'name' => $request->nama,
@@ -253,19 +216,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // BUAT AKUN WALI KELAS
     // -------------------------------------------------------
-    public function createWaliKelas(Request $request)
+    public function createWaliKelas(CreateWaliKelasUserRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8',
-            'nama' => 'required|string|max:150',
-            'nuptk' => 'required|string|max:16|exists:gurus,nuptk',
-            'kelas_id' => 'nullable|integer|exists:kelas,id',
-            'no_sk' => 'nullable|string|max:80',
-            'tmt_jabatan' => 'nullable|date',
-        ]);
-
         DB::transaction(function () use ($request) {
             $user = User::create([
                 'name' => $request->nama,
@@ -275,8 +227,6 @@ class OperatorController extends Controller
                 'is_active' => 1,
             ]);
             $this->assignRole($user->id, 'wali_kelas');
-
-            // Link guru via user_id
             \App\Models\Guru::where('nuptk', $request->nuptk)->update(['user_id' => $user->id]);
         });
 
@@ -293,7 +243,11 @@ class OperatorController extends Controller
             return response()->json(['success' => false, 'message' => 'Tidak bisa menonaktifkan akun sendiri.'], 422);
         }
         $user->update(['is_active' => !$user->is_active]);
-        return response()->json(['success' => true, 'message' => $user->is_active ? 'Akun diaktifkan.' : 'Akun dinonaktifkan.', 'data' => ['is_active' => $user->is_active]]);
+        return response()->json([
+            'success' => true,
+            'message' => $user->is_active ? 'Akun diaktifkan.' : 'Akun dinonaktifkan.',
+            'data' => ['is_active' => $user->is_active],
+        ]);
     }
 
     // -------------------------------------------------------
@@ -301,8 +255,7 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     public function approveOrtu(Request $request, $id)
     {
-        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))
-            ->findOrFail($id);
+        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))->findOrFail($id);
 
         if ($user->is_active) {
             return response()->json(['success' => false, 'message' => 'Akun ortu ini sudah aktif.'], 422);
@@ -356,15 +309,9 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // UPDATE ORTU
     // -------------------------------------------------------
-    public function updateOrtu(Request $request, $id)
+    public function updateOrtu(UpdateOrtuRequest $request, $id)
     {
         $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))->findOrFail($id);
-
-        $request->validate([
-            'email' => 'nullable|email|max:100|unique:users,email,' . $user->id,
-            'nama' => 'nullable|string|max:150',
-            'hubungan' => 'nullable|in:Ayah,Ibu,Wali,Kakek,Nenek,Paman,Bibi,Kakak,Lainnya',
-        ]);
 
         DB::transaction(function () use ($request, $user) {
             $user->update(array_filter([
@@ -382,15 +329,9 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // TAUTKAN ANAK KE AKUN ORTU
     // -------------------------------------------------------
-    public function attachAnakOrtu(Request $request, $id)
+    public function attachAnakOrtu(AttachAnakOrtuRequest $request, $id)
     {
         $user = User::whereHas('roles', fn($q) => $q->where('slug', 'ortu'))->findOrFail($id);
-
-        $request->validate([
-            'nisn' => 'required|string|max:10|exists:siswas,nisn',
-            'hubungan' => 'required|in:Ayah,Ibu,Wali,Kakek,Nenek,Paman,Bibi,Kakak,Lainnya',
-        ]);
-
         $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->firstOrFail();
 
         $exists = \App\Models\OrangTua::where('user_id', $user->id)
@@ -420,9 +361,8 @@ class OperatorController extends Controller
     // -------------------------------------------------------
     // RESET PASSWORD
     // -------------------------------------------------------
-    public function resetPassword(Request $request, $id)
+    public function resetPassword(ResetPasswordRequest $request, $id)
     {
-        $request->validate(['password' => 'required|string|min:8|confirmed']);
         $user = User::findOrFail($id);
         $user->update(['password' => Hash::make($request->password)]);
         $user->tokens()->delete();

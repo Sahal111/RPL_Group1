@@ -22,7 +22,18 @@ class StoreGuruCutiRequest extends FormRequest
             'pejabat_pemberi' => 'nullable|string|max:150',
             'alasan' => 'nullable|string|max:500',
             'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'keterangan' => 'nullable|string|max:500',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'jenis_cuti.required' => 'Jenis cuti wajib dipilih.',
+            'jenis_cuti.in' => 'Jenis cuti tidak valid.',
+            'tanggal_mulai.required' => 'Tanggal mulai cuti wajib diisi.',
+            'tanggal_selesai.required' => 'Tanggal selesai cuti wajib diisi.',
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai.',
+            'file_sk.max' => 'Ukuran file SK maksimal 5MB.',
         ];
     }
 }

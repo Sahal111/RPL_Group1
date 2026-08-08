@@ -18,4 +18,13 @@ class AddSiswaKelasRequest extends FormRequest
             'jenis_perubahan' => 'required|in:masuk_baru,naik_kelas,mutasi_masuk',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'siswa_id.required' => 'Siswa wajib dipilih.',
+            'jenis_perubahan.required' => 'Jenis perubahan wajib dipilih.',
+            'jenis_perubahan.in' => 'Jenis perubahan tidak valid.',
+        ];
+    }
 }

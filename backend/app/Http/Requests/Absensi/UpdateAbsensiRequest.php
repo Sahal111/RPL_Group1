@@ -18,4 +18,12 @@ class UpdateAbsensiRequest extends FormRequest
             'keterangan' => 'nullable|string|max:255',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'status.required' => 'Status absensi wajib diisi.',
+            'status.in' => 'Status harus Hadir, Sakit, Izin, atau Alpa.',
+        ];
+    }
 }

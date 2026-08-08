@@ -18,4 +18,12 @@ class RemoveSiswaKelasRequest extends FormRequest
             'catatan' => 'nullable|string',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'jenis_perubahan.required' => 'Jenis perubahan wajib dipilih.',
+            'jenis_perubahan.in' => 'Jenis perubahan tidak valid.',
+        ];
+    }
 }
