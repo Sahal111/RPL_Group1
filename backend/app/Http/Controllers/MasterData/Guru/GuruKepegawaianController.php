@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Guru\StorePendidikanRequest;
 use App\Http\Requests\Guru\StoreSertifikasiRequest;
 use App\Http\Requests\Guru\StoreInpassingRequest;
+use App\Http\Requests\Guru\StoreDiklatRequest;
 use App\Http\Requests\Guru\StoreJabatanRequest;
+use App\Http\Requests\Guru\StorePkgRequest;
 use App\Models\Guru;
 use Illuminate\Support\Facades\Storage;
 
@@ -356,5 +358,109 @@ class GuruKepegawaianController extends Controller
         $guru->jabatans()->findOrFail($id)->delete();
 
         return $this->success(message: 'Riwayat jabatan dihapus.');
+    }
+
+    // ── DIKLAT / PELATIHAN ────────────────────────────────────────────────────
+
+    public function getDiklat($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        return $this->success($guru->diklats);
+    }
+
+    public function storeDiklat(StoreDiklatRequest $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $data = $request->only([
+            'nama_diklat',
+            'penyelenggara',
+            'jenis',
+            'tingkat',
+            'tanggal_mulai',
+            'tanggal_selesai',
+            'jumlah_jam',
+            'peran',
+            'no_sertifikat',
+            'keterangan',
+        ]);
+
+        if ($request->hasFile('file_sertifikat')) {
+            $data['file_sertifikat'] = $request->file('file_sertifikat')
+                ->store("guru-dokumen/{$guru->id}/diklat", 'public');
+        }
+
+        return $this->created($guru->diklats()->create($data), 'Riwayat pelatihan ditambahkan.');
+    }
+
+    public function updateDiklat(StoreDiklatRequest $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $diklat = $guru->diklats()->findOrFail($id);
+
+        $data = $request->only([
+            'nama_diklat',
+            'penyelenggara',
+            'jenis',
+            'tingkat',
+            'tanggal_mulai',
+            'tanggal_selesai',
+            'jumlah_jam',
+            'peran',
+            'no_sertifikat',
+            'keterangan',
+        ]);
+
+        if ($request->hasFile('file_sertifikat')) {
+            if ($diklat->file_sertifikat) {
+                Storage::disk('public')->delete($diklat->file_sertifikat);
+            }
+            $data['file_sertifikat'] = $request->file('file_sertifikat')
+                ->store("guru-dokumen/{$guru->id}/diklat", 'public');
+        }
+
+        $diklat->update($data);
+        return $this->success($diklat, 'Riwayat pelatihan diperbarui.');
+    }
+
+    public function destroyDiklat($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $diklat = $guru->diklats()->findOrFail($id);
+
+        if ($diklat->file_sertifikat) {
+            Storage::disk('public')->delete($diklat->file_sertifikat);
+        }
+
+        $diklat->delete();
+        return $this->success(message: 'Riwayat pelatihan dihapus.');
+    }
+
+    // ── PKG (Penilaian Kinerja Guru) ──────────────────────────────────────────
+
+    public function getPkg($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        return $this->success(
+            $guru->pkgs()->with(['tahunAjaran', 'semester', 'penilai:id,name'])->get()
+        );
+    }
+
+    public function storePkg(StorePkgRequest $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $pkg = $guru->pkgs()->updateOrCreate(
+            ['tahun_ajaran_id' => $request->tahun_ajaran_id, 'semester_id' => $request->semester_id],
+            [
+                'nilai' => $request->nilai,
+                'predikat' => $request->predikat,
+                'catatan' => $request->catatan,
+                'dinilai_oleh' => auth()->id(),
+                'tanggal_penilaian' => $request->tanggal_penilaian ?? now(),
+            ]
+        );
+
+        return $this->success($pkg, 'PKG berhasil disimpan.');
     }
 }
