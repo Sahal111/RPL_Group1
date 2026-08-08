@@ -5,13 +5,14 @@ namespace App\Http\Controllers\MasterData\Guru;
 use App\Http\Controllers\Controller;
 use App\Models\Guru;
 use App\Models\GuruImportLog;
+use App\Services\Excel\MultiSheetXlsxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class GuruExportController extends Controller
 {
-    public function __construct()
+    public function __construct(private MultiSheetXlsxService $xlsx)
     {
         $this->middleware(fn($req, $next) => $this->authorize('export', Guru::class) ?? $next($req));
     }
@@ -505,7 +506,7 @@ class GuruExportController extends Controller
         ];
 
         $filename = 'data_guru_' . now()->format('Ymd_His') . '.xlsx';
-        $xlsx = $this->buildMultiSheetXlsx($sheets);
+        $xlsx = $this->xlsx->build($sheets);
         return response($xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -986,7 +987,7 @@ class GuruExportController extends Controller
             ['name' => 'Kontak Darurat', 'headers' => $hKontak, 'rows' => $rKontak],
             ['name' => 'Dokumen Umum', 'headers' => $hDokumen, 'rows' => $rDokumen],
         ];
-        $xlsxBinary = $this->buildMultiSheetXlsx($sheets);
+        $xlsxBinary = $this->xlsx->build($sheets);
 
         // ── ZIP: xlsx + foto + semua file dokumen ───────────────────────
         $tmpFile = tempnam(sys_get_temp_dir(), 'backup_guru_');
@@ -1121,165 +1122,4 @@ class GuruExportController extends Controller
         ]);
     }
 
-    // ── Private: Multi-Sheet XLSX Builder ─────────────────────────────
-    private function buildMultiSheetXlsx(array $sheets): string
-    {
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $spreadsheet->removeSheetByIndex(0); // hapus sheet default
-
-        foreach ($sheets as $si => $sheet) {
-            $ws = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $sheet['name']);
-            $spreadsheet->addSheet($ws, $si);
-
-            // Header row
-            foreach ($sheet['headers'] as $ci => $header) {
-                $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
-                $cell = $ws->getCell("{$col}1");
-                $cell->setValue($header);
-                // Style header: bold, background ungu, teks putih
-                $cell->getStyle()->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                    'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '5B21B6']],
-                    'alignment' => ['horizontal' => 'center'],
-                ]);
-            }
-
-            // Data rows
-            foreach ($sheet['rows'] as $ri => $row) {
-                $rowNum = $ri + 2;
-                $bg = $ri % 2 === 0 ? 'FFFFFF' : 'F5F3FF';
-                foreach ($row as $ci => $val) {
-                    $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
-                    $cell = $ws->getCell("{$col}{$rowNum}");
-                    $cell->setValueExplicit((string) $val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                    $cell->getStyle()->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
-                }
-            }
-
-            // Auto width
-            foreach (range(1, count($sheet['headers'])) as $colIdx) {
-                $ws->getColumnDimensionByColumn($colIdx)->setAutoSize(true);
-            }
-        }
-
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        ob_start();
-        $writer->save('php://output');
-        return ob_get_clean();
-    }
-    private function parseMultiSheetXlsx(string $filePath): array
-    {
-        $zip = new \ZipArchive();
-        if ($zip->open($filePath) !== true)
-            return [];
-
-        // shared strings
-        $sharedStrings = [];
-        $ssXml = $zip->getFromName('xl/sharedStrings.xml');
-        if ($ssXml !== false) {
-            $ss = simplexml_load_string($ssXml);
-            foreach ($ss->si as $si) {
-                $t = '';
-                foreach ($si->r as $r)
-                    $t .= (string) $r->t;
-                if ($t === '' && isset($si->t))
-                    $t = (string) $si->t;
-                $sharedStrings[] = $t;
-            }
-        }
-
-        // workbook — get sheet names & targets
-        $wbXml = $zip->getFromName('xl/workbook.xml');
-        $wbRelsXml = $zip->getFromName('xl/_rels/workbook.xml.rels');
-        $sheetList = [];
-
-        if ($wbXml && $wbRelsXml) {
-            $wb = simplexml_load_string($wbXml);
-            $wbRels = simplexml_load_string($wbRelsXml);
-
-            $relMap = [];
-            foreach ($wbRels->Relationship as $rel) {
-                $relMap[(string) $rel['Id']] = (string) $rel['Target'];
-            }
-
-            $ns = $wb->getNamespaces(true);
-            $rNs = $ns['r'] ?? 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-
-            foreach ($wb->sheets->sheet as $sheet) {
-                $rId = (string) $sheet->attributes($rNs)['id'];
-                $target = $relMap[$rId] ?? null;
-                if (!$target)
-                    continue;
-                // target could be "worksheets/sheet1.xml" or absolute
-                $path = (strpos($target, '/') === 0) ? ltrim($target, '/') : 'xl/' . $target;
-                $sheetList[] = ['name' => (string) $sheet['name'], 'path' => $path];
-            }
-        } else {
-            // fallback: try sheet1..sheetN
-            for ($i = 1; $i <= 15; $i++) {
-                $path = "xl/worksheets/sheet{$i}.xml";
-                if ($zip->getFromName($path) !== false) {
-                    $sheetList[] = ['name' => "Sheet{$i}", 'path' => $path];
-                }
-            }
-        }
-
-        $result = [];
-        foreach ($sheetList as $sheetMeta) {
-            $sheetXml = $zip->getFromName($sheetMeta['path']);
-            if ($sheetXml === false)
-                continue;
-
-            $sheet = simplexml_load_string($sheetXml);
-            $rows = [];
-            foreach ($sheet->sheetData->row as $row) {
-                $rowArr = [];
-                $maxCol = 0;
-                foreach ($row->c as $cell) {
-                    $ref = (string) $cell['r'];
-                    $colLetter = preg_replace('/[0-9]/', '', $ref);
-                    $colIdx = $this->colLetterToIndex($colLetter);
-                    $maxCol = max($maxCol, $colIdx);
-                    $t = (string) $cell['t'];
-                    $val = isset($cell->v) ? (string) $cell->v : '';
-                    if ($t === 's' && $val !== '')
-                        $val = $sharedStrings[(int) $val] ?? '';
-                    $rowArr[$colIdx] = $val;
-                }
-                for ($i = 0; $i <= $maxCol; $i++) {
-                    if (!isset($rowArr[$i]))
-                        $rowArr[$i] = '';
-                }
-                ksort($rowArr);
-                $rows[] = array_values($rowArr);
-            }
-            $result[] = ['name' => $sheetMeta['name'], 'rows' => $rows];
-        }
-
-        $zip->close();
-        return $result;
-    }
-
-
-    private function indexToColLetter(int $index): string
-    {
-        $letter = '';
-        $index++;
-        while ($index > 0) {
-            $index--;
-            $letter = chr(65 + ($index % 26)) . $letter;
-            $index = intdiv($index, 26);
-        }
-        return $letter;
-    }
-
-    private function colLetterToIndex(string $col): int
-    {
-        $col = strtoupper($col);
-        $index = 0;
-        for ($i = 0; $i < strlen($col); $i++) {
-            $index = $index * 26 + (ord($col[$i]) - 64);
-        }
-        return $index - 1;
-    }
 }

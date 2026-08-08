@@ -8,6 +8,7 @@ use App\Jobs\ProcessGuruZipImport;
 use App\Models\ActivityLog;
 use App\Models\Guru;
 use App\Models\GuruImportLog;
+use App\Services\Excel\MultiSheetXlsxService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 
 class GuruImportController extends Controller
 {
-    public function __construct()
+    public function __construct(private MultiSheetXlsxService $xlsx)
     {
         $this->middleware(fn($req, $next) => $this->authorize('import', Guru::class) ?? $next($req));
     }
@@ -400,7 +401,7 @@ class GuruImportController extends Controller
             ['name' => 'Kontak Darurat', 'headers' => $sheetKontakHeaders, 'rows' => $sheetKontakExample],
         ];
 
-        $xlsx = $this->buildMultiSheetXlsx($sheets);
+        $xlsx = $this->xlsx->build($sheets);
         return response($xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="template_import_guru.xlsx"',
@@ -416,7 +417,7 @@ class GuruImportController extends Controller
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls|max:10240']);
 
-        $allSheets = $this->parseMultiSheetXlsx($request->file('file')->getRealPath());
+        $allSheets = $this->xlsx->parse($request->file('file')->getRealPath());
         if (empty($allSheets)) {
             return $this->error('File kosong atau tidak bisa dibaca.', 'VALIDATION_ERROR', 422);
         }
@@ -1019,7 +1020,7 @@ class GuruImportController extends Controller
         try {
             $filePath = $request->file('file')->getRealPath();
             $fileName = $request->file('file')->getClientOriginalName();
-            $allSheets = $this->parseMultiSheetXlsx($filePath);
+            $allSheets = $this->xlsx->parse($filePath);
 
             if (empty($allSheets)) {
                 return $this->error('File tidak bisa dibaca.', 'VALIDATION_ERROR', 422);
@@ -1181,7 +1182,7 @@ class GuruImportController extends Controller
             return $this->error('File sudah tidak ada di server. Silakan upload ulang dari awal.', 'NOT_FOUND', 422);
         }
 
-        $allSheets = $this->parseMultiSheetXlsx($filePath);
+        $allSheets = $this->xlsx->parse($filePath);
         // ── Tentukan sheet utama ─────────────────────────────────────────
         $sheetUtama = null;
         foreach ($allSheets as $s) {
@@ -1516,7 +1517,7 @@ class GuruImportController extends Controller
         $rows = array_map(fn($err, $i) => [$i + 1, is_array($err) ? ($err['pesan'] ?? json_encode($err)) : $err], $log->error_detail, array_keys($log->error_detail));
 
         $sheets = [['name' => 'Error Report', 'headers' => $headers, 'rows' => $rows]];
-        $xlsx = $this->buildMultiSheetXlsx($sheets);
+        $xlsx = $this->xlsx->build($sheets);
 
         return response($xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1558,7 +1559,7 @@ class GuruImportController extends Controller
         // Simpan dan parse Excel
         $tmpPath = storage_path('app/imports/restore_' . time() . '.xlsx');
         file_put_contents($tmpPath, $excelContent);
-        $allSheets = $this->parseMultiSheetXlsx($tmpPath);
+        $allSheets = $this->xlsx->parse($tmpPath);
 
         // Proses Data Utama
         $sheetUtama = null;
@@ -1914,260 +1915,5 @@ class GuruImportController extends Controller
         $msg = "Import selesai: {$total} file berhasil diproses, {$results['dilewati']} dilewati.";
 
         return $this->success($results, $msg);
-    }
-    /**
-     * GET /guru/backup
-     */
-    private function buildMultiSheetXlsx(array $sheets): string
-    {
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $spreadsheet->removeSheetByIndex(0); // hapus sheet default
-
-        foreach ($sheets as $si => $sheet) {
-            $ws = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $sheet['name']);
-            $spreadsheet->addSheet($ws, $si);
-
-            // Header row
-            foreach ($sheet['headers'] as $ci => $header) {
-                $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
-                $cell = $ws->getCell("{$col}1");
-                $cell->setValue($header);
-                // Style header: bold, background ungu, teks putih
-                $cell->getStyle()->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                    'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => '5B21B6']],
-                    'alignment' => ['horizontal' => 'center'],
-                ]);
-            }
-
-            // Data rows
-            foreach ($sheet['rows'] as $ri => $row) {
-                $rowNum = $ri + 2;
-                $bg = $ri % 2 === 0 ? 'FFFFFF' : 'F5F3FF';
-                foreach ($row as $ci => $val) {
-                    $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
-                    $cell = $ws->getCell("{$col}{$rowNum}");
-                    $cell->setValueExplicit((string) $val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                    $cell->getStyle()->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
-                }
-            }
-
-            // Auto width
-            foreach (range(1, count($sheet['headers'])) as $colIdx) {
-                $ws->getColumnDimensionByColumn($colIdx)->setAutoSize(true);
-            }
-        }
-
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        ob_start();
-        $writer->save('php://output');
-        return ob_get_clean();
-    }
-
-    private function importRelasiFromSheets(array $allSheets, array &$stats, GuruImportLog $log): void
-    {
-        $getSheet = function (string $name) use ($allSheets): ?array {
-            foreach ($allSheets as $s) {
-                if (strtolower($s['name']) === strtolower($name))
-                    return $s;
-            }
-            return null;
-        };
-
-        $parseDate = fn(?string $v): ?string => $v ? (function ($v) {
-            try {
-                return \Carbon\Carbon::parse($v)->format('Y-m-d'); } catch (\Throwable) {
-                return null; }
-        })($v) : null;
-
-        // ── Sheet: Keluarga & Anak ───────────────────────────────────────
-        $sheetKel = $getSheet('Keluarga & Anak');
-        if ($sheetKel && !empty($sheetKel['rows'])) {
-            $rows = $sheetKel['rows'];
-            $hRow = array_map('trim', array_shift($rows));
-            $hMap = array_flip($hRow);
-            $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
-            foreach ($rows as $row) {
-                $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)') ?? $get($row, 'nuptk');
-                if (!$nuptk)
-                    continue;
-                $guru = Guru::where('nuptk', $nuptk)->first();
-                if (!$guru)
-                    continue;
-                try {
-                    if ($spk = $get($row, 'status_perkawinan')) {
-                        $guru->keluarga()->updateOrCreate(['guru_id' => $guru->id], array_filter([
-                            'status_perkawinan' => $spk,
-                            'nama_pasangan' => $get($row, 'nama_pasangan'),
-                            'nik_pasangan' => $get($row, 'nik_pasangan'),
-                            'pekerjaan_pasangan' => $get($row, 'pekerjaan_pasangan'),
-                            'jumlah_anak' => $get($row, 'jumlah_anak'),
-                        ], fn($v) => $v !== null));
-                        $stats['relasi']['keluarga'] = ($stats['relasi']['keluarga'] ?? 0) + 1;
-                    }
-                    if ($namaAnak = $get($row, 'nama_anak')) {
-                        $guru->anaks()->create(array_filter([
-                            'nama' => $namaAnak,
-                            'jenis_kelamin' => $get($row, 'jenis_kelamin_anak (L/P)'),
-                            'tanggal_lahir' => $parseDate($get($row, 'tanggal_lahir_anak (YYYY-MM-DD)')),
-                            'urutan' => $get($row, 'urutan_anak'),
-                        ], fn($v) => $v !== null));
-                        $stats['relasi']['anak'] = ($stats['relasi']['anak'] ?? 0) + 1;
-                    }
-                } catch (\Exception $e) {
-                    $stats['errors'][] = "Keluarga (NUPTK {$nuptk}): " . $e->getMessage();
-                }
-            }
-        }
-
-        // ── Sheet: Pendidikan ────────────────────────────────────────────
-        $sheetPend = $getSheet('Pendidikan');
-        if ($sheetPend && !empty($sheetPend['rows'])) {
-            $rows = $sheetPend['rows'];
-            $hRow = array_map('trim', array_shift($rows));
-            $hMap = array_flip($hRow);
-            $get = fn($row, $key) => (($i = $hMap[$key] ?? null) !== null && trim($row[$i] ?? '') !== '') ? trim($row[$i]) : null;
-            foreach ($rows as $row) {
-                $nuptk = $get($row, 'nuptk* (harus ada di Sheet1)') ?? $get($row, 'nuptk');
-                if (!$nuptk)
-                    continue;
-                $guru = Guru::where('nuptk', $nuptk)->first();
-                if (!$guru)
-                    continue;
-                try {
-                    $guru->pendidikans()->create(array_filter([
-                        'jenjang' => str_replace('-', '/', $get($row, 'jenjang (SD/SMP/SMA-SMK/D1/D2/D3/D4/S1/S2/S3)*') ?? $get($row, 'jenjang')),
-                        'nama_sekolah' => $get($row, 'nama_sekolah*') ?? $get($row, 'nama_sekolah'),
-                        'jurusan' => $get($row, 'jurusan'),
-                        'prodi' => $get($row, 'prodi'),
-                        'tahun_masuk' => $get($row, 'tahun_masuk'),
-                        'tahun_lulus' => $get($row, 'tahun_lulus'),
-                        'no_ijazah' => $get($row, 'no_ijazah'),
-                    ], fn($v) => $v !== null));
-                    $stats['relasi']['pendidikan'] = ($stats['relasi']['pendidikan'] ?? 0) + 1;
-                } catch (\Exception $e) {
-                    $stats['errors'][] = "Pendidikan (NUPTK {$nuptk}): " . $e->getMessage();
-                }
-            }
-        }
-
-        $log->update(['progress_persen' => 95]);
-    }
-
-    // ── Private: Multi-Sheet XLSX Parser ──────────────────────────────
-    private function parseMultiSheetXlsx(string $filePath): array
-    {
-        $zip = new \ZipArchive();
-        if ($zip->open($filePath) !== true)
-            return [];
-
-        // shared strings
-        $sharedStrings = [];
-        $ssXml = $zip->getFromName('xl/sharedStrings.xml');
-        if ($ssXml !== false) {
-            $ss = simplexml_load_string($ssXml);
-            foreach ($ss->si as $si) {
-                $t = '';
-                foreach ($si->r as $r)
-                    $t .= (string) $r->t;
-                if ($t === '' && isset($si->t))
-                    $t = (string) $si->t;
-                $sharedStrings[] = $t;
-            }
-        }
-
-        // workbook — get sheet names & targets
-        $wbXml = $zip->getFromName('xl/workbook.xml');
-        $wbRelsXml = $zip->getFromName('xl/_rels/workbook.xml.rels');
-        $sheetList = [];
-
-        if ($wbXml && $wbRelsXml) {
-            $wb = simplexml_load_string($wbXml);
-            $wbRels = simplexml_load_string($wbRelsXml);
-
-            $relMap = [];
-            foreach ($wbRels->Relationship as $rel) {
-                $relMap[(string) $rel['Id']] = (string) $rel['Target'];
-            }
-
-            $ns = $wb->getNamespaces(true);
-            $rNs = $ns['r'] ?? 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-
-            foreach ($wb->sheets->sheet as $sheet) {
-                $rId = (string) $sheet->attributes($rNs)['id'];
-                $target = $relMap[$rId] ?? null;
-                if (!$target)
-                    continue;
-                // target could be "worksheets/sheet1.xml" or absolute
-                $path = (strpos($target, '/') === 0) ? ltrim($target, '/') : 'xl/' . $target;
-                $sheetList[] = ['name' => (string) $sheet['name'], 'path' => $path];
-            }
-        } else {
-            // fallback: try sheet1..sheetN
-            for ($i = 1; $i <= 15; $i++) {
-                $path = "xl/worksheets/sheet{$i}.xml";
-                if ($zip->getFromName($path) !== false) {
-                    $sheetList[] = ['name' => "Sheet{$i}", 'path' => $path];
-                }
-            }
-        }
-
-        $result = [];
-        foreach ($sheetList as $sheetMeta) {
-            $sheetXml = $zip->getFromName($sheetMeta['path']);
-            if ($sheetXml === false)
-                continue;
-
-            $sheet = simplexml_load_string($sheetXml);
-            $rows = [];
-            foreach ($sheet->sheetData->row as $row) {
-                $rowArr = [];
-                $maxCol = 0;
-                foreach ($row->c as $cell) {
-                    $ref = (string) $cell['r'];
-                    $colLetter = preg_replace('/[0-9]/', '', $ref);
-                    $colIdx = $this->colLetterToIndex($colLetter);
-                    $maxCol = max($maxCol, $colIdx);
-                    $t = (string) $cell['t'];
-                    $val = isset($cell->v) ? (string) $cell->v : '';
-                    if ($t === 's' && $val !== '')
-                        $val = $sharedStrings[(int) $val] ?? '';
-                    $rowArr[$colIdx] = $val;
-                }
-                for ($i = 0; $i <= $maxCol; $i++) {
-                    if (!isset($rowArr[$i]))
-                        $rowArr[$i] = '';
-                }
-                ksort($rowArr);
-                $rows[] = array_values($rowArr);
-            }
-            $result[] = ['name' => $sheetMeta['name'], 'rows' => $rows];
-        }
-
-        $zip->close();
-        return $result;
-    }
-
-
-    private function indexToColLetter(int $index): string
-    {
-        $letter = '';
-        $index++;
-        while ($index > 0) {
-            $index--;
-            $letter = chr(65 + ($index % 26)) . $letter;
-            $index = intdiv($index, 26);
-        }
-        return $letter;
-    }
-
-    private function colLetterToIndex(string $col): int
-    {
-        $col = strtoupper($col);
-        $index = 0;
-        for ($i = 0; $i < strlen($col); $i++) {
-            $index = $index * 26 + (ord($col[$i]) - 64);
-        }
-        return $index - 1;
     }
 }
