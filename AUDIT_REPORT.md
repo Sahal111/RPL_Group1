@@ -208,3 +208,97 @@ Fase 3 (Testing & Readiness):
 
 Tulis Feature Test minimal untuk modul Auth, Multi-tenancy, dan Master Data.
 Bersihkan file-file sisa development (patch\_\*.py, database.sqlite).
+
+
+Ringkasan Kemajuan & Status Perubahan
+✅ Issues Yang Telah Berhasil Diperbaiki (FIXED)
+🔥 Multi-Tenancy Fail-Closed Scoping (FIXED): SchoolScope.php kini memiliki klausul fallback $builder->whereRaw('1 = 0') jika current_school_id bernilai null. Kebocoran data lintas sekolah (Cross-Tenant Data Breach) telah ditutup total.
+🔥 Token Authentication Security / XSS Defense (FIXED): Token Sanctum tidak lagi disimpan di localStorage. Backend mengeset Cookie auth_token bertipe HttpOnly, SameSite=Lax, dan EnsureFrontendRequestsAreStateful diaktifkan di middleware API.
+🔥 Standardisasi Validasi via Form Requests (FIXED): Dibuat dan diintegrasikan belasan Form Request classes (StoreSiswaRequest, UpdateSiswaRequest, CreateUserRequest, StoreKelasRequest, StoreOrtuRequest, StoreDiklatRequest, dll) di seluruh controller (MasterDataSiswaController, OperatorController, GuruKepegawaianController, MasterDataKelasController, MasterDataOrtuController).
+🔥 Ekstraksi Service Layer Excel (FIXED): Dibuat MultiSheetXlsxService untuk mengisolasi logika eksekusi ZipArchive + SimpleXML / PhpSpreadsheet multi-sheet, membersihkan duplikasi kode ratusan baris dari GuruImportController dan GuruExportController.
+⚠️ Sisa Temuan Yang Perlu Diperhatikan (Remaining Audit Items)
+1. High Priority Issues
+[Enterprise Readiness] Ketiadaan Automated Test Suite (0% Code Coverage)
+Severity: High
+
+Lokasi:
+
+backend/tests/Feature/ExampleTest.php (file:///Users/sahalanwarhadi/project_Sahal/Tugas_UAS_RPL_1/backend/tests/Feature/ExampleTest.php)
+Masalah: Meskipun keamanan multi-tenancy dan validasi sudah diperbaiki, proyek masih belum memiliki automated test suite (Unit / Integration / Feature tests) untuk memastikan fitur tidak rusak di masa depan.
+
+Mengapa ini berbahaya: Setiap perubahan kode baru atau refactoring berisiko menimbulkan regression bug tanpa ada sistem otomatis yang mendeteksinya sebelum masuk production.
+
+Dampak jangka panjang: Proses QA manual memakan waktu lama setiap rilis versi baru.
+
+Cara memperbaiki: Tambahkan Feature Test minimal untuk:
+
+TenantIsolationTest.php (memastikan SchoolScope memblokir akses ke sekolah lain).
+AuthenticationTest.php (memastikan login HttpOnly cookie & logout bekerja).
+SiswaManagementTest.php & GuruManagementTest.php.
+Best Practice: Test-Driven Development (TDD) / Continuous Integration (CI) test gate.
+
+Referensi Laravel: Laravel Testing Documentation
+
+Referensi Enterprise: Martin Fowler — Test Pyramid & Automation Standards.
+
+[Architecture / Clean Code] Ukuran File Controller Import/Export Masih Cukup Besar
+Severity: High
+
+Lokasi:
+
+backend/app/Http/Controllers/MasterData/Guru/GuruImportController.php (file:///Users/sahalanwarhadi/project_Sahal/Tugas_UAS_RPL_1/backend/app/Http/Controllers/MasterData/Guru/GuruImportController.php) (~1.900 baris)
+backend/app/Http/Controllers/MasterData/Guru/GuruExportController.php (file:///Users/sahalanwarhadi/project_Sahal/Tugas_UAS_RPL_1/backend/app/Http/Controllers/MasterData/Guru/GuruExportController.php) (~1.100 baris)
+Masalah: Meskipun ekstraksi method Excel ke MultiSheetXlsxService sudah berhasil menghapus duplikasi helper XML, alur bisnis parsing baris demi baris, perataan relasi, dan penanganan log import masih berada di dalam file controller.
+
+Mengapa ini berbahaya: Metode controller import masih memuat terlalu banyak baris logika prosedural.
+
+Dampak jangka panjang: Menyulitkan pengujian skenario import yang gagal (edge cases) tanpa melakukan mock HTTP request.
+
+Cara memperbaiki: Ekstrak proses eksekusi import dari GuruImportController ke GuruImportService atau pembaca baris terisolasi (GuruRowParser).
+
+Best Practice: Single Responsibility Principle (SRP) — Controller hanya menangani Request/Response routing.
+
+Referensi Laravel: Laravel Architecture Concepts - Service Providers & Services
+
+2. Medium Priority Issues
+[Database / Routing] Inkonsistensi Route Parameter & Public Identifier
+Severity: Medium
+
+Lokasi:
+
+backend/routes/api/master-data.php (file:///Users/sahalanwarhadi/project_Sahal/Tugas_UAS_RPL_1/backend/routes/api/master-data.php)
+Masalah: Rute API masih mencampur parameter pencarian:
+
+Guru menggunakan {nuptk}
+Siswa menggunakan {nisn}
+Kelas & Ortu menggunakan {id} (Integer auto-increment DB)
+Mengapa ini berbahaya: Penggunaan Integer ID mengekspos ID internal database di URL publik. Sementara NUPTK/NISN bisa berubah jika ada koreksi data administratif.
+
+Dampak jangka panjang: TIDAK konsisten dengan dokumen standar 03-database-standard.md yang menetapkan ulid (CHAR 26) sebagai public identifier universal.
+
+Cara memperbaiki: Perbarui Route Model Binding agar seluruh rute master data utama menggunakan {ulid} atau getRouteKeyName() = 'ulid'.
+
+Best Practice: URL Slug / ULID obfuscation untuk resource identifier di API public.
+
+Referensi Enterprise: OWASP API Security Top 10 — Broken Object Level Authorization (BOLA) & Information Disclosure.
+
+[Security / Configuration] Pengaturan Kredensial Environment Production
+Severity: Medium
+
+Lokasi:
+
+backend/.env (file:///Users/sahalanwarhadi/project_Sahal/Tugas_UAS_RPL_1/backend/.env)
+Masalah: File .env lokal masih menyimpan konfigurasi email SMTP dan database lokal.
+
+Mengapa ini berbahaya: Saat aplikasi di-deploy ke staging/production, kredensial sensitif tidak boleh tersimpan dalam file teks biasa di workspace repository.
+
+Cara memperbaiki: Pastikan server produksi menggunakan Environment Variables yang di-inject dari CI/CD pipeline / Secret Manager (seperti Docker Secrets, AWS SSM Parameter Store, atau GCP Secret Manager).
+
+Best Practice: 12-Factor App methodology — III. Config (Store config in the environment).
+
+💡 Recommendation Next Steps
+Jangka Pendek (Tanpa Ubah Kode Saat Ini):
+Lakukan verifikasi runtime end-to-end (Postman / Browser) pada alur login baru (HttpOnly Cookie) dan eksekusi import/export Excel.
+Jangka Menengah (Sebelum Deploy Production):
+Menambahkan Feature Tests untuk memverifikasi isolasi Multi-Tenant dan Autentikasi.
+Menyelaraskan Parameter Route ke {ulid} untuk standar API Enterprise.
