@@ -35,11 +35,6 @@ class PlotGuruMapel extends Model
         return $this->belongsTo(MataPelajaran::class, 'mapel_id');
     }
 
-    public function mataPelajaran()
-    {
-        return $this->mapel();
-    }
-
     public function kelas()
     {
         return $this->belongsTo(Kelas::class, 'kelas_id');

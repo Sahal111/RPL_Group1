@@ -3,11 +3,11 @@
 namespace App\Models;
 
 /**
- * SiswaKelas — alias backward-compatible untuk RiwayatKelas.
- * Controller lama yang masih reference SiswaKelas akan tetap bekerja.
- * Secara bertahap ganti ke RiwayatKelas::class.
+ * @deprecated Gunakan RiwayatKelas::class secara langsung.
+ * Kelas ini hanya alias backward-compatible dan akan dihapus di versi berikutnya.
+ * Cari semua referensi `SiswaKelas` dan ganti ke `RiwayatKelas`.
  */
 class SiswaKelas extends RiwayatKelas
 {
-    // Mewarisi semua dari RiwayatKelas (tabel: riwayat_kelas)
+    // TODO: Hapus kelas ini setelah semua referensi dimigrasikan ke RiwayatKelas
 }

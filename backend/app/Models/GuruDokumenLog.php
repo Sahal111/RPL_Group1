@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class GuruDokumenLog extends Model
 {
     protected $table = 'guru_dokumen_logs';
-    public $timestamps = false;
-    const CREATED_AT = 'created_at';
+    // Hanya menyimpan created_at, tidak ada updated_at
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'guru_dokumen_id',

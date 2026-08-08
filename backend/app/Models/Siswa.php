@@ -87,11 +87,17 @@ class Siswa extends Model
 
     public static function generateKodeAnak(): string
     {
-        do {
-            $kode = strtoupper(Str::random(10));
-        } while (static::where('kode_anak', $kode)->exists());
+        $maxAttempts = 10;
 
-        return $kode;
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $kode = strtoupper(Str::random(10));
+            if (!static::where('kode_anak', $kode)->exists()) {
+                return $kode;
+            }
+        }
+
+        // Fallback: tambah timestamp suffix agar dijamin unik
+        return strtoupper(Str::random(6)) . strtoupper(base_convert((string) now()->timestamp, 10, 36));
     }
 
     // ── Local Scope ──────────────────────────────────────────

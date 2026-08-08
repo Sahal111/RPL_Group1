@@ -52,19 +52,9 @@ class JadwalPelajaran extends Model
         return $this->belongsTo(Guru::class, 'guru_id');
     }
 
-    public function gurus()
-    {
-        return $this->guru();
-    }
-
     public function mataPelajaran()
     {
         return $this->belongsTo(MataPelajaran::class, 'mapel_id');
-    }
-
-    public function mapel()
-    {
-        return $this->mataPelajaran();
     }
 
     public function semester()
