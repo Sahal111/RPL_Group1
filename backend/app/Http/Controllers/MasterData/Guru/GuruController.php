@@ -3,22 +3,25 @@
 namespace App\Http\Controllers\MasterData\Guru;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Guru\KoreksiNuptkRequest;
 use App\Http\Requests\Guru\StoreGuruRequest;
 use App\Http\Requests\Guru\UpdateGuruRequest;
 use App\Http\Requests\Guru\UploadFotoGuruRequest;
-use App\Http\Requests\Guru\KoreksiNuptkRequest;
-use App\Models\ActivityLog;
 use App\Models\Guru;
 use App\Models\PlotGuruMapel;
 use App\Models\Semester;
 use App\Models\TahunAjaran;
-use App\Models\User;
+use App\Services\GuruService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 class GuruController extends Controller
 {
+    public function __construct(private GuruService $service)
+    {
+        // Otomatis map: index→viewAny, show→view, store→create, update→update, destroy→delete
+        $this->authorizeResource(Guru::class, 'guru');
+    }
+
     // ────────────────────────────────────────
     // SECTION: CRUD UTAMA
     // ────────────────────────────────────────
@@ -94,7 +97,7 @@ class GuruController extends Controller
 
     public function store(StoreGuruRequest $request)
     {
-        $guru = Guru::create($request->validated());
+        $guru = $this->service->store($request->validated());
 
         return $this->created($guru, 'Data guru berhasil ditambahkan.');
     }
@@ -102,7 +105,7 @@ class GuruController extends Controller
     public function update(UpdateGuruRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-        $guru->update($request->validated());
+        $guru = $this->service->update($guru, $request->validated());
 
         return $this->success($guru, 'Data guru berhasil diperbarui.');
     }
@@ -111,21 +114,19 @@ class GuruController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
-        if ($guru->user()->exists()) {
-            return $this->error(
-                'Guru ini memiliki akun login. Hapus akun loginnya terlebih dahulu.',
-                'CONFLICT',
-                422
-            );
+        try {
+            $this->service->delete($guru);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 'CONFLICT', 422);
         }
-
-        $guru->delete();
 
         return $this->success(message: 'Data guru berhasil dihapus.');
     }
 
     public function trash()
     {
+        $this->authorize('viewAny', Guru::class);
+
         $data = Guru::onlyTrashed()->orderByDesc('deleted_at')->paginate(15);
 
         return $this->success($data);
@@ -134,6 +135,7 @@ class GuruController extends Controller
     public function restore($nuptk)
     {
         $guru = Guru::onlyTrashed()->where('nuptk', $nuptk)->firstOrFail();
+        $this->authorize('restore', $guru);
         $guru->restore();
 
         return $this->success(message: 'Data guru berhasil dipulihkan.');
@@ -142,6 +144,7 @@ class GuruController extends Controller
     public function forceDelete($nuptk)
     {
         $guru = Guru::onlyTrashed()->where('nuptk', $nuptk)->firstOrFail();
+        $this->authorize('forceDelete', $guru);
         $guru->forceDelete();
 
         return $this->success(message: 'Data guru berhasil dihapus permanen.');
@@ -256,13 +259,9 @@ class GuruController extends Controller
     public function uploadFoto(UploadFotoGuruRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $this->authorize('uploadDocument', $guru);
 
-        if ($guru->foto) {
-            Storage::disk('public')->delete($guru->foto);
-        }
-
-        $path = $request->file('foto')->store('foto-guru', 'public');
-        $guru->update(['foto' => $path]);
+        $path = $this->service->uploadFoto($guru, $request->file('foto'));
 
         return $this->success(
             ['foto_url' => asset('storage/' . $path)],
@@ -277,12 +276,9 @@ class GuruController extends Controller
     public function verifikasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $this->authorize('verify', $guru);
 
-        $guru->update([
-            'is_verified' => true,
-            'verified_at' => now(),
-            'verified_by' => auth()->id(),
-        ]);
+        $this->service->verifikasi($guru);
 
         return $this->success(message: 'Data guru berhasil diverifikasi.');
     }
@@ -290,12 +286,9 @@ class GuruController extends Controller
     public function batalVerifikasi($nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $this->authorize('verify', $guru);
 
-        $guru->update([
-            'is_verified' => false,
-            'verified_at' => null,
-            'verified_by' => null,
-        ]);
+        $this->service->batalVerifikasi($guru);
 
         return $this->success(message: 'Verifikasi data guru dibatalkan.');
     }
@@ -303,33 +296,22 @@ class GuruController extends Controller
     public function koreksiNuptk(KoreksiNuptkRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $this->authorize('update', $guru);
 
-        $request->validate([
-            'nuptk_baru' => [
-                'required',
-                'string',
-                'size:16',
-                'regex:/^\d{16}$/',
-                Rule::unique('gurus', 'nuptk')->ignore($guru->id),
-            ],
-            'alasan' => 'required|string|max:255',
-        ]);
-
-        $nuptk_lama = $guru->nuptk;
-        $guru->update(['nuptk' => $request->nuptk_baru]);
-
-        ActivityLog::create([
-            'user_id' => auth()->id(),
-            'action' => 'koreksi_nuptk',
-            'module' => 'guru',
-            'subject_id' => $guru->id,
-            'keterangan' => "NUPTK dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}. Alasan: {$request->alasan}",
-            'ip_address' => $request->ip(),
-        ]);
+        try {
+            $this->service->koreksiNuptk(
+                $guru,
+                $request->nuptk_baru,
+                $request->alasan,
+                $request
+            );
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 'CONFLICT', 422);
+        }
 
         return $this->success(
             ['nuptk_baru' => $request->nuptk_baru],
-            "NUPTK berhasil dikoreksi dari {$nuptk_lama} ke {$request->nuptk_baru}."
+            "NUPTK berhasil dikoreksi dari {$nuptk} ke {$request->nuptk_baru}."
         );
     }
 }
