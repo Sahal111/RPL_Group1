@@ -35,8 +35,13 @@ class SchoolScope implements Scope
     {
         $schoolId = app()->bound('current_school_id') ? app('current_school_id') : null;
 
-        if ($schoolId) {
+        if ($schoolId !== null) {
             $builder->where($model->getTable() . '.school_id', $schoolId);
+        } else {
+            // Fail-closed: jika tenant tidak terresolve, blokir seluruh query.
+            // Bypass hanya via withoutGlobalScope(SchoolScope::class) oleh
+            // PlatformAdminController, Artisan Command, atau SchoolProvisioningService.
+            $builder->whereRaw('1 = 0');
         }
     }
 }

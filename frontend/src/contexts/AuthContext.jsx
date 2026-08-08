@@ -8,19 +8,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    const savedToken = localStorage.getItem("token");
-
-    if (savedUser && savedToken) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        // ponytail: localStorage corrupt → clear
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-    setLoading(false);
+    // Token tidak lagi disimpan di localStorage — ada di HttpOnly cookie.
+    // Cek session aktif via /auth/me agar state user ter-restore saat refresh.
+    api
+      .get("/auth/me")
+      .then((res) => setUser(res.data.data.user))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (loginVal, password) => {
@@ -28,27 +22,21 @@ export function AuthProvider({ children }) {
       login: loginVal,
       password,
     });
-    const { token, user } = res.data.data;
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
+    // Token ada di HttpOnly cookie — tidak perlu disimpan secara manual.
+    const { user } = res.data.data;
     setUser(user);
     return user;
   };
 
   const updateUser = (updatedFields) => {
-    setUser((prev) => {
-      const newUser = { ...prev, ...updatedFields };
-      localStorage.setItem("user", JSON.stringify(newUser));
-      return newUser;
-    });
+    setUser((prev) => ({ ...prev, ...updatedFields }));
   };
 
   const logout = async () => {
     try {
       await api.post("/auth/logout");
     } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      // Cookie di-clear oleh backend. Cukup reset state.
       setUser(null);
     }
   };

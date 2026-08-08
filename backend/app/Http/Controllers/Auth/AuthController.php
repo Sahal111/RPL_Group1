@@ -42,13 +42,26 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
         $user->update(['last_login_at' => now()]);
 
+        // Token dikirim via HttpOnly cookie — tidak bisa dibaca JavaScript (XSS-safe).
+        // Frontend TIDAK perlu menyimpan token di localStorage.
+        cookie()->queue(cookie(
+            name: 'auth_token',
+            value: $token,
+            minutes: 60 * 24 * 7,   // 7 hari
+            path: '/',
+            domain: null,
+            secure: app()->isProduction(),
+            httpOnly: true,
+            raw: false,
+            sameSite: 'Lax',
+        ));
+
         $profile = $this->getProfile($user);
 
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil.',
             'data' => [
-                'token' => $token,
                 'user' => [
                     'id' => $user->id,
                     'username' => $user->username,
@@ -69,7 +82,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Logout berhasil.',
-        ]);
+        ])->withoutCookie('auth_token');
     }
 
     public function me(Request $request)

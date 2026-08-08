@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 2. TenantMiddleware set school_id sebelum auth dan query apapun
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
+            // Sanctum stateful: izinkan SPA baca cookie auth_token tanpa header Bearer.
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \App\Http\Middleware\TenantMiddleware::class,
         ]);
     })
