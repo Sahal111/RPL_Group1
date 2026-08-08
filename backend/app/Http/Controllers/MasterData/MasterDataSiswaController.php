@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Siswa\StoreSiswaRequest;
+use App\Http\Requests\Siswa\UpdateSiswaRequest;
 use App\Models\OrangTua;
 use App\Models\Siswa;
 use App\Models\RiwayatKelas;
@@ -106,48 +108,8 @@ class MasterDataSiswaController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreSiswaRequest $request)
     {
-        $request->validate([
-            'nisn' => 'required|string|size:10|unique:siswas,nisn',
-            'nik' => 'nullable|string|size:16|unique:siswas,nik',
-            'nis' => 'nullable|string|max:20|unique:siswas,nis',
-            'no_kk' => 'nullable|string|size:16',
-            'nama' => 'required|string|max:150',
-            'jenis_kelamin' => 'required|in:L,P',
-            'tempat_lahir' => 'required|string|max:100',
-            'tanggal_lahir' => 'required|date|before:today',
-            'agama' => 'required|in:Islam,Kristen Protestan,Kristen Katolik,Hindu,Buddha,Konghucu,Lainnya',
-            'golongan_darah' => 'nullable|in:A,B,AB,O,-',
-            'kewarganegaraan' => 'required|in:WNI,WNA',
-            'nama_ibu_kandung' => 'required|string|max:150',
-            'nama_kepala_keluarga' => 'nullable|string|max:150',
-            'anak_ke' => 'nullable|integer|min:1',
-            'jumlah_saudara' => 'nullable|integer|min:0',
-            'status_dalam_keluarga' => 'required|in:Kandung,Tiri,Angkat',
-            'pembiaya_sekolah' => 'nullable|in:Orang Tua,Sendiri,Pemerintah,Lembaga,Lainnya',
-            'kebutuhan_khusus' => 'nullable|string|max:100',
-            'riwayat_penyakit' => 'nullable|string',
-            'imunisasi' => 'nullable|in:Lengkap,Tidak Lengkap,Tidak Diketahui',
-            'alamat_jalan' => 'required|string|max:255',
-            'rt' => 'nullable|string|max:4',
-            'rw' => 'nullable|string|max:4',
-            'desa_kelurahan' => 'nullable|string|max:100',
-            'kecamatan' => 'nullable|string|max:100',
-            'kota_kabupaten' => 'nullable|string|max:100',
-            'provinsi' => 'nullable|string|max:100',
-            'kode_pos' => 'nullable|string|max:10',
-            'jarak_tempat_tinggal' => 'nullable|numeric|min:0',
-            'waktu_tempuh' => 'nullable|integer|min:0',
-            'moda_transportasi' => 'nullable|string|max:50',
-            'asal_sekolah' => 'nullable|string|max:200',
-            'tanggal_masuk' => 'required|date',
-            'tingkat' => 'nullable|integer|min:1|max:6',
-            'status' => 'required|in:aktif,nonaktif,mutasi_keluar,lulus,meninggal',
-            'orang_tua_id' => 'nullable|integer|exists:orang_tuas,id',
-            'unlink_orang_tua' => 'nullable|boolean',
-            ...$this->orangTuaValidationRules(),
-        ]);
 
         $siswa = DB::transaction(function () use ($request) {
             $siswa = Siswa::create($request->only($this->siswaFields()));
