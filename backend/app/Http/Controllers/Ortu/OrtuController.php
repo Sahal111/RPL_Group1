@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Ortu;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Ortu\TambahAnakRequest;
+use App\Http\Requests\Ortu\UpdateHubunganAnakRequest;
+use App\Http\Requests\Ortu\UpdateProfilOrtuRequest;
 use Illuminate\Http\Request;
 use App\Models\OrangTua;
 use App\Models\Siswa;
@@ -237,13 +240,8 @@ class OrtuController extends Controller
     // -------------------------------------------------------
     // TAMBAH ANAK (link siswa ke akun ortu)
     // -------------------------------------------------------
-    public function tambahAnak(Request $request)
+    public function tambahAnak(TambahAnakRequest $request)
     {
-        $request->validate([
-            'nisn' => 'required|string|size:10|exists:siswas,nisn',
-            'kode_anak' => 'required|string|size:10', // ponytail: cegah claim anak sembarangan
-            'hubungan' => 'required|in:Ayah,Ibu,Wali',
-        ]);
 
         $user = $request->user();
         $siswa = Siswa::where('nisn', $request->nisn)
@@ -288,9 +286,8 @@ class OrtuController extends Controller
     // -------------------------------------------------------
     // UPDATE HUBUNGAN ANAK
     // -------------------------------------------------------
-    public function updateAnak(Request $request, string $nisn)
+    public function updateAnak(UpdateHubunganAnakRequest $request, string $nisn)
     {
-        $request->validate(['hubungan' => 'required|in:Ayah,Ibu,Wali']);
 
         $user = $request->user();
         $siswa = Siswa::where('nisn', $nisn)->firstOrFail();
@@ -408,17 +405,9 @@ class OrtuController extends Controller
     // -------------------------------------------------------
     // UPDATE PROFIL USER ORTU
     // -------------------------------------------------------
-    public function updateProfil(Request $request)
+    public function updateProfil(UpdateProfilOrtuRequest $request)
     {
         $user = User::find($request->user()->id);
-
-        $request->validate([
-            'email' => 'nullable|email|unique:users,email,' . $user->id,
-            'no_hp' => 'nullable|string|max:20',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'password_lama' => 'nullable|string',
-            'password_baru' => 'nullable|string|min:6|confirmed',
-        ]);
 
         if ($request->filled('password_baru')) {
             if (!$request->filled('password_lama')) {

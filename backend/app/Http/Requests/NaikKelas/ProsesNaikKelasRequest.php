@@ -4,7 +4,7 @@ namespace App\Http\Requests\NaikKelas;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProseNaikKelasRequest extends FormRequest
+class ProsesNaikKelasRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -24,7 +24,7 @@ class ProseNaikKelasRequest extends FormRequest
         return [
             'kelas_id_asal.required' => 'Kelas asal wajib dipilih.',
             'kelas_id_tujuan.required' => 'Kelas tujuan wajib dipilih.',
-            'kelas_id_tujuan.different' => 'Kelas tujuan tidak boleh sama dengan kelas asal.',
+            'kelas_id_tujuan.different' => 'Kelas tujuan harus berbeda dengan kelas asal.',
         ];
     }
 }

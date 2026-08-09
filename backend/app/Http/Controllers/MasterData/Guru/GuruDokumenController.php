@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\MasterData\Guru;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Guru\UploadDokumenRequest;
 use App\Http\Requests\Guru\RejectDokumenRequest;
+use App\Http\Requests\Guru\UpdateDokumenRequest;
+use App\Http\Requests\Guru\UploadDokumenRequest;
 use App\Models\Guru;
 use App\Models\GuruDokumen;
 use App\Services\GuruDokumenService;
@@ -59,19 +60,6 @@ class GuruDokumenController extends Controller
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
-        $request->validate([
-            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,administrasi,penghargaan,lainnya',
-            'jenis_dokumen' => 'nullable|string|max:80',
-            'nama_dokumen' => 'nullable|string|max:150',
-            'nomor_dokumen' => 'nullable|string|max:80',
-            'tanggal_dokumen' => 'nullable|date',
-            'tanggal_berlaku' => 'nullable|date',
-            'tanggal_kadaluarsa' => 'nullable|date|after_or_equal:tanggal_berlaku',
-            'penerbit' => 'nullable|string|max:150',
-            'keterangan' => 'nullable|string|max:500',
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        ]);
-
         $dokumen = $this->service->upload(
             guruId: $guru->id,
             data: [
@@ -92,24 +80,10 @@ class GuruDokumenController extends Controller
         return $this->created($dokumen, 'Dokumen berhasil diupload.');
     }
 
-    public function updateDokumen(UploadDokumenRequest $request, $nuptk, $id)
+    public function updateDokumen(UpdateDokumenRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $dokumen = $guru->dokumens()->findOrFail($id);
-
-        $request->validate([
-            'kategori' => 'required|in:identitas,kepegawaian,pendidikan,sertifikasi,administrasi,lainnya',
-            'jenis_dokumen' => 'nullable|string|max:80',
-            'nama_dokumen' => 'nullable|string|max:150',
-            'nomor_dokumen' => 'nullable|string|max:80',
-            'tanggal_dokumen' => 'nullable|date',
-            'tanggal_berlaku' => 'nullable|date',
-            'tanggal_kadaluarsa' => 'nullable|date|after_or_equal:tanggal_berlaku',
-            'penerbit' => 'nullable|string|max:150',
-            'keterangan' => 'nullable|string|max:500',
-            'catatan_versi' => 'nullable|string|max:255',
-            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        ]);
 
         $dokumen->update([
             'kategori' => $request->kategori,
@@ -157,8 +131,6 @@ class GuruDokumenController extends Controller
 
     public function rejectDokumen(RejectDokumenRequest $request, $nuptk, $id)
     {
-        $request->validate(['alasan' => 'required|string|max:500']);
-
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $dokumen = $guru->dokumens()->findOrFail($id);
         $updated = $this->service->reject($dokumen, auth()->id(), $request->alasan);

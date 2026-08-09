@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Kepsek;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Kepsek\RangeAbsensiRequest;
+use App\Http\Requests\Kepsek\SiswaAlpaRequest;
+use App\Http\Requests\Kepsek\UpdateProfilKepsekRequest;
 use App\Models\Kelas;
 use App\Models\Absensi; // tabel: absensis
 use App\Models\Siswa;
@@ -161,12 +164,8 @@ class KepsekController extends Controller
     // -------------------------------------------------------
     // REKAP SEMUA KELAS (untuk kepsek monitoring)
     // -------------------------------------------------------
-    public function rekapSemuaKelas(Request $request)
+    public function rekapSemuaKelas(RangeAbsensiRequest $request)
     {
-        $request->validate([
-            'dari' => 'required|date',
-            'sampai' => 'required|date|after_or_equal:dari',
-        ]);
 
         $kelasList = Kelas::where('is_active', 1)->get();
 
@@ -212,13 +211,8 @@ class KepsekController extends Controller
     // -------------------------------------------------------
     // SISWA DENGAN ALPA TERBANYAK (monitoring)
     // -------------------------------------------------------
-    public function siswaAlpaTerbanyak(Request $request)
+    public function siswaAlpaTerbanyak(SiswaAlpaRequest $request)
     {
-        $request->validate([
-            'dari' => 'required|date',
-            'sampai' => 'required|date|after_or_equal:dari',
-            'limit' => 'nullable|integer|between:5,50',
-        ]);
 
         $limit = $request->limit ?? 10;
 
@@ -503,18 +497,9 @@ class KepsekController extends Controller
     // -------------------------------------------------------
     // UPDATE PROFIL KEPSEK
     // -------------------------------------------------------
-    public function updateProfil(Request $request)
+    public function updateProfil(UpdateProfilKepsekRequest $request)
     {
         $user = User::find($request->user()->id);
-
-        $request->validate([
-            'email' => 'nullable|email|unique:users,email,' . $user->id,
-            'no_hp' => 'nullable|string|max:20',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'password_lama' => 'nullable|string',
-            'password_baru' => 'nullable|string|min:6|confirmed',
-            'password_baru_confirmation' => 'nullable|string',
-        ]);
 
         if ($request->filled('password_baru')) {
             if (!$request->filled('password_lama')) {

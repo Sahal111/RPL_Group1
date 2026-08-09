@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Kepsek;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Kepsek\StoreKalenderRequest;
+use App\Http\Requests\Kepsek\UpdateKalenderRequest;
 use App\Models\KalenderAkademik; // tabel: kalender_akademiks
 use Illuminate\Http\Request;
 
@@ -46,15 +48,8 @@ class KalenderAkademikController extends Controller
     // -------------------------------------------------------
     // POST /kepsek/kalender
     // -------------------------------------------------------
-    public function store(Request $request)
+    public function store(StoreKalenderRequest $request)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
-            'jenis' => 'required|in:jadwal_ujian,libur_nasional,libur_semester,kegiatan,rapat',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-        ]);
 
         $kalender = KalenderAkademik::create([
             'judul' => $request->judul,
@@ -75,15 +70,8 @@ class KalenderAkademikController extends Controller
     // -------------------------------------------------------
     // PUT /kepsek/kalender/{id}
     // -------------------------------------------------------
-    public function update(Request $request, $id)
+    public function update(UpdateKalenderRequest $request, $id)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
-            'jenis' => 'required|in:jadwal_ujian,libur_nasional,libur_semester,kegiatan,rapat',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-        ]);
 
         $kalender = KalenderAkademik::findOrFail($id);
         $kalender->update([

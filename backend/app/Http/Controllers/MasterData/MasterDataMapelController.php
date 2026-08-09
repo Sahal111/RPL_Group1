@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Mapel\ImportMapelRequest;
+use App\Http\Requests\Mapel\StoreMapelRequest;
+use App\Http\Requests\Mapel\UpdateMapelRequest;
 use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 
@@ -31,17 +34,8 @@ class MasterDataMapelController extends Controller
     }
 
     /* ── STORE ───────────────────────────────────────────────── */
-    public function store(Request $request)
+    public function store(StoreMapelRequest $request)
     {
-        $request->validate([
-            'kode' => 'required|string|max:20|unique:mapels,kode',
-            'nama_mapel' => 'required|string|max:150',
-            'kelompok' => 'required|in:' . implode(',', self::KELOMPOK_VALID),
-            'tingkat' => 'nullable|array',
-            'tingkat.*' => 'in:1,2,3,4,5,6',
-            'jam_per_minggu' => 'required|integer|min:1|max:40',
-            'kurikulum' => 'required|in:' . implode(',', self::KURIKULUM_VALID),
-        ]);
 
         $mapel = MataPelajaran::create([
             'kode' => strtoupper($request->kode),
@@ -63,19 +57,9 @@ class MasterDataMapelController extends Controller
     }
 
     /* ── UPDATE ──────────────────────────────────────────────── */
-    public function update(Request $request, $id)
+    public function update(UpdateMapelRequest $request, $id)
     {
         $mapel = MataPelajaran::findOrFail($id);
-        $request->validate([
-            'kode' => "required|string|max:20|unique:mapels,kode,{$id}",
-            'nama_mapel' => 'required|string|max:150',
-            'kelompok' => 'required|in:' . implode(',', self::KELOMPOK_VALID),
-            'tingkat' => 'nullable|array',
-            'tingkat.*' => 'in:1,2,3,4,5,6',
-            'jam_per_minggu' => 'required|integer|min:1|max:40',
-            'kurikulum' => 'required|in:' . implode(',', self::KURIKULUM_VALID),
-            'is_active' => 'boolean',
-        ]);
         $mapel->update([
             'kode' => strtoupper($request->kode),
             'nama_mapel' => $request->nama_mapel,
@@ -176,9 +160,8 @@ class MasterDataMapelController extends Controller
     /*  IMPORT  →  baca .xlsx (ZipArchive + SimpleXML, built-in)  */
     /*             atau .csv sebagai fallback                      */
     /* ─────────────────────────────────────────────────────────── */
-    public function import(Request $request)
+    public function import(ImportMapelRequest $request)
     {
-        $request->validate(['file' => 'required|file|max:5120']);
 
         $file = $request->file('file');
         $ext = strtolower($file->getClientOriginalExtension());

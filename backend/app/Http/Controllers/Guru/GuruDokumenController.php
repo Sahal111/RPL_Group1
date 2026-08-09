@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guru\StoreGuruDokumenRequest;
+use App\Http\Requests\Guru\VerifyDokumenRequest;
 use App\Http\Resources\GuruDokumenResource;
 use App\Models\Guru;
 use App\Models\GuruDokumen;
@@ -61,18 +62,13 @@ class GuruDokumenController extends Controller
     /**
      * Verify/Approve a teacher document (Kepsek/Admin).
      */
-    public function verify(Request $request, string $dokumenId): JsonResponse
+    public function verify(VerifyDokumenRequest $request, string $dokumenId): JsonResponse
     {
         $dokumen = GuruDokumen::find($dokumenId);
 
         if (!$dokumen) {
             return $this->notFound('Dokumen tidak ditemukan.');
         }
-
-        $request->validate([
-            'status' => ['required', 'in:approved,rejected'],
-            'catatan' => ['nullable', 'string'],
-        ]);
 
         $dokumen->update([
             'status_verifikasi' => $request->status,

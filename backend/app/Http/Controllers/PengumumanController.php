@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Pengumuman\StorePengumumanRequest;
+use App\Http\Requests\Pengumuman\UpdatePengumumanRequest;
 use App\Models\Pengumuman;
 use Illuminate\Http\Request;
 
@@ -27,15 +29,8 @@ class PengumumanController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StorePengumumanRequest $request)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'konten' => 'required|string',
-            'kategori' => 'required|string',
-            'target' => 'required|in:semua,internal,ortu',
-            'publish_at' => 'nullable|date|after:now',
-        ]);
 
         $pengumuman = Pengumuman::create([
             'judul' => $request->judul,
@@ -53,15 +48,8 @@ class PengumumanController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdatePengumumanRequest $request, $id)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'konten' => 'required|string',
-            'kategori' => 'required|string',
-            'target' => 'required|in:semua,internal,ortu',
-            'publish_at' => 'nullable|date',
-        ]);
 
         $pengumuman = Pengumuman::findOrFail($id);
         $pengumuman->update([

@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Absensi;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Absensi\FilterAbsensiRequest;
+use App\Http\Requests\Absensi\RangkumanAbsensiRequest;
+use App\Http\Requests\Absensi\StoreAbsensiRequest;
+use App\Http\Requests\Absensi\UpdateAbsensiRequest;
 use App\Models\Absensi; // tabel: absensis
 use App\Models\JadwalPelajaran; // tabel: jadwals
 use App\Models\RiwayatKelas;
@@ -133,17 +137,8 @@ class AbsensiController extends Controller
     // -------------------------------------------------------
     // SUBMIT ABSENSI per jadwal pelajaran
     // -------------------------------------------------------
-    public function store(Request $request)
+    public function store(StoreAbsensiRequest $request)
     {
-        $request->validate([
-            'kelas_id' => 'required|integer|exists:kelas,id',
-            'jadwal_id' => 'nullable|integer|exists:jadwals,id',
-            'tanggal' => 'required|date|before_or_equal:today',
-            'absensi' => 'required|array|min:1',
-            'absensi.*.siswa_id' => 'required|integer|exists:siswas,id',
-            'absensi.*.status' => 'required|in:Hadir,Sakit,Izin,Alpa',
-            'absensi.*.keterangan' => 'nullable|string|max:255',
-        ]);
 
         $user = $request->user();
 
@@ -193,12 +188,8 @@ class AbsensiController extends Controller
     // -------------------------------------------------------
     // EDIT ABSENSI SATU SISWA
     // -------------------------------------------------------
-    public function update(Request $request, $id)
+    public function update(UpdateAbsensiRequest $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:Hadir,Sakit,Izin,Alpa',
-            'keterangan' => 'nullable|string|max:255',
-        ]);
 
         $absensi = Absensi::findOrFail($id);
         $absensi->update([
@@ -217,12 +208,8 @@ class AbsensiController extends Controller
     // -------------------------------------------------------
     // REKAP ABSENSI PER KELAS (summary per siswa)
     // -------------------------------------------------------
-    public function rekap(Request $request, $id_kelas)
+    public function rekap(RangkumanAbsensiRequest $request, $id_kelas)
     {
-        $request->validate([
-            'dari' => 'required|date',
-            'sampai' => 'required|date|after_or_equal:dari',
-        ]);
 
         $kelas = Kelas::findOrFail($id_kelas);
 
@@ -318,16 +305,9 @@ class AbsensiController extends Controller
     // RIWAYAT ABSENSI PER SISWA (digunakan oleh Ortu)
     // Menampilkan per hari dengan info mata pelajaran
     // -------------------------------------------------------
-    public function bySiswa(Request $request, $nisn)
+    public function bySiswa(FilterAbsensiRequest $request, $nisn)
     {
         $user = $request->user();
-
-        $request->validate([
-            'dari' => 'nullable|date',
-            'sampai' => 'nullable|date|after_or_equal:dari',
-            'bulan' => 'nullable|integer|between:1,12',
-            'tahun' => 'nullable|integer',
-        ]);
 
         // ponytail: IDOR guard — ortu hanya anak sendiri
         if ($user->hasRole('ortu') && !$user->hasRole('guru') && !$user->hasRole('operator')) {

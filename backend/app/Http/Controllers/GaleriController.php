@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Galeri\StoreGaleriRequest;
 use App\Models\Galeri; // tabel: galeris
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,14 +23,8 @@ class GaleriController extends Controller
     }
 
     // OPERATOR — upload foto baru ke galeri
-    public function store(Request $request)
+    public function store(StoreGaleriRequest $request)
     {
-        $request->validate([
-            'foto' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'judul' => 'required|string|max:150',
-            'deskripsi' => 'nullable|string|max:500',
-            'kategori' => 'required|in:kegiatan,prestasi,ekstrakurikuler,fasilitas,acara',
-        ]);
 
         $path = $request->file('foto')->store('galeris', 'public');
 

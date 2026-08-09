@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TahunAjaran\SetSemesterAktifRequest;
+use App\Http\Requests\TahunAjaran\StoreTahunAjaranRequest;
+use App\Http\Requests\TahunAjaran\UpdateTahunAjaranRequest;
 use App\Models\TahunAjaran;
 use App\Models\ActivityLog;
 use App\Models\Kelas;
@@ -178,20 +181,8 @@ class TahunAjaranController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreTahunAjaranRequest $request)
     {
-        $request->validate([
-            'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', 'unique:tahun_ajarans,tahun'],
-            'is_active' => 'nullable|boolean',
-            'buat_semester' => 'nullable|boolean',
-            'semester_ganjil_mulai' => 'nullable|date',
-            'semester_ganjil_selesai' => 'nullable|date',
-            'semester_genap_mulai' => 'nullable|date',
-            'semester_genap_selesai' => 'nullable|date',
-            'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
-            'tgl_mulai_ta' => 'nullable|date',
-            'tgl_selesai_ta' => 'nullable|date',
-        ]);
 
         DB::beginTransaction();
         try {
@@ -252,22 +243,9 @@ class TahunAjaranController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateTahunAjaranRequest $request, $id)
     {
         $tahunAjaran = TahunAjaran::findOrFail($id);
-
-        $request->validate([
-            'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', 'unique:tahun_ajarans,tahun,' . $id],
-            'is_active' => 'nullable|boolean',
-            'buat_semester' => 'nullable|boolean',
-            'semester_ganjil_mulai' => 'nullable|date',
-            'semester_ganjil_selesai' => 'nullable|date',
-            'semester_genap_mulai' => 'nullable|date',
-            'semester_genap_selesai' => 'nullable|date',
-            'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
-            'tgl_mulai_ta' => 'nullable|date',
-            'tgl_selesai_ta' => 'nullable|date',
-        ]);
 
         DB::beginTransaction();
         try {
@@ -376,11 +354,8 @@ class TahunAjaranController extends Controller
             'data' => $tahunAjaran->load('semesters'),
         ]);
     }
-    public function setSemesterAktif(Request $request, $id)
+    public function setSemesterAktif(SetSemesterAktifRequest $request, $id)
     {
-        $request->validate([
-            'semester_nama' => 'required|in:Ganjil,Genap',
-        ]);
 
         $tahunAjaran = TahunAjaran::findOrFail($id);
         if (!$tahunAjaran->is_active) {

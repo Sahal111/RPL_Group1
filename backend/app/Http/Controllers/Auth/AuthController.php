@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterOrtuRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,12 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'login' => 'required|string',
-            'password' => 'required|string',
-        ]);
 
         $user = User::with('roles')
             ->where(function ($q) use ($request) {
@@ -105,18 +103,8 @@ class AuthController extends Controller
         ]);
     }
 
-    public function registerOrtu(Request $request)
+    public function registerOrtu(RegisterOrtuRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'required|email|max:100|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'nama' => 'required|string|max:100',
-            'no_hp' => 'required|string|max:20',
-            'nisn' => 'required|string|size:10|exists:siswas,nisn',
-            'kode_sekolah' => 'required|string',
-            'hubungan' => 'required|in:Ayah,Ibu,Wali',
-        ]);
 
         $pengaturan = \App\Models\Pengaturan::where('key', 'kode_registrasi_ortu')->first();
         $kodeValid = $pengaturan ? $pengaturan->value : config('school.kode_registrasi');

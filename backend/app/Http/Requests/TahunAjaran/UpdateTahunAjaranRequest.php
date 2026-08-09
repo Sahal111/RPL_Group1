@@ -13,7 +13,7 @@ class UpdateTahunAjaranRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('id') ?? $this->route('tahunAjaran');
+        $id = $this->route('id') ?? $this->route('tahun_ajaran');
 
         return [
             'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', "unique:tahun_ajarans,tahun,{$id}"],
@@ -24,6 +24,8 @@ class UpdateTahunAjaranRequest extends FormRequest
             'semester_genap_mulai' => 'nullable|date',
             'semester_genap_selesai' => 'nullable|date',
             'semester_aktif' => 'nullable|string|in:Ganjil,Genap',
+            'tgl_mulai_ta' => 'nullable|date',
+            'tgl_selesai_ta' => 'nullable|date',
         ];
     }
 

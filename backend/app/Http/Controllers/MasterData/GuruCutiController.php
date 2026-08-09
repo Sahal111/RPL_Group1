@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cuti\StoreCutiRequest;
+use App\Http\Requests\Cuti\UpdateCutiRequest;
 use App\Models\Guru;
 use App\Models\GuruCuti;
 use App\Services\GuruCutiService;
@@ -26,21 +28,9 @@ class GuruCutiController extends Controller
     }
 
     // POST /guru/{nuptk}/cuti
-    public function store(Request $request, $nuptk)
+    public function store(StoreCutiRequest $request, $nuptk)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
-
-        $request->validate([
-            'jenis_cuti' => 'required|in:Cuti Tahunan,Cuti Sakit,Cuti Bersalin,Cuti Alasan Penting,Cuti Besar,Lainnya',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'no_sk' => 'nullable|string|max:80',
-            'tanggal_sk' => 'nullable|date',
-            'pejabat_pemberi' => 'nullable|string|max:150',
-            'alasan' => 'nullable|string|max:500',
-            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'keterangan' => 'nullable|string|max:500',
-        ]);
 
         $result = $this->service->validate($guru, $request->all());
         if (count($result['errors']) > 0) {
@@ -78,22 +68,10 @@ class GuruCutiController extends Controller
     }
 
     // PUT /guru/{nuptk}/cuti/{id}
-    public function update(Request $request, $nuptk, $id)
+    public function update(UpdateCutiRequest $request, $nuptk, $id)
     {
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $cuti = $guru->cutis()->findOrFail($id);
-
-        $request->validate([
-            'jenis_cuti' => 'required|in:Cuti Tahunan,Cuti Sakit,Cuti Bersalin,Cuti Alasan Penting,Cuti Besar,Lainnya',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'no_sk' => 'nullable|string|max:80',
-            'tanggal_sk' => 'nullable|date',
-            'pejabat_pemberi' => 'nullable|string|max:150',
-            'alasan' => 'nullable|string|max:500',
-            'file_sk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'keterangan' => 'nullable|string|max:500',
-        ]);
 
         $result = $this->service->validate($guru, $request->all(), $id);
         if (count($result['errors']) > 0) {

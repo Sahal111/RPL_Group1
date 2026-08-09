@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Guru;
+namespace App\Http\Requests\Ortu;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RejectDokumenRequest extends FormRequest
+class UpdateHubunganAnakRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,14 +14,15 @@ class RejectDokumenRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'alasan' => 'required|string|max:500',
+            'hubungan' => 'required|in:Ayah,Ibu,Wali',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'alasan.required' => 'Alasan penolakan wajib diisi.',
+            'hubungan.required' => 'Hubungan wajib dipilih.',
+            'hubungan.in' => 'Hubungan harus Ayah, Ibu, atau Wali.',
         ];
     }
 }
