@@ -67,6 +67,41 @@ class GuruImportService
     }
 
     /**
+     * Proses hanya sheet relasi (Sheet 2–11) dari allSheets yang sudah di-parse.
+     * Digunakan oleh importExecute setelah sheet utama diproses inline dengan chunking.
+     *
+     * @param  array  $allSheets  Output dari MultiSheetXlsxService::parse()
+     * @param  array  &$stats     Array stats yang sama dipakai oleh caller (by reference)
+     */
+    public function importRelasi(array $allSheets, array &$stats): void
+    {
+        $getSheet = $this->sheetFinder($allSheets);
+
+        $findGuru = function (string $nuptk) use (&$stats): ?Guru {
+            $guru = Guru::where('nuptk', $nuptk)->first();
+            if (!$guru) {
+                $stats['errors'][] = "NUPTK {$nuptk} tidak ditemukan di DB (relasi).";
+            }
+            return $guru;
+        };
+
+        $countRelasi = function (string $key) use (&$stats) {
+            $stats['relasi'][$key] = ($stats['relasi'][$key] ?? 0) + 1;
+        };
+
+        $this->processSheetKeluarga($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetRekening($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetPendidikan($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetSertifikasi($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetDiklat($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetJabatan($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetInpassing($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetMutasi($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetKompetensi($getSheet, $findGuru, $countRelasi, $stats);
+        $this->processSheetKontakDarurat($getSheet, $findGuru, $countRelasi, $stats);
+    }
+
+    /**
      * Bangun summary message dari hasil import.
      */
     public function buildSummaryMessage(array $results): string
