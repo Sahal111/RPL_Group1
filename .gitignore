@@ -8,3 +8,4 @@ backend/.env
 .env
 .DS_Store
 PROMPT_TEMPLATES.md
+backend/phpunit.xml
