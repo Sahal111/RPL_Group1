@@ -225,6 +225,7 @@ class GuruExportImportTest extends TestCase
     public function test_import_service_berhasil_proses_guru_baru(): void
     {
         $school = $this->createSchool();
+        $this->setTenant($school->id); // SchoolScope butuh tenant context
 
         $nuptk = '3333333333333333';
         $bytes = $this->makeXlsxWithGuru($nuptk, 'Guru Import Baru');
@@ -252,6 +253,7 @@ class GuruExportImportTest extends TestCase
     public function test_import_service_memperbarui_guru_yang_sudah_ada(): void
     {
         $school = $this->createSchool();
+        $this->setTenant($school->id); // SchoolScope butuh tenant context
         $nuptk = '4444444444444444';
 
         // Buat guru existing
@@ -322,7 +324,10 @@ class GuruExportImportTest extends TestCase
 
         $results = $svc->import($path);
 
-        unlink($path);
+        // Hapus file setelah import (mungkin sudah dihapus service atau tidak ada)
+        if (file_exists($path)) {
+            unlink($path);
+        }
 
         $this->assertNotEmpty($results['errors'], 'File kosong harus menghasilkan error message.');
         $this->assertEquals(0, $results['berhasil']);

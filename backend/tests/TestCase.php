@@ -15,9 +15,10 @@ abstract class TestCase extends BaseTestCase
      */
     protected function createSchool(array $overrides = []): School
     {
+        static $npsn = 10000000;
         return School::create(array_merge([
             'nama' => 'SDN Test',
-            'npsn' => '12345678',
+            'npsn' => (string) ($npsn++),
             'jenis' => 'SD',
             'status' => 'active',
         ], $overrides));
@@ -63,6 +64,15 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Buat user dengan role tertentu, menerima object School.
+     * Alias untuk createUserWithRole yang menerima School object.
+     */
+    protected function createUserForSchool(School $school, string $roleSlug, array $overrides = []): User
+    {
+        return $this->createUserWithRole($school->id, $roleSlug, $overrides);
+    }
+
+    /**
      * Set tenant context (simulasi TenantMiddleware).
      */
     protected function setTenant(int $schoolId): void
@@ -84,5 +94,30 @@ abstract class TestCase extends BaseTestCase
     protected function withTenantHeader(int $schoolId): array
     {
         return ['X-School-ID' => $schoolId];
+    }
+
+    /**
+     * Helper: buat sekolah + operator, login, set tenant, return keduanya.
+     * Dipakai oleh GuruExportImportTest.
+     *
+     * @return array{school: School, user: User}
+     */
+    protected function loginAsOperator(array $schoolOverrides = []): array
+    {
+        $school = $this->createSchool($schoolOverrides);
+        $user = $this->createUserWithRole($school->id, 'operator');
+
+        $this->actingAs($user, 'sanctum');
+        $this->setTenant($school->id);
+
+        return ['school' => $school, 'user' => $user];
+    }
+
+    /**
+     * Helper: kirim JSON request dengan X-School-ID header sekaligus.
+     */
+    protected function jsonWithTenant(string $method, string $uri, array $data = [], int $schoolId = 0): \Illuminate\Testing\TestResponse
+    {
+        return $this->json($method, $uri, $data, $this->withTenantHeader($schoolId));
     }
 }
