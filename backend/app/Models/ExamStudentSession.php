@@ -47,6 +47,11 @@ class ExamStudentSession extends Model
         return $this->belongsTo(Siswa::class, 'siswa_id');
     }
 
+    public function answers()
+    {
+        return $this->hasMany(ExamAnswer::class, 'session_id');
+    }
+
     // ── Scope ────────────────────────────────────────────────
 
     public function scopeSelesai($query)

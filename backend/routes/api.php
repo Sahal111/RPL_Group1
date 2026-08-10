@@ -15,6 +15,9 @@
  *   routes/api/guru.php         → portal guru
  *   routes/api/kepsek.php       → portal kepala sekolah
  *   routes/api/ortu.php         → portal orang tua
+ *   routes/api/keuangan.php     → modul keuangan & tagihan SPP
+ *   routes/api/ppdb.php         → modul penerimaan peserta didik baru
+ *   routes/api/lms.php          → modul pembelajaran (materi, tugas, ujian)
  */
 
 require __DIR__ . '/api/auth.php';
@@ -27,3 +30,4 @@ require __DIR__ . '/api/kepsek.php';
 require __DIR__ . '/api/ortu.php';
 require __DIR__ . '/api/keuangan.php';
 require __DIR__ . '/api/ppdb.php';
+require __DIR__ . '/api/lms.php';
