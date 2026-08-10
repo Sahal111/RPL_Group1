@@ -12,10 +12,15 @@ const api = axios.create({
 // karena withCredentials: true sudah diset di atas.
 
 // Response interceptor — handle 401 global
+// PENTING: /auth/me DIKECUALIKAN karena endpoint itu memang bisa return 401
+// untuk user yang belum login di halaman publik. AuthContext sudah handle sendiri.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || "";
+    const isAuthMe = requestUrl.includes("/auth/me");
+
+    if (error.response?.status === 401 && !isAuthMe) {
       window.location.href = "/login";
     }
     return Promise.reject(error);

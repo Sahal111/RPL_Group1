@@ -13,6 +13,8 @@ import UnauthorizedPage from "./pages/UnauthorizedPage";
 import GalleryPage from "./pages/public/GalleryPage";
 import AboutPage from "./pages/public/AboutPage";
 import ContactPage from "./pages/public/ContactPage";
+import ProgramPage from "./pages/public/ProgramPage";
+import PpdbPage from "./pages/public/PpdbPage";
 
 // Operator
 import OperatorLayout from "./pages/operator/OperatorLayout";
@@ -100,6 +102,9 @@ export default function App() {
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/profile" element={<AboutPage />} />
+      <Route path="/program" element={<ProgramPage />} />
+      <Route path="/ppdb" element={<PpdbPage />} />
       <Route path="/gallery" element={<GalleryPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/login" element={<LoginPage />} />

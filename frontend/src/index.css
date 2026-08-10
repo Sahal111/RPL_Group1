@@ -4,19 +4,29 @@
 
 
 @theme {
-  /* Legacy colors (keep for existing pages) */
+  /* === Color Tokens === */
+  --color-primary: #11d452;
+  --color-primary-dark: #0da640;
+  --color-secondary: #d4af37;
+  --color-madrasah-green: #0d3b23;
+  --color-madrasah-green-deep: #1B4332;
+  --color-background-light: #ffffff;
+  --color-background-dark: #102216;
+  --color-surface-light: #f8fcf9;
+  --color-surface-dark: #1a3324;
+
+  /* Legacy colors */
   --color-primary-600: #2563eb;
   --color-primary-700: #1d4ed8;
 
   /* === Template Design Tokens === */
-  /* Colors */
   --color-surface-tint: #006d30;
   --color-surface-container: #eaefe6;
   --color-outline-variant: #becabc;
   --color-warning: #F59E0B;
   --color-surface-container-high: #e4eae1;
-  --color-background: #f6fbf2;
-  --color-surface: #f6fbf2;
+  --color-background: #ffffff;
+  --color-surface: #f8fcf9;
   --color-surface-dim: #d6dcd3;
   --color-surface-variant: #dfe4db;
   --color-secondary-fixed-dim: #afceba;
@@ -37,7 +47,6 @@
   --color-inverse-primary: #79db8d;
   --color-tertiary-fixed-dim: #ffb2bd;
   --color-surface-container-highest: #dfe4db;
-  --color-primary: #00652c;
   --color-error: #ba1a1a;
   --color-secondary-fixed: #caead6;
   --color-on-primary: #ffffff;
@@ -60,15 +69,11 @@
   --color-inverse-on-surface: #edf2e9;
   --color-on-background: #181d17;
   --color-primary-container: #15803d;
-  --color-secondary: #486554;
   --color-on-secondary: #ffffff;
   --color-on-secondary-fixed: #042014;
   --color-on-secondary-fixed-variant: #314d3e;
   --color-on-tertiary-container: #fff1f1;
   --color-on-tertiary-fixed-variant: #81233b;
-  --color-background-light: #F8FAFC;
-  --color-background-dark: #0F172A;
-  --color-surface-dark: #1E293B;
 
   /* Spacing */
   --spacing-space-md: 16px;
@@ -158,14 +163,13 @@
 
 /* Google Fonts for template */
 
-/* ── FORCE LIGHT MODE ─────────────────────────────────────────────────────── */
-/* Mencegah browser dark mode meng-override warna custom Tailwind              */
+/* ── ROOT STYLES ──────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: light only;
+  color-scheme: light dark;
 }
 
 html, body {
-  background-color: #f6fbf2;
+  background-color: #ffffff;
   color: #111827;
 }
 
@@ -237,4 +241,94 @@ input[type="datetime-local"] {
   color-scheme: light;
   background-color: #f6fbf2;
   color: #111827;
+}
+
+/* ── Custom Landing Page & Mobile Nav Styles ───────────────────────────────── */
+#wa-fab {
+  bottom: 24px;
+  right: 24px;
+}
+@media (max-width: 768px) {
+  #wa-fab {
+    bottom: 110px;
+    right: 16px;
+    transform: scale(0.95);
+  }
+}
+
+#nav-indicator {
+  position: absolute;
+  top: -20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  z-index: 0;
+  transition: all 0.45s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.mobile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+.icon-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.45s;
+  color: #111827;
+}
+.dark .icon-wrapper {
+  color: #f1f5f9;
+}
+
+.tab-label {
+  font-size: 11px;
+  margin-top: 4px;
+  color: #6B7280;
+  transition: 0.3s;
+}
+.dark .tab-label {
+  color: #94a3b8;
+}
+
+.mobile-tab.active .icon-wrapper {
+  transform: translateY(-24px);
+  color: white !important;
+}
+
+.mobile-tab.active .tab-label {
+  color: #11d452;
+  font-weight: 700;
+  transform: translateY(-4px);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.dark .glass-nav {
+  background: rgba(16, 34, 22, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hero-pattern {
+  background-color: #0d3b23;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
