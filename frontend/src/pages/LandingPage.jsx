@@ -56,7 +56,7 @@ function useReveal() {
         entries.forEach((e) => {
           if (e.isIntersecting) e.target.classList.add("lp-reveal-active");
         }),
-      { threshold: 0.07 }
+      { threshold: 0.07 },
     );
     refs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
@@ -78,10 +78,16 @@ function StatCard({ icon: Icon, value, label, iconBg, iconColor }) {
         <Icon size={28} style={{ color: iconColor }} />
       </div>
       <div>
-        <p className="text-2xl sm:text-3xl font-extrabold" style={{ color: C.primaryMid }}>
+        <p
+          className="text-2xl sm:text-3xl font-extrabold"
+          style={{ color: C.primaryMid }}
+        >
           {value}
         </p>
-        <p className="text-sm font-medium mt-0.5" style={{ color: C.textLight }}>
+        <p
+          className="text-sm font-medium mt-0.5"
+          style={{ color: C.textLight }}
+        >
           {label}
         </p>
       </div>
@@ -120,7 +126,10 @@ function ProgramCard({ icon: Icon, iconColor, bgColor, title, desc }) {
         <Icon size={52} style={{ color: iconColor }} />
       </div>
       <div className="p-5 sm:p-6 flex-grow">
-        <h4 className="text-base sm:text-lg font-bold mb-2" style={{ color: C.textDark }}>
+        <h4
+          className="text-base sm:text-lg font-bold mb-2"
+          style={{ color: C.textDark }}
+        >
           {title}
         </h4>
         <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
@@ -290,9 +299,8 @@ export default function LandingPage() {
 
           {/* Headline */}
           <h1 className="lp-fade-up d1 text-3xl sm:text-5xl lg:text-[64px] font-extrabold text-white tracking-tight leading-tight mb-5 drop-shadow-sm">
-            Membentuk Generasi{" "}
-            <span style={{ color: C.accent }}>Qur'ani</span>,<br className="hidden sm:block" />{" "}
-            Cerdas &amp; Berakhlak Mulia
+            Membentuk Generasi <span style={{ color: C.accent }}>Qur'ani</span>,
+            <br className="hidden sm:block" /> Cerdas &amp; Berakhlak Mulia
           </h1>
 
           {/* Sub */}
@@ -330,9 +338,7 @@ export default function LandingPage() {
 
         {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 hidden sm:flex flex-col items-center gap-2">
-          <div
-            className="w-5 h-8 rounded-full border-2 border-white/40 flex items-start justify-center p-1"
-          >
+          <div className="w-5 h-8 rounded-full border-2 border-white/40 flex items-start justify-center p-1">
             <div
               className="w-1 h-2 rounded-full bg-white/60"
               style={{ animation: "lpScrollDot 2s ease infinite" }}
@@ -434,9 +440,12 @@ export default function LandingPage() {
             >
               Kenapa Memilih MI Nurul Huda 3?
             </h2>
-            <p className="text-sm sm:text-base lg:text-lg leading-relaxed" style={{ color: C.textMuted }}>
-              Kami memadukan kurikulum nasional dengan nilai-nilai keislaman yang
-              kuat untuk mencetak generasi pemimpin masa depan.
+            <p
+              className="text-sm sm:text-base lg:text-lg leading-relaxed"
+              style={{ color: C.textMuted }}
+            >
+              Kami memadukan kurikulum nasional dengan nilai-nilai keislaman
+              yang kuat untuk mencetak generasi pemimpin masa depan.
             </p>
           </div>
 
@@ -496,9 +505,12 @@ export default function LandingPage() {
             >
               Program Unggulan
             </h2>
-            <p className="text-sm sm:text-base leading-relaxed" style={{ color: C.textMuted }}>
-              Berbagai program ekstrakurikuler untuk mengembangkan potensi
-              siswa secara holistik.
+            <p
+              className="text-sm sm:text-base leading-relaxed"
+              style={{ color: C.textMuted }}
+            >
+              Berbagai program ekstrakurikuler untuk mengembangkan potensi siswa
+              secara holistik.
             </p>
           </div>
 
@@ -553,7 +565,10 @@ export default function LandingPage() {
       </section>
 
       {/* ── Gallery Preview ──────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-24 lp-pattern" style={{ background: C.surface }}>
+      <section
+        className="py-16 sm:py-24 lp-pattern"
+        style={{ background: C.surface }}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header row */}
           <div
@@ -573,7 +588,10 @@ export default function LandingPage() {
               >
                 Galeri Kegiatan
               </h2>
-              <p className="text-sm sm:text-base mt-2" style={{ color: C.textMuted }}>
+              <p
+                className="text-sm sm:text-base mt-2"
+                style={{ color: C.textMuted }}
+              >
                 Intip keseruan belajar dan bermain di MI Nurul Huda 3
               </p>
             </div>
@@ -595,10 +613,22 @@ export default function LandingPage() {
             {galeriPreview.length === 0 ? (
               <>
                 {/* Skeleton state */}
-                <div className="col-span-2 row-span-2 rounded-2xl bg-[#e5e7eb] animate-pulse" style={{ minHeight: "260px" }} />
-                <div className="rounded-2xl bg-[#e5e7eb] animate-pulse" style={{ minHeight: "125px" }} />
-                <div className="rounded-2xl bg-[#e5e7eb] animate-pulse" style={{ minHeight: "125px" }} />
-                <div className="col-span-2 rounded-2xl bg-[#e5e7eb] animate-pulse" style={{ minHeight: "125px" }} />
+                <div
+                  className="col-span-2 row-span-2 rounded-2xl bg-[#e5e7eb] animate-pulse"
+                  style={{ minHeight: "260px" }}
+                />
+                <div
+                  className="rounded-2xl bg-[#e5e7eb] animate-pulse"
+                  style={{ minHeight: "125px" }}
+                />
+                <div
+                  className="rounded-2xl bg-[#e5e7eb] animate-pulse"
+                  style={{ minHeight: "125px" }}
+                />
+                <div
+                  className="col-span-2 rounded-2xl bg-[#e5e7eb] animate-pulse"
+                  style={{ minHeight: "125px" }}
+                />
               </>
             ) : galeriPreview.length >= 4 ? (
               <>
@@ -613,7 +643,9 @@ export default function LandingPage() {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5 sm:p-6">
-                    <p className="text-white font-medium text-sm sm:text-base">{galeriPreview[0].judul}</p>
+                    <p className="text-white font-medium text-sm sm:text-base">
+                      {galeriPreview[0].judul}
+                    </p>
                   </div>
                 </Link>
                 <Link
@@ -651,7 +683,9 @@ export default function LandingPage() {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 sm:p-5">
-                    <p className="text-white font-medium text-sm">{galeriPreview[3].judul}</p>
+                    <p className="text-white font-medium text-sm">
+                      {galeriPreview[3].judul}
+                    </p>
                   </div>
                 </Link>
               </>
@@ -695,8 +729,7 @@ export default function LandingPage() {
         <div
           className="absolute inset-0 opacity-10"
           style={{
-            backgroundImage:
-              "radial-gradient(#ffffff 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
