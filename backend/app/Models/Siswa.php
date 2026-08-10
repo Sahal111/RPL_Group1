@@ -64,6 +64,10 @@ class Siswa extends Model
         'updated_by',
     ];
 
+    protected $hidden = [
+        'national_ids',   // NIK, NISN, No. KK — sensitif
+    ];
+
     protected $casts = [
         'national_ids' => 'array',
         'address_details' => 'array',

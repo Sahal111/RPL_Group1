@@ -32,6 +32,10 @@ class OrangTua extends Model
         'alamat',
     ];
 
+    protected $hidden = [
+        'nik',  // NIK sensitif
+    ];
+
     protected $casts = [
         'tahun_lahir' => 'integer',
     ];

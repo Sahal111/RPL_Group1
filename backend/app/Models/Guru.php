@@ -79,6 +79,10 @@ class Guru extends Model
         'deleted_by',
     ];
 
+    protected $hidden = [
+        'national_ids',   // NIK, NPWP — sensitif
+    ];
+
     protected $casts = [
         'national_ids' => 'array',
         'address_details' => 'array',
