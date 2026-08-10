@@ -25,3 +25,4 @@ require __DIR__ . '/api/absensi.php';
 require __DIR__ . '/api/guru.php';
 require __DIR__ . '/api/kepsek.php';
 require __DIR__ . '/api/ortu.php';
+require __DIR__ . '/api/keuangan.php';
