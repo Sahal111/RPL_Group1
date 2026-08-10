@@ -5,6 +5,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterOrtuPage from "./pages/auth/RegisterOrtuPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 
 // Public pages
@@ -102,6 +104,8 @@ export default function App() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register-ortu" element={<RegisterOrtuPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       {/* Global Super Admin (Developer SaaS Owner) */}
