@@ -1,3 +1,12 @@
+# MASTER AUDIT REPORT — Scholara (SIAKAD SaaS Multi-Tenant)
+
+> Dokumen gabungan dari seluruh laporan audit proyek. Disusun ulang dari:
+> `AUDIT_REPORT.md`, `Business_Logic_Audit_Report.md`, `SaaS_Audit_Report.md`,
+> `Security_Audit_Report.md`, `UI_UX_Audit_Report.md`, `Master_Audit_Roadmap.md`.
+
+
+---
+
 SaaS SCHOOL SYSTEM — FULL AUDIT REPORT
 Nama Project: Scholara (SIAKAD Multi-School SaaS Platform)
 Tanggal Audit: 10 Agustus 2026
@@ -226,3 +235,319 @@ PHASE 3 — Refactoring & Code Quality: Breaking down file raksasa (GuruImportCo
 PHASE 4 — SaaS Readiness: Pembuatan Super Admin Portal, integrasi billing payment gateway, dan deployment multi-tenant di cloud infrastruktur.
 Ringkasan Penutup
 Audit ini memberikan gambaran yang transparan dan jujur mengenai kondisi codebase Scholara. Fondasi akademik yang dibuat sudah sangat kuat dan kaya fitur. Dengan menyelesaikan perbaikan keamanan (P0) dan melengkapi frontend UI (P1), Scholara akan siap menjadi platform SaaS Sekolah/Madrasah yang Modern, Aman, Profesional, dan Scalable.
+
+
+---
+
+# BUSINESS LOGIC & SAAS AUDIT
+
+## 1. Domain Map
+*   **System Core:** Multi-tenant school management (Shared MySQL, App-level scoping).
+*   **Academic:** Period-aware entity management (Year → Semester → Schedule/Grade).
+*   **Administrative:** Teacher/Student life-cycle management.
+*   **Ancillary:** PPDB, Finance, LMS (High risk of loosely coupled domain interaction).
+
+## 2. Workflow Map
+*   **Tenant Boundary:** Middleware/Route scoping.
+*   **Period Control:** Global session-based Academic Year/Semester.
+*   **State Management:** Status-flag based (e.g., `active`, `transferred`, `resigned`).
+
+## 3-13. Logic Audit Findings
+
+| Severity | Module | Problem | Current Behavior | Expected Behavior | Recommendation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **HIGH** | Multi-Tenancy | Controller raw DB calls | Manual `school_id` filtering | Repository-level enforcement | Use Tenant Repositories |
+| **MEDIUM** | Financial | Records are mutable | Standard CRUD update | Immutable status | Lock records on transition |
+| **LOW** | Schedule | Conflict handling | UI-level check only | Transactional validation | Add Service-layer validator |
+
+## 14. Edge Case Audit (Highlights)
+*   *Siswa pindah kelas tengah semester:* Currently creates orphaned records. Needs transition history.
+*   *Guru resign:* Status flag changes but historical teaching load remains potentially active.
+*   *Tahun Ajaran berubah:* System-wide period lock is weak; data from old years remains potentially editable.
+
+## 15. Business Logic Bugs
+1.  **State Inconsistency:** Student transfers don't archive academic history properly; records split between schools.
+2.  **Policy Fragmentation:** Only 2 controllers use Policies; most authorization is ad-hoc, creating massive IDOR potential.
+3.  **PPDB/LMS Orphans:** Models exist without full controller coverage, leading to partial implementation risks.
+
+---
+
+## CRITICAL BUSINESS PROBLEMS
+*   **Tenant Isolation Inconsistency:** Reliance on manual `school_id` filtering in controllers rather than enforced Repository/Global Scope patterns.
+
+## HIGH PRIORITY
+*   **Immutability:** Financial and Grade records must be locked via database-level triggers or App Observers once finalized.
+
+## MEDIUM PRIORITY
+*   **Academic Locking:** Rigid period-based lookups required for all grade/attendance queries.
+
+## LOW PRIORITY
+*   **Validation:** Centralize scheduling conflict validation in a dedicated Service validator.
+
+---
+
+## RECOMMENDED BUSINESS RULES
+1.  **Tenancy Rule:** All `Service` layer methods must strictly verify `school_id`. No global `auth()` calls.
+2.  **Immutability Rule:** Financial records are read-only once status is `paid`.
+3.  **Period Locking:** Queries for `Nilai` or `Jadwal` must filter by explicit `academic_period_id`.
+
+
+---
+
+# ARCHITECTURE & DATABASE AUDIT
+
+## 1. Architecture Overview
+Monolithic Laravel with application-level multi-tenancy.
+
+## 2. Current Architecture Diagram
+```
+Client → Load Balancer → Laravel App (Shared) → MySQL (Shared Schema)
+```
+
+## 3. Architecture Problems
+| Severity | Problem | Location | Impact | Recommendation |
+| :--- | :--- | :--- | :--- | :--- |
+| HIGH | Manual Multi-tenancy | App Logic | Cross-tenant data leak | Implement Global Scoping/Middleware |
+| MEDIUM | Monolithic Design | Repo | Scalability bottleneck | Extract core modules (Academic, LMS, Finance) |
+
+## 4. Database Overview
+Single MySQL instance; shared schema with `school_id` foreign keys.
+
+## 5. Database Problems
+| Severity | Problem | Location | Impact | Recommendation |
+| :--- | :--- | :--- | :--- | :--- |
+| HIGH | Shared Schema | MySQL | Data leakage risk | Implement Row-Level Security (RLS) |
+| MEDIUM | Index Bloat | Tables | Query performance | Partition by `school_id` where applicable |
+
+## 6. Relationship Problems
+Circular dependencies in academic modules; lack of flexible partitioning.
+
+## 7. Master Data Problems
+Ambiguity between global vs. local master data; potential for redundancy.
+
+## 8. Historical Data Problems
+No archival strategy for academic/transactional logs.
+
+## 9. SaaS Architecture Problems
+Manual query filtering is error-prone. One missing `where` clause leaks entire school data.
+
+## 10. Scalability Problems
+Single DB instance will bottleneck at scale (10,000 schools).
+
+## 11. Technical Debt
+Massive, unpruned migration history.
+
+## 12. Recommended Architecture
+Automated Global Query Scoping + Tenant-isolated DBs or sharding.
+
+## 13. Recommended Database Architecture
+Table partitioning + strict tenant middleware.
+
+## 14. Risk Matrix
+| Risk | Severity | Mitigation |
+| :--- | :--- | :--- |
+| Data Leakage | HIGH | Automated Tenant Scoping |
+| DB Contention | HIGH | Database Sharding |
+| Migration Bloat | MEDIUM | Consolidation |
+
+## 15. Priority
+1. P0: Automated Global Scoping (Data Security).
+2. P1: Database Archiving/Partitioning (Database Health).
+3. P2: DB Sharding/Multi-tenant Isolation (Multi-tenant Readiness).
+
+
+---
+
+# SECURITY AUDIT REPORT
+
+## 1. Security Overview
+Standard Laravel architecture utilizing Sanctum for API token management, enforcing tenant isolation primarily via Global Scoping on Eloquent models.
+
+## 2. Authentication Audit
+Uses Laravel Sanctum. Logic is generally sound, though coupling `auth()` inside service classes introduces risk and complicates testing/CLI job contexts.
+
+## 3. Authorization Audit
+Role/Permission middleware is implemented correctly at the route level. Internal Service-level authorization is inconsistent, creating a risk of privilege escalation if methods are called outside route context.
+
+## 4. RBAC Audit
+Role-based access is granular; however, manual code-level checks for specific roles (instead of permissions) exist, hindering flexibility for future role modifications.
+
+## 5. API Security Audit
+Susceptible to IDOR. While middleware protects routes, service-layer methods often fetch entities by ID without explicit `school_id` verification, relying solely on global scope.
+
+## 6. Tenant Isolation Audit
+Global Scope (`SchoolScope`) is implemented. Security is "fail-closed." Risk remains via `withoutGlobalScope()` bypasses, which must be strictly guarded.
+
+## 7. Validation Audit
+Request validation is handled via FormRequests, but inconsistent application across the codebase leaves some controller endpoints under-validated.
+
+## 8. File Upload Audit
+Route handlers exist for document management. No evidence of enforced server-side MIME type or extension verification at the point of ingestion.
+
+## 9. Sensitive Data Audit
+Potential for mass-assignment. Ensure Eloquent models have `protected $fillable` correctly configured and that API Resources explicitly hide sensitive fields.
+
+## 10. Configuration Audit
+Ensure `APP_DEBUG` is false, `CORS` is strictly restricted to trusted domains, and sensitive keys are not leaked in logs.
+
+---
+
+## Vulnerability Table
+
+| Severity | Vulnerability | Location | Attack Scenario | Impact | Recommendation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **CRITICAL** | Scope Bypass | `withoutGlobalScope()` usages | Unauthorized query | Cross-tenant leak | Audit all usages to ensure Super-Admin only |
+| **HIGH** | IDOR | Service/Controller | Entity lookup by ID | Cross-tenant access | Explicitly verify `school_id` in queries |
+| **HIGH** | File Injection | File Upload routes | Malicious file type upload | RCE / File exposure | Validate MIME/ext on server-side |
+| **MEDIUM** | Auth Coupling | Service Layer | Service misuse | Auth logic bypass | Inject `user_id` as parameter |
+
+---
+
+## Security Priority
+
+- **P0**: Audit and restrict all usages of `withoutGlobalScope()`.
+- **P1**: Enforce mandatory `school_id` checks at Service/Repository layer.
+- **P1**: Implement strict server-side file MIME validation.
+- **P2**: Refactor services to decouple from global `auth()` context.
+
+
+---
+
+# UI/UX & PRODUCT AUDIT
+
+## 1. Product Assessment
+The product is a functional SaaS for school management. **Core Value:** Reliable data management for school stakeholders. Currently, it fits the "functional MVP" stage. Needs refinement in accessibility and mass-data efficiency to reach the "professional/enterprise" level.
+
+## 2. Information Architecture
+Navigation is logical but requires better breadcrumbs and quick actions. The depth of the hierarchy is acceptable, but "Master Data" modules feel like "add-ons" rather than integrated components.
+
+## 3. UI System
+Base library is solid (Tailwind + headless patterns), but implementation is fragmented. Spacing and padding fluctuate between pages, diluting the "System" feel.
+
+## 4. AI Slop Assessment
+The design is clean, not "AI slop." Avoid adding gratuitous shadows, rounded gradients, or empty dashboard cards. Keep it "Institutional Calm"—high contrast, clear typography, and generous, functional whitespace.
+
+## 5. Form UX
+Validation is present but inconsistent. Lack of "Save & Continue" or batch-entry workflows makes bulk management of students/grades slow.
+
+## 6. Table UX
+Utilizes TanStack Table (excellent). Needs standardized bulk actions (e.g., delete/export) and better mobile responsiveness for list views.
+
+## 7-10. Workflow, Responsive, Accessibility, Feedback
+*   **Accessibility:** Significant gaps in ARIA roles for complex tables.
+*   **Feedback:** Toast system is missing. Ops are silent until the UI updates.
+
+## 11-13. Production Readiness & QA
+*   Missing centralized error handling.
+*   Route-level crashes need protection via Error Boundaries.
+
+---
+
+## Vulnerability Table
+
+| Severity | Area | Problem | Evidence | Impact | Recommendation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **HIGH** | Feedback | Missing error/success states | Action-dependent | Silent failures | Add global Toast/Snackbar system |
+| **MEDIUM** | Accessibility | ARIA roles missing | Datatables | Inaccessible UI | Enforce semantic HTML/ARIA |
+| **MEDIUM** | UI Design | Fragmented spacing | MasterData modules | Inconsistent look | Centralize spacing in Tailwind config |
+| **LOW** | Prod Readiness | No Error Boundaries | App stability | Page crashes | Route-level Error Boundaries |
+
+---
+
+## TOP 10 UX PROBLEMS
+1. Inconsistent button variants.
+2. Silent action results (no success feedback).
+3. Sparse "Save & Continue" options for batch data.
+4. Unclear loading/skeleton states on heavy tables.
+5. Lack of breadcrumbs for deep navigation.
+6. Mobile responsiveness on complex tables.
+7. Missing field validation cues in real-time.
+8. Fragmented layout margins.
+9. No keyboard shortcuts for common ops.
+10. Unclear search/filtering persistent states.
+
+## TOP 10 PRODUCT PROBLEMS
+1. Bulk data entry efficiency.
+2. Inconsistent auth flow feedback.
+3. Lack of institutional reporting dashboard.
+4. Fragmented module integration.
+5. Incomplete empty states.
+6. Minimalist navigation (needs more context).
+7. Missing data archival UI.
+8. Weak state visualization (e.g., PPDB progress).
+9. Lack of user-configurable views.
+10. Sparse documentation for end-users.
+
+## TOP 10 PRODUCTION RISKS
+1. Silent API failures (no Error Boundary).
+2. Unoptimized table queries at scale.
+3. Prop-drilling maintenance overhead.
+4. Missing logging infrastructure.
+5. Inconsistent form validation logic.
+6. Lack of accessibility (legal risk).
+7. Potential session leakage in unhandled error states.
+8. Non-standardized component versions.
+9. Hardcoded configurations.
+10. Missing automated UI smoke tests.
+
+---
+
+## DESIGN SYSTEM RECOMMENDATION
+*   Centralize Tailwind theme: `font-size`, `spacing`, `shadow`, and `border-radius`.
+*   Standardize primitive components (Input, Button, Table) via Headless UI or Radix.
+*   Establish "Institutional Calm" style guide: High readability, minimal border-radius, functional shadows.
+
+## PRODUCT ROADMAP
+*   **P0**: Add global Error Boundaries & Toast system.
+*   **P1**: Standardize UI components across Master Data modules.
+*   **P2**: Accessibility audit & fix (ARIA).
+*   **P3**: Batch-entry shortcuts for heavy data modules.
+
+
+---
+
+# MASTER AUDIT & ROADMAP: SaaS Multi-Tenant Readiness
+
+## 1. Executive Summary
+The system is functionally sound but suffers from significant "architectural noise"—manual tenant scoping, fragmented authorization patterns, and inconsistent UI implementation. Transitioning to a professional SaaS requires centralizing tenant isolation and security, removing over-engineered abstractions, and enforcing record immutability.
+
+---
+
+## 2. Consolidated Over-Engineering Audit
+| Tag | Finding | Replacement | Location |
+| :--- | :--- | :--- | :--- |
+| **yagni** | Manual `withoutGlobalScope()` | Explicit Tenant Service Scoping | App-wide |
+| **yagni** | Custom UI Primitives | Headless UI / Radix Primitives | `frontend/components` |
+| **shrink** | Ad-hoc Permission Middleware | Native Laravel Policies/Gates | `backend/routes` |
+| **delete** | Unused LMS/PPDB Boilerplate | Remove until required | `backend/app/Modules` |
+| **stdlib** | Manual Multi-tenant Filtering | Centralized Tenant Repository | `backend/app/Services` |
+
+*Net Impact: ~1,200 lines removed, replaced with platform-native patterns.*
+
+---
+
+## 3. Critical Findings (The "Security First" List)
+1.  **Tenant Isolation (High Risk):** Manual filtering in controllers is prone to leakage. **Fix:** Repository-level enforcement.
+2.  **Authorization Fragmentation (High Risk):** Ad-hoc middleware prevents consistent enforcement. **Fix:** Centralized Laravel Policies.
+3.  **UI/UX Inconsistency (Medium Risk):** Fragmented UI implementation causes maintenance overhead and poor professional perception. **Fix:** Centralized Tailwind/Component system.
+4.  **Silent Failures (Medium Risk):** Lack of error boundaries/toasts in frontend. **Fix:** Centralized Error Boundary/Toast system.
+
+---
+
+## 4. Master Roadmap (P0 - P3)
+
+| Priority | Focus Area | Objective | Goal |
+| :--- | :--- | :--- | :--- |
+| **P0** | **Data Safety** | Enforce automated Global Tenant Scoping. | Zero cross-tenant data leaks. |
+| **P1** | **Resilience** | Implement Global Error Boundaries & Toast system. | UI stability and clear user feedback. |
+| **P2** | **Integrity** | Lock Financial/Grade records (Append-only). | Audit-proof business data. |
+| **P3** | **Scalability** | Standardize UI/Batch entry workflows. | Maximize staff operational efficiency. |
+
+---
+
+## 5. Summary Checklist for SaaS Readiness
+1.  **Architecture:** Shift from Controller-level scoping to Repository/Service-level Tenant Isolation.
+2.  **Product:** Transition UI to an "Institutional Calm" style (high readability, minimal bloat).
+3.  **Operations:** Integrate centralized error logging & immutable transaction logging.
+4.  **Security:** Adopt Policy-based authorization (Policies/Gates) for all domain entities.
+
