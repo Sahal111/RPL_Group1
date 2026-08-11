@@ -33,6 +33,9 @@ export default function LandingPage() {
       className="bg-brand-lightbg font-sans relative text-on-surface min-h-screen overflow-x-hidden"
       style={{}}
     >
+      <style>{`
+        .font-serif { font-family: Georgia, 'Times New Roman', serif; }
+      `}</style>
       <PublicNavbar />
 
       {/* Hero */}

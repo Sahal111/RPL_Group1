@@ -4,6 +4,9 @@ import logoMi from "../../assets/logo.png";
 export default function PublicFooter() {
   return (
     <footer className="pt-16 md:pt-24 pb-12 w-full bg-islamic-pattern bg-gradient-to-b from-transparent to-brand-green/5">
+      <style>{`
+        .font-serif { font-family: Georgia, 'Times New Roman', serif; }
+      `}</style>
       <div className="max-w-7xl mx-auto w-[94%] sm:w-[92%] bg-gradient-to-br from-brand-darkgreen via-brand-darkgreen to-[#002b23] backdrop-blur-2xl rounded-[2rem] md:rounded-[2.5rem] border border-white/10 mb-8 md:mb-12 shadow-2xl overflow-hidden pt-12 md:pt-16 px-6 sm:px-8 md:px-16">
         <div className="grid grid-cols-2 md:grid-cols-12 gap-8 md:gap-12 lg:gap-16 mb-12 md:mb-16">
           {/* Brand */}
@@ -17,7 +20,7 @@ export default function PublicFooter() {
                 />
               </div>
               <div className="flex flex-col justify-center">
-                <h3 className="text-white font-extrabold text-xl md:text-2xl leading-none tracking-tight">
+                <h3 className="text-white font-extrabold text-xl md:text-2xl leading-none tracking-tight font-serif">
                   MI Nurul Huda 3
                 </h3>
                 <div className="flex items-center gap-2 mt-1.5">
@@ -54,7 +57,7 @@ export default function PublicFooter() {
 
           {/* Links 1 */}
           <div className="col-span-1 md:col-span-2">
-            <h4 className="font-bold text-white mb-6 md:mb-8 text-sm uppercase tracking-widest">
+            <h4 className="font-bold text-white mb-6 md:mb-8 text-sm uppercase tracking-widest font-serif">
               Tentang Kami
             </h4>
             <ul className="space-y-4 md:space-y-5">
@@ -79,7 +82,7 @@ export default function PublicFooter() {
 
           {/* Links 2 */}
           <div className="col-span-1 md:col-span-2">
-            <h4 className="font-bold text-white mb-6 md:mb-8 text-sm uppercase tracking-widest">
+            <h4 className="font-bold text-white mb-6 md:mb-8 text-sm uppercase tracking-widest font-serif">
               Informasi
             </h4>
             <ul className="space-y-4 md:space-y-5">
@@ -112,7 +115,7 @@ export default function PublicFooter() {
 
           {/* Contact */}
           <div className="col-span-2 md:col-span-4 lg:pl-8 border-l-0 lg:border-l border-white/10">
-            <h4 className="font-bold text-white mb-6 md:mb-8 text-sm uppercase tracking-widest">
+            <h4 className="font-bold text-white mb-6 md:mb-8 text-sm uppercase tracking-widest font-serif">
               Kontak
             </h4>
             <ul className="space-y-5 md:space-y-6">

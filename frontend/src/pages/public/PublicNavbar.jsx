@@ -82,6 +82,9 @@ export default function PublicNavbar() {
         scrolled ? "glass-nav-scrolled" : "glass-nav"
       }`}
     >
+      <style>{`
+        .font-serif { font-family: Georgia, 'Times New Roman', serif; }
+      `}</style>
       <div className="mx-auto flex items-center justify-between px-4 sm:px-6 md:px-8 py-2.5 sm:py-3">
         <Link
           to="/"
@@ -95,7 +98,7 @@ export default function PublicNavbar() {
             />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-white font-extrabold text-base sm:text-xl leading-none tracking-tight">
+            <h1 className="text-white font-extrabold text-base sm:text-xl leading-none tracking-tight font-serif">
               MI Nurul Huda 3
             </h1>
             <p className="text-brand-green text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase mt-0.5 sm:mt-1">
