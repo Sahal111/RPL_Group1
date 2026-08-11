@@ -268,13 +268,8 @@ class OrtuController extends Controller
                 ['nama' => $user->name, 'no_hp' => null]
             );
 
-            // Link ke siswa via pivot
-            DB::table('orang_tua_siswa')->insertOrIgnore([
-                'siswa_id' => $siswa->id,
-                'orang_tua_id' => $ortu->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Link ke siswa via Eloquent
+            $ortu->siswa()->syncWithoutDetaching([$siswa->id]);
         });
 
         return response()->json([
@@ -322,11 +317,8 @@ class OrtuController extends Controller
             return response()->json(['success' => false, 'message' => 'Data anak tidak ditemukan.'], 404);
         }
 
-        // Hapus dari pivot, bukan hapus ortu itu sendiri
-        DB::table('orang_tua_siswa')
-            ->where('orang_tua_id', $ortu->id)
-            ->where('siswa_id', $siswa->id)
-            ->delete();
+        // Hapus dari pivot via Eloquent, bukan hapus record ortu itu sendiri
+        $ortu->siswa()->detach($siswa->id);
 
         return response()->json(['success' => true, 'message' => 'Anak berhasil dihapus dari akun kamu.']);
     }

@@ -9,8 +9,9 @@ use App\Http\Requests\Absensi\StoreAbsensiRequest;
 use App\Http\Requests\Absensi\UpdateAbsensiRequest;
 use App\Models\Absensi; // tabel: absensis
 use App\Models\JadwalPelajaran; // tabel: jadwals
-use App\Models\RiwayatKelas;
 use App\Models\Kelas;
+use App\Models\RiwayatKelas;
+use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -27,8 +28,8 @@ class AbsensiController extends Controller
 
         $kelas = Kelas::findOrFail($id_kelas);
 
-        // Ambil nama tahun ajaran dari DB berdasarkan id_tahun_ajaran di kelas
-        $tahunAjaran = DB::table('tahun_ajarans')->find($kelas->tahun_ajaran_id);
+        // Ambil nama tahun ajaran dari Eloquent
+        $tahunAjaran = TahunAjaran::find($kelas->tahun_ajaran_id);
 
         $query = JadwalPelajaran::with(['mataPelajaran', 'guru'])
             ->where('kelas_id', $id_kelas)

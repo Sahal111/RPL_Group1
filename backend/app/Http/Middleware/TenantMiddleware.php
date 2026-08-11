@@ -13,9 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
  * Harus dijalankan sebelum auth middleware supaya SchoolScope bisa bekerja.
  *
  * Urutan deteksi:
- * 1. Subdomain request  → cari di school_domains
- * 2. Header X-School-ID → untuk keperluan testing atau API eksternal
- * 3. user->school_id    → fallback setelah auth (untuk app mobile yang tidak pakai subdomain)
+ * 1. Subdomain request → cari di school_domains
+ * 2. user->school_id   → fallback setelah auth (app mobile tanpa subdomain)
+ *
+ * ⚠️  Header X-School-ID dihapus — rentan cross-tenant injection.
  *
  * Kalau school ditemukan tapi status bukan active/trial → return 403.
  */
@@ -63,13 +64,7 @@ class TenantMiddleware
             }
         }
 
-        // 2. Dari header X-School-ID (untuk testing atau API mobile)
-        $headerSchoolId = $request->header('X-School-ID');
-        if ($headerSchoolId && is_numeric($headerSchoolId)) {
-            return (int) $headerSchoolId;
-        }
-
-        // 3. Dari user yang sudah login
+        // 2. Dari user yang sudah login
         $user = $request->user();
         if ($user && $user->school_id) {
             return $user->school_id;

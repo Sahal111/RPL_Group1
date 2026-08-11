@@ -9,6 +9,7 @@ use App\Http\Requests\Kelas\StoreKelasRequest;
 use App\Http\Requests\Kelas\UpdateKelasRequest;
 use App\Models\Kelas;
 use App\Models\RiwayatKelas;
+use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -122,7 +123,7 @@ class MasterDataKelasController extends Controller
 
     public function tahunAjaranDropdown()
     {
-        $data = DB::table('tahun_ajarans')->orderByDesc('is_active')->orderByDesc('id')->get(['id', 'tahun', 'is_active']);
+        $data = TahunAjaran::orderByDesc('is_active')->orderByDesc('id')->get(['id', 'tahun', 'is_active']);
         return response()->json(['success' => true, 'data' => $data]);
     }
 

@@ -464,7 +464,7 @@ class MasterDataSiswaController extends Controller
 
         DB::transaction(function () use ($siswa) {
             RiwayatKelas::where('siswa_id', $siswa->id)->delete();
-            DB::table('orang_tua_siswa')->where('siswa_id', $siswa->id)->delete();
+            $siswa->orangTua()->detach(); // hapus semua pivot orang_tua_siswa
             $siswa->delete();
         });
 

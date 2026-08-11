@@ -1,102 +1,239 @@
 <?php
 
-namespace App\Http\Controllers\Guru;
+namespace App\Http\Controllers\MasterData\Guru;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Guru\StoreGuruDokumenRequest;
-use App\Http\Requests\Guru\VerifyDokumenRequest;
-use App\Http\Resources\GuruDokumenResource;
+use App\Http\Requests\Guru\RejectDokumenRequest;
+use App\Http\Requests\Guru\UpdateDokumenRequest;
+use App\Http\Requests\Guru\UploadDokumenRequest;
 use App\Models\Guru;
 use App\Models\GuruDokumen;
-use Illuminate\Http\JsonResponse;
+use App\Services\GuruDokumenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class GuruDokumenController extends Controller
 {
-    /**
-     * Display a listing of teacher documents.
-     */
-    public function index(string $guruId): JsonResponse
+    public function __construct(private GuruDokumenService $service)
     {
-        $guru = Guru::find($guruId) ?? Guru::where('ulid', $guruId)->first();
-
-        if (!$guru) {
-            return $this->notFound('Data guru tidak ditemukan.');
-        }
-
-        $dokumens = GuruDokumen::where('guru_id', $guru->id)->latest()->get();
-
-        return $this->success(GuruDokumenResource::collection($dokumens));
     }
 
-    /**
-     * Upload a new teacher document (DMS).
-     */
-    public function store(StoreGuruDokumenRequest $request, string $guruId): JsonResponse
-    {
-        $guru = Guru::find($guruId) ?? Guru::where('ulid', $guruId)->first();
+    // ────────────────────────────────────────
+    // SECTION: DOKUMEN
+    // ────────────────────────────────────────
 
-        if (!$guru) {
-            return $this->notFound('Data guru tidak ditemukan.');
+    public function getDokumen($nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $dokumens = $guru->dokumens()
+            ->with(['uploader:id,username,name', 'verifier:id,username,name'])
+            ->withCount('versions')
+            ->orderBy('kategori')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $statistik = $this->service->getStatistik($guru->id);
+
+        $uploaded = $dokumens->pluck('jenis_dokumen')->filter()->unique()->toArray();
+        $checklist = [];
+        foreach (GuruDokumen::JENIS_WAJIB as $kategori => $jenisMap) {
+            foreach ($jenisMap as $key => $label) {
+                $checklist[] = [
+                    'jenis' => $key,
+                    'label' => $label,
+                    'kategori' => $kategori,
+                    'uploaded' => in_array($key, $uploaded),
+                ];
+            }
         }
 
-        $schoolId = (app()->bound('current_school_id') ? app('current_school_id') : null) ?? $guru->school_id;
-        $path = $request->file('berkas')->store("schools/{$schoolId}/dokumen-guru/{$guru->id}", 'public');
-
-        $dokumen = GuruDokumen::create([
-            'guru_id' => $guru->id,
-            'school_id' => $schoolId,
-            'jenis_dokumen' => $request->jenis_dokumen,
-            'nama_dokumen' => $request->nama_dokumen,
-            'file_path' => $path,
-            'nomor_dokumen' => $request->nomor_dokumen,
-            'tgl_terbit' => $request->tgl_terbit,
-            'keterangan' => $request->keterangan,
-            'status_verifikasi' => 'pending',
+        return $this->success([
+            'dokumens' => $dokumens,
+            'statistik' => $statistik,
+            'checklist' => $checklist,
         ]);
-
-        return $this->created(new GuruDokumenResource($dokumen), 'Dokumen berhasil diunggah.');
     }
 
-    /**
-     * Verify/Approve a teacher document (Kepsek/Admin).
-     */
-    public function verify(VerifyDokumenRequest $request, string $dokumenId): JsonResponse
+    public function uploadDokumen(UploadDokumenRequest $request, $nuptk)
     {
-        $dokumen = GuruDokumen::find($dokumenId);
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
 
-        if (!$dokumen) {
-            return $this->notFound('Dokumen tidak ditemukan.');
-        }
+        $dokumen = $this->service->upload(
+            guruId: $guru->id,
+            data: [
+                'kategori' => $request->kategori,
+                'jenis_dokumen' => $request->jenis_dokumen,
+                'nama_dokumen' => $request->nama_dokumen ?? ($request->jenis_dokumen ?? $request->kategori),
+                'nomor_dokumen' => $request->nomor_dokumen,
+                'tanggal_dokumen' => $request->tanggal_dokumen,
+                'tanggal_berlaku' => $request->tanggal_berlaku,
+                'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
+                'penerbit' => $request->penerbit,
+                'keterangan' => $request->keterangan,
+            ],
+            file: $request->file('file'),
+            uploadedBy: auth()->id(),
+        );
+
+        return $this->created($dokumen, 'Dokumen berhasil diupload.');
+    }
+
+    public function updateDokumen(UpdateDokumenRequest $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
 
         $dokumen->update([
-            'status_verifikasi' => $request->status,
-            'catatan_verifikasi' => $request->catatan,
-            'verified_at' => now(),
-            'verified_by' => auth()->id(),
+            'kategori' => $request->kategori,
+            'jenis_dokumen' => $request->jenis_dokumen,
+            'nama_dokumen' => $request->nama_dokumen ?? $dokumen->nama_dokumen,
+            'nomor_dokumen' => $request->nomor_dokumen,
+            'tanggal_dokumen' => $request->tanggal_dokumen,
+            'tanggal_berlaku' => $request->tanggal_berlaku,
+            'tanggal_kadaluarsa' => $request->tanggal_kadaluarsa,
+            'penerbit' => $request->penerbit,
+            'keterangan' => $request->keterangan,
         ]);
 
-        return $this->success(new GuruDokumenResource($dokumen), 'Status verifikasi dokumen berhasil diperbarui.');
+        if ($request->hasFile('file')) {
+            $this->service->replace(
+                dokumen: $dokumen,
+                file: $request->file('file'),
+                uploadedBy: auth()->id(),
+                catatan: $request->catatan_versi,
+            );
+        }
+
+        return $this->success($dokumen->fresh(['uploader', 'verifier', 'versions']), 'Dokumen berhasil diperbarui.');
     }
 
-    /**
-     * Delete a teacher document.
-     */
-    public function destroy(string $dokumenId): JsonResponse
+    public function destroyDokumen($nuptk, $id)
     {
-        $dokumen = GuruDokumen::find($dokumenId);
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
 
-        if (!$dokumen) {
-            return $this->notFound('Dokumen tidak ditemukan.');
-        }
-
-        if ($dokumen->file_path && Storage::disk('public')->exists($dokumen->file_path)) {
-            Storage::disk('public')->delete($dokumen->file_path);
-        }
-
+        Storage::disk('local')->delete($dokumen->file_path);
         $dokumen->delete();
 
-        return $this->success(null, 'Dokumen berhasil dihapus.');
+        return $this->success(message: 'Dokumen dihapus.');
+    }
+
+    public function approveDokumen(Request $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+        $updated = $this->service->approve($dokumen, auth()->id());
+
+        return $this->success($updated, 'Dokumen berhasil disetujui.');
+    }
+
+    public function rejectDokumen(RejectDokumenRequest $request, $nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+        $updated = $this->service->reject($dokumen, auth()->id(), $request->alasan);
+
+        return $this->success($updated, 'Dokumen ditolak.');
+    }
+
+    public function getDokumenVersions($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        return $this->success($dokumen->versions()->with('uploader:id,username,name')->get());
+    }
+
+    public function getDokumenLogs($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        return $this->success($dokumen->logs()->with('user:id,username,name')->get());
+    }
+
+    // ────────────────────────────────────────
+    // SECTION: DOWNLOAD
+    // ────────────────────────────────────────
+
+    public function downloadDokumen($nuptk, $id)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $dokumen = $guru->dokumens()->findOrFail($id);
+
+        if (!$dokumen->file_path || !Storage::disk('local')->exists($dokumen->file_path)) {
+            return $this->notFound('File tidak ditemukan.');
+        }
+
+        $ext = pathinfo($dokumen->file_path, PATHINFO_EXTENSION);
+        $filename = $dokumen->nama_dokumen . '.' . $ext;
+
+        return Storage::disk('local')->download($dokumen->file_path, $filename);
+    }
+
+    public function downloadFile(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+
+        $filePath = $request->query('path');
+        $namaFile = $request->query('nama', 'dokumen');
+
+        if (!$filePath) {
+            return $this->error('Path tidak ditemukan.', 'NOT_FOUND', 400);
+        }
+
+        // Pastikan file memang milik guru ini — cegah path traversal antar guru
+        $dokumen = $guru->dokumens()->where('file_path', $filePath)->first();
+        if (!$dokumen || !Storage::disk('local')->exists($filePath)) {
+            return $this->notFound('File tidak ditemukan.');
+        }
+
+        $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+        $safeName = preg_replace('/[\/\\:*?"<>|]/', '_', $namaFile);
+
+        return Storage::disk('local')->download($filePath, $safeName . '.' . $ext);
+    }
+
+    public function bulkDownload(Request $request, $nuptk)
+    {
+        $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
+        $query = $guru->dokumens()->whereNotNull('file_path');
+
+        if ($request->has('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        $dokumens = $query->get();
+
+        if ($dokumens->isEmpty()) {
+            return $this->notFound('Tidak ada dokumen.');
+        }
+
+        $zip = new ZipArchive();
+        $filename = "Dokumen_{$guru->nama}_{$nuptk}_" . now()->format('Ymd') . '.zip';
+        $tmpPath = storage_path("app/tmp/{$filename}");
+
+        if (!is_dir(storage_path('app/tmp'))) {
+            mkdir(storage_path('app/tmp'), 0755, true);
+        }
+
+        if ($zip->open($tmpPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return $this->error('Gagal membuat ZIP.', 'SERVER_ERROR', 500);
+        }
+
+        foreach ($dokumens as $dok) {
+            $fullPath = Storage::disk('local')->path($dok->file_path);
+            if (file_exists($fullPath)) {
+                $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+                $entryName = "{$dok->kategori}/{$dok->nama_dokumen}.{$ext}";
+                $zip->addFile($fullPath, $entryName);
+            }
+        }
+
+        $zip->close();
+
+        return response()->download($tmpPath, $filename)->deleteFileAfterSend(true);
     }
 }

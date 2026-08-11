@@ -102,7 +102,7 @@ class GuruDokumen extends Model
     ];
 
     // ── Appended Accessors ──
-    protected $appends = ['is_expired', 'is_near_expiry', 'file_url'];
+    protected $appends = ['is_expired', 'is_near_expiry'];
 
     public function getIsExpiredAttribute(): bool
     {
@@ -118,12 +118,8 @@ class GuruDokumen extends Model
             && $this->tanggal_kadaluarsa->diffInDays(now()) <= 90;
     }
 
-    public function getFileUrlAttribute(): ?string
-    {
-        return $this->file_path
-            ? Storage::disk('public')->url($this->file_path)
-            : null;
-    }
+    // ⚠️  file_url accessor sengaja dihapus — dokumen disimpan di private disk.
+    // Download hanya boleh melalui endpoint authenticated: GET /guru/{nuptk}/dokumen/{id}/download
 
     // ── Scopes ──
     public function scopeByKategori($query, string $kategori)

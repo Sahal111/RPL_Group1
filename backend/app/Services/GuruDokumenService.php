@@ -190,7 +190,7 @@ class GuruDokumenService
     {
         $ext = $file->getClientOriginalExtension();
         $filename = Str::uuid() . '.' . $ext;
-        return $file->storeAs("guru-dokumen/{$guruId}", $filename, 'public');
+        return $file->storeAs("guru-dokumen/{$guruId}", $filename, 'local');
     }
 
     private function log(int $dokumenId, ?int $userId, string $aksi, ?string $keterangan = null): void

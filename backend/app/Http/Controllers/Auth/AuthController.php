@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterOrtuRequest;
+use App\Models\OrangTua;
+use App\Models\Role;
+use App\Models\Siswa;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -138,29 +141,20 @@ class AuthController extends Controller
                 'is_active' => 0,
             ]);
 
-            // Assign role ortu via user_roles
-            $roleId = DB::table('roles')->where('slug', 'ortu')->value('id');
-            DB::table('user_roles')->insert([
-                'user_id' => $user->id,
-                'role_id' => $roleId,
-                'created_at' => now(),
-            ]);
+            // Assign role ortu via Eloquent
+            $role = Role::where('slug', 'ortu')->firstOrFail();
+            $user->roles()->syncWithoutDetaching([$role->id]);
 
             // Buat record orang_tua
-            $ortu = \App\Models\OrangTua::create([
+            $ortu = OrangTua::create([
                 'user_id' => $user->id,
                 'nama' => $request->nama,
                 'hubungan' => $request->hubungan,
                 'no_hp' => $request->no_hp,
             ]);
 
-            // Link ortu ke siswa
-            DB::table('orang_tua_siswa')->insert([
-                'siswa_id' => $siswa->id,
-                'orang_tua_id' => $ortu->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Link ortu ke siswa via Eloquent
+            $ortu->siswa()->syncWithoutDetaching([$siswa->id]);
         });
 
         return response()->json([

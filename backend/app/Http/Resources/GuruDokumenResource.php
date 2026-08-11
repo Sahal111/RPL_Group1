@@ -16,7 +16,7 @@ class GuruDokumenResource extends JsonResource
             'jenis_dokumen' => $this->jenis_dokumen,
             'nama_dokumen' => $this->nama_dokumen,
             'file_path' => $this->file_path,
-            'file_url' => $this->file_path ? asset('storage/' . $this->file_path) : null,
+            'has_file' => (bool) $this->file_path,
             'nomor_dokumen' => $this->nomor_dokumen,
             'status_verifikasi' => $this->status_verifikasi ?? 'pending',
             'created_at' => $this->created_at?->toIso8601String(),

@@ -12,6 +12,7 @@ use App\Http\Requests\Operator\CreateWaliKelasUserRequest;
 use App\Http\Requests\Operator\ResetPasswordRequest;
 use App\Http\Requests\Operator\UpdateKodeRegistrasiRequest;
 use App\Http\Requests\Operator\UpdateOrtuRequest;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserBendahara;
 use App\Models\UserWaliKelas;
@@ -21,15 +22,12 @@ use Illuminate\Support\Facades\Hash;
 
 class OperatorController extends Controller
 {
-    // Helper: assign role ke user via user_roles
+    // Helper: assign role ke user via Eloquent relationship
     private function assignRole(int $userId, string $slug): void
     {
-        $roleId = DB::table('roles')->where('slug', $slug)->value('id');
-        DB::table('user_roles')->insertOrIgnore([
-            'user_id' => $userId,
-            'role_id' => $roleId,
-            'created_at' => now(),
-        ]);
+        $user = User::findOrFail($userId);
+        $role = Role::where('slug', $slug)->firstOrFail();
+        $user->roles()->syncWithoutDetaching([$role->id]);
     }
 
     // -------------------------------------------------------
@@ -174,12 +172,7 @@ class OperatorController extends Controller
                 'no_hp' => $request->no_hp,
             ]);
 
-            DB::table('orang_tua_siswa')->insert([
-                'siswa_id' => $siswa->id,
-                'orang_tua_id' => $ortu->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $ortu->siswa()->syncWithoutDetaching([$siswa->id]);
 
             return $user->load('roles', 'orangTua.siswa');
         });
@@ -347,12 +340,7 @@ class OperatorController extends Controller
                 ['user_id' => $user->id, 'hubungan' => $request->hubungan],
                 ['nama' => $user->name]
             );
-            DB::table('orang_tua_siswa')->insertOrIgnore([
-                'siswa_id' => $siswa->id,
-                'orang_tua_id' => $ortu->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $ortu->siswa()->syncWithoutDetaching([$siswa->id]);
         });
 
         return response()->json(['success' => true, 'message' => 'Anak berhasil ditautkan.', 'data' => $user->load('orangTua.siswa')], 201);
