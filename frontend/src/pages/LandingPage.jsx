@@ -29,11 +29,14 @@ const TESTIMONIALS = [
 
 export default function LandingPage() {
   return (
-    <div className="bg-brand-lightbg font-sans relative text-on-surface min-h-screen">
+    <div
+      className="bg-brand-lightbg font-sans relative text-on-surface min-h-screen overflow-x-hidden"
+      style={{ fontFamily: "'Plus Jakarta Sans', Inter, sans-serif" }}
+    >
       <PublicNavbar />
 
       {/* Hero */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-32 pb-32 px-4 text-center overflow-hidden">
+      <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-24 sm:pt-32 pb-20 sm:pb-32 px-4 text-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             alt="Background"
@@ -47,12 +50,12 @@ export default function LandingPage() {
           <div className="absolute inset-0 hero-gradient" />
           <div className="absolute bottom-0 left-0 right-0 h-64 hero-fade" />
         </div>
-        <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center mt-12">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs md:text-sm font-semibold px-5 py-2.5 rounded-full mb-10 flex items-center gap-3 shadow-lg">
-            <span className="w-2.5 h-2.5 rounded-full bg-brand-green animate-pulse" />
-            Penerimaan Peserta Didik Baru (PPDB) Telah Dibuka
+        <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center mt-4 sm:mt-12 w-full px-2">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs md:text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-full mb-10 flex items-center gap-2 sm:gap-3 shadow-lg max-w-full text-center">
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-brand-green animate-pulse shrink-0" />
+            <span>Penerimaan Peserta Didik Baru (PPDB) Telah Dibuka</span>
           </div>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.15] tracking-tight drop-shadow-sm">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-[1.15] tracking-tight drop-shadow-sm font-serif">
             Membentuk Generasi{" "}
             <span className="text-brand-green relative inline-block">
               Qur&apos;ani
@@ -95,9 +98,9 @@ export default function LandingPage() {
       </section>
 
       {/* Statistics */}
-      <section className="relative z-20 -mt-24 px-4 md:px-12 lg:px-24 mb-20 md:mb-28">
+      <section className="relative z-20 -mt-12 sm:-mt-24 px-4 md:px-12 lg:px-24 mb-16 md:mb-28">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 icon: "fa-graduation-cap",
@@ -142,7 +145,7 @@ export default function LandingPage() {
         className="py-20 md:py-28 px-4 md:px-12 lg:px-24 bg-islamic-pattern relative overflow-hidden"
       >
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center mb-32 group/hover-zone transition-all duration-700 ease-in-out hover:bg-brand-green/5 p-6 md:p-10 -m-2 md:-m-10 rounded-[3rem] border border-transparent hover:border-brand-green/10 hover:shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center mb-20 md:mb-32 group/hover-zone transition-all duration-700 ease-in-out hover:bg-brand-green/5 p-4 md:p-10 rounded-[2rem] lg:rounded-[3rem] border border-transparent hover:border-brand-green/10 hover:shadow-2xl">
             <div className="lg:col-span-7 transition-transform duration-500 group-hover/hover-zone:scale-[1.02]">
               <div className="relative">
                 <div className="absolute -left-10 -top-10 opacity-[0.05] pointer-events-none hidden lg:block">
@@ -166,7 +169,7 @@ export default function LandingPage() {
                     Keunggulan Kami
                   </span>
                 </div>
-                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-brand-darkgreen mb-10 tracking-tight leading-[1.1]">
+                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-brand-darkgreen mb-10 tracking-tight leading-[1.1] font-serif">
                   Membangun{" "}
                   <span className="text-brand-green relative inline-block">
                     Karakter
@@ -207,7 +210,7 @@ export default function LandingPage() {
                       <span className="text-brand-green text-xs font-bold tracking-[0.3em] uppercase block mb-2">
                         Sertifikasi Resmi
                       </span>
-                      <h4 className="font-extrabold text-brand-darkgreen text-3xl tracking-tight">
+                      <h4 className="font-extrabold text-brand-darkgreen text-3xl tracking-tight font-serif">
                         Akreditasi A
                       </h4>
                       <p className="text-gray-500 text-sm mt-2 font-medium">
@@ -242,7 +245,7 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-brand-green/10 text-brand-green rounded-2xl flex items-center justify-center text-2xl mb-8 group-hover:scale-110 transition-transform duration-500">
                   <i className="fas fa-book-open" />
                 </div>
-                <h3 className="text-2xl font-bold text-brand-darkgreen mb-4">
+                <h3 className="text-2xl font-bold text-brand-darkgreen mb-4 font-serif">
                   Tahfidz Al-Qur&apos;an
                 </h3>
                 <p className="text-gray-500 leading-relaxed mb-8 flex-grow">
@@ -268,7 +271,7 @@ export default function LandingPage() {
                 <div className="w-20 h-20 bg-brand-green text-white rounded-[2rem] flex items-center justify-center text-3xl mb-8 shadow-lg shadow-brand-green/30 group-hover:rotate-6 transition-transform duration-500">
                   <i className="fas fa-laptop" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">
+                <h3 className="text-2xl font-bold text-white mb-4 font-serif">
                   Digital Classroom
                 </h3>
                 <p className="text-white/80 leading-relaxed mb-8 flex-grow">
@@ -290,7 +293,7 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-brand-green/10 text-brand-green rounded-2xl flex items-center justify-center text-2xl mb-8 group-hover:scale-110 transition-transform duration-500">
                   <i className="fas fa-users" />
                 </div>
-                <h3 className="text-2xl font-bold text-brand-darkgreen mb-4">
+                <h3 className="text-2xl font-bold text-brand-darkgreen mb-4 font-serif">
                   Character Building
                 </h3>
                 <p className="text-gray-500 leading-relaxed mb-8 flex-grow">
@@ -324,7 +327,7 @@ export default function LandingPage() {
                 Program &amp; Ekstrakurikuler
               </span>
             </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-darkgreen tracking-tight leading-tight">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-darkgreen tracking-tight leading-tight font-serif">
               Program <span className="text-brand-green">Unggulan</span>
             </h2>
             <div className="mt-6 flex justify-center items-center gap-4">
@@ -369,7 +372,7 @@ export default function LandingPage() {
                 >
                   <i className={`fas ${p.icon}`} />
                 </div>
-                <h3 className="text-2xl font-bold text-brand-darkgreen mb-4 tracking-tight">
+                <h3 className="text-2xl font-bold text-brand-darkgreen mb-4 tracking-tight font-serif">
                   {p.title}
                 </h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-grow font-medium">
@@ -395,7 +398,7 @@ export default function LandingPage() {
                 <i className="fas fa-graduation-cap" />
               </div>
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white mb-8 tracking-tight leading-[1.15] max-w-4xl drop-shadow-sm">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white mb-8 tracking-tight leading-[1.15] max-w-4xl drop-shadow-sm font-serif">
               Siap Bergabung Menjadi Bagian{" "}
               <span className="text-brand-green">Keluarga Besar</span> Kami?
             </h2>
@@ -442,7 +445,7 @@ export default function LandingPage() {
                 Testimoni
               </span>
             </div>
-            <h2 className="text-4xl md:text-6xl font-extrabold text-brand-darkgreen tracking-tight leading-tight">
+            <h2 className="text-4xl md:text-6xl font-extrabold text-brand-darkgreen tracking-tight leading-tight font-serif">
               Apa Kata <span className="text-brand-green">Orang Tua?</span>
             </h2>
             <p className="mt-6 text-gray-500 max-w-2xl mx-auto text-lg">
@@ -480,7 +483,7 @@ export default function LandingPage() {
                     />
                   </div>
                   <div>
-                    <h4 className="font-bold text-brand-darkgreen text-lg">
+                    <h4 className="font-bold text-brand-darkgreen text-lg font-serif">
                       {t.name}
                     </h4>
                     <p className="text-xs text-brand-green font-bold uppercase tracking-widest">
