@@ -110,6 +110,7 @@ export default function PublicNavbar() {
         <div className="hidden md:flex items-center gap-6 lg:gap-8 xl:gap-10 text-sm font-semibold">
           {navLink("/", "Beranda")}
           {navLink("/about", "Profil")}
+          {navLink("/akademik", "Akademik")}
           {navLink("/program", "Program")}
           {navLink("/gallery", "Galeri")}
           <Link
@@ -197,6 +198,7 @@ export default function PublicNavbar() {
             ["/", "Beranda"],
             ["/about", "Profil"],
             ["/program", "Program"],
+            ["/akademik", "Akademik"],
             ["/gallery", "Galeri"],
             ["/contact", "Kontak"],
           ].map(([to, label]) => (

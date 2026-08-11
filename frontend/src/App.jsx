@@ -14,6 +14,7 @@ import GalleryPage from "./pages/public/GalleryPage";
 import AboutPage from "./pages/public/AboutPage";
 import ContactPage from "./pages/public/ContactPage";
 import ProgramPage from "./pages/public/ProgramPage";
+import AkademikPage from "./pages/public/AkademikPage";
 import PpdbPage from "./pages/public/PpdbPage";
 
 // Operator
@@ -107,6 +108,7 @@ export default function App() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="/profile" element={<AboutPage />} />
       <Route path="/program" element={<ProgramPage />} />
+      <Route path="/akademik" element={<AkademikPage />} />
       <Route path="/ppdb" element={<PpdbPage />} />
       <Route path="/gallery" element={<GalleryPage />} />
       <Route path="/contact" element={<ContactPage />} />
