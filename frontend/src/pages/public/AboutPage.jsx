@@ -3,441 +3,619 @@ import { Link } from "react-router-dom";
 import PublicNavbar from "./PublicNavbar";
 import PublicFooter from "./PublicFooter";
 
-export default function AboutPage() {
-  const scrollContainerRef = useRef(null);
+// ─── Data ────────────────────────────────────────────────────────────────────
 
-  const scrollFacilities = (direction) => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = direction === "left" ? -350 : 350;
-      scrollContainerRef.current.scrollBy({
-        left: scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
+const staffList = [
+  {
+    name: "Siti Aminah, S.Pd.",
+    role: "Waka Kurikulum",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnq6x03kibmSL2_gVa8yLEJG6wO9H1k8CvpLRhsjz9mRjWYP4WYhNMzXStzAeu4s5MqjcF5aQSOUz31kSD48bsSZ1RVMMNyYFlchw6eKZuk24xKOyBli9R7lwq5KR9M8yPRlePNy3JjkyHCrI4egTsEQGZ0Da99YQSAebHOwqwzpiOq4i9NCdkbptu8eRnJdKx-vhA0NG3EJ6dh1qNjt_fdS02xw5DiDqf06cdYWqUdRIWpj63jhs4",
+    rotate: "-rotate-12",
+  },
+  {
+    name: "Budi Santoso, S.Ag.",
+    role: "Waka Kesiswaan",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBEjyX8_S7t_awKu--rcn-Si9RKjvBQqgD25JKmeRAjBb3fDuw8BC4gCqiYVmVdCXM2CNMl-7cbhyityeuIrhs82khKRmlcDUypgAta-eeJG3hERi7UNRw647ez4TUqCmOEHgVqnXPG_zfvGHWVmZbYwlS6jhpl6Jq_sv4675G7VECKq4mBBnwJtJ-v1Pu-nH2Rny348_zxZ3WJd8fNe-Kr_40NfoQH5EW4V1UqlLyhPneDGqSrl_3x",
+    rotate: "rotate-12",
+  },
+  {
+    name: "Nurul Hidayah, S.E.",
+    role: "Bendahara",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBS9zooOHK5rlDDtpGYRrHh2hATGFZ_eYoD_eMQtAJNQ4F6-lcu0sFLoimAl_nJOTwFZzZb8kvq1YG0iwFmNPxBg33I2teCFcstLDbsXOtdWvTzPbiF6oaFDM6qaa1p-ryAfoGlVbtpKjQjm6bNpDCLug7L2mEnZ2Ar3BbsFxWg_aNAeAHVPsUtpLFVLqL3mIpetJC1yD6o-IhYe2_LJuh4cFk8f4yDzmH0BwuXetmCTg3WSg5nvyaS",
+    rotate: "-rotate-12",
+  },
+  {
+    name: "M. Ridwan, S.Kom.",
+    role: "Kepala TU",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAIJz3ADP9Vd75vXVEVThOyrN3cK_SbYo7uJR0RSNFLdI3s6yBPUUAlCTdqtkwmXPV_cTf-dHzuD2yK50S12QUO9G2cSPlC9aQtLalqpV1GJ_udP_a7Ueq6zdngeO4imxCwH1wknllq5bD_EKZl9U8GzXxgZ7s0qS-lP8z5mNJI6WscW1WBhwuF5yTQBp0Hb8VCbm7mCpuL6_SNyuxsx6RBZ2S0UFB8Yx9N_NBtdHfCqHNIBycnxdHz",
+    rotate: "rotate-12",
+  },
+];
 
-  const staffList = [
-    {
-      name: "Siti Aminah, S.Ag",
-      role: "Waka Kurikulum",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4QaNcxE8bJSa1Ct3hatwiIQgmCOgkCxPrImx6kKkwQI0DHn8NwuBCO38rq0xKRGOO1HLNnoTpbYtNVJ_1v96HbwoDJTbQ3PRYd53rtTKXMl1qWPOhZp4oAwSk8dumMEWu_Af8GK3zYJ1f868khF6DrgDIaRhy58KGtHp7j--XyqjyNEd-uXd0lTI5lRS36FMugX2ejfX3h_j-0u3x9Gl3ckNBXQzDAd5m2-iAEQUsfyOJq5FMyQnvS8o40vRr1CwnV8wwvamf2q5O",
-    },
-    {
-      name: "Rahmat Hidayat, S.Pd",
-      role: "Waka Kesiswaan",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuA3wmCO_gYxV8YJJhSkvEYmL-S0zygLxEiNrbcVnYkttyg_VHHyeuFgy-ZSAZTz7Kyw62LgqAFcWZg1HSxaJgCHoJRVojFa7a-8I2X3IVfU4d4Nh0SC6_K30NfOxU43wEABoOq1ePbSUrzfsQ2sk4WbY4j72exB4JSbyRNO2tNvDm_4HImxaiZEn1kzniP08wL7CWWg3fPu3RLx6rtK1ieJJp_4vCsegAF8QSuZWK0Pc_H5S54gsoOZXmmbKRh1XiB7DWnlXftklbaq",
-    },
-    {
-      name: "Fatimah Zahra, S.E",
-      role: "Bendahara",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDRo8a8aGzPP97WmnBqWeu5itIWD5LTjstSkPK7JN54mykybK_zsPOJwpf0mh3QkvldaNmaBXKWWxWafQHgzd_6LBXG5BoEools_JwheVLxmIiSX1BzyPd2H49URpMMGXaqtOJz5a3YBjdNDr-_d6iWzewCBKoaH9bLE8LBUVyyEv8BlY3Wy08j_MIOw0hE9L6xiX3t6sr58DSM8PSZnzr5Xlv-EXn7gCXmEVuxHm1fZZAj_cRU32gu1h9BtsWynzCehgbVlqxkUVsq",
-    },
-    {
-      name: "Budi Santoso, S.Kom",
-      role: "Tata Usaha",
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCacB7aOolbGbG2aprspS8pKExudcy9WmHGB-2ppsYQhNu-GomTqMB90Jbbz60vP1IcLymoT0z9mr2J5OGAg27Yg8KoLvDim2LLvu2Ogqhh4lZkU0jjNBAzZz7x50--NTYWHgTSrixbGF57TRSVcqADWNaLSWZFm39BxuGvgbNt3jHvl3kV7-5M9JzSReYe1PItvj4flc8LWbyrZO-t6swyyxSzb7mp-y7iZ1SDJUmNtFSoq9Pr8-sc_5519k7mC4WpZlMhis-pzJtA",
-    },
-  ];
+const misiList = [
+  {
+    icon: "menu_book",
+    title: "Akademik Unggul",
+    desc: "Menyelenggarakan pembelajaran aktif, inovatif, kreatif, efektif, dan menyenangkan berbasis TIK.",
+    patternId: "islamic-pattern-hover-1",
+  },
+  {
+    icon: "mosque",
+    title: "Karakter Islami",
+    desc: "Membiasakan pengamalan ibadah dan akhlakul karimah dalam kehidupan sehari-hari di sekolah maupun rumah.",
+    patternId: "islamic-pattern-hover-2",
+  },
+  {
+    icon: "diversity_3",
+    title: "Pengembangan Diri",
+    desc: "Mengembangkan potensi, bakat, dan minat siswa melalui kegiatan ekstrakurikuler yang terarah dan berkelanjutan.",
+    patternId: "islamic-pattern-hover-3",
+  },
+  {
+    icon: "eco",
+    title: "Peduli Lingkungan",
+    desc: "Menciptakan lingkungan madrasah yang bersih, sehat, asri, dan nyaman sebagai pendukung proses belajar.",
+    patternId: "islamic-pattern-hover-4",
+  },
+];
 
+const fasilitasList = [
+  {
+    label: "Ibadah",
+    icon: "mosque",
+    title: "Masjid Sekolah",
+    desc: "Pusat kegiatan ibadah dan pembentukan karakter religius siswa.",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB-jq-42YSKaMuUd2SuxCeHWOWJjHRys_VmrURDXITnNRc2Q88XuRwxX0rXjQXOPno9XvPT6WCYqy6eP4sU7WFR7ZSlFrE9CQTznwitw52Q7eZgl3bBTY0JuRmHiYkvPnABU3s3KXkuOj_vKej28lEvym_u-GVA5gwWBZllLgM3XpFaA5KdiHIv4j2MGJ1poR25cxwKUw9JmyNMdKRkNSmuAXqSpzH6hxmoAlPzWW0GWxMT1bTU2Cd_",
+    offset: false,
+  },
+  {
+    label: "Pembelajaran",
+    icon: "school",
+    title: "Ruang Kelas",
+    desc: "Lingkungan belajar interaktif dengan fasilitas multimedia modern.",
+    img: "https://lh3.googleusercontent.com/aida/AP1WRLuKOW3nwlHT71oVihJyFa4euXIx47L91oK_DC-WbFUzpFmk4PujU6CO_LyXVcSOu9fa_YpuSF4b0AKrBSALAyT8qFa3IbXuqmStCUB7ZBQNnI7aXDj6ApHdMlS1c-MVrotDfuCJEIogSfiOPRnmxNJFRu2ZAmG239-gXf4LbjCEhYNZxCT7MSLOKbkO6JHgGjqzj9dXC1W49cUCC2XKNgpxYqmvaCKVHhIQ2HIkUeK2bfrgrwK4_I8Us5I",
+    offset: true,
+  },
+  {
+    label: "Literasi",
+    icon: "menu_book",
+    title: "Perpustakaan",
+    desc: "Koleksi literatur lengkap untuk menumbuhkan minat baca siswa.",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCJ9_5WM0FS3FZlKYGu5HGW-ZlpgDLA2CJumcxaCozVd6RE-cwfRSFRrlWBcIDlms49VqmQge-KXMkqFqZi5S_mGkVVjjr-hPdsue08SJBu1o37RjjjBFsORFrt1JHShO8AqbQsyoEBX5W6PtfoBrUF2CvgBVbhn6UY-bgkcKzGWJ_74ZMDf1rstjsMRjpSGDarCWOodtGumasDVykfq9nY2pbQpSERhiuw11Rx5aSLBrTsMaSePmU-",
+    offset: false,
+  },
+  {
+    label: "Olahraga",
+    icon: "sports_soccer",
+    title: "Area Bermain",
+    desc: "Fasilitas olahraga dan rekreasi yang aman dan menyenangkan.",
+    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDCOdTzaaKYKvxspAC8jGy07octd2-Kjkf7gz7hzEzVhYufka2ekVwzC8Ci_YKbCLs7GDxq7z9cbL_2gqJs7Ww7OoRFbBPTRUXn3fwuOl3xchqcUZ6H5OWRouC7IqOARzY8o0hLjfMDikW49Xpo-F-bnn_Plr27ejW5CNE8CV_oMDhr1zJt259iNSJr6tHahIpW-RUDjwS-N7bN9XWB-O3ve2lfJzE_owlCuOWLNM204ziXI0gua_80",
+    offset: true,
+  },
+];
+
+// ─── Reusable Section Header ─────────────────────────────────────────────────
+
+function SectionHeader({ badge, badgeIcon, title, highlight, subtitle }) {
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-display antialiased selection:bg-primary selection:text-white transition-colors duration-300">
+    <div className="text-center mb-20">
+      <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-secondary/10 border border-secondary/30 text-secondary font-bold tracking-[0.15em] uppercase text-[11px] mb-6 shadow-[0_0_20px_rgba(0,110,42,0.15)] animate-pulse">
+        <span className="material-symbols-outlined text-sm">{badgeIcon}</span>
+        <span>{badge}</span>
+      </div>
+
+      <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#004d40]/20" />
+        <div className="w-2 h-2 rotate-45 bg-secondary shadow-[0_0_10px_rgba(0,110,42,0.4)]" />
+        <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#004d40]/20" />
+      </div>
+
+      <h2 className="text-[40px] md:text-[56px] font-bold text-[#004d40] leading-tight tracking-tight font-serif">
+        {title} <span className="text-secondary">{highlight}</span>
+      </h2>
+
+      <div className="w-20 h-1.5 bg-gradient-to-r from-secondary to-[#004d40]/60 mx-auto mt-8 rounded-full opacity-80" />
+
+      {subtitle && (
+        <p className="text-base text-[#3f4945]/80 mt-8 max-w-2xl mx-auto leading-relaxed">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Islamic SVG Pattern (inline reusable) ───────────────────────────────────
+
+function IslamicPatternRect({ id }) {
+  return (
+    <svg
+      className="w-full h-full text-[#004d40]"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern id={id} height="20" patternUnits="userSpaceOnUse" width="20">
+          <path
+            d="M10 0 L12.2 7.8 L20 10 L12.2 12.2 L10 20 L7.8 12.2 L0 10 L7.8 7.8 Z"
+            fill="currentColor"
+          />
+        </pattern>
+      </defs>
+      <rect fill={`url(#${id})`} height="100%" width="100%" />
+    </svg>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function AboutPage() {
+  return (
+    <div className="bg-[#f8f9fa] text-[#191c1d] antialiased overflow-x-hidden font-sans">
+      {/* Global font + material icons */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-serif { font-family: Georgia, 'Times New Roman', serif; }
+      `}</style>
+
       <PublicNavbar />
 
-      {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-24 lg:pt-40 lg:pb-32 overflow-hidden bg-slate-50 dark:bg-background-dark transition-colors duration-300">
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(#0f766e 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        ></div>
-
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
-
-        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          {/* Breadcrumb Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 mb-8 rounded-full bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-800 shadow-sm text-sm font-medium text-slate-500 dark:text-slate-400">
-            <Link to="/" className="hover:text-primary transition-colors">
-              Beranda
-            </Link>
-            <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-primary font-bold">Profil Madrasah</span>
+      <main>
+        {/* ── Hero ──────────────────────────────────────────────────────────── */}
+        <section className="relative min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden">
+          {/* Background image + overlays */}
+          <div className="absolute inset-0 z-0">
+            <div
+              className="w-full h-full bg-cover bg-center scale-105"
+              style={{
+                backgroundImage:
+                  'url("https://lh3.googleusercontent.com/aida/AP1WRLuKOW3nwlHT71oVihJyFa4euXIx47L91oK_DC-WbFUzpFmk4PujU6CO_LyXVcSOu9fa_YpuSF4b0AKrBSALAyT8qFa3IbXuqmStCUB7ZBQNnI7aXDj6ApHdMlS1c-MVrotDfuCJEIogSfiOPRnmxNJFRu2ZAmG239-gXf4LbjCEhYNZxCT7MSLOKbkO6JHgGjqzj9dXC1W49cUCC2XKNgpxYqmvaCKVHhIQ2HIkUeK2bfrgrwK4_I8Us5I")',
+              }}
+            />
+            <div className="absolute inset-0 bg-[#004d40]/70 mix-blend-multiply" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#004d40]/40 via-transparent to-[#f8f9fa]" />
           </div>
 
-          {/* Main Title */}
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tight leading-tight">
-            Mengenal Lebih Dekat <br className="hidden md:block" />
-            <span className="text-madrasah-green dark:text-primary relative inline-block">
-              Nurul Huda 3
-              <svg
-                className="absolute w-full h-3 -bottom-1 left-0 text-secondary opacity-60"
-                viewBox="0 0 200 9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M2.00025 6.99997C25.7501 9.77491 55.986 3.2309 83 2.99999C114.735 2.72866 142.484 7.00003 197 7"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-          </h1>
+          {/* Hero Card */}
+          <div className="relative z-10 w-full max-w-4xl px-6">
+            <div className="group backdrop-blur-md bg-white/5 border border-white/10 p-8 md:p-16 rounded-xl shadow-2xl transition-all duration-700 hover:bg-white/10 hover:scale-[1.02]">
+              <div className="text-center">
+                {/* Accredited badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#006e2a]/20 text-[#69ff87] font-bold mb-8 border border-[#006e2a]/30 animate-pulse shadow-[0_0_15px_rgba(60,227,106,0.2)] text-sm">
+                  <span className="material-symbols-outlined text-sm">
+                    school
+                  </span>
+                  <span>Terakreditasi A</span>
+                </div>
 
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-light">
-            Sebuah ikhtiar merawat tradisi keilmuan Islam sambil menyongsong
-            kemajuan zaman dengan integritas dan inovasi.
-          </p>
-        </div>
-      </section>
+                {/* Main heading */}
+                <h1 className="text-5xl md:text-[72px] font-bold text-white mb-8 leading-[1.05] tracking-[-0.04em] drop-shadow-sm font-serif">
+                  Membangun Generasi <br />
+                  <span className="bg-gradient-to-r from-[#69ff87] via-[#006e2a] to-[#94d3c1] bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(60,227,106,0.4)]">
+                    Rabbani
+                  </span>
+                </h1>
 
-      {/* ── Sejarah Section ───────────────────────────────────────────────── */}
-      <section className="py-20 lg:py-28 bg-white dark:bg-background-dark relative overflow-hidden transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Image Box */}
-            <div className="relative group order-2 lg:order-1">
-              <div className="absolute inset-0 bg-secondary rounded-3xl rotate-3 opacity-20 group-hover:rotate-6 transition-transform duration-500"></div>
-              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800">
-                <img
-                  alt="Sejarah Pendirian MI Nurul Huda 3"
-                  className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCacB7aOolbGbG2aprspS8pKExudcy9WmHGB-2ppsYQhNu-GomTqMB90Jbbz60vP1IcLymoT0z9mr2J5OGAg27Yg8KoLvDim2LLvu2Ogqhh4lZkU0jjNBAzZz7x50--NTYWHgTSrixbGF57TRSVcqADWNaLSWZFm39BxuGvgbNt3jHvl3kV7-5M9JzSReYe1PItvj4flc8LWbyrZO-t6swyyxSzb7mp-y7iZ1SDJUmNtFSoq9Pr8-sc_5519k7mC4WpZlMhis-pzJtA"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60"></div>
-                <div className="absolute bottom-8 left-8 text-white">
-                  <p className="text-sm uppercase tracking-widest opacity-80 mb-1">
-                    Established
+                <p className="text-lg text-white mb-12 max-w-2xl mx-auto leading-relaxed opacity-95">
+                  Berdedikasi mencetak siswa-siswi yang unggul dalam IPTEK dan
+                  tangguh dalam IMTAQ, siap menghadapi tantangan global dengan
+                  nilai-nilai Islami yang luhur.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                  <a
+                    href="#sejarah"
+                    className="group/btn px-10 py-4 rounded-full bg-gradient-to-r from-[#006e2a] to-[#004d40] text-white font-bold hover:scale-105 hover:shadow-[0_0_30px_rgba(0,110,42,0.4)] transition-all duration-300 shadow-lg flex items-center justify-center gap-3 border border-white/10"
+                  >
+                    Jelajahi Profil
+                    <span className="material-symbols-outlined transition-transform duration-300 group-hover/btn:translate-y-1">
+                      arrow_downward
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Sejarah ───────────────────────────────────────────────────────── */}
+        <section
+          id="sejarah"
+          className="py-[120px] px-6 relative overflow-hidden bg-gradient-to-b from-[#f8f9fa] to-[#004d40]/5"
+        >
+          {/* Skewed background accent */}
+          <div className="absolute top-0 right-0 w-1/3 h-full bg-[#004d40]/5 -z-0 skew-x-12 transform translate-x-1/2" />
+
+          <div className="max-w-[1280px] mx-auto relative z-10 flex flex-col lg:flex-row items-center gap-12 lg:gap-0">
+            {/* ── Left: Content Card (overlapping) ── */}
+            <div className="w-full lg:w-5/12 lg:pr-8 relative z-30 lg:translate-x-12">
+              <div className="bg-white p-10 md:p-14 rounded-3xl shadow-xl border border-[#e1e3e4] relative overflow-hidden hover:-translate-y-2 hover:shadow-[0_20px_50px_-12px_rgba(0,52,43,0.15)] transition-all duration-500 ease-out">
+                {/* Decorative blur inside card */}
+                <div className="absolute -top-24 -left-24 w-48 h-48 bg-[#004d40]/5 rounded-full blur-3xl" />
+
+                {/* Badge */}
+                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-[#004d40]/5 border border-[#004d40]/10 mb-8 relative z-10">
+                  <span className="material-symbols-outlined text-[#004d40] text-[20px]">
+                    history_edu
+                  </span>
+                  <span className="text-[#004d40] font-bold tracking-[0.1em] uppercase text-xs">
+                    Warisan &amp; Sejarah
+                  </span>
+                </div>
+
+                {/* Heading */}
+                <div className="relative mb-8 z-10">
+                  <h2 className="text-4xl md:text-[48px] font-bold text-[#004d40] leading-[1.15] tracking-tight font-serif">
+                    Dedikasi <br />
+                    Pendidikan <br />
+                    <span className="text-[#5c3e00] relative inline-block italic font-serif">
+                      Sejak 1990
+                      <span className="absolute bottom-2 left-0 w-full h-2 bg-[#ffdeac]/30 -z-10 rounded-full" />
+                    </span>
+                  </h2>
+                </div>
+
+                {/* Body text */}
+                <div className="space-y-6 relative z-10">
+                  <p className="text-base text-[#3f4945] leading-relaxed font-medium">
+                    Berawal dari semangat warga setempat untuk menyediakan
+                    pendidikan dasar berbasis Islam yang berkualitas, MI Nurul
+                    Huda 3 didirikan pada tahun 1990. Perjalanan panjang telah
+                    membentuk kami menjadi institusi pendidikan yang matang dan
+                    berprestasi.
                   </p>
-                  <p className="text-4xl font-black">1985</p>
+                  <p className="text-sm text-[#3f4945]/80 leading-relaxed border-l-2 border-[#004d40]/20 pl-6 py-2">
+                    Dari masa ke masa, kami terus beradaptasi dengan
+                    perkembangan kurikulum nasional tanpa meninggalkan akar
+                    nilai-nilai keislaman. Kini, kami berdiri sebagai salah satu
+                    madrasah ibtidaiyah terkemuka yang dipercaya ratusan orang
+                    tua setiap tahunnya.
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Text Box */}
-            <div className="space-y-8 order-1 lg:order-2">
-              <div className="inline-block">
-                <h2 className="text-secondary font-bold tracking-widest text-sm uppercase mb-2">
-                  Sejarah Singkat
-                </h2>
-                <h3 className="text-3xl md:text-5xl font-black text-madrasah-green dark:text-white leading-tight tracking-tight">
-                  Perjalanan Keilmuan &amp;{" "}
-                  <span className="text-primary italic">Pengabdian.</span>
-                </h3>
-              </div>
+            {/* ── Right: Image ── */}
+            <div className="w-full lg:w-8/12 relative z-20">
+              <div className="relative group/premium">
+                {/* Decorative frames */}
+                <div className="absolute -inset-6 border-2 border-[#ffdeac]/30 rounded-[2rem] -z-10 transition-all duration-500 group-hover/premium:-inset-8 group-hover/premium:rotate-1" />
+                <div className="absolute -inset-3 bg-[#004d40]/5 rounded-[1.5rem] -z-10 transition-all duration-500 group-hover/premium:scale-105" />
 
-              <div className="space-y-4 text-slate-600 dark:text-slate-400 text-base md:text-lg leading-relaxed text-justify">
-                <p>
-                  MI Nurul Huda 3 didirikan pada tahun 1985 oleh para tokoh agama
-                  setempat yang memiliki visi besar untuk menghadirkan pendidikan
-                  dasar Islam berkualitas. Berawal dari bangunan sederhana,
-                  madrasah ini bertransformasi menjadi pusat peradaban kecil di
-                  lingkungan kami.
-                </p>
-                <p>
-                  Selama puluhan tahun, kami konsisten menjaga nilai-nilai luhur
-                  kepesantrenan (<em>At-Turats</em>) yang dipadukan harmonis
-                  dengan kurikulum modern. Perjalanan ini telah melahirkan ribuan
-                  alumni yang kini berkiprah membawa misi{" "}
-                  <em>Rahmatan lil 'Alamin</em>.
-                </p>
+                {/* Main image */}
+                <div className="relative overflow-hidden rounded-2xl border-4 border-[#004d40] shadow-2xl aspect-[4/3] md:aspect-[16/10] z-20 bg-[#edeeef] transition-all duration-500 group-hover/premium:shadow-[0_25px_50px_-12px_rgba(0,110,42,0.3)]">
+                  <img
+                    alt="Modern Islamic school campus"
+                    className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover/premium:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAL3Wvb1E-bLXHwWxa7n8h2DmbaP65RlaoU3u5ZH4911QUPuZ3fnJz9lL9tJfNIhFmqPAfbVgJ-UK0IegHSSnyOfz2KD3mB25TAsXZGt088qoiY9wTZfjb-qWWQ8B5YfIs70NiF1hI3zWVUHcbWOgl-2f3md_EW6qtnQc3-n7ltJNhJGsCG_YruIef7vL9rMWM1lq6Nk8SusUC_ED1beAtP0UsMGEsMdgZfTSourard-NWn4LpFmZuD"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#004d40]/60 via-transparent to-transparent opacity-60" />
+                </div>
+
+                {/* Floating info cards */}
+                <div className="absolute -right-6 top-1/4 z-30 flex flex-col gap-4 transition-transform duration-500 group-hover/premium:translate-x-2 hidden sm:flex">
+                  <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-[#004d40]/10 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#006e2a]/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[#006e2a]">
+                        verified
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-[#3f4945] font-bold">
+                        Akreditasi
+                      </p>
+                      <p className="text-sm font-bold text-[#004d40]">
+                        Unggul (A)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-[#ffdeac]/30 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#ffdeac]/20 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[#3f2900]">
+                        calendar_today
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-[#3f4945] font-bold">
+                        Berdiri
+                      </p>
+                      <p className="text-sm font-bold text-[#004d40]">
+                        Sejak 1990
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Visi & Misi Section ───────────────────────────────────────────── */}
-      <section className="py-24 bg-surface-light dark:bg-surface-dark relative transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black text-madrasah-green dark:text-white mb-4 tracking-tight">
-              Komitmen Kami
-            </h2>
-            <div className="w-20 h-1.5 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full"></div>
+        {/* ── Visi & Misi ──────────────────────────────────────────────────── */}
+        <section className="py-[120px] px-6 bg-[#f3f4f5] relative overflow-hidden">
+          {/* Background islamic pattern */}
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none">
+            <svg
+              className="w-full h-full"
+              viewBox="0 0 100 100"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <pattern
+                  height="40"
+                  id="islamic-pattern-v2"
+                  patternUnits="userSpaceOnUse"
+                  width="40"
+                >
+                  <path
+                    className="text-[#004d40]"
+                    d="M20 0 L24.4 15.6 L40 20 L24.4 24.4 L20 40 L15.6 24.4 L0 20 L15.6 15.6 Z"
+                    fill="#004d40"
+                  />
+                </pattern>
+              </defs>
+              <rect
+                fill="url(#islamic-pattern-v2)"
+                height="100%"
+                width="100%"
+              />
+            </svg>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {/* Visi Card */}
-            <div className="lg:col-span-2 bg-gradient-to-br from-madrasah-green to-[#0f4c3a] rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden flex flex-col justify-center shadow-xl">
-              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                <span className="material-symbols-outlined text-9xl">
-                  verified
+          <div className="max-w-[1280px] mx-auto relative z-10">
+            <SectionHeader
+              badge="Visi & Misi"
+              badgeIcon="star_rate"
+              title="Arah Langkah"
+              highlight="Institusi"
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+              {/* ── Visi Card ── */}
+              <div className="lg:col-span-5 flex">
+                <div className="relative group overflow-hidden rounded-[2rem] p-10 md:p-14 bg-[#004d40] flex flex-col justify-center shadow-2xl transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-3 hover:scale-[1.02] hover:shadow-[0_25px_50px_-12px_rgba(0,77,64,0.5)] w-full">
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(60,227,106,0.2),transparent_60%)] opacity-80" />
+                  {/* Islamic star watermark */}
+                  <div className="absolute inset-0 opacity-10">
+                    <svg
+                      viewBox="0 0 100 100"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-full h-full"
+                    >
+                      <path
+                        d="M50 0 L61 39 L100 50 L61 61 L50 100 L39 61 L0 50 L39 39 Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </div>
+
+                  <div className="relative z-10">
+                    {/* Icon */}
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 mb-10 shadow-xl transition-all duration-[600ms] group-hover:scale-125 group-hover:bg-[#006e2a]">
+                      <span className="material-symbols-outlined text-white text-[40px]">
+                        lightbulb
+                      </span>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="h-px w-8 bg-[#69ff87]/50" />
+                        <h3 className="text-2xl font-bold text-[#69ff87] font-serif tracking-tight">
+                          Visi Kami
+                        </h3>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute -left-6 -top-4 text-8xl text-white/10 font-serif pointer-events-none">
+                          "
+                        </span>
+                        <p className="text-lg leading-relaxed italic font-medium text-white/95">
+                          Terwujudnya peserta didik yang religius, berakhlak
+                          mulia, cerdas, terampil, dan peduli lingkungan
+                          berlandaskan ajaran Islam Ahlussunnah wal Jama'ah.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Misi Cards Grid ── */}
+              <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {misiList.map((m, idx) => (
+                  <div
+                    key={idx}
+                    className="group relative overflow-hidden bg-white/80 backdrop-blur-md p-8 rounded-2xl border border-[#e1e3e4]/50 shadow-sm hover:shadow-2xl hover:bg-[#004d40] hover:border-[#004d40] hover:-translate-y-2 transition-all duration-[500ms] ease-[cubic-bezier(0.25,0.8,0.25,1)]"
+                  >
+                    {/* Hover pattern */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-all duration-700 pointer-events-none z-0 scale-125 group-hover:scale-100">
+                      <IslamicPatternRect id={m.patternId} />
+                    </div>
+
+                    <div className="relative z-10">
+                      <div className="w-14 h-14 rounded-xl bg-[#004d40]/5 flex items-center justify-center mb-6 group-hover:bg-white/20 transition-all duration-[500ms] group-hover:scale-110">
+                        <span className="material-symbols-outlined text-3xl text-[#004d40] group-hover:text-white transition-colors duration-500">
+                          {m.icon}
+                        </span>
+                      </div>
+                      <h4 className="text-xl font-bold text-[#004d40] mb-3 font-serif group-hover:text-white transition-colors duration-500">
+                        {m.title}
+                      </h4>
+                      <p className="text-[#3f4945] leading-relaxed group-hover:text-white/90 transition-colors duration-500 text-sm">
+                        {m.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Fasilitas Unggulan ────────────────────────────────────────────── */}
+        <section className="py-[120px] px-6 relative overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(60,227,106,0.05),transparent_60%)]">
+          <div className="absolute inset-0 bg-[#004d40]/5 -z-10" />
+
+          <div className="max-w-[1280px] mx-auto">
+            <SectionHeader
+              badge="Lingkungan Belajar"
+              badgeIcon="home_work"
+              title="Fasilitas"
+              highlight="Unggulan"
+              subtitle="Menyediakan infrastruktur modern yang dirancang khusus untuk mendukung kenyamanan dan efektivitas proses belajar mengajar."
+            />
+
+            {/* CTA */}
+            <div className="text-center -mt-10 mb-16">
+              <Link
+                to="/gallery"
+                className="group/btn inline-flex items-center gap-3 px-8 py-3 rounded-full bg-white border border-[#004d40]/10 text-[#004d40] font-bold hover:bg-[#004d40] hover:text-white transition-all duration-300 shadow-sm hover:shadow-xl"
+              >
+                Lihat Semua
+                <span className="material-symbols-outlined transition-transform duration-300 group-hover/btn:translate-x-1">
+                  arrow_forward
                 </span>
-              </div>
-              <span className="inline-block py-1 px-3.5 rounded-lg bg-white/20 backdrop-blur-sm text-xs font-bold uppercase tracking-widest w-fit mb-6">
-                Visi
-              </span>
-              <h3 className="text-2xl md:text-3xl lg:text-4xl font-black leading-snug mb-6 italic">
-                "Terwujudnya generasi Qur'ani, Berakhlak Mulia, Cerdas, dan
-                Unggul."
-              </h3>
-              <p className="text-white/80 font-medium text-sm sm:text-base">
-                Menjadi mercusuar pendidikan yang menyeimbangkan IMTAQ dan IPTEK.
-              </p>
+              </Link>
             </div>
 
-            {/* Misi Card */}
-            <div className="lg:col-span-3 bg-white dark:bg-background-dark rounded-[2.5rem] p-8 md:p-10 shadow-lg border border-slate-100 dark:border-slate-800 flex flex-col justify-center transition-colors duration-300">
-              <span className="text-primary font-bold uppercase tracking-widest text-xs mb-8 block">
-                Misi Utama
-              </span>
-              <div className="grid gap-6">
-                <div className="flex group">
-                  <div className="shrink-0 mr-6">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xl group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                      1
-                    </div>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-slate-800 dark:text-white text-lg mb-1">
-                      Pendidikan Qur'ani
-                    </h5>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                      Pendidikan berbasis nilai-nilai Al-Qur'an dan As-Sunnah
-                      yang terintegrasi.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex group">
-                  <div className="shrink-0 mr-6">
-                    <div className="w-12 h-12 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center font-bold text-xl group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-                      2
-                    </div>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-slate-800 dark:text-white text-lg mb-1">
-                      Potensi Optimal
-                    </h5>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                      Mengembangkan potensi akademik dan non-akademik siswa secara
-                      seimbang.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex group">
-                  <div className="shrink-0 mr-6">
-                    <div className="w-12 h-12 rounded-2xl bg-madrasah-green/10 text-madrasah-green dark:bg-primary/20 dark:text-primary flex items-center justify-center font-bold text-xl group-hover:bg-madrasah-green group-hover:text-white transition-colors duration-300">
-                      3
-                    </div>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-slate-800 dark:text-white text-lg mb-1">
-                      Karakter Islami
-                    </h5>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                      Membentuk adab melalui pembiasaan ibadah harian yang
-                      terpantau.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Struktur Organisasi Section ──────────────────────────────────── */}
-      <section className="py-24 bg-white dark:bg-background-dark transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <span className="text-secondary font-bold tracking-wider text-sm uppercase">
-              Tim Manajemen
-            </span>
-            <h2 className="text-3xl md:text-4xl font-black text-madrasah-green dark:text-white mt-2 tracking-tight">
-              Struktur Organisasi
-            </h2>
-          </div>
-
-          {/* Headmaster Card */}
-          <div className="flex justify-center mb-16">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative flex flex-col items-center bg-white dark:bg-surface-dark p-8 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 max-w-sm text-center">
-                <div className="w-32 h-32 rounded-full p-1 border-2 border-dashed border-primary mb-6 overflow-hidden shrink-0">
-                  <img
-                    alt="Kepala Madrasah"
-                    className="w-full h-full object-cover rounded-full"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ28Ex1TbLdZyVmkpaqVM5eT-ZJrvon6g4c_-vT8AUWXXfKhMt0-K7KNuF4SMvakS7NwxLHyHM4U8vuA865DQAIgz4pP2kmkfQenthQKghjO63jUxVNIJwhbFmzyPkOBuLVwS1inQM_kW2vwq1q1J7u-Jylmp0soYbtFWJ_GmHswQLqV-mOY4KEZewjET4CSQE3jvQQoCwGUyFl_ea9k3yclCOC6ME41zYYezsK2xsuHdldxi1c9XNGJm81kYvK_gQSf9_6Kz4jxzy"
+            {/* Cards grid — staggered on lg */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {fasilitasList.map((f, idx) => (
+                <div
+                  key={idx}
+                  className={`group relative rounded-[2rem] overflow-hidden h-[400px] shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl${f.offset ? " lg:mt-8" : ""}`}
+                >
+                  {/* Background image */}
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    style={{ backgroundImage: `url("${f.img}")` }}
                   />
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#004d40] via-[#004d40]/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 w-full p-8 transform transition-transform duration-500 group-hover:-translate-y-2">
+                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center mb-4">
+                      <span className="material-symbols-outlined text-white">
+                        {f.icon}
+                      </span>
+                    </div>
+                    <h3 className="text-white font-bold text-2xl mb-2">
+                      {f.title}
+                    </h3>
+                    <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                      {f.desc}
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-2xl font-bold text-slate-800 dark:text-white mb-1">
-                  H. Ahmad Syarifuddin, M.Pd
-                </h4>
-                <p className="text-primary font-semibold text-sm mb-4">
-                  Kepala Madrasah
-                </p>
-                <p className="text-slate-500 dark:text-slate-400 text-sm italic">
-                  "Memimpin dengan hati, mendidik dengan keteladanan."
-                </p>
-              </div>
+              ))}
             </div>
           </div>
+        </section>
 
-          {/* Staff Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
-            {staffList.map((staff, idx) => (
-              <div
-                key={idx}
-                className="group bg-surface-light dark:bg-surface-dark rounded-2xl p-6 text-center hover:bg-white dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
-              >
-                <div className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4 grayscale group-hover:grayscale-0 transition-all duration-500">
-                  <img
-                    alt={staff.name}
-                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform"
-                    src={staff.img}
+        {/* ── Struktur Organisasi ───────────────────────────────────────────── */}
+        <section className="py-[120px] px-6 bg-gradient-to-b from-white to-[#f3f4f5] relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,77,64,0.03),transparent_50%)]" />
+
+          <div className="max-w-[1280px] mx-auto relative z-10">
+            <SectionHeader
+              badge="Kepemimpinan"
+              badgeIcon="group"
+              title="Struktur"
+              highlight="Organisasi"
+              subtitle="Tenaga pendidik profesional yang berdedikasi tinggi."
+            />
+
+            <div className="flex flex-col items-center justify-center">
+              {/* ── Kepala Sekolah ── */}
+              <div className="w-full max-w-md mb-12">
+                <div className="group relative overflow-hidden bg-white/70 backdrop-blur-md p-8 border border-[#004d40]/20 shadow-xl hover:shadow-[0_25px_50px_-12px_rgba(0,77,64,0.2)] transition-all duration-300 hover:-translate-y-2 text-center flex flex-col items-center rounded-3xl">
+                  {/* Hover pattern */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300 pointer-events-none z-0">
+                    <IslamicPatternRect id="islamic-star-pattern-head" />
+                  </div>
+
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="relative mb-6">
+                      <div className="absolute -inset-2 rounded-full border-2 border-dashed border-[#004d40]/30 group-hover:border-[#004d40] group-hover:rotate-12 transition-all duration-500 z-0" />
+                      <div className="absolute -inset-4 rounded-full bg-[#004d40]/5 group-hover:bg-[#004d40]/10 transition-colors duration-300 z-0" />
+                      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md relative z-10 group-hover:shadow-[0_0_15px_rgba(0,77,64,0.3)] transition-shadow duration-300">
+                        <img
+                          alt="Ahmad Fauzi, S.Pd.I., M.Pd."
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2ud0gt796s9butDPeOnoj15JYoX8swmHEko3XED303R6l6R2B-SgWNncjHPABTpRY3yldCIV6FYnYiI2pzsO0QzrD-UGXirKq8sVaXSOeJZqB8OcmYqjZezvwjigXCSAVdHKvI1PK9fQDIS9SU7BS-fNPaaaffYU_AMGRdxCSPmggX8EyfXxRjz8E6N-EJ9PH22swgZljNXRvYbaXQGj3lkqlD4BnOw6LizOUYkc6Ub208Nkjia_a"
+                        />
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#004d40] mb-2 font-serif group-hover:text-[#004d40] transition-colors duration-300">
+                      Ahmad Fauzi, S.Pd.I., M.Pd.
+                    </h3>
+                    <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#004d40]/10 text-[#004d40] font-bold text-sm tracking-wide">
+                      Kepala Sekolah
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Connector lines — desktop only */}
+              <div className="hidden lg:flex items-center justify-center w-full h-12 -mt-12 mb-4 relative z-0">
+                <svg
+                  className="w-[75%] h-full"
+                  viewBox="0 0 800 48"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M400 0V24H100V48M400 24H700V48M400 24H300V48M400 24H500V48"
+                    stroke="#004d40"
+                    strokeWidth="2"
+                    strokeDasharray="4 4"
+                    opacity="0.3"
                   />
-                </div>
-                <h5 className="font-bold text-slate-800 dark:text-white text-sm md:text-base mb-1">
-                  {staff.name}
-                </h5>
-                <p className="text-xs text-secondary font-medium uppercase tracking-wide">
-                  {staff.role}
-                </p>
+                </svg>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── Fasilitas Section ────────────────────────────────────────────── */}
-      <section className="py-24 bg-surface-light dark:bg-surface-dark overflow-hidden transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-black text-madrasah-green dark:text-white tracking-tight">
-                Fasilitas Unggulan
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-2 text-base sm:text-lg">
-                Infrastruktur modern untuk menunjang kenyamanan belajar.
-              </p>
-            </div>
+              {/* ── Staff Cards ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-[1000px]">
+                {staffList.map((s, idx) => (
+                  <div
+                    key={idx}
+                    className="group relative overflow-hidden bg-white/60 backdrop-blur-sm p-6 border border-[#004d40]/15 shadow-md hover:shadow-xl hover:shadow-[#004d40]/10 transition-all duration-300 hover:-translate-y-2 text-center flex flex-col items-center rounded-3xl hover:bg-white/90"
+                  >
+                    {/* Hover pattern */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300 pointer-events-none z-0">
+                      <IslamicPatternRect id={`islamic-star-staff-${idx}`} />
+                    </div>
 
-            <div className="hidden md:flex gap-2">
-              <button
-                onClick={() => scrollFacilities("left")}
-                className="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-primary hover:text-white hover:border-primary transition-colors cursor-pointer"
-                aria-label="Previous facility"
-              >
-                <span className="material-symbols-outlined">arrow_back</span>
-              </button>
-              <button
-                onClick={() => scrollFacilities("right")}
-                className="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-primary hover:text-white hover:border-primary transition-colors cursor-pointer"
-                aria-label="Next facility"
-              >
-                <span className="material-symbols-outlined">arrow_forward</span>
-              </button>
-            </div>
-          </div>
-
-          <div
-            ref={scrollContainerRef}
-            className="flex overflow-x-auto gap-8 pb-12 hide-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0"
-          >
-            {/* Facility 1 */}
-            <div className="min-w-[300px] md:min-w-[400px] snap-center bg-white dark:bg-background-dark rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group border border-slate-100 dark:border-slate-800">
-              <div className="h-56 overflow-hidden relative">
-                <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-black/80 backdrop-blur text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                  Literasi
-                </div>
-                <img
-                  alt="Perpustakaan Digital"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCacB7aOolbGbG2aprspS8pKExudcy9WmHGB-2ppsYQhNu-GomTqMB90Jbbz60vP1IcLymoT0z9mr2J5OGAg27Yg8KoLvDim2LLvu2Ogqhh4lZkU0jjNBAzZz7x50--NTYWHgTSrixbGF57TRSVcqADWNaLSWZFm39BxuGvgbNt3jHvl3kV7-5M9JzSReYe1PItvj4flc8LWbyrZO-t6swyyxSzb7mp-y7iZ1SDJUmNtFSoq9Pr8-sc_5519k7mC4WpZlMhis-pzJtA"
-                />
-              </div>
-              <div className="p-8">
-                <h4 className="text-2xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-primary transition-colors">
-                  Perpustakaan Digital
-                </h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed mb-6 text-sm">
-                  Akses ribuan buku digital dan fisik dalam ruangan yang nyaman,
-                  ber-AC, dan ramah anak.
-                </p>
-                <Link
-                  to="/gallery"
-                  className="inline-flex items-center text-sm font-bold text-secondary hover:text-yellow-600 transition-colors"
-                >
-                  Lihat Detail{" "}
-                  <span className="material-symbols-outlined text-base ml-1">
-                    arrow_forward
-                  </span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Facility 2 */}
-            <div className="min-w-[300px] md:min-w-[400px] snap-center bg-white dark:bg-background-dark rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group border border-slate-100 dark:border-slate-800">
-              <div className="h-56 overflow-hidden relative">
-                <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-black/80 backdrop-blur text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                  Teknologi
-                </div>
-                <img
-                  alt="Laboratorium Komputer"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ28Ex1TbLdZyVmkpaqVM5eT-ZJrvon6g4c_-vT8AUWXXfKhMt0-K7KNuF4SMvakS7NwxLHyHM4U8vuA865DQAIgz4pP2kmkfQenthQKghjO63jUxVNIJwhbFmzyPkOBuLVwS1inQM_kW2vwq1q1J7u-Jylmp0soYbtFWJ_GmHswQLqV-mOY4KEZewjET4CSQE3jvQQoCwGUyFl_ea9k3yclCOC6ME41zYYezsK2xsuHdldxi1c9XNGJm81kYvK_gQSf9_6Kz4jxzy"
-                />
-              </div>
-              <div className="p-8">
-                <h4 className="text-2xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-primary transition-colors">
-                  Laboratorium Komputer
-                </h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed mb-6 text-sm">
-                  Pusat pelatihan IT dengan perangkat terbaru untuk menunjang
-                  kecakapan digital (Coding &amp; Office).
-                </p>
-                <Link
-                  to="/gallery"
-                  className="inline-flex items-center text-sm font-bold text-secondary hover:text-yellow-600 transition-colors"
-                >
-                  Lihat Detail{" "}
-                  <span className="material-symbols-outlined text-base ml-1">
-                    arrow_forward
-                  </span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Facility 3 */}
-            <div className="min-w-[300px] md:min-w-[400px] snap-center bg-white dark:bg-background-dark rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group border border-slate-100 dark:border-slate-800">
-              <div className="h-56 overflow-hidden relative">
-                <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-black/80 backdrop-blur text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                  Ibadah
-                </div>
-                <img
-                  alt="Masjid Sekolah"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4QaNcxE8bJSa1Ct3hatwiIQgmCOgkCxPrImx6kKkwQI0DHn8NwuBCO38rq0xKRGOO1HLNnoTpbYtNVJ_1v96HbwoDJTbQ3PRYd53rtTKXMl1qWPOhZp4oAwSk8dumMEWu_Af8GK3zYJ1f868khF6DrgDIaRhy58KGtHp7j--XyqjyNEd-uXd0lTI5lRS36FMugX2ejfX3h_j-0u3x9Gl3ckNBXQzDAd5m2-iAEQUsfyOJq5FMyQnvS8o40vRr1CwnV8wwvamf2q5O"
-                />
-              </div>
-              <div className="p-8">
-                <h4 className="text-2xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-primary transition-colors">
-                  Masjid Sekolah
-                </h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed mb-6 text-sm">
-                  Pusat kegiatan keagamaan, shalat berjamaah Dhuha &amp; Dhuhur,
-                  serta tahfidz Al-Qur'an harian.
-                </p>
-                <Link
-                  to="/gallery"
-                  className="inline-flex items-center text-sm font-bold text-secondary hover:text-yellow-600 transition-colors"
-                >
-                  Lihat Detail{" "}
-                  <span className="material-symbols-outlined text-base ml-1">
-                    arrow_forward
-                  </span>
-                </Link>
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="relative mb-5">
+                        <div
+                          className={`absolute -inset-1.5 rounded-full border border-dashed border-[#004d40]/30 group-hover:border-[#004d40] group-hover:${s.rotate} transition-all duration-500 z-0`}
+                        />
+                        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-sm relative z-10 group-hover:shadow-[0_0_15px_rgba(0,77,64,0.2)] transition-shadow duration-300">
+                          <img
+                            alt={s.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            src={s.img}
+                          />
+                        </div>
+                      </div>
+                      <h4 className="font-bold text-lg text-[#004d40] mb-1">
+                        {s.name}
+                      </h4>
+                      <p className="text-sm text-[#3f4945]/80 font-medium bg-[#004d40]/5 px-3 py-1 rounded-full">
+                        {s.role}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <PublicFooter />
     </div>

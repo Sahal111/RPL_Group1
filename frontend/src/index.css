@@ -4,16 +4,24 @@
 
 
 @theme {
+  /* === Brand (landing template) === */
+  --color-brand-green: #00c853;
+  --color-brand-darkgreen: #004d40;
+  --color-brand-lightbg: #F8FAF9;
+  --color-brand-gold: #F2A900;
+
   /* === Color Tokens === */
-  --color-primary: #11d452;
-  --color-primary-dark: #0da640;
-  --color-secondary: #d4af37;
-  --color-madrasah-green: #0d3b23;
-  --color-madrasah-green-deep: #1B4332;
-  --color-background-light: #ffffff;
+  --color-primary: #00c853;
+  --color-primary-dark: #00a844;
+  --color-primary-container: #004d40;
+  --color-secondary: #F2A900;
+  --color-madrasah-green: #004d40;
+  --color-madrasah-green-deep: #00342b;
+  --color-background-light: #F8FAF9;
   --color-background-dark: #102216;
-  --color-surface-light: #f8fcf9;
+  --color-surface-light: #F8FAF9;
   --color-surface-dark: #1a3324;
+  --color-on-surface: #191c1d;
 
   /* Legacy colors */
   --color-primary-600: #2563eb;
@@ -179,7 +187,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-size: 0.875rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -310,19 +318,68 @@ input[type="datetime-local"] {
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+.glass-nav-scrolled {
+  background: rgba(0, 77, 64, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .dark .glass-nav {
-  background: rgba(16, 34, 22, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(16, 34, 22, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bg-islamic-pattern {
+  background-color: #f8f9fa;
+  background-image: radial-gradient(rgba(0, 77, 64, 0.05) 2px, transparent 2px);
+  background-size: 30px 30px;
+}
+
+.hero-gradient {
+  background: linear-gradient(to bottom, rgba(0, 77, 64, 0.5) 0%, rgba(0, 77, 64, 0.9) 100%);
+}
+
+.hero-fade {
+  background: linear-gradient(180deg, rgba(248, 250, 249, 0) 0%, rgba(248, 250, 249, 1) 100%);
+}
+
+.whatsapp-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 50;
+}
+@media (max-width: 768px) {
+  .whatsapp-btn {
+    bottom: 1.25rem;
+    right: 1rem;
+  }
+}
+
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .hero-pattern {
-  background-color: #0d3b23;
+  background-color: #004d40;
   background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+.shadow-soft {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+}
+.shadow-softer {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
 }
 
 .hide-scrollbar::-webkit-scrollbar {

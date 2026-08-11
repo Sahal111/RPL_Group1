@@ -54,6 +54,9 @@ import RekapAbsensiGuru from "./pages/guru/RekapAbsensiGuru";
 import JadwalMengajarGuru from "./pages/guru/JadwalMengajarGuru";
 import PengumumanGuru from "./pages/guru/PengumumanGuru";
 import ProfilGuru from "./pages/guru/ProfilGuru";
+import LmsMateri from "./pages/guru/lms/LmsMateri";
+import LmsTugas from "./pages/guru/lms/LmsTugas";
+import LmsUjian from "./pages/guru/lms/LmsUjian";
 
 // Kepsek
 import KepsekLayout from "./pages/kepsek/KepsekLayout";
@@ -199,6 +202,9 @@ export default function App() {
         <Route path="absensi" element={<InputAbsensi />} />
         <Route path="rekap-absensi" element={<RekapAbsensiGuru />} />
         <Route path="jadwal" element={<JadwalMengajarGuru />} />
+        <Route path="lms/materi" element={<LmsMateri />} />
+        <Route path="lms/tugas" element={<LmsTugas />} />
+        <Route path="lms/ujian" element={<LmsUjian />} />
         <Route path="pengumuman" element={<PengumumanGuru />} />
         <Route path="profil" element={<ProfilGuru />} />
       </Route>

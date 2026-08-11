@@ -1,6 +1,17 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../../components/layout/Sidebar";
-import { LayoutDashboard, ClipboardList, Users, BarChart3, CalendarDays, Megaphone, UserCircle } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Users,
+  BarChart3,
+  CalendarDays,
+  Megaphone,
+  UserCircle,
+  BookOpen,
+  ClipboardCheck,
+  FileQuestion,
+} from "lucide-react";
 
 const menus = [
   { path: "/guru", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -8,6 +19,9 @@ const menus = [
   { path: "/guru/absensi", label: "Input Absensi", icon: ClipboardList },
   { path: "/guru/rekap-absensi", label: "Rekap Absensi", icon: BarChart3 },
   { path: "/guru/jadwal", label: "Jadwal Mengajar", icon: CalendarDays },
+  { path: "/guru/lms/materi", label: "Materi", icon: BookOpen },
+  { path: "/guru/lms/tugas", label: "Tugas", icon: ClipboardCheck },
+  { path: "/guru/lms/ujian", label: "Ujian", icon: FileQuestion },
   { path: "/guru/pengumuman", label: "Pengumuman", icon: Megaphone },
   { path: "/guru/profil", label: "Profil Guru", icon: UserCircle },
 ];
