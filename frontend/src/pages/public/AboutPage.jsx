@@ -154,9 +154,6 @@ export default function AboutPage() {
     <div className="bg-[#f8f9fa] text-[#191c1d] antialiased overflow-x-hidden font-sans">
       {/* Global font + material icons */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .font-serif { font-family: Georgia, 'Times New Roman', serif; }
       `}</style>
 

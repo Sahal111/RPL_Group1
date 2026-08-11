@@ -71,13 +71,11 @@ export default function ContactPage() {
   return (
     <div
       style={{
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
         background: C.surface,
         color: C.onSurface,
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         .reveal-section { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
         .reveal-section.reveal-active { opacity: 1; transform: translateY(0); }
         .contact-input {
@@ -85,7 +83,7 @@ export default function ContactPage() {
           border: 1.5px solid ${C.outlineVariant}80;
           border-radius: 12px; font-size: 14px;
           background: #fff; color: ${C.onSurface};
-          font-family: inherit;
+          font-family: 'Plus Jakarta Sans', sans-serif;
           transition: border-color 0.2s, box-shadow 0.2s;
           outline: none;
         }

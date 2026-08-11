@@ -108,7 +108,9 @@
   --font-headline-lg-mobile: "Plus Jakarta Sans", sans-serif;
   --font-body-lg: "Inter", sans-serif;
   --font-label-md: "Inter", sans-serif;
-  --font-sans: "Inter", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-serif: "Plus Jakarta Sans", "Inter", sans-serif;
 
   /* Font Sizes — tuned for professional, compact UI */
   --text-headline-lg: 24px;

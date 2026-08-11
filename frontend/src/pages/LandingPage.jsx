@@ -29,7 +29,10 @@ const TESTIMONIALS = [
 
 export default function LandingPage() {
   return (
-    <div className="bg-brand-lightbg font-sans relative text-on-surface min-h-screen overflow-x-hidden" style={{ fontFamily: "'Plus Jakarta Sans', Inter, sans-serif" }}>
+    <div
+      className="bg-brand-lightbg font-sans relative text-on-surface min-h-screen overflow-x-hidden"
+      style={{}}
+    >
       <PublicNavbar />
 
       {/* Hero */}
