@@ -51,13 +51,14 @@ class PembayaranController extends Controller
 
     public function store(StorePembayaranRequest $request)
     {
-        $tagihan = Tagihan::findOrFail($request->tagihan_id);
+        $pembayaran = DB::transaction(function () use ($request) {
+            // Lock dulu sebelum baca status — cegah race condition concurrent payment
+            $tagihan = Tagihan::lockForUpdate()->findOrFail($request->tagihan_id);
 
-        if ($tagihan->status === 'lunas' || $tagihan->status === 'bebas') {
-            return $this->conflict('Tagihan ini sudah ' . $tagihan->status . '.');
-        }
+            if ($tagihan->status === 'lunas' || $tagihan->status === 'bebas') {
+                abort(409, 'Tagihan ini sudah ' . $tagihan->status . '.');
+            }
 
-        $pembayaran = DB::transaction(function () use ($request, $tagihan) {
             $pembayaran = Pembayaran::create([
                 ...$request->validated(),
                 'siswa_id' => $tagihan->siswa_id,
@@ -83,6 +84,7 @@ class PembayaranController extends Controller
             $pembayaran->load(['tagihan.jenisTagihan:id,nama_tagihan', 'siswa:id,nisn,nama']),
             'Pembayaran berhasil dicatat.'
         );
+
     }
 
     public function show($id)

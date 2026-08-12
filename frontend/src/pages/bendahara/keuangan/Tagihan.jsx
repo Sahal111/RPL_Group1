@@ -61,9 +61,8 @@ function FormTagihan({ onClose }) {
     siswa_id: "",
     jenis_tagihan_id: "",
     bulan: "",
-    tahun: new Date().getFullYear(),
     nominal_tagihan: "",
-    diskon: 0,
+    nominal_diskon: 0,
     keterangan: "",
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -151,17 +150,6 @@ function FormTagihan({ onClose }) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            Tahun
-          </label>
-          <input
-            type="number"
-            value={form.tahun}
-            onChange={(e) => set("tahun", e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
             Nominal (Rp)
           </label>
           <input
@@ -178,8 +166,8 @@ function FormTagihan({ onClose }) {
           </label>
           <input
             type="number"
-            value={form.diskon}
-            onChange={(e) => set("diskon", e.target.value)}
+            value={form.nominal_diskon}
+            onChange={(e) => set("nominal_diskon", e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
           />
         </div>
@@ -231,7 +219,6 @@ function FormGenerate({ onClose }) {
     jenis_tagihan_id: "",
     kelas_id: "",
     bulan: "",
-    tahun: new Date().getFullYear(),
     nominal_tagihan: "",
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -313,17 +300,6 @@ function FormGenerate({ onClose }) {
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Tahun
-          </label>
-          <input
-            type="number"
-            value={form.tahun}
-            onChange={(e) => set("tahun", e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-          />
         </div>
         <div className="col-span-2">
           <label className="block text-xs font-medium text-gray-600 mb-1">

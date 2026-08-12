@@ -291,7 +291,8 @@ export function useCreatePembayaranKeuangan() {
 export function useBatalkanPembayaran() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id) => api.patch(`/keuangan/pembayaran/${id}/batalkan`),
+    mutationFn: ({ id, alasan }) =>
+      api.patch(`/keuangan/pembayaran/${id}/batalkan`, { alasan }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keuanganKeys.pembayaran.lists() });
       qc.invalidateQueries({ queryKey: keuanganKeys.tagihan.lists() });

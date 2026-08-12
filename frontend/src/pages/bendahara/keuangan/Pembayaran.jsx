@@ -22,10 +22,12 @@ function FormPembayaran({ onClose }) {
   const [siswaId, setSiswaId] = useState("");
   const [tagihanList, setTagihanList] = useState([]);
   const [loadingTagihan, setLoadingTagihan] = useState(false);
+  const today = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     tagihan_id: "",
     nominal_bayar: "",
-    metode_pembayaran: "tunai",
+    tanggal_bayar: today,
+    metode_bayar: "tunai",
     catatan: "",
   });
   const create = useCreatePembayaranKeuangan();
@@ -124,15 +126,29 @@ function FormPembayaran({ onClose }) {
             Metode
           </label>
           <select
-            value={form.metode_pembayaran}
-            onChange={(e) => set("metode_pembayaran", e.target.value)}
+            value={form.metode_bayar}
+            onChange={(e) => set("metode_bayar", e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
           >
             <option value="tunai">Tunai</option>
             <option value="transfer">Transfer</option>
             <option value="qris">QRIS</option>
+            <option value="va">Virtual Account</option>
           </select>
         </div>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          Tanggal Bayar
+        </label>
+        <input
+          required
+          type="date"
+          value={form.tanggal_bayar}
+          max={today}
+          onChange={(e) => set("tanggal_bayar", e.target.value)}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+        />
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -169,6 +185,7 @@ export default function Pembayaran() {
   const [search, setSearch] = useState("");
   const [modalAdd, setModalAdd] = useState(false);
   const [batalkanId, setBatalkanId] = useState(null);
+  const [alasanBatal, setAlasanBatal] = useState("");
   const { data, isLoading } = usePembayaranKeuanganList(params);
   const batalkan = useBatalkanPembayaran();
 
@@ -253,7 +270,7 @@ export default function Pembayaran() {
               {items.map((item) => (
                 <tr
                   key={item.id}
-                  className={`hover:bg-gray-50 ${item.is_cancelled ? "opacity-50" : ""}`}
+                  className={`hover:bg-gray-50 ${item.status === "batal" ? "opacity-50" : ""}`}
                 >
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-800">
@@ -268,7 +285,7 @@ export default function Pembayaran() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                      {METODE[item.metode_pembayaran] ?? item.metode_pembayaran}
+                      {METODE[item.metode_bayar] ?? item.metode_bayar}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
@@ -277,7 +294,7 @@ export default function Pembayaran() {
                       : "–"}
                   </td>
                   <td className="px-4 py-3">
-                    {!item.is_cancelled && (
+                    {item.status !== "batal" && (
                       <div className="flex justify-end">
                         <button
                           onClick={() => setBatalkanId(item.id)}
@@ -330,13 +347,31 @@ export default function Pembayaran() {
       </Modal>
       <Confirm
         isOpen={Boolean(batalkanId)}
-        onClose={() => setBatalkanId(null)}
-        onConfirm={() => {
-          batalkan.mutate(batalkanId);
+        onClose={() => {
           setBatalkanId(null);
+          setAlasanBatal("");
+        }}
+        onConfirm={() => {
+          if (!alasanBatal.trim()) return;
+          batalkan.mutate({ id: batalkanId, alasan: alasanBatal });
+          setBatalkanId(null);
+          setAlasanBatal("");
         }}
         title="Batalkan Pembayaran"
-        message="Pembayaran akan dibatalkan dan status tagihan akan dikembalikan."
+        message={
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">
+              Pembayaran akan dibatalkan dan status tagihan dikembalikan.
+            </p>
+            <input
+              autoFocus
+              value={alasanBatal}
+              onChange={(e) => setAlasanBatal(e.target.value)}
+              placeholder="Alasan pembatalan (wajib)"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+            />
+          </div>
+        }
         confirmLabel="Batalkan"
       />
     </div>

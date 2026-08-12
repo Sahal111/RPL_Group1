@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Guru;
+namespace App\Http\Controllers\MasterData\Guru;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Guru\RiwayatAbsensiRequest;
+use App\Http\Requests\Guru\UpdateProfilGuruRequest;
 use App\Models\Kelas;
 use App\Models\RiwayatKelas;
-use App\Models\SiswaKelas;
 use App\Models\Absensi;
 use App\Models\Siswa;
 use App\Models\Guru;
@@ -106,7 +107,7 @@ class GuruController extends Controller
         $search = $request->search;
         $idKelasFilter = $request->kelas_id;
 
-        $query = SiswaKelas::with([
+        $query = RiwayatKelas::with([
             'siswa',
             'kelas',
             'siswa.orangTua',
@@ -182,7 +183,7 @@ class GuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $idKelasWali = Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->pluck('id')->toArray();
 
-        $isSiswaWali = SiswaKelas::whereHas('siswa', fn($q) => $q->where('nisn', $nisn))
+        $isSiswaWali = RiwayatKelas::whereHas('siswa', fn($q) => $q->where('nisn', $nisn))
             ->whereIn('kelas_id', $idKelasWali)
             ->aktif()
             ->exists();
@@ -296,7 +297,7 @@ class GuruController extends Controller
         $guru = Guru::where('nuptk', $nuptk)->firstOrFail();
         $kelas = Kelas::where('wali_kelas_id', $guru->id)->where('is_active', 1)->get()
             ->map(function ($k) {
-                $totalSiswa = SiswaKelas::where('kelas_id', $k->id)
+                $totalSiswa = RiwayatKelas::where('kelas_id', $k->id)
                     ->aktif()
                     ->count();
 
@@ -335,7 +336,7 @@ class GuruController extends Controller
             ->where('wali_kelas_id', $guru->id)
             ->firstOrFail();
 
-        $siswaList = SiswaKelas::with('siswa')
+        $siswaList = RiwayatKelas::with('siswa')
             ->where('kelas_id', $id_kelas)
             ->aktif()
             ->orderBy('no_absen')
@@ -381,13 +382,8 @@ class GuruController extends Controller
     // -------------------------------------------------------
     // RIWAYAT ABSENSI KELAS (per tanggal)
     // -------------------------------------------------------
-    public function riwayatAbsensi(Request $request, $id_kelas)
+    public function riwayatAbsensi(RiwayatAbsensiRequest $request, $id_kelas)
     {
-        $request->validate([
-            'bulan' => 'required|integer|between:1,12',
-            'tahun' => 'required|integer',
-        ]);
-
         $user = $request->user();
         $nuptk = $user->guru?->nuptk;
 
@@ -509,17 +505,9 @@ class GuruController extends Controller
     // -------------------------------------------------------
     // UPDATE PROFIL GURU
     // -------------------------------------------------------
-    public function updateProfil(Request $request)
+    public function updateProfil(UpdateProfilGuruRequest $request)
     {
         $user = User::find($request->user()->id);
-
-        $request->validate([
-            'email' => 'nullable|email|unique:users,email,' . $user->id,
-            'no_hp' => 'nullable|string|max:20',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'password_lama' => 'nullable|string',
-            'password_baru' => 'nullable|string|min:6|confirmed',
-        ]);
 
         if ($request->filled('password_baru')) {
             if (!$request->filled('password_lama')) {
