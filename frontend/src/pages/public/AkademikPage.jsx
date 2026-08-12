@@ -80,8 +80,7 @@ function KurikulumCard() {
       ref={cardRef}
       className="md:col-span-6 lg:col-span-5 rounded-3xl p-10 relative overflow-hidden group shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/10"
       style={{
-        background: "linear-gradient(135deg, #00342b, #004d40)",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l15 15-15 15L15 15zM0 30l15 15-15 15L-15 15zM60 30l15 15-15 15L45 15zM30 60l15 15-15 15L15 75z' fill='%23004d40' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+        background: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l15 15-15 15L15 15zM0 30l15 15-15 15L-15 15zM60 30l15 15-15 15L45 15zM30 60l15 15-15 15L15 75z' fill='%23004d40' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E") top left, linear-gradient(135deg, #00342b, #004d40)`,
       }}
     >
       {/* Particle container */}
@@ -164,13 +163,12 @@ export default function AkademikPage() {
           box-shadow: 0 20px 40px -10px rgba(0, 52, 43, 0.15);
           border-color: rgba(0, 52, 43, 0.3);
         }
-        .journey-circle {
-          transition: all 0.4s ease;
-        }
-        .group:hover .journey-circle {
-          box-shadow: 0 0 25px 5px rgba(0, 110, 42, 0.4);
-          transform: translateX(-50%) scale(1.15);
-        }
+       .journey-circle {
+  transition: box-shadow 0.4s ease;
+}
+.group:hover .journey-circle {
+  box-shadow: 0 0 25px 5px rgba(0, 110, 42, 0.4);
+}
       `}</style>
 
       <PublicNavbar />
