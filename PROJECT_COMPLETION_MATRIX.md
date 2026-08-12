@@ -1,242 +1,253 @@
-# 📊 PROJECT COMPLETION MATRIX
-
-**Last Updated:** 2026-08-09  
-**Overall Completion:** 68%  
-**Production Ready:** NO
+# PROJECT COMPLETION MATRIX — Scholara
+**Last Verified:** 2026-08-12 (cross-checked langsung ke source code)
+**Overall Completion:** ~62% (estimate setelah koreksi)
+**Production Ready:** PARTIAL — modul core sudah siap, modul lanjutan perlu verifikasi integrasi
 
 ---
 
 ## LEGEND
-
-**Status:**
-- ✅ COMPLETED — Feature fully implemented, tested, documented
-- 🟡 PARTIAL — Feature partially implemented or missing key components
-- 🔴 NOT IMPLEMENTED — Feature not started
-- 🟠 BROKEN — Feature implemented but has critical bugs
-- 🔵 NOT INTEGRATED — Feature exists but not connected to system
-
-**Priority:**
-- P0 — Critical blocker for production
-- P1 — High priority for production
-- P2 — Medium priority for quality
-- P3 — Low priority / nice to have
+- ✅ COMPLETED — Controller + Model + Routes + Frontend ada dan terhubung
+- 🟡 PARTIAL — Ada sebagian tapi belum fully integrated atau belum diverifikasi
+- 🔴 NOT IMPLEMENTED — Benar-benar belum ada
+- ⚠️ NEEDS VERIFICATION — Ada di backend dan frontend tapi integrasi belum dikonfirmasi
 
 ---
 
 ## OPERATOR FEATURES
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| OP-001 | Login & Authentication | Auth | ✅ | 100% | - | AuthController, LoginPage.jsx, Sanctum token | - |
-| OP-002 | Dashboard Operator | Core | ✅ | 100% | - | DashboardOperator.jsx | - |
-| OP-003 | Manajemen Akun (CRUD User) | Core | ✅ | 100% | - | OperatorController, ManajemenAkun.jsx | - |
-| OP-004 | Approval Orang Tua | Core | ✅ | 100% | - | approveOrtu method, ApprovalOrtu.jsx | - |
-| OP-005 | Master Data Guru — CRUD | Core | ✅ | 100% | - | GuruController, MasterGuru.jsx, 18 sub-tables | - |
-| OP-006 | Master Data Guru — Import Excel | Core | ✅ | 100% | - | GuruImportController (1335 lines), tested | Needs refactoring (P2) |
-| OP-007 | Master Data Guru — Export Excel | Core | ✅ | 100% | - | GuruExportController, pure-PHP xlsx | - |
-| OP-008 | Master Data Guru — Upload Foto | Core | ✅ | 100% | - | uploadFoto method, storage/foto-guru/ | - |
-| OP-009 | Master Data Siswa — CRUD | Core | ✅ | 100% | - | MasterDataSiswaController, MasterSiswa.jsx | - |
-| OP-010 | Master Data Siswa — Upload Foto | Core | ✅ | 100% | - | uploadFoto method, storage/foto-siswa/ | - |
-| OP-011 | Master Data Siswa — Assign Kelas | Core | ✅ | 100% | - | assignKelas method | - |
-| OP-012 | Master Data Siswa — Mutasi | Core | ✅ | 100% | - | MutasiSiswa.jsx | - |
-| OP-013 | Master Data Kelas — CRUD | Core | ✅ | 100% | - | MasterDataKelasController, MasterKelas.jsx | - |
-| OP-014 | Master Data Kelas — Detail Periode | Core | ✅ | 100% | - | DetailKelasPeriodeAkademik.jsx | - |
-| OP-015 | Master Data Orang Tua — CRUD | Core | ✅ | 100% | - | MasterDataOrtuController, MasterOrtu.jsx | - |
-| OP-016 | Master Data Orang Tua — Attach Anak | Core | ✅ | 100% | - | attachAnakOrtu method | - |
-| OP-017 | Master Data Mapel — CRUD | Core | ✅ | 100% | - | MasterDataMapelController, MasterMapel.jsx | - |
-| OP-018 | Master Data Mapel — Import/Export | Core | ✅ | 100% | - | Pure-PHP xlsx generation (no PhpSpreadsheet) | - |
-| OP-019 | Master Data Jadwal — CRUD | Core | ✅ | 100% | - | JadwalPelajaranController, MasterJadwal.jsx | - |
-| OP-020 | Master Data Tahun Ajaran — CRUD | Core | ✅ | 100% | - | TahunAjaranController (580 lines), complex | - |
-| OP-021 | Naik Kelas Massal | Core | ✅ | 100% | - | NaikKelasController, preview + proses | - |
-| OP-022 | Pengumuman — CRUD | Core | ✅ | 100% | - | PengumumanController, PengumumanOperator.jsx | - |
-| OP-023 | Galeri Foto — CRUD | Core | ✅ | 100% | - | GaleriController, GaleriOperator.jsx | - |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| OP-001 | Login & Authentication | ✅ | AuthController, LoginPage.jsx, Sanctum |
+| OP-002 | Dashboard Operator | ✅ | DashboardOperator.jsx |
+| OP-003 | Manajemen Akun (CRUD User) | ✅ | OperatorController, ManajemenAkun.jsx |
+| OP-004 | Approval Orang Tua | ✅ | approveOrtu method, ApprovalOrtu.jsx |
+| OP-005 | Master Data Guru — CRUD | ✅ | GuruController, MasterGuru.jsx |
+| OP-006 | Master Data Guru — Import Excel | ✅ | GuruImportController, GuruImportService (754 baris) |
+| OP-007 | Master Data Guru — Export Excel | ✅ | GuruExportService (562 baris), pure-PHP xlsx |
+| OP-008 | Master Data Guru — Upload Foto | ✅ | uploadFoto method |
+| OP-009 | Master Data Siswa — CRUD | ✅ | MasterDataSiswaController, MasterSiswa.jsx |
+| OP-010 | Master Data Siswa — Upload Foto | ✅ | uploadFoto method |
+| OP-011 | Master Data Siswa — Assign Kelas | ✅ | assignKelas method |
+| OP-012 | Master Data Siswa — Mutasi | ✅ | MutasiSiswa.jsx, MutasiGuruService |
+| OP-013 | Master Data Kelas — CRUD | ✅ | MasterDataKelasController, MasterKelas.jsx |
+| OP-014 | Master Data Kelas — Detail Periode | ✅ | DetailKelasPeriodeAkademik.jsx |
+| OP-015 | Master Data Orang Tua — CRUD | ✅ | MasterDataOrtuController, MasterOrtu.jsx |
+| OP-016 | Master Data Orang Tua — Attach Anak | ✅ | attachAnakOrtu method |
+| OP-017 | Master Data Mapel — CRUD | ✅ | MasterDataMapelController, MasterMapel.jsx |
+| OP-018 | Master Data Mapel — Import/Export | ✅ | Pure-PHP xlsx |
+| OP-019 | Master Data Jadwal — CRUD | ✅ | JadwalPelajaranController, MasterJadwal.jsx |
+| OP-020 | Master Data Tahun Ajaran — CRUD | ✅ | TahunAjaranController |
+| OP-021 | Naik Kelas Massal | ✅ | NaikKelasController |
+| OP-022 | Pengumuman — CRUD | ✅ | PengumumanController |
+| OP-023 | Galeri Foto — CRUD | ✅ | GaleriController |
 
 ---
 
 ## GURU FEATURES
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| GU-001 | Dashboard Guru | Core | ✅ | 100% | - | DashboardGuru.jsx | - |
-| GU-002 | Input Absensi | Core | ✅ | 100% | - | AbsensiController, InputAbsensi.jsx | - |
-| GU-003 | Rekap Absensi | Core | ✅ | 100% | - | rekap method, RekapAbsensiGuru.jsx | - |
-| GU-004 | Data Siswa | Core | ✅ | 100% | - | siswaSaya method, DataSiswaGuru.jsx | - |
-| GU-005 | Detail Siswa | Core | ✅ | 100% | - | detailSiswa method, DetailSiswaGuru.jsx | - |
-| GU-006 | Riwayat Absensi Siswa | Core | ✅ | 100% | - | riwayatAbsensi method, RiwayatAbsensiSiswaGuru.jsx | - |
-| GU-007 | Jadwal Mengajar | Core | ✅ | 100% | - | jadwalMengajar method, JadwalMengajarGuru.jsx | - |
-| GU-008 | Pengumuman Guru | Core | ✅ | 100% | - | PengumumanGuru.jsx | - |
-| GU-009 | Profil Guru | Core | ✅ | 100% | - | ProfilGuru.jsx, update password | - |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| GU-001 | Dashboard Guru | ✅ | DashboardGuru.jsx |
+| GU-002 | Input Absensi | ✅ | AbsensiController, InputAbsensi.jsx |
+| GU-003 | Rekap Absensi | ✅ | rekap method, RekapAbsensiGuru.jsx |
+| GU-004 | Data Siswa | ✅ | siswaSaya method, DataSiswaGuru.jsx |
+| GU-005 | Detail Siswa | ✅ | detailSiswa method, DetailSiswaGuru.jsx |
+| GU-006 | Riwayat Absensi Siswa | ✅ | riwayatAbsensi method |
+| GU-007 | Jadwal Mengajar | ✅ | jadwalMengajar method |
+| GU-008 | Pengumuman Guru | ✅ | PengumumanGuru.jsx |
+| GU-009 | Profil Guru | ✅ | ProfilGuru.jsx |
+| GU-010 | LMS — Materi | ⚠️ | LmsMateri.jsx + CourseMaterialController ada, integrasi belum diverifikasi |
+| GU-011 | LMS — Tugas | ⚠️ | LmsTugas.jsx + AssignmentController ada, integrasi belum diverifikasi |
+| GU-012 | LMS — Ujian | ⚠️ | LmsUjian.jsx + ExamController ada, integrasi belum diverifikasi |
 
 ---
 
 ## KEPSEK FEATURES
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| KS-001 | Dashboard Kepsek | Core | ✅ | 100% | - | DashboardKepsek.jsx | - |
-| KS-002 | Monitoring Absensi | Core | ✅ | 100% | - | MonitoringAbsensi.jsx | - |
-| KS-003 | Data Guru (read-only) | Core | ✅ | 100% | - | daftarGuru method, DataGuruKepsek.jsx | - |
-| KS-004 | Detail Guru (read-only) | Core | ✅ | 100% | - | detailGuru method, DetailGuruKepsek.jsx | - |
-| KS-005 | Data Siswa (read-only) | Core | ✅ | 100% | - | daftarSiswa method, DataSiswaKepsek.jsx | - |
-| KS-006 | Detail Siswa (read-only) | Core | ✅ | 100% | - | detailSiswa method, DetailSiswaKepsek.jsx | - |
-| KS-007 | Pengumuman — CRUD | Core | ✅ | 100% | - | PengumumanKepsek.jsx | - |
-| KS-008 | Kalender Akademik — CRUD | Core | ✅ | 100% | - | KalenderAkademikController, KalenderAkademik.jsx | - |
-| KS-009 | Profil Kepsek | Core | ✅ | 100% | - | ProfilKepsek.jsx | - |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| KS-001 | Dashboard Kepsek | ✅ | DashboardKepsek.jsx |
+| KS-002 | Monitoring Absensi | ✅ | MonitoringAbsensi.jsx |
+| KS-003 | Data Guru (read-only) | ✅ | daftarGuru method |
+| KS-004 | Detail Guru (read-only) | ✅ | detailGuru method |
+| KS-005 | Data Siswa (read-only) | ✅ | daftarSiswa method |
+| KS-006 | Detail Siswa (read-only) | ✅ | detailSiswa method |
+| KS-007 | Pengumuman — CRUD | ✅ | PengumumanKepsek.jsx |
+| KS-008 | Kalender Akademik — CRUD | ✅ | KalenderAkademikController |
+| KS-009 | Profil Kepsek | ✅ | ProfilKepsek.jsx |
 
 ---
 
 ## ORANG TUA FEATURES
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| OR-001 | Dashboard Ortu | Core | ✅ | 100% | - | OrtuController dashboard method | - |
-| OR-002 | Absensi Anak | Core | ✅ | 100% | - | AbsensiAnak.jsx | - |
-| OR-003 | Riwayat Absensi Anak | Core | ✅ | 100% | - | RiwayatAbsensiAnak.jsx | - |
-| OR-004 | Data Anak | Core | ✅ | 100% | - | DataAnak.jsx, daftarAnak method | - |
-| OR-005 | Tambah Anak (via kode) | Core | ✅ | 100% | - | tambahAnak method, TambahAnak.jsx | - |
-| OR-006 | Pengumuman Ortu | Core | ✅ | 100% | - | PengumumanOrtu.jsx | - |
-| OR-007 | Profil Ortu | Core | ✅ | 100% | - | ProfilOrtu.jsx, updateProfil method | - |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| OR-001 | Dashboard Ortu | ✅ | OrtuController |
+| OR-002 | Absensi Anak | ✅ | AbsensiAnak.jsx |
+| OR-003 | Riwayat Absensi Anak | ✅ | RiwayatAbsensiAnak.jsx |
+| OR-004 | Data Anak | ✅ | DataAnak.jsx |
+| OR-005 | Tambah Anak (via kode) | ✅ | tambahAnak method |
+| OR-006 | Pengumuman Ortu | ✅ | PengumumanOrtu.jsx |
+| OR-007 | Profil Ortu | ✅ | ProfilOrtu.jsx |
 
 ---
 
 ## PUBLIC FEATURES
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| PB-001 | Landing Page | Public | ✅ | 100% | - | LandingPage.jsx | - |
-| PB-002 | Galeri Publik | Public | ✅ | 100% | - | GalleryPage.jsx, GET /api/galeri | - |
-| PB-003 | Tentang | Public | ✅ | 100% | - | AboutPage.jsx | - |
-| PB-004 | Kontak | Public | ✅ | 100% | - | ContactPage.jsx | - |
-| PB-005 | Login Page | Public | ✅ | 100% | - | LoginPage.jsx | - |
-| PB-006 | Register Orang Tua | Public | ✅ | 100% | - | RegisterOrtuPage.jsx, throttle 10/min | - |
-
----
-
-## PLACEHOLDER ROLES (Partial Implementation)
-
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| WK-001 | Wali Kelas Dashboard | Placeholder | 🟡 | 10% | P0 | WaliKelasLayout + DashboardWaliKelas (UI only) | Backend routes + features OR remove role |
-| BD-001 | Bendahara Dashboard | Placeholder | 🟡 | 10% | P0 | BendaharaLayout + DashboardBendahara (UI only) | Backend routes + Keuangan module OR remove |
-| SW-001 | Siswa Portal Dashboard | Placeholder | 🟡 | 10% | P0 | SiswaLayout + DashboardSiswa (UI only) | Backend routes + Nilai module OR remove |
-| PP-001 | Admin PPDB Dashboard | Placeholder | 🟡 | 10% | P0 | AdminPpdbLayout + DashboardAdminPpdb (UI only) | Backend routes + PPDB module OR remove |
-| SA-001 | Super Admin Dashboard | Placeholder | 🟡 | 10% | P0 | SuperAdminLayout + DashboardSuperAdmin (UI only) | Backend routes + SaaS features OR remove |
-
----
-
-## AUTHENTICATION & AUTHORIZATION
-
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| AU-001 | Login | Auth | ✅ | 100% | - | AuthController, tested | - |
-| AU-002 | Logout | Auth | ✅ | 100% | - | AuthController | - |
-| AU-003 | Register Ortu | Auth | ✅ | 100% | - | registerOrtu method | - |
-| AU-004 | Token Auth (Sanctum) | Auth | ✅ | 100% | - | Bearer token, HttpOnly cookie | - |
-| AU-005 | Role-Based Access | Auth | ✅ | 100% | - | RoleMiddleware, 8 routes protected | - |
-| AU-006 | Multi-Role Support | Auth | ✅ | 100% | - | User can have multiple roles | - |
-| AU-007 | Account Activation | Auth | ✅ | 100% | - | is_active flag, toggleActive method | - |
-| AU-008 | Password Reset | Auth | 🔴 | 0% | P0 | NO implementation | Implement forgot password flow |
-| AU-009 | Email Verification | Auth | 🔴 | 0% | P1 | NO implementation | Add email verification |
-| AU-010 | Permission-Based Access | Auth | 🟡 | 50% | P0 | PermissionMiddleware exists but NOT USED | Refactor routes to use permission: |
-| AU-011 | 2FA / MFA | Auth | 🔴 | 0% | P3 | NO implementation | Future enhancement |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| PB-001 | Landing Page | ✅ | LandingPage.jsx |
+| PB-002 | Galeri Publik | ✅ | GalleryPage.jsx |
+| PB-003 | Tentang | ✅ | AboutPage.jsx |
+| PB-004 | Kontak | ✅ | ContactPage.jsx |
+| PB-005 | Login Page | ✅ | LoginPage.jsx |
+| PB-006 | Register Orang Tua | ✅ | RegisterOrtuPage.jsx |
+| PB-007 | PPDB Publik | ⚠️ | PpdbPage.jsx ada, backend CalonSiswaController ada |
 
 ---
 
 ## KEUANGAN MODULE
+> **Koreksi dari audit lama:** Keuangan BUKAN 0%. Backend dan frontend ada. Perlu verifikasi integrasi.
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| KU-001 | CRUD Jenis Tagihan | Keuangan | 🔴 | 0% | P0 | Table exists, NO model, NO controller | Implement OR drop table |
-| KU-002 | Generate Tagihan Siswa | Keuangan | 🔴 | 0% | P0 | Table exists, NO implementation | Implement OR drop table |
-| KU-003 | Input Pembayaran | Keuangan | 🔴 | 0% | P0 | Table exists, NO implementation | Implement OR drop table |
-| KU-004 | Laporan Keuangan | Keuangan | 🔴 | 0% | P2 | NO implementation | Implement if module kept |
-| KU-005 | Export Tagihan | Keuangan | 🔴 | 0% | P2 | NO implementation | Implement if module kept |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| KU-001 | CRUD Jenis Tagihan | ⚠️ | JenisTagihanController ✅ + JenisTagihan.jsx ✅ — perlu test integrasi |
+| KU-002 | Generate Tagihan Siswa | ⚠️ | TagihanController.generate() ✅ + Tagihan.jsx ✅ — perlu test integrasi |
+| KU-003 | Input Pembayaran | ⚠️ | PembayaranController.store() ✅ + Pembayaran.jsx ✅ — perlu test integrasi |
+| KU-004 | Dashboard Keuangan | ⚠️ | dashboardStats method ✅ + DashboardKeuangan.jsx ✅ |
+| KU-005 | Laporan Pembayaran | ⚠️ | laporan method ada, frontend perlu dikonfirmasi |
+| KU-006 | Batalkan Pembayaran | ⚠️ | batalkan method ada |
+| KU-007 | Laporan Tunggakan | ⚠️ | tunggakan method ada |
+| **MISSING** | Pessimistic locking di pembayaran | ❌ | Race condition risk — `lockForUpdate()` belum ada |
+| **MISSING** | Export Tagihan/Laporan | 🔴 | Belum ada |
 
 ---
 
 ## PPDB MODULE
+> **Koreksi dari audit lama:** PPDB BUKAN 0%. Ada backend dan frontend.
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| PP-002 | Form Pendaftaran Publik | PPDB | 🔴 | 0% | P0 | Table exists, NO implementation | Implement OR drop table |
-| PP-003 | Upload Berkas | PPDB | 🔴 | 0% | P0 | Table exists, NO implementation | Implement OR drop table |
-| PP-004 | Verifikasi Berkas | PPDB | 🔴 | 0% | P0 | NO implementation | Implement OR drop table |
-| PP-005 | Pengumuman Hasil | PPDB | 🔴 | 0% | P2 | NO implementation | Implement if module kept |
-| PP-006 | Konversi Calon → Siswa | PPDB | 🔴 | 0% | P2 | NO implementation | Implement if module kept |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| PP-001 | Admin PPDB Dashboard | 🟡 | DashboardAdminPpdb.jsx ada, backend minimal |
+| PP-002 | Calon Siswa — CRUD | ⚠️ | CalonSiswaController ✅ + PpdbCalonSiswa.jsx ✅ |
+| PP-003 | Upload Berkas | ⚠️ | BerkasPendaftarController ✅ |
+| PP-004 | Pembayaran PPDB | ⚠️ | PembayaranPpdbController ✅ + usePpdb.js ✅ |
+| PP-005 | Verifikasi Berkas | 🔴 | Belum diimplementasikan |
+| PP-006 | Pengumuman Hasil | 🔴 | Belum diimplementasikan |
+| PP-007 | Konversi Calon → Siswa | 🔴 | Belum diimplementasikan |
 
 ---
 
 ## LMS MODULE
+> **Koreksi dari audit lama:** LMS BUKAN 0%. Ada model, controller, dan frontend.
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| LM-001 | CRUD Course Materials | LMS | 🔴 | 0% | P0 | 9 tables exist, NO models | Implement OR drop tables |
-| LM-002 | CRUD Assignments | LMS | 🔴 | 0% | P0 | Tables exist, NO implementation | Implement OR drop tables |
-| LM-003 | Student Submissions | LMS | 🔴 | 0% | P0 | Tables exist, NO implementation | Implement OR drop tables |
-| LM-004 | CRUD Exams | LMS | 🔴 | 0% | P0 | Tables exist, NO implementation | Implement OR drop tables |
-| LM-005 | Exam Sessions | LMS | 🔴 | 0% | P0 | Tables exist, NO implementation | Implement OR drop tables |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| LM-001 | CRUD Course Materials | ⚠️ | CourseMaterial model ✅, CourseMaterialController ✅, LmsMateri.jsx ✅ |
+| LM-002 | CRUD Assignments | ⚠️ | Assignment model ✅, AssignmentController ✅, LmsTugas.jsx ✅ |
+| LM-003 | Student Submissions | ⚠️ | AssignmentSubmission model ✅ |
+| LM-004 | CRUD Exams | ⚠️ | Exam model ✅, ExamController ✅, LmsUjian.jsx ✅ |
+| LM-005 | Exam Questions & Answers | ⚠️ | ExamQuestion, ExamAnswer, ExamStudentSession models ✅ |
+| LM-006 | Portal Siswa — LMS | 🔴 | Tidak ada frontend siswa untuk konsumsi LMS |
 
 ---
 
 ## AKADEMIK (NILAI & RAPOR)
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| AK-001 | CRUD Komponen Penilaian | Akademik | 🔴 | 0% | P2 | NO tables, NO implementation | Implement when ready |
-| AK-002 | Input Nilai per Mapel | Akademik | 🔴 | 0% | P2 | NO implementation | Implement when ready |
-| AK-003 | Generate Rapor Semester | Akademik | 🔴 | 0% | P2 | NO implementation | Implement when ready |
-| AK-004 | Export Rapor PDF | Akademik | 🔴 | 0% | P3 | NO implementation | Implement when ready |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| AK-001 | Input Nilai | 🔴 | Tabel `nilais` ada di migration, model belum ada di app/Models/ |
+| AK-002 | Nilai Akhir | 🔴 | Tabel `nilai_akhirs` ada, model belum ada |
+| AK-003 | Generate Rapor | 🔴 | Tabel `rapors` ada, tidak ada controller/frontend |
+| AK-004 | Export Rapor PDF | 🔴 | Belum ada |
 
 ---
 
-## NOTIFICATION SYSTEM
+## AUTHENTICATION & AUTHORIZATION
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| NT-001 | In-App Notifications | Notification | 🔴 | 0% | P1 | Tables exist, NO implementation | Implement notification engine |
-| NT-002 | Email Notifications | Notification | 🔴 | 0% | P1 | NO implementation | Configure SMTP + templates |
-| NT-003 | Notification Templates | Notification | 🔴 | 0% | P1 | Table exists, NO implementation | Create templates |
-| NT-004 | WhatsApp Notifications | Notification | 🔴 | 0% | P3 | NO implementation | Optional integration |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| AU-001 | Login | ✅ | AuthController |
+| AU-002 | Logout | ✅ | AuthController |
+| AU-003 | Register Ortu | ✅ | registerOrtu method |
+| AU-004 | Token Auth (Sanctum) | ✅ | Bearer token |
+| AU-005 | Role-Based Access | ✅ | RoleMiddleware |
+| AU-006 | Multi-Role Support | ✅ | User multi-role |
+| AU-007 | Account Activation | ✅ | is_active flag |
+| AU-008 | Password Reset | ✅ | PasswordResetController ada (forgotPassword + resetPassword) — **bukan 0%** |
+| AU-009 | Email Verification | 🔴 | Belum ada |
+| AU-010 | Permission-Based Access | 🟡 | PermissionMiddleware ada DAN dipakai di 55+ routes |
+| AU-011 | 2FA / MFA | 🔴 | Future enhancement |
+
+---
+
+## PLACEHOLDER ROLES
+
+| ID | Role | Backend | Frontend | Status |
+|----|------|---------|----------|--------|
+| WK-001 | Wali Kelas | Route `walikelas` di operator untuk create | WaliKelasLayout.jsx | 🟡 Create user ada, fitur wali kelas sendiri belum |
+| BD-001 | Bendahara | `role:bendahara` routes di keuangan.php ✅ | BendaharaLayout + DashboardKeuangan | 🟡 Modul keuangan ada, perlu verifikasi end-to-end |
+| SW-001 | Siswa Portal | Tidak ada route siswa | SiswaLayout.jsx | 🔴 UI saja, tidak ada backend |
+| PP-001 | Admin PPDB | PPDB controllers ada | AdminPpdbLayout.jsx | 🟡 Partial |
+| SA-001 | Super Admin/SaaS | Partial di SaaS routes | SuperAdminLayout.jsx | 🟡 SaaS infrastructure ada, UI belum lengkap |
 
 ---
 
 ## TESTING & QA
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| TS-001 | Auth Tests | Testing | ✅ | 100% | - | AuthenticationTest.php (10 tests) | - |
-| TS-002 | Guru CRUD Tests | Testing | ✅ | 100% | - | GuruManagementTest.php (17 tests) | - |
-| TS-003 | Guru Import/Export Tests | Testing | ✅ | 100% | - | GuruExportImportTest.php (13 tests) | - |
-| TS-004 | Tenant Isolation Tests | Testing | ✅ | 100% | - | TenantIsolationTest.php (7 tests) | - |
-| TS-005 | Siswa CRUD Tests | Testing | 🔴 | 0% | P1 | NO tests | Write feature tests |
-| TS-006 | Kelas Tests | Testing | 🔴 | 0% | P1 | NO tests | Write feature tests |
-| TS-007 | Absensi Tests | Testing | 🔴 | 0% | P1 | NO tests | Write feature tests |
-| TS-008 | Mapel Tests | Testing | 🔴 | 0% | P1 | NO tests | Write feature tests |
-| TS-009 | Jadwal Tests | Testing | 🔴 | 0% | P1 | NO tests | Write feature tests |
-| TS-010 | Tahun Ajaran Tests | Testing | 🔴 | 0% | P1 | NO tests | Write feature tests |
-| TS-011 | Frontend Tests | Testing | 🔴 | 0% | P2 | NO test framework | Set up React Testing Library |
-| TS-012 | E2E Tests | Testing | 🔴 | 0% | P2 | NO E2E framework | Set up Playwright/Cypress |
+| ID | Test | Status | Evidence |
+|----|------|--------|---------|
+| TS-001 | Auth Tests | ✅ | AuthenticationTest.php |
+| TS-002 | Guru CRUD Tests | ✅ | GuruManagementTest.php |
+| TS-003 | Guru Import/Export Tests | ✅ | GuruExportImportTest.php |
+| TS-004 | Tenant Isolation Tests | ✅ | TenantIsolationTest.php |
+| TS-005 | Siswa Tests | 🔴 | Belum ada |
+| TS-006 | Kelas Tests | 🔴 | Belum ada |
+| TS-007 | Absensi Tests | 🔴 | Belum ada |
+| TS-008 | Keuangan Tests | 🔴 | Belum ada — perlu sebelum production |
+| TS-009 | Frontend Tests | 🔴 | Belum ada framework |
+| TS-010 | E2E Tests | 🔴 | Belum ada |
 
 ---
 
 ## DEVOPS & DEPLOYMENT
 
-| ID | Feature | Category | Status | Completion | Priority | Evidence | Remaining Work |
-|----|---------|----------|--------|------------|----------|----------|----------------|
-| DV-001 | CI/CD Pipeline | DevOps | 🔴 | 0% | P1 | NO .github/workflows | Set up GitHub Actions |
-| DV-002 | Docker Setup | DevOps | 🔴 | 0% | P1 | NO docker-compose.yml | Create Docker config |
-| DV-003 | Deployment Scripts | DevOps | 🔴 | 0% | P1 | NO automation | Create deploy scripts |
-| DV-004 | Database Backups | DevOps | 🔴 | 0% | P1 | NO automation | Configure automated backups |
-| DV-005 | Monitoring (Sentry) | DevOps | 🔴 | 0% | P1 | NO integration | Add Sentry |
-| DV-006 | Log Aggregation | DevOps | 🔴 | 0% | P2 | NO integration | Optional ELK/CloudWatch |
-| DV-007 | SSL/TLS Config | DevOps | 🔴 | 0% | P1 | NO docs | Document SSL setup |
-| DV-008 | Deployment Runbook | DevOps | 🟡 | 30% | P1 | Partial docs in 17-deployment-standard.md | Complete runbook |
+| ID | Feature | Status | Evidence |
+|----|---------|--------|---------|
+| DV-001 | CI/CD Pipeline | 🔴 | Tidak ada .github/workflows |
+| DV-002 | Docker Setup | 🔴 | Tidak ada docker-compose.yml |
+| DV-003 | Deployment Scripts | 🔴 | Belum ada |
+| DV-004 | Database Backups | 🔴 | Belum ada otomasi |
+| DV-005 | Monitoring (Sentry) | 🔴 | Belum ada integrasi |
+| DV-008 | Deployment Runbook | 🟡 | Partial di 17-deployment-standard.md |
 
 ---
 
-**TOTAL FEATURES TRACKED:** 115  
-**COMPLETED:** 54 (47%)  
-**PARTIAL:** 11 (10%)  
-**NOT IMPLEMENTED:** 50 (43%)
+## TECH DEBT
 
-**Next Update:** After completing P0 fixes
+| Item | Severity | Action |
+|------|----------|--------|
+| `SiswaKelas.php` deprecated, masih dipakai di GuruController | Medium | Migrate ke `RiwayatKelas`, hapus file |
+| `activity_logs` tanpa cleanup job | Medium | Buat scheduled command archiving |
+| Missing `lockForUpdate()` di PembayaranController | High | Tambah sebelum production |
+| Missing index `jatuh_tempo` di tagihans | Medium | Migration baru |
+| `doc3-api-contract.md` masih tulis `/api/v1/` | Low | Update docs |
+
+---
+
+## SUMMARY
+
+| Kategori | Completed | Partial/Needs Verify | Not Started |
+|----------|----------:|---------------------:|------------:|
+| Operator Core | 23 | 0 | 0 |
+| Guru Core | 9 | 3 (LMS) | 0 |
+| Kepsek | 9 | 0 | 0 |
+| Ortu | 7 | 0 | 0 |
+| Public | 6 | 1 | 0 |
+| Keuangan | 0 | 7 | 1 (export) |
+| PPDB | 0 | 4 | 3 |
+| LMS | 0 | 5 | 1 |
+| Akademik/Nilai | 0 | 0 | 4 |
+| Auth | 8 | 1 | 2 |
+| Testing | 4 | 0 | 6 |
+| DevOps | 0 | 1 | 6 |
