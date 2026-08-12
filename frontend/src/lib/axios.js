@@ -1,7 +1,16 @@
 import axios from "axios";
 
+// Satu sumber kebenaran untuk backend URL.
+// VITE_API_URL  → full URL termasuk /api  (contoh: http://127.0.0.1:8000/api)
+// VITE_BACKEND_URL → root URL tanpa /api  (contoh: http://127.0.0.1:8000)
+// Jika hanya VITE_BACKEND_URL yang diset, /api di-append otomatis.
+const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "http://127.0.0.1:8000";
+
+export const apiBaseUrl = import.meta.env.VITE_API_URL ?? `${backendUrl}/api`;
+export const backendBaseUrl = backendUrl;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8001/api",
+  baseURL: apiBaseUrl,
   headers: {
     Accept: "application/json",
   },
