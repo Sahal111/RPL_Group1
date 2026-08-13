@@ -18,19 +18,46 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
+        // Resolve school_id dari TenantMiddleware (sudah di-set dari subdomain)
+        $currentSchoolId = app()->bound('current_school_id')
+            ? app('current_school_id')
+            : null;
 
-        $user = User::withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)
+        $query = User::withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)
             ->with(['roles' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)])
             ->where(function ($q) use ($request) {
                 $q->where('username', $request->login)
                     ->orWhere('email', $request->login);
-            })
-            ->first();
+            });
+
+        // Kalau ada school_id dari subdomain → filter ketat per sekolah
+        // Kecuali super_admin yang boleh login dari mana saja (school_id = null)
+        if ($currentSchoolId) {
+            $query->where(function ($q) use ($currentSchoolId) {
+                $q->where('school_id', $currentSchoolId)
+                    ->orWhereNull('school_id'); // super_admin tidak punya school_id
+            });
+        }
+
+        $user = $query->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'login' => ['Username/email atau password salah.'],
             ]);
+        }
+
+        // Validasi cross-tenant: user dari sekolah lain tidak boleh masuk
+        // (error message sengaja sama — anti-enumeration)
+        if ($currentSchoolId && $user->school_id && $user->school_id !== $currentSchoolId) {
+            throw ValidationException::withMessages([
+                'login' => ['Username/email atau password salah.'],
+            ]);
+        }
+
+        // Kalau tidak ada subdomain, set current_school_id dari user (fallback mobile/localhost)
+        if (!$currentSchoolId && $user->school_id) {
+            app()->instance('current_school_id', $user->school_id);
         }
 
         if (!$user->is_active) {

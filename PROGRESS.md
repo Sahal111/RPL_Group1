@@ -125,3 +125,31 @@ FRONTEND_URL=http://localhost:5173
 VITE_BACKEND_URL=http://127.0.0.1:8000
 ```
 > ⚠️ Ada duplikat MAIL config di `.env` backend — hapus blok `MAIL_MAILER=log` yang lama.
+
+## ✅ [2026-08-13] Security Fix — Multi-Tenant Login (Cross-Tenant Prevention)
+
+### Scope
+Mencegah user dari sekolah A bisa login ke subdomain sekolah B.
+
+### Problem
+Method `login()` pakai `withoutGlobalScope(SchoolScope)` tanpa filter `school_id` → user dari sekolah manapun bisa login ke subdomain sekolah lain selama username/password cocok.
+
+### Fix
+**File:** `backend/app/Http/Controllers/Auth/AuthController.php`
+
+Logic baru di `login()`:
+1. Cek apakah ada `current_school_id` dari TenantMiddleware (subdomain)
+2. Kalau **ADA** subdomain → `WHERE school_id = current_school_id` (+ `orWhereNull` untuk super_admin)
+3. Double-check setelah user ditemukan: kalau `school_id` tidak cocok → tolak dengan pesan generik
+4. Kalau **TIDAK ADA** subdomain (localhost/mobile) → query tanpa filter, lalu set `current_school_id` dari user yang login (fallback)
+5. `super_admin` (`school_id = null`) dikecualikan — boleh login dari subdomain manapun
+
+### Yang Tidak Boleh Diubah
+- Jangan hapus `withoutGlobalScope(SchoolScope)` di query login — scope ini akan filter terlalu ketat sebelum kita apply filter manual
+- Jangan ubah pesan error cross-tenant ke pesan spesifik — harus tetap generik ("Username/email atau password salah") agar tidak membocorkan informasi bahwa user exists di sekolah lain (anti-enumeration)
+- Urutan logic: filter school_id → cek password → double-check cross-tenant → cek is_active
+
+### File yang Diubah
+| File | Perubahan |
+|------|-----------|
+| `backend/app/Http/Controllers/Auth/AuthController.php` | Tambah logika filter `school_id` di method `login()` |
