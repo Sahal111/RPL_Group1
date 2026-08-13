@@ -9,12 +9,27 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL ?? "http://127.0.0.1:8000";
 export const apiBaseUrl = import.meta.env.VITE_API_URL ?? `${backendUrl}/api`;
 export const backendBaseUrl = backendUrl;
 
+// Helper: baca nilai cookie by name
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
 const api = axios.create({
   baseURL: apiBaseUrl,
   headers: {
     Accept: "application/json",
   },
   withCredentials: true,
+});
+
+// Attach token dari cookie auth_token ke setiap request
+api.interceptors.request.use((config) => {
+  const token = getCookie('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // Token tidak perlu di-attach manual — browser otomatis kirim HttpOnly cookie

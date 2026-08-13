@@ -19,7 +19,8 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
 
-        $user = User::with('roles')
+        $user = User::withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)
+            ->with('roles')
             ->where(function ($q) use ($request) {
                 $q->where('username', $request->login)
                     ->orWhere('email', $request->login);
@@ -43,21 +44,19 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
         $user->update(['last_login_at' => now()]);
 
-        // Token dikirim via HttpOnly cookie — tidak bisa dibaca JavaScript (XSS-safe).
-        // Frontend TIDAK perlu menyimpan token di localStorage.
-        cookie()->queue(cookie(
+        $profile = $this->getProfile($user);
+
+        $cookie = cookie(
             name: 'auth_token',
             value: $token,
-            minutes: 60 * 24 * 7,   // 7 hari
+            minutes: 60 * 24 * 7,
             path: '/',
             domain: null,
             secure: app()->isProduction(),
             httpOnly: true,
             raw: false,
             sameSite: 'Lax',
-        ));
-
-        $profile = $this->getProfile($user);
+        );
 
         return response()->json([
             'success' => true,
@@ -73,7 +72,7 @@ class AuthController extends Controller
                     'profile' => $profile,
                 ],
             ],
-        ]);
+        ])->withCookie($cookie);
     }
 
     public function logout(Request $request)

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api, { backendBaseUrl } from "../lib/axios";
+import api from "../lib/axios";
 
 const AuthContext = createContext(null);
 
@@ -18,12 +18,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (loginVal, password) => {
-    // Sanctum SPA auth: harus ambil CSRF cookie dulu sebelum POST apapun.
-    // Tanpa ini → Laravel return 419 (CSRF token mismatch).
-    await api.get("/sanctum/csrf-cookie", {
-      baseURL: backendBaseUrl,
-    });
-
     const res = await api.post("/auth/login", {
       login: loginVal,
       password,

@@ -27,7 +27,7 @@ export default function LoginPage() {
     try {
       const user = await login(form.login, form.password);
 
-      toast.success(`Selamat datang, ${user.nama_lengkap}!`);
+      toast.success(`Selamat datang, ${user.nama}!`);
 
       // Redirect berdasarkan role
       const redirectMap = {
