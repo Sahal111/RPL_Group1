@@ -17,7 +17,7 @@ class RegisterOrtuRequest extends FormRequest
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'nama' => 'required|string|max:100',
+            'nama_lengkap' => 'required|string|max:100',
             'no_hp' => 'required|string|max:20',
             'nisn' => 'required|string|size:10|exists:siswas,nisn',
             'kode_sekolah' => 'required|string',

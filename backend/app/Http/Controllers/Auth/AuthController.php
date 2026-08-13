@@ -98,14 +98,16 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'nama' => $user->name,
-                'role' => $user->getRoleSlug(),
-                'foto' => $user->foto,
-                'last_login' => $user->last_login_at,
-                'profile' => $profile,
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'nama' => $user->name,
+                    'role' => $user->getRoleSlug(),
+                    'foto' => $user->foto,
+                    'last_login' => $user->last_login_at,
+                    'profile' => $profile,
+                ],
             ],
         ]);
     }
@@ -133,7 +135,7 @@ class AuthController extends Controller
         DB::transaction(function () use ($request, $siswa) {
             // Buat user tanpa role_id (skema baru pakai user_roles)
             $user = User::create([
-                'name' => $request->nama,
+                'name' => $request->nama_lengkap,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
@@ -147,7 +149,7 @@ class AuthController extends Controller
             // Buat record orang_tua
             $ortu = OrangTua::create([
                 'user_id' => $user->id,
-                'nama' => $request->nama,
+                'nama' => $request->nama_lengkap,
                 'hubungan' => $request->hubungan,
                 'no_hp' => $request->no_hp,
             ]);
