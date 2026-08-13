@@ -49,7 +49,7 @@ Sistem autentikasi lengkap: login multi-role, register orang tua, forgot/reset p
 
 **Bug 3 — `MasterData/Guru/GuruController` isi salah (500 di dashboard operator)**
 - Files: `Guru/GuruProfileController.php` + `routes/api/master-data.php`
-- Problem: route operator `/master-data/guru` pakai `MasterGuruController` yang ternyata isinya method portal guru (bukan CRUD master data) → 500 karena method `index()` tidak ada
+- Problem: route operator `/master-data/guru` pakai `MasterGuruController` yang isinya method portal guru bukan CRUD → 500 karena `index()` tidak ada
 - Fix: ganti import di route ke `GuruProfileController`, tambahkan 12 method yang kurang, fix `show()` & `update()` pakai `$nuptk`
 
 ### File yang Diubah
@@ -65,6 +65,36 @@ Sistem autentikasi lengkap: login multi-role, register orang tua, forgot/reset p
 - Field `nama_lengkap` di `RegisterOrtuRequest` — jangan dikembalikan ke `nama`
 - Import `MasterGuruController` di `master-data.php` — harus tetap dari `GuruProfileController`
 - Method `show()` dan `update()` di `GuruProfileController` — harus pakai `$nuptk`
+
+---
+
+## ✅ [2026-08-13] Security Fix — Multi-Tenant Login (Cross-Tenant Prevention)
+
+### Scope
+Mencegah user dari sekolah A bisa login ke subdomain sekolah B.
+
+### Problem
+Method `login()` pakai `withoutGlobalScope(SchoolScope)` tanpa filter `school_id` → user dari sekolah manapun bisa login ke subdomain sekolah lain selama username/password cocok.
+
+### Fix
+**File:** `backend/app/Http/Controllers/Auth/AuthController.php`
+
+Logic baru di `login()`:
+1. Cek apakah ada `current_school_id` dari TenantMiddleware (subdomain)
+2. Kalau **ADA** subdomain → `WHERE school_id = current_school_id` (+ `orWhereNull` untuk super_admin)
+3. Double-check setelah user ditemukan: kalau `school_id` tidak cocok → tolak dengan pesan generik
+4. Kalau **TIDAK ADA** subdomain (localhost/mobile) → query tanpa filter, lalu set `current_school_id` dari user yang login (fallback)
+5. `super_admin` (`school_id = null`) dikecualikan — boleh login dari subdomain manapun
+
+### Yang Tidak Boleh Diubah
+- Jangan hapus `withoutGlobalScope(SchoolScope)` di query login — tanpa ini query akan error sebelum filter manual sempat jalan
+- Pesan error cross-tenant harus tetap generik (`'Username/email atau password salah.'`) — anti-enumeration, jangan bocorkan bahwa user exist di sekolah lain
+- Urutan logic wajib: filter school_id → cek password → double-check cross-tenant → cek is_active
+
+### File yang Diubah
+| File | Perubahan |
+|------|-----------|
+| `backend/app/Http/Controllers/Auth/AuthController.php` | Tambah logika filter `school_id` di method `login()` |
 
 ---
 
@@ -125,31 +155,3 @@ FRONTEND_URL=http://localhost:5173
 VITE_BACKEND_URL=http://127.0.0.1:8000
 ```
 > ⚠️ Ada duplikat MAIL config di `.env` backend — hapus blok `MAIL_MAILER=log` yang lama.
-
-## ✅ [2026-08-13] Security Fix — Multi-Tenant Login (Cross-Tenant Prevention)
-
-### Scope
-Mencegah user dari sekolah A bisa login ke subdomain sekolah B.
-
-### Problem
-Method `login()` pakai `withoutGlobalScope(SchoolScope)` tanpa filter `school_id` → user dari sekolah manapun bisa login ke subdomain sekolah lain selama username/password cocok.
-
-### Fix
-**File:** `backend/app/Http/Controllers/Auth/AuthController.php`
-
-Logic baru di `login()`:
-1. Cek apakah ada `current_school_id` dari TenantMiddleware (subdomain)
-2. Kalau **ADA** subdomain → `WHERE school_id = current_school_id` (+ `orWhereNull` untuk super_admin)
-3. Double-check setelah user ditemukan: kalau `school_id` tidak cocok → tolak dengan pesan generik
-4. Kalau **TIDAK ADA** subdomain (localhost/mobile) → query tanpa filter, lalu set `current_school_id` dari user yang login (fallback)
-5. `super_admin` (`school_id = null`) dikecualikan — boleh login dari subdomain manapun
-
-### Yang Tidak Boleh Diubah
-- Jangan hapus `withoutGlobalScope(SchoolScope)` di query login — scope ini akan filter terlalu ketat sebelum kita apply filter manual
-- Jangan ubah pesan error cross-tenant ke pesan spesifik — harus tetap generik ("Username/email atau password salah") agar tidak membocorkan informasi bahwa user exists di sekolah lain (anti-enumeration)
-- Urutan logic: filter school_id → cek password → double-check cross-tenant → cek is_active
-
-### File yang Diubah
-| File | Perubahan |
-|------|-----------|
-| `backend/app/Http/Controllers/Auth/AuthController.php` | Tambah logika filter `school_id` di method `login()` |
