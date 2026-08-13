@@ -44,6 +44,12 @@ class RoleMiddleware
 
         // User bisa punya lebih dari satu role (misal: guru + wali_kelas).
         // Izinkan akses kalau SALAH SATU role user cocok dengan role yang diizinkan route ini.
+        // Load roles dengan bypass SchoolScope — scope aktif sebelum TenantMiddleware
+// resolve school_id dari user, sehingga roles akan kosong tanpa bypass ini.
+        if (!$user->relationLoaded('roles')) {
+            $user->load(['roles' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)]);
+        }
+
         $userSlugs = $user->roles->pluck('slug');
 
         if ($userSlugs->contains('super_operator') || $userSlugs->intersect($roles)->isNotEmpty()) {

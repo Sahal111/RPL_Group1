@@ -53,7 +53,8 @@ class User extends Authenticatable
 
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
+        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id')
+            ->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class);
     }
 
     public function getRoleSlug(): ?string
@@ -79,8 +80,11 @@ class User extends Authenticatable
 
     public function getAllPermissions(): \Illuminate\Support\Collection
     {
-        if (!$this->relationLoaded('roles')) {
-            $this->load('roles.permissions');
+        if (!$this->relationLoaded('roles') || $this->roles->isEmpty()) {
+            $this->load([
+                'roles' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class),
+                'roles.permissions' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class),
+            ]);
         }
 
         return $this->roles

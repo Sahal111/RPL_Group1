@@ -20,7 +20,7 @@ class AuthController extends Controller
     {
 
         $user = User::withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)
-            ->with('roles')
+            ->with(['roles' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)])
             ->where(function ($q) use ($request) {
                 $q->where('username', $request->login)
                     ->orWhere('email', $request->login);
@@ -92,7 +92,7 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        $user = $request->user()->load('roles');
+        $user = $request->user()->load(['roles' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class)]);
         $profile = $this->getProfile($user);
 
         return response()->json([

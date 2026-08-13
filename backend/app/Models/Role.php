@@ -32,7 +32,8 @@ class Role extends Model
 
     public function permissions()
     {
-        return $this->belongsToMany(Permission::class, 'role_permissions', 'role_id', 'permission_id');
+        return $this->belongsToMany(Permission::class, 'role_permissions', 'role_id', 'permission_id')
+            ->withoutGlobalScope(\App\Models\Scopes\SchoolScope::class);
     }
 
     public function scopeAktif($query)

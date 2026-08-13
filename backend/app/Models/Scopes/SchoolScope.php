@@ -38,10 +38,17 @@ class SchoolScope implements Scope
         if ($schoolId !== null) {
             $builder->where($model->getTable() . '.school_id', $schoolId);
         } else {
-            // Fail-closed: jika tenant tidak terresolve, blokir seluruh query.
-            // Bypass hanya via withoutGlobalScope(SchoolScope::class) oleh
-            // PlatformAdminController, Artisan Command, atau SchoolProvisioningService.
-            $builder->whereRaw('1 = 0');
+            // Coba resolve dari authenticated user sebagai fallback.
+            // Ini handle kasus TenantMiddleware belum resolve school_id
+            // tapi user sudah ter-auth via Sanctum.
+            $user = auth('sanctum')->user();
+            if ($user && $user->school_id) {
+                app()->instance('current_school_id', $user->school_id);
+                $builder->where($model->getTable() . '.school_id', $user->school_id);
+            } else {
+                // Benar-benar tidak ada tenant — fail-closed.
+                $builder->whereRaw('1 = 0');
+            }
         }
     }
 }
