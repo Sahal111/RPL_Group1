@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\MasterData\Guru\GuruAdministrasiController;
-use App\Http\Controllers\MasterData\Guru\GuruController as MasterGuruController;
+use App\Http\Controllers\Guru\GuruProfileController as MasterGuruController;
 use App\Http\Controllers\MasterData\Guru\GuruDokumenController as MasterGuruDokumenController;
 use App\Http\Controllers\MasterData\Guru\GuruExportController;
 use App\Http\Controllers\MasterData\Guru\GuruImportController;
