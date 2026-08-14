@@ -5,22 +5,14 @@
 ## Status Saat Ini
 
 Project sudah punya fondasi yang berjalan:
-- Auth (Sanctum, role-based)
-- Master Data Guru (lengkap — identitas, kepegawaian, DMS, import/export)
-- Master Data Siswa
-- Master Data Kelas, Mapel, Jadwal, Tahun Ajaran
-- Absensi siswa
-- Portal Guru, Kepsek, Ortu, WaliKelas, Bendahara (sebagian)
-- React frontend dengan layout per role
-
-**Yang belum ada tapi harus ada sebelum bisa scale:**
-- `school_id` di semua tabel (multi-tenant)
-- Form Request (semua validasi masih inline)
-- ApiResponse trait (response belum konsisten)
-- SchoolScope (Global Scope)
-- Permission-based middleware (masih role-based)
-- Reusable UI components
-- Route terpisah per domain
+- ✅ Auth lengkap: login multi-role, register ortu, forgot/reset password via email
+- ✅ Multi-tenant login: cross-tenant prevention via subdomain + SchoolScope
+- ✅ 14 role sistem: super_operator, operator, kepsek, wakasek, guru, guru_bk, wali_kelas, bendahara, admin_keuangan, tata_usaha, pustakawan, ortu, siswa, admin_ppdb
+- ✅ DB + Model untuk modul BK, Perpustakaan, Surat/TU
+- ✅ Master Data Guru (GuruProfileController — index, show, store, update, destroy, dll)
+- ✅ Master Data Siswa, Kelas, Mapel, Jadwal, Tahun Ajaran
+- ✅ Portal Guru, Kepsek, Ortu, WaliKelas, Bendahara (sebagian)
+- ✅ React frontend dengan layout per role + redirectMap 14 role
 
 ---
 

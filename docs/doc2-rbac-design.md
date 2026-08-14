@@ -36,21 +36,24 @@ Setelah itu, operator sekolah bisa tambah/hapus/edit sesuai kebutuhan.
 Ini adalah role yang otomatis dibuat saat sekolah baru terdaftar.
 `is_system = 1` artinya tidak bisa dihapus, hanya bisa dinonaktifkan.
 
-| slug           | nama               | is_system | Deskripsi                                     |
-|----------------|--------------------|-----------|-----------------------------------------------|
-| super_operator | Operator Utama     | 1         | Akses penuh ke semua fitur sekolah            |
-| operator       | Operator           | 1         | Kelola master data, akun, pengumuman          |
-| kepsek         | Kepala Sekolah     | 1         | Read-only semua data + approve dokumen        |
-| guru           | Guru               | 1         | Data siswa kelas sendiri + absensi + profil   |
-| wali_kelas     | Wali Kelas         | 1         | Sama seperti guru + catatan wali kelas        |
-| bendahara      | Bendahara          | 1         | Modul keuangan + tagihan + pembayaran         |
-| ortu           | Orang Tua          | 1         | Portal orang tua — data anak + absensi        |
-| admin_ppdb     | Admin PPDB         | 1         | Modul PPDB — pendaftaran + seleksi            |
+| slug            | nama                      | is_system | Deskripsi                                              |
+|-----------------|---------------------------|-----------|--------------------------------------------------------|
+| super_operator  | Operator Utama            | 1         | Akses penuh ke semua fitur sekolah                     |
+| operator        | Operator                  | 1         | Kelola master data, akun, pengumuman                   |
+| kepsek          | Kepala Sekolah            | 1         | Read-only semua data + approve dokumen                 |
+| wakasek         | Wakil Kepala Sekolah      | 1         | Hampir setara kepsek — manage kurikulum & kesiswaan    |
+| guru            | Guru                      | 1         | Data siswa kelas sendiri + absensi + profil            |
+| guru_bk         | Guru BK                   | 1         | Konseling siswa + catatan BK — tidak bisa lihat nilai  |
+| wali_kelas      | Wali Kelas                | 1         | Sama seperti guru + rapor siswa kelasnya               |
+| bendahara       | Bendahara                 | 1         | Modul keuangan + tagihan + laporan keuangan            |
+| admin_keuangan  | Admin Keuangan            | 1         | Input tagihan & pembayaran — tidak bisa approve        |
+| tata_usaha      | Tata Usaha                | 1         | Surat, arsip, legalisir — tidak akses data nilai       |
+| pustakawan      | Pustakawan                | 1         | Kelola buku & peminjaman perpustakaan                  |
+| ortu            | Orang Tua                 | 1         | Portal orang tua — data anak + absensi                 |
+| siswa           | Siswa                     | 1         | Portal siswa — profil, nilai, jadwal, tagihan          |
+| admin_ppdb      | Admin PPDB                | 1         | Modul PPDB — pendaftaran + seleksi                     |
 
-Operator sekolah bisa tambah role custom, misal:
-- `wakil_kepsek` — Wakil Kepala Sekolah
-- `tata_usaha` — Tata Usaha
-- `perpustakaan` — Petugas Perpustakaan (kalau plugin aktif)
+Operator sekolah bisa tambah role custom sesuai kebutuhan spesifik sekolah.
 
 ---
 
@@ -182,6 +185,41 @@ laporan.keuangan.view
 laporan.export
 ```
 
+### Modul: bk (Bimbingan Konseling)
+```
+bk.konseling.view       -- lihat sesi konseling
+bk.konseling.create     -- buat sesi konseling baru
+bk.konseling.update     -- edit sesi konseling
+bk.konseling.delete     -- hapus sesi konseling
+bk.catatan.view         -- lihat catatan BK siswa
+bk.catatan.create       -- buat catatan BK
+bk.catatan.update       -- edit catatan BK
+bk.laporan.view         -- laporan BK
+bk.laporan.export       -- export laporan BK
+```
+
+### Modul: perpustakaan
+```
+perpustakaan.buku.view          -- lihat katalog buku
+perpustakaan.buku.create        -- tambah buku
+perpustakaan.buku.update        -- edit data buku
+perpustakaan.buku.delete        -- hapus buku
+perpustakaan.peminjaman.view    -- lihat data peminjaman
+perpustakaan.peminjaman.manage  -- proses pinjam & kembali
+perpustakaan.laporan.view       -- laporan perpustakaan
+perpustakaan.laporan.export     -- export laporan perpustakaan
+```
+
+### Modul: surat (Tata Usaha)
+```
+surat.view      -- lihat daftar surat
+surat.create    -- buat surat baru
+surat.update    -- edit surat
+surat.delete    -- hapus surat
+surat.arsip     -- arsipkan surat
+surat.legalisir -- proses permohonan legalisir dokumen
+```
+
 ---
 
 ## Mapping Role Default → Permission
@@ -250,6 +288,59 @@ pengumuman.view
 ```
 ppdb.* (semua)
 master_data.siswa.view        -- read only untuk referensi
+```
+
+### wakasek
+```
+master_data.guru.view, master_data.guru.export, master_data.guru.verify
+master_data.siswa.view, master_data.siswa.export
+master_data.kelas.view, master_data.kelas.manage
+master_data.mapel.view, master_data.mapel.manage
+master_data.tahun_ajaran.view
+master_data.orang_tua.view
+absensi.view_all, absensi.rekap
+dms.view_all, dms.approve, dms.download, dms.bulk_download
+pengumuman.* (semua)
+laporan.guru.view, laporan.siswa.view, laporan.absensi.view, laporan.export
+akademik.jadwal.manage, akademik.rapor.view, akademik.kalender.manage
+pengaturan.view
+```
+
+### guru_bk
+```
+master_data.siswa.view        -- untuk cari siswa yang dikonseling
+absensi.view_all, absensi.rekap
+dms.upload, dms.view_own, dms.download
+pengumuman.view
+bk.* (semua)                  -- akses penuh modul BK
+-- TIDAK punya akademik.nilai.* -- sengaja diblokir
+```
+
+### tata_usaha
+```
+master_data.siswa.view
+master_data.guru.view
+master_data.orang_tua.view
+dms.upload, dms.view_all, dms.download, dms.bulk_download
+pengumuman.view, pengumuman.create
+surat.* (semua)
+laporan.siswa.view, laporan.guru.view, laporan.export
+```
+
+### pustakawan
+```
+master_data.siswa.view        -- untuk cari peminjam
+pengumuman.view
+perpustakaan.* (semua)
+```
+
+### admin_keuangan
+```
+master_data.siswa.view
+keuangan.tagihan.view, keuangan.tagihan.manage
+keuangan.pembayaran.view, keuangan.pembayaran.input
+keuangan.export
+-- TIDAK punya keuangan.laporan.view -- itu hak bendahara
 ```
 
 ---

@@ -115,6 +115,11 @@ class SchoolSeeder extends Seeder
             ['slug' => 'ortu', 'nama' => 'Orang Tua', 'is_system' => true],
             ['slug' => 'siswa', 'nama' => 'Siswa', 'is_system' => true],
             ['slug' => 'admin_ppdb', 'nama' => 'Admin PPDB', 'is_system' => true],
+            ['slug' => 'wakasek', 'nama' => 'Wakil Kepala Sekolah', 'is_system' => true],
+            ['slug' => 'guru_bk', 'nama' => 'Guru Bimbingan Konseling', 'is_system' => true],
+            ['slug' => 'pustakawan', 'nama' => 'Pustakawan', 'is_system' => true],
+            ['slug' => 'tata_usaha', 'nama' => 'Tata Usaha', 'is_system' => true],
+            ['slug' => 'admin_keuangan', 'nama' => 'Admin Keuangan', 'is_system' => true],
         ];
 
         $created = [];
@@ -273,6 +278,35 @@ class SchoolSeeder extends Seeder
             ['slug' => 'laporan.absensi.view', 'nama' => 'Laporan Absensi', 'modul' => 'laporan'],
             ['slug' => 'laporan.keuangan.view', 'nama' => 'Laporan Keuangan', 'modul' => 'laporan'],
             ['slug' => 'laporan.export', 'nama' => 'Export Laporan', 'modul' => 'laporan'],
+
+            // BK (Bimbingan Konseling)
+            ['slug' => 'bk.konseling.view', 'nama' => 'Lihat Data Konseling', 'modul' => 'bk'],
+            ['slug' => 'bk.konseling.create', 'nama' => 'Buat Sesi Konseling', 'modul' => 'bk'],
+            ['slug' => 'bk.konseling.update', 'nama' => 'Edit Sesi Konseling', 'modul' => 'bk'],
+            ['slug' => 'bk.konseling.delete', 'nama' => 'Hapus Sesi Konseling', 'modul' => 'bk'],
+            ['slug' => 'bk.catatan.view', 'nama' => 'Lihat Catatan BK', 'modul' => 'bk'],
+            ['slug' => 'bk.catatan.create', 'nama' => 'Buat Catatan BK', 'modul' => 'bk'],
+            ['slug' => 'bk.catatan.update', 'nama' => 'Edit Catatan BK', 'modul' => 'bk'],
+            ['slug' => 'bk.laporan.view', 'nama' => 'Laporan BK', 'modul' => 'bk'],
+            ['slug' => 'bk.laporan.export', 'nama' => 'Export Laporan BK', 'modul' => 'bk'],
+
+            // Perpustakaan
+            ['slug' => 'perpustakaan.buku.view', 'nama' => 'Lihat Katalog Buku', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.buku.create', 'nama' => 'Tambah Buku', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.buku.update', 'nama' => 'Edit Buku', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.buku.delete', 'nama' => 'Hapus Buku', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.peminjaman.view', 'nama' => 'Lihat Peminjaman', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.peminjaman.manage', 'nama' => 'Kelola Peminjaman', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.laporan.view', 'nama' => 'Laporan Perpustakaan', 'modul' => 'perpustakaan'],
+            ['slug' => 'perpustakaan.laporan.export', 'nama' => 'Export Laporan Perpustakaan', 'modul' => 'perpustakaan'],
+
+            // Surat & Tata Usaha
+            ['slug' => 'surat.view', 'nama' => 'Lihat Surat', 'modul' => 'surat'],
+            ['slug' => 'surat.create', 'nama' => 'Buat Surat', 'modul' => 'surat'],
+            ['slug' => 'surat.update', 'nama' => 'Edit Surat', 'modul' => 'surat'],
+            ['slug' => 'surat.delete', 'nama' => 'Hapus Surat', 'modul' => 'surat'],
+            ['slug' => 'surat.arsip', 'nama' => 'Arsip Surat', 'modul' => 'surat'],
+            ['slug' => 'surat.legalisir', 'nama' => 'Legalisir Dokumen', 'modul' => 'surat'],
         ];
     }
 
@@ -431,6 +465,103 @@ class SchoolSeeder extends Seeder
                 'ppdb.pendaftar.approve',
                 'ppdb.pendaftar.reject',
                 'ppdb.pengaturan.manage',
+            ],
+
+            // Wakil Kepala Sekolah — hampir setara kepsek, tambahan manage kurikulum/kesiswaan
+            'wakasek' => [
+                'master_data.guru.view',
+                'master_data.guru.export',
+                'master_data.guru.verify',
+                'master_data.siswa.view',
+                'master_data.siswa.export',
+                'master_data.kelas.view',
+                'master_data.kelas.manage',
+                'master_data.mapel.view',
+                'master_data.mapel.manage',
+                'master_data.tahun_ajaran.view',
+                'master_data.orang_tua.view',
+                'absensi.view_all',
+                'absensi.rekap',
+                'dms.view_all',
+                'dms.approve',
+                'dms.download',
+                'dms.bulk_download',
+                'pengumuman.view',
+                'pengumuman.create',
+                'pengumuman.update',
+                'pengumuman.delete',
+                'laporan.guru.view',
+                'laporan.siswa.view',
+                'laporan.absensi.view',
+                'laporan.export',
+                'akademik.jadwal.manage',
+                'akademik.rapor.view',
+                'akademik.kalender.manage',
+                'pengaturan.view',
+            ],
+
+            // Guru BK — akses konseling, tidak bisa lihat nilai akademik
+            'guru_bk' => [
+                'master_data.siswa.view',
+                'absensi.view_all',
+                'absensi.rekap',
+                'dms.upload',
+                'dms.view_own',
+                'dms.download',
+                'pengumuman.view',
+                'bk.konseling.view',
+                'bk.konseling.create',
+                'bk.konseling.update',
+                'bk.catatan.view',
+                'bk.catatan.create',
+                'bk.laporan.view',
+                'bk.laporan.export',
+            ],
+
+            // Pustakawan — kelola perpustakaan, tidak ada akses akademik
+            'pustakawan' => [
+                'master_data.siswa.view',
+                'pengumuman.view',
+                'perpustakaan.buku.view',
+                'perpustakaan.buku.create',
+                'perpustakaan.buku.update',
+                'perpustakaan.buku.delete',
+                'perpustakaan.peminjaman.view',
+                'perpustakaan.peminjaman.manage',
+                'perpustakaan.laporan.view',
+                'perpustakaan.laporan.export',
+            ],
+
+            // Tata Usaha — surat, arsip, legalisir, tidak akses data akademik sensitif
+            'tata_usaha' => [
+                'master_data.siswa.view',
+                'master_data.guru.view',
+                'master_data.orang_tua.view',
+                'dms.upload',
+                'dms.view_all',
+                'dms.download',
+                'dms.bulk_download',
+                'pengumuman.view',
+                'pengumuman.create',
+                'surat.view',
+                'surat.create',
+                'surat.update',
+                'surat.delete',
+                'surat.arsip',
+                'surat.legalisir',
+                'laporan.siswa.view',
+                'laporan.guru.view',
+                'laporan.export',
+            ],
+
+            // Admin Keuangan — input tagihan & invoice, tidak bisa approve/laporan tingkat bendahara
+            'admin_keuangan' => [
+                'master_data.siswa.view',
+                'keuangan.tagihan.view',
+                'keuangan.tagihan.manage',
+                'keuangan.pembayaran.view',
+                'keuangan.pembayaran.input',
+                'keuangan.export',
             ],
         ];
     }

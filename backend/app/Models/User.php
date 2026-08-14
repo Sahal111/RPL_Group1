@@ -60,7 +60,7 @@ class User extends Authenticatable
     public function getRoleSlug(): ?string
     {
         $slugs = $this->roles->pluck('slug')->toArray();
-        foreach (['operator', 'kepsek', 'guru', 'wali_kelas', 'bendahara', 'admin_ppdb', 'ortu', 'siswa'] as $role) {
+        foreach (['operator', 'super_operator', 'kepsek', 'wakasek', 'guru', 'guru_bk', 'wali_kelas', 'bendahara', 'admin_keuangan', 'tata_usaha', 'pustakawan', 'admin_ppdb', 'ortu', 'siswa'] as $role) {
             if (in_array($role, $slugs)) {
                 return $role;
             }

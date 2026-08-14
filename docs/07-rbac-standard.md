@@ -27,18 +27,25 @@ seed role default + permission default.
 
 ## Role Default (Template)
 
-| slug | nama | is_system | Bisa Dihapus |
-|---|---|---|---|
-| `super_operator` | Operator Utama | ✓ | ❌ |
-| `operator` | Operator | ✓ | ❌ |
-| `kepsek` | Kepala Sekolah | ✓ | ❌ |
-| `guru` | Guru | ✓ | ❌ |
-| `wali_kelas` | Wali Kelas | ✓ | ❌ |
-| `bendahara` | Bendahara | ✓ | ❌ |
-| `ortu` | Orang Tua | ✓ | ❌ |
-| `admin_ppdb` | Admin PPDB | ✓ | ❌ |
+| slug              | nama                    | is_system | Bisa Dihapus |
+|-------------------|-------------------------|-----------|--------------|
+| `super_operator`  | Operator Utama          | ✓         | ❌            |
+| `operator`        | Operator                | ✓         | ❌            |
+| `kepsek`          | Kepala Sekolah          | ✓         | ❌            |
+| `wakasek`         | Wakil Kepala Sekolah    | ✓         | ❌            |
+| `guru`            | Guru                    | ✓         | ❌            |
+| `guru_bk`         | Guru BK                 | ✓         | ❌            |
+| `wali_kelas`      | Wali Kelas              | ✓         | ❌            |
+| `bendahara`       | Bendahara               | ✓         | ❌            |
+| `admin_keuangan`  | Admin Keuangan          | ✓         | ❌            |
+| `tata_usaha`      | Tata Usaha              | ✓         | ❌            |
+| `pustakawan`      | Pustakawan              | ✓         | ❌            |
+| `ortu`            | Orang Tua               | ✓         | ❌            |
+| `siswa`           | Siswa                   | ✓         | ❌            |
+| `admin_ppdb`      | Admin PPDB              | ✓         | ❌            |
 
-Operator sekolah bisa tambah role custom (misal: `wakil_kepsek`, `tata_usaha`).
+Operator sekolah bisa tambah role custom sesuai kebutuhan spesifik sekolah.
+Matriks permission lengkap ada di `doc2-rbac-design.md`.
 
 ---
 

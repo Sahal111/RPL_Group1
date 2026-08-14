@@ -34,13 +34,18 @@ export default function LoginPage() {
         super_admin: "/superadmin",
         operator: "/operator",
         super_operator: "/operator",
-        guru: "/guru",
         kepsek: "/kepsek",
+        wakasek: "/wakasek",
+        guru: "/guru",
+        guru_bk: "/guru-bk",
+        wali_kelas: "/walikelas",
+        pustakawan: "/pustakawan",
+        tata_usaha: "/tata-usaha",
+        bendahara: "/bendahara",
+        admin_keuangan: "/admin-keuangan",
+        admin_ppdb: "/adminppdb",
         ortu: "/ortu",
         siswa: "/siswa",
-        wali_kelas: "/walikelas",
-        bendahara: "/bendahara",
-        admin_ppdb: "/adminppdb",
       };
       navigate(redirectMap[user.role] ?? "/login", { replace: true });
     } catch (err) {
