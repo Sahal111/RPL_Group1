@@ -18,6 +18,9 @@
  *   routes/api/keuangan.php     → modul keuangan & tagihan SPP
  *   routes/api/ppdb.php         → modul penerimaan peserta didik baru
  *   routes/api/lms.php          → modul pembelajaran (materi, tugas, ujian)
+ *   routes/api/bk.php           → modul bimbingan konseling
+ *   routes/api/perpustakaan.php → modul perpustakaan (buku & peminjaman)
+ *   routes/api/tata-usaha.php   → modul tata usaha (surat & legalisir)
  */
 
 require __DIR__ . '/api/auth.php';
@@ -31,3 +34,6 @@ require __DIR__ . '/api/ortu.php';
 require __DIR__ . '/api/keuangan.php';
 require __DIR__ . '/api/ppdb.php';
 require __DIR__ . '/api/lms.php';
+require __DIR__ . '/api/bk.php';
+require __DIR__ . '/api/perpustakaan.php';
+require __DIR__ . '/api/tata-usaha.php';

@@ -96,6 +96,26 @@ import DashboardAdminPpdb from "./pages/adminppdb/DashboardAdminPpdb";
 import SuperAdminLayout from "./pages/superadmin/SuperAdminLayout";
 import DashboardSuperAdmin from "./pages/superadmin/DashboardSuperAdmin";
 
+// Wakasek
+import WakasekLayout from "./pages/wakasek/WakasekLayout";
+import DashboardWakasek from "./pages/wakasek/DashboardWakasek";
+
+// Guru BK
+import GuruBkLayout from "./pages/guru-bk/GuruBkLayout";
+import DashboardGuruBk from "./pages/guru-bk/DashboardGuruBk";
+
+// Pustakawan
+import PustakawanLayout from "./pages/pustakawan/PustakawanLayout";
+import DashboardPustakawan from "./pages/pustakawan/DashboardPustakawan";
+
+// Tata Usaha
+import TataUsahaLayout from "./pages/tata-usaha/TataUsahaLayout";
+import DashboardTataUsaha from "./pages/tata-usaha/DashboardTataUsaha";
+
+// Admin Keuangan
+import AdminKeuanganLayout from "./pages/admin-keuangan/AdminKeuanganLayout";
+import DashboardAdminKeuangan from "./pages/admin-keuangan/DashboardAdminKeuangan";
+
 // Siswa
 import SiswaLayout from "./pages/siswa/SiswaLayout";
 import DashboardSiswa from "./pages/siswa/DashboardSiswa";
@@ -282,6 +302,66 @@ export default function App() {
         }
       >
         <Route index element={<DashboardAdminPpdb />} />
+      </Route>
+
+      {/* Wakasek */}
+      <Route
+        path="/wakasek"
+        element={
+          <ProtectedRoute roles={["wakasek"]}>
+            <WakasekLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardWakasek />} />
+      </Route>
+
+      {/* Guru BK */}
+      <Route
+        path="/guru-bk"
+        element={
+          <ProtectedRoute roles={["guru_bk"]}>
+            <GuruBkLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardGuruBk />} />
+      </Route>
+
+      {/* Pustakawan */}
+      <Route
+        path="/pustakawan"
+        element={
+          <ProtectedRoute roles={["pustakawan"]}>
+            <PustakawanLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardPustakawan />} />
+      </Route>
+
+      {/* Tata Usaha */}
+      <Route
+        path="/tata-usaha"
+        element={
+          <ProtectedRoute roles={["tata_usaha"]}>
+            <TataUsahaLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardTataUsaha />} />
+      </Route>
+
+      {/* Admin Keuangan */}
+      <Route
+        path="/admin-keuangan"
+        element={
+          <ProtectedRoute roles={["admin_keuangan"]}>
+            <AdminKeuanganLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardAdminKeuangan />} />
       </Route>
     </Routes>
   );
