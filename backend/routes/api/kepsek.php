@@ -5,7 +5,8 @@ use App\Http\Controllers\Kepsek\KepsekController;
 use App\Http\Controllers\PengumumanController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'role:kepsek,super_operator'])->prefix('kepsek')->group(function () {
+Route::middleware(['auth:sanctum', 'role:kepsek'])
+    ->prefix('kepsek')->group(function () {
 
     // Dashboard & laporan — butuh minimal view guru atau siswa
     Route::middleware('permission:laporan.absensi.view,laporan.guru.view,laporan.siswa.view')->group(function () {

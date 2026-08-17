@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum', 'role:guru_bk,kepsek,wakasek,operator,super_operator'])
+Route::middleware(['auth:sanctum', 'role:guru_bk,kepsek,wakasek,operator'])
     ->prefix('bk')
     ->group(function () {
 

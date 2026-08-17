@@ -9,7 +9,7 @@ class SiswaPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->hasRole('super_operator')) {
+        if ($user->hasRole('operator')) {
             return true;
         }
         return null;

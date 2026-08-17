@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'role:tata_usaha,operator,super_operator,kepsek,wakasek'])
+Route::middleware(['auth:sanctum', 'role:tata_usaha,operator,kepsek,wakasek'])
+
     ->prefix('tata-usaha')
     ->group(function () {
 

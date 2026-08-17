@@ -166,7 +166,7 @@ export default function App() {
       <Route
         path="/operator"
         element={
-          <ProtectedRoute roles={["operator", "super_operator"]}>
+          <ProtectedRoute roles={["operator"]}>
             <OperatorLayout />
           </ProtectedRoute>
         }

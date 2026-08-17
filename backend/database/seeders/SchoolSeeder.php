@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Hash;
  * - Role default (system roles)
  * - Permission default (semua modul)
  * - Mapping role → permission
- * - User super_operator pertama
+ * - User operator pertama
  *
  * Seeder ini juga dipakai oleh SchoolProvisioningService saat sekolah baru
  * didaftarkan dari production (bukan hanya untuk dev).
@@ -36,7 +36,7 @@ class SchoolSeeder extends Seeder
         $roles = $this->createRoles($school);
         $this->assignPermissionsToRoles($roles, $permissions);
 
-        $this->createSuperOperator($school, $roles['super_operator']);
+        $this->createSuperOperator($school, $roles['operator']);
 
         $this->command->info("✅ Sekolah '{$school->nama}' berhasil di-seed.");
         $this->command->info("   👤 Login: admin@minurulhuda3.sch.id / password: password");
@@ -106,7 +106,6 @@ class SchoolSeeder extends Seeder
     private function createRoles(School $school): array
     {
         $roleDefs = [
-            ['slug' => 'super_operator', 'nama' => 'Operator Utama', 'is_system' => true],
             ['slug' => 'operator', 'nama' => 'Operator', 'is_system' => true],
             ['slug' => 'kepsek', 'nama' => 'Kepala Sekolah', 'is_system' => true],
             ['slug' => 'guru', 'nama' => 'Guru', 'is_system' => true],
@@ -319,56 +318,56 @@ class SchoolSeeder extends Seeder
         $all = array_column($this->permissionDefinitions(), 'slug');
 
         return [
-            'super_operator' => $all,
+            'operator' => $all,
 
-            'operator' => [
-                'master_data.guru.view',
-                'master_data.guru.create',
-                'master_data.guru.update',
-                'master_data.guru.delete',
-                'master_data.guru.import',
-                'master_data.guru.export',
-                'master_data.guru.verify',
-                'master_data.siswa.view',
-                'master_data.siswa.create',
-                'master_data.siswa.update',
-                'master_data.siswa.delete',
-                'master_data.siswa.import',
-                'master_data.siswa.export',
-                'master_data.kelas.view',
-                'master_data.kelas.manage',
-                'master_data.mapel.view',
-                'master_data.mapel.manage',
-                'master_data.tahun_ajaran.view',
-                'master_data.tahun_ajaran.manage',
-                'master_data.orang_tua.view',
-                'master_data.orang_tua.manage',
-                'akun.view',
-                'akun.create',
-                'akun.update',
-                'akun.delete',
-                'akun.toggle_active',
-                'akun.reset_password',
-                'akun.approve_ortu',
-                'absensi.view_all',
-                'absensi.rekap',
-                'dms.view_all',
-                'dms.approve',
-                'dms.download',
-                'dms.bulk_download',
-                'dms.delete',
-                'pengumuman.view',
-                'pengumuman.create',
-                'pengumuman.update',
-                'pengumuman.delete',
-                'laporan.guru.view',
-                'laporan.siswa.view',
-                'laporan.absensi.view',
-                'laporan.export',
-                'akademik.jadwal.manage',
-                'akademik.kalender.manage',
-                'pengaturan.view',
-            ],
+            // 'operator' => [
+            //     'master_data.guru.view',
+            //     'master_data.guru.create',
+            //     'master_data.guru.update',
+            //     'master_data.guru.delete',
+            //     'master_data.guru.import',
+            //     'master_data.guru.export',
+            //     'master_data.guru.verify',
+            //     'master_data.siswa.view',
+            //     'master_data.siswa.create',
+            //     'master_data.siswa.update',
+            //     'master_data.siswa.delete',
+            //     'master_data.siswa.import',
+            //     'master_data.siswa.export',
+            //     'master_data.kelas.view',
+            //     'master_data.kelas.manage',
+            //     'master_data.mapel.view',
+            //     'master_data.mapel.manage',
+            //     'master_data.tahun_ajaran.view',
+            //     'master_data.tahun_ajaran.manage',
+            //     'master_data.orang_tua.view',
+            //     'master_data.orang_tua.manage',
+            //     'akun.view',
+            //     'akun.create',
+            //     'akun.update',
+            //     'akun.delete',
+            //     'akun.toggle_active',
+            //     'akun.reset_password',
+            //     'akun.approve_ortu',
+            //     'absensi.view_all',
+            //     'absensi.rekap',
+            //     'dms.view_all',
+            //     'dms.approve',
+            //     'dms.download',
+            //     'dms.bulk_download',
+            //     'dms.delete',
+            //     'pengumuman.view',
+            //     'pengumuman.create',
+            //     'pengumuman.update',
+            //     'pengumuman.delete',
+            //     'laporan.guru.view',
+            //     'laporan.siswa.view',
+            //     'laporan.absensi.view',
+            //     'laporan.export',
+            //     'akademik.jadwal.manage',
+            //     'akademik.kalender.manage',
+            //     'pengaturan.view',
+            // ],
 
             'kepsek' => [
                 'master_data.guru.view',

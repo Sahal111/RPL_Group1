@@ -52,7 +52,7 @@ class RoleMiddleware
 
         $userSlugs = $user->roles->pluck('slug');
 
-        if ($userSlugs->contains('super_operator') || $userSlugs->intersect($roles)->isNotEmpty()) {
+        if ($userSlugs->intersect($roles)->isNotEmpty()) {
             return $next($request);
         }
 

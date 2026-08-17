@@ -145,10 +145,10 @@ class SyncPermissions extends Command
         DB::table('permissions')->insert($toInsert);
         $this->line("   + Ditambahkan " . count($toInsert) . " permission baru.");
 
-        // Auto-assign ke super_operator
+        // Auto-assign ke operator
         $superOpRole = DB::table('roles')
             ->where('school_id', $schoolId)
-            ->where('slug', 'super_operator')
+            ->where('slug', 'operator')
             ->first();
 
         if ($superOpRole) {
@@ -163,7 +163,7 @@ class SyncPermissions extends Command
             ])->toArray();
 
             DB::table('role_permissions')->insertOrIgnore($pivotData);
-            $this->line("   + Ditambahkan ke role super_operator.");
+            $this->line("   + Ditambahkan ke role operator.");
         }
     }
 }

@@ -27,7 +27,8 @@ Route::middleware(['auth:sanctum'])->prefix('lms')->group(function () {
     // GURU & OPERATOR — Kelola Materi, Tugas, Ujian
     // ══════════════════════════════════════════════════════════════════════
 
-    Route::middleware(['role:guru,wali_kelas,operator,super_operator'])->group(function () {
+    Route::middleware(['role:guru,wali_kelas,operator'])
+        ->group(function () {
 
         // ── MATERI (Course Materials) ──────────────────────────────────────
         Route::prefix('materi')->group(function () {

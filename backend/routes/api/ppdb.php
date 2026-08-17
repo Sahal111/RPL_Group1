@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum', 'role:admin_ppdb,operator,super_operator'])
+Route::middleware(['auth:sanctum', 'role:admin_ppdb,operator'])
+
     ->prefix('ppdb')
     ->group(function () {
 

@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum', 'role:bendahara,operator,super_operator'])
+Route::middleware(['auth:sanctum', 'role:bendahara,operator'])
+
     ->prefix('keuangan')
     ->group(function () {
 

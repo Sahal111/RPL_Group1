@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'role:pustakawan,operator,super_operator'])
+Route::middleware(['auth:sanctum', 'role:pustakawan,operator'])
     ->prefix('perpustakaan')
     ->group(function () {
 
