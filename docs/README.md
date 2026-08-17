@@ -10,6 +10,7 @@ Setiap developer yang bergabung **wajib membaca semua dokumen ini** sebelum menu
 
 | # | Dokumen | Deskripsi |
 |---|---------|-----------|
+| ⭐️ | [**PROJECT_CONTEXT.md**](PROJECT_CONTEXT.md) | **Single Source of Truth / Master AI Context (Wajib Dibaca)** |
 | 01 | [Vision & Mission](docs/01-vision.md) | Tujuan besar, target user, scope |
 | 02 | [Architecture Overview](docs/02-architecture.md) | Arsitektur sistem, request lifecycle, keputusan final |
 | 03 | [Database Standard](docs/03-database-standard.md) | Schema, naming, index, audit field, migration, seeder |

@@ -7,61 +7,57 @@ export default function OperatorTopBar({ onMenuClick }) {
   const { user } = useAuth();
 
   return (
-    <header className="shrink-0 z-30 h-[72px] w-full bg-surface/75 backdrop-blur-lg border-b border-outline-variant/30 flex items-center justify-between px-6 transition-all duration-300 ease-out">
+    <header className="shrink-0 z-30 h-20 w-full bg-white/70 backdrop-blur-lg border-b border-white/10 shadow-sm flex items-center justify-between px-6 transition-all duration-300">
       {/* Left */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
+        {/* Mobile hamburger */}
         <button
           onClick={onMenuClick}
-          className="md:hidden text-on-surface p-2 rounded-lg hover:bg-surface-container-low transition-colors duration-300"
+          className="md:hidden text-[#00342b] p-2 rounded-lg hover:bg-[#004d40]/10 transition-colors duration-300"
           aria-label="Buka menu"
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
 
-        <div className="relative hidden sm:flex items-center">
-          <span className="material-symbols-outlined absolute left-3 text-text-secondary text-sm">
+        {/* Search Bar */}
+        <div className="relative hidden md:block w-80 group">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#00342b]/40 text-[20px] group-focus-within:text-[#006e2a] transition-colors">
             search
           </span>
           <input
-            className="pl-10 pr-12 py-2 bg-surface-container/50 border border-border-light/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/30 focus:bg-surface text-sm w-64 transition-all duration-300 focus:w-80 outline-none hover:bg-surface-container/80 text-text-primary placeholder:text-text-secondary"
-            placeholder="Search across portal..."
+            className="w-full bg-[#f2f4f3]/50 border-[#bfc9c4]/20 border rounded-full py-2.5 pl-11 pr-16 text-sm focus:ring-4 focus:ring-[#006e2a]/10 focus:border-[#006e2a]/50 focus:outline-none transition-all text-[#191c1c] placeholder:text-[#3f4945]/40 shadow-inner"
+            placeholder="Cari data siswa, guru..."
             type="text"
           />
-          <div className="absolute right-3 flex items-center gap-1">
-            <kbd className="hidden lg:inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-medium text-text-secondary bg-surface rounded border border-border-light shadow-sm">
-              ⌘K
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 items-center pointer-events-none">
+            <kbd className="border border-[#707975]/20 rounded-md px-1.5 py-0.5 text-[10px] font-sans font-bold text-[#bfc9c4] bg-white/80 shadow-sm">
+              ⌘
+            </kbd>
+            <kbd className="border border-[#707975]/20 rounded-md px-1.5 py-0.5 text-[10px] font-sans font-bold text-[#bfc9c4] bg-white/80 shadow-sm">
+              K
             </kbd>
           </div>
         </div>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-5">
-        <div className="hidden lg:flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-full border border-primary/10">
-          <span className="w-1.5 h-1.5 bg-primary rounded-full" />
-          <span className="text-xs font-semibold text-primary">
-            Academic Year: 2023-24
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button className="p-2 text-text-secondary hover:bg-surface-container hover:text-text-primary rounded-lg transition-all duration-300 relative">
-            <span className="material-symbols-outlined text-[20px]">
-              notifications
-            </span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full ring-2 ring-surface" />
+      <div className="flex items-center gap-4">
+        {/* Action Icons */}
+        <div className="flex items-center gap-2">
+          <button className="p-2.5 text-[#00342b]/70 hover:text-[#006e2a] hover:bg-[#00342b]/5 rounded-full transition-all relative group">
+            <span className="material-symbols-outlined text-[22px]">notifications</span>
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#006e2a] rounded-full border-2 border-white animate-pulse shadow-[0_0_8px_rgba(0,110,42,0.6)]" />
           </button>
-          <button className="p-2 text-text-secondary hover:bg-surface-container hover:text-text-primary rounded-lg transition-all duration-300">
-            <span className="material-symbols-outlined text-[20px]">
-              chat_bubble_outline
-            </span>
+          <button className="p-2.5 text-[#00342b]/70 hover:text-[#006e2a] hover:bg-[#00342b]/5 rounded-full transition-all">
+            <span className="material-symbols-outlined text-[22px]">dark_mode</span>
           </button>
         </div>
 
-        <div className="h-6 w-px bg-outline-variant/40 mx-1" />
+        <div className="h-8 w-[1px] bg-[#bfc9c4]/30 mx-1" />
 
-        <div className="flex items-center gap-3 cursor-pointer hover:bg-surface-container/50 p-1.5 pr-3 rounded-xl transition-colors duration-300 group border border-transparent hover:border-border-light/50">
-          <div className="w-8 h-8 rounded-lg overflow-hidden border border-outline-variant/50 shadow-sm shrink-0">
+        {/* Profile */}
+        <div className="flex items-center gap-3 cursor-pointer hover:bg-white/50 p-1.5 pr-4 rounded-full transition-all duration-300 border border-transparent hover:border-[#69ff87]/10 group/profile">
+          <div className="w-10 h-10 rounded-full border-2 border-[#69ff87] shadow-md overflow-hidden group-hover/profile:scale-105 transition-transform">
             {user?.foto ? (
               <img
                 alt={user?.nama_lengkap || "Admin"}
@@ -69,21 +65,21 @@ export default function OperatorTopBar({ onMenuClick }) {
                 src={`${BASE_URL}/storage/${user.foto}`}
               />
             ) : (
-              <div className="w-full h-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-sm">
+              <div className="w-full h-full bg-[#004d40] text-white flex items-center justify-center font-bold text-sm">
                 {user?.nama_lengkap?.charAt(0)?.toUpperCase() || "A"}
               </div>
             )}
           </div>
-          <div className="hidden sm:flex flex-col items-start">
-            <p className="text-sm font-semibold text-text-primary leading-tight">
-              {user?.nama_lengkap || "Admin Operator"}
-            </p>
-            <p className="text-[11px] text-text-secondary font-medium">
-              MI Nurul Huda 3
-            </p>
+          <div className="hidden md:flex flex-col">
+            <span className="text-sm font-bold text-[#00342b] leading-tight group-hover/profile:text-[#006e2a] transition-colors">
+              {user?.nama_lengkap || "Admin Utama"}
+            </span>
+            <span className="text-[9px] font-black text-[#00342b]/40 uppercase tracking-[0.2em]">
+              Superadmin
+            </span>
           </div>
-          <span className="material-symbols-outlined text-text-secondary text-sm hidden sm:block group-hover:text-text-primary transition-colors">
-            expand_more
+          <span className="material-symbols-outlined text-[#00342b]/30 text-[20px] group-hover/profile:translate-y-0.5 transition-transform">
+            keyboard_arrow_down
           </span>
         </div>
       </div>

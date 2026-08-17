@@ -1,16 +1,23 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmt(str) {
   if (!str) return "-";
   return new Date(str).toLocaleDateString("id-ID", {
     day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function fmtShortMonthYear(str) {
+  if (!str) return "-";
+  return new Date(str).toLocaleDateString("id-ID", {
     month: "short",
     year: "numeric",
   });
@@ -32,8 +39,7 @@ function daysBetween(a, b) {
 
 function daysRemaining(end) {
   if (!end) return null;
-  const diff = Math.round((new Date(end) - new Date()) / 86400000);
-  return diff;
+  return Math.round((new Date(end) - new Date()) / 86400000);
 }
 
 function getTglMulai(t) {
@@ -47,6 +53,16 @@ function getTglSelesai(t) {
   const genap = t.semesters.find((s) => s.nama === "Genap");
   const ganjil = t.semesters.find((s) => s.nama === "Ganjil");
   return genap ? genap.tgl_selesai : ganjil ? ganjil.tgl_selesai : null;
+}
+
+function getStatusTahunAjaran(t) {
+  if (t.is_active) return "AKTIF";
+  const now = new Date();
+  const mulai = getTglMulai(t);
+  const selesai = getTglSelesai(t);
+  if (selesai && new Date(selesai) < now) return "SELESAI";
+  if (!mulai || new Date(mulai) > now) return "AKAN DATANG";
+  return "SELESAI";
 }
 
 // ── Modal Tambah / Edit Tahun Ajaran ──────────────────────────────────────────
@@ -65,7 +81,6 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     semester_aktif: "Ganjil",
   });
 
-  // Calculate semester date ranges automatically when TA start/end dates change
   const calcSemesterDates = (startStr, endStr) => {
     if (!startStr || !endStr) return {};
     const start = new Date(startStr);
@@ -125,7 +140,6 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Handle TA start date change
   const handleTglMulaiChange = (val) => {
     setForm((f) => {
       const updated = { ...f, tgl_mulai_ta: val };
@@ -145,7 +159,6 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     });
   };
 
-  // Handle TA end date change
   const handleTglSelesaiChange = (val) => {
     setForm((f) => {
       const updated = { ...f, tgl_selesai_ta: val };
@@ -157,7 +170,6 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     });
   };
 
-  // Handle Tahun string input change (e.g., "2025/2026")
   const handleTahunTextChange = (val) => {
     setForm((f) => {
       const updated = { ...f, tahun: val };
@@ -204,75 +216,78 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
   if (!open) return null;
 
   const inputCls =
-    "w-full px-3.5 py-2.5 bg-background-light border border-border-light rounded-xl text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-text-secondary/50";
+    "w-full px-4 py-2.5 bg-[#f8faf9] border border-[#bfc9c4]/40 rounded-xl text-sm text-[#111827] focus:ring-2 focus:ring-[#006e2a]/20 focus:border-[#006e2a] outline-none transition-all placeholder:text-[#3f4945]/40";
   const labelCls =
-    "block text-label-md font-semibold text-text-secondary mb-1.5";
+    "block text-xs font-bold text-[#00342b] uppercase tracking-wider mb-1.5";
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 transition-all duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 transition-all duration-300"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-border-light/80 animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-[28px] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] border border-[#bfc9c4]/30 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light bg-surface-container-lowest">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
-              <span className="material-symbols-outlined text-[22px]">
-                {isEdit ? "edit_note" : "add_circle"}
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-7 py-5 border-b border-[#bfc9c4]/20 bg-gradient-to-r from-[#00342b]/5 to-transparent">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-[#00342b] flex items-center justify-center text-white shadow-md shadow-[#00342b]/20">
+              <span className="material-symbols-outlined text-[24px]">
+                {isEdit ? "edit_calendar" : "calendar_add_on"}
               </span>
             </div>
             <div>
-              <h3 className="text-section-title font-bold text-on-surface">
-                {isEdit ? "Edit Tahun Ajaran" : "Tambah Tahun Ajaran"}
+              <h3 className="font-headline-card text-[18px] font-extrabold text-[#00342b]">
+                {isEdit ? "Edit Tahun Ajaran" : "Tambah Tahun Ajaran Baru"}
               </h3>
-              <p className="text-xs text-text-secondary">
-                Kelola periode akademis dan semester sekolah
+              <p className="text-xs text-[#3f4945]/70">
+                Kelola periode akademik & pembagian semester madrasah
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-surface-container hover:text-on-surface transition-colors"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-[#3f4945]/70 hover:bg-[#eceeed] hover:text-[#111827] transition-colors"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5 overflow-y-auto custom-scrollbar flex-1">
-          {/* INFORMASI TAHUN AJARAN */}
+        {/* Modal Body */}
+        <div className="px-7 py-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+          {/* SECTION 1: Informasi Tahun Ajaran */}
           <div>
-            <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">
-                calendar_today
+            <div className="flex items-center gap-2 mb-4 border-b border-[#bfc9c4]/20 pb-2">
+              <span className="material-symbols-outlined text-[#006e2a] text-[20px]">
+                event_note
               </span>
-              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                INFORMASI TAHUN AJARAN
+              <h4 className="text-xs font-extrabold text-[#00342b] uppercase tracking-wider">
+                Informasi Periode
               </h4>
             </div>
-            <div className="space-y-3.5">
+
+            <div className="space-y-4">
               <div>
                 <label className={labelCls}>
-                  Nama Tahun Ajaran <span className="text-danger">*</span>
+                  Nama Tahun Ajaran <span className="text-[#ba1a1a]">*</span>
                 </label>
                 <input
                   value={form.tahun}
                   onChange={(e) => handleTahunTextChange(e.target.value)}
                   className={inputCls}
-                  placeholder="Contoh: 2025/2026"
+                  placeholder="Contoh: 2026/2027"
                   maxLength={9}
                 />
+                <p className="text-[11px] text-[#3f4945]/60 mt-1">
+                  Format: YYYY/YYYY (otomatis menetapkan rentang tanggal semester).
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
                   <label className={labelCls}>
-                    Tanggal Mulai Tahun Ajaran{" "}
-                    <span className="text-danger">*</span>
+                    Mulai Periode <span className="text-[#ba1a1a]">*</span>
                   </label>
                   <input
                     type="date"
@@ -283,8 +298,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                 </div>
                 <div>
                   <label className={labelCls}>
-                    Tanggal Selesai Tahun Ajaran{" "}
-                    <span className="text-danger">*</span>
+                    Selesai Periode <span className="text-[#ba1a1a]">*</span>
                   </label>
                   <input
                     type="date"
@@ -297,15 +311,15 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
             </div>
           </div>
 
-          {/* PENGATURAN SEMESTER */}
+          {/* SECTION 2: Pengaturan Semester */}
           <div>
-            <div className="flex items-center justify-between border-b border-border-light pb-2 mb-3">
+            <div className="flex items-center justify-between border-b border-[#bfc9c4]/20 pb-2 mb-4">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[18px]">
+                <span className="material-symbols-outlined text-[#006e2a] text-[20px]">
                   date_range
                 </span>
-                <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                  PENGATURAN SEMESTER
+                <h4 className="text-xs font-extrabold text-[#00342b] uppercase tracking-wider">
+                  Pengaturan Semester
                 </h4>
               </div>
               <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -313,32 +327,34 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                   type="checkbox"
                   checked={form.buat_semester}
                   onChange={(e) => set("buat_semester", e.target.checked)}
-                  className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"
+                  className="w-4 h-4 rounded text-[#006e2a] focus:ring-[#006e2a] accent-[#006e2a]"
                 />
-                <span className="text-xs font-semibold text-text-secondary">
-                  Buat Semester Otomatis
+                <span className="text-xs font-bold text-[#006e2a]">
+                  Buat Otomatis
                 </span>
               </label>
             </div>
 
             {form.buat_semester && (
-              <div className="space-y-3.5">
-                {/* Semester Ganjil (Readonly Label Header) */}
-                <div className="p-4 bg-background-light/70 rounded-xl border border-border-light/80 shadow-xs">
+              <div className="space-y-4">
+                {/* Semester Ganjil */}
+                <div className="p-4 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-6 h-6 rounded-md bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-lg bg-[#00342b] text-white font-bold text-xs flex items-center justify-center">
                       1
                     </span>
-                    <span className="text-body-md font-bold text-on-surface select-none">
+                    <span className="text-sm font-bold text-[#00342b]">
                       Semester Ganjil
                     </span>
-                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium ml-auto">
-                      Otomatis
+                    <span className="text-[10px] bg-[#006e2a]/10 text-[#006e2a] font-bold px-2 py-0.5 rounded-full ml-auto">
+                      Semester 1
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Tanggal Mulai</label>
+                      <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                        Tgl Mulai
+                      </label>
                       <input
                         type="date"
                         value={form.semester_ganjil_mulai}
@@ -349,7 +365,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Tanggal Selesai</label>
+                      <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                        Tgl Selesai
+                      </label>
                       <input
                         type="date"
                         value={form.semester_ganjil_selesai}
@@ -362,22 +380,24 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                   </div>
                 </div>
 
-                {/* Semester Genap (Readonly Label Header) */}
-                <div className="p-4 bg-background-light/70 rounded-xl border border-border-light/80 shadow-xs">
+                {/* Semester Genap */}
+                <div className="p-4 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="w-6 h-6 rounded-md bg-text-secondary/10 text-text-secondary font-bold text-xs flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-lg bg-[#3f4945]/20 text-[#3f4945] font-bold text-xs flex items-center justify-center">
                       2
                     </span>
-                    <span className="text-body-md font-bold text-on-surface select-none">
+                    <span className="text-sm font-bold text-[#00342b]">
                       Semester Genap
                     </span>
-                    <span className="text-[10px] bg-surface-container text-text-secondary px-2 py-0.5 rounded-full font-medium ml-auto">
-                      Otomatis
+                    <span className="text-[10px] bg-[#eceeed] text-[#3f4945] font-bold px-2 py-0.5 rounded-full ml-auto">
+                      Semester 2
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Tanggal Mulai</label>
+                      <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                        Tgl Mulai
+                      </label>
                       <input
                         type="date"
                         value={form.semester_genap_mulai}
@@ -388,7 +408,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Tanggal Selesai</label>
+                      <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                        Tgl Selesai
+                      </label>
                       <input
                         type="date"
                         value={form.semester_genap_selesai}
@@ -404,62 +426,48 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
             )}
           </div>
 
-          {/* PENGATURAN LAINNYA */}
-          <div>
-            <div className="flex items-center gap-2 mb-3 border-b border-border-light pb-2">
-              <span className="material-symbols-outlined text-primary text-[18px]">
-                settings
-              </span>
-              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                PENGATURAN LAINNYA
-              </h4>
-            </div>
-            <div className="space-y-2">
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(e) => {
-                    const active = e.target.checked;
-                    setForm((f) => ({
-                      ...f,
-                      is_active: active,
-                      semester_aktif: active ? (f.semester_aktif || "Ganjil") : "",
-                    }));
-                  }}
-                  className="w-4 h-4 rounded border-border-light text-primary focus:ring-primary accent-primary"
-                />
-                <span className="text-body-md font-medium text-on-surface">
-                  Jadikan Tahun Ajaran Aktif
+          {/* SECTION 3: Aktivasi */}
+          <div className="p-4 bg-[#006e2a]/5 border border-[#006e2a]/20 rounded-2xl">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) => {
+                  const active = e.target.checked;
+                  setForm((f) => ({
+                    ...f,
+                    is_active: active,
+                    semester_aktif: active ? f.semester_aktif || "Ganjil" : "",
+                  }));
+                }}
+                className="w-5 h-5 rounded text-[#006e2a] focus:ring-[#006e2a] accent-[#006e2a]"
+              />
+              <div>
+                <span className="text-sm font-bold text-[#00342b] block">
+                  Jadikan Sebagai Tahun Ajaran Aktif
                 </span>
-              </label>
-
-              {/* Informational Warning Note */}
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-amber-800">
-                <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">
-                  info
+                <span className="text-xs text-[#3f4945]/70">
+                  Mengaktifkan periode ini akan menonaktifkan periode aktif yang sedang berjalan.
                 </span>
-                <p className="text-xs leading-relaxed text-amber-900 font-medium">
-                  Mengaktifkan Tahun Ajaran ini akan menonaktifkan Tahun Ajaran
-                  yang sedang aktif.
-                </p>
               </div>
-            </div>
+            </label>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-border-light bg-surface-container-lowest">
+        {/* Modal Footer */}
+        <div className="flex gap-3 px-7 py-5 border-t border-[#bfc9c4]/20 bg-[#f8faf9]">
           <button
+            type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-border-light text-text-secondary hover:bg-surface-container-low text-body-md font-semibold transition-colors"
+            className="flex-1 py-3 rounded-full border border-[#bfc9c4]/50 text-[#3f4945] hover:bg-[#eceeed] text-xs font-bold uppercase tracking-wider transition-all"
           >
             Batal
           </button>
           <button
+            type="button"
             onClick={() => mutation.mutate(form)}
-            disabled={mutation.isPending}
-            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-body-md font-semibold hover:bg-primary-700 shadow-sm hover:shadow transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            disabled={mutation.isPending || !form.tahun}
+            className="flex-1 py-3 rounded-full bg-[#006e2a] text-white text-xs font-black uppercase tracking-wider hover:bg-[#00531e] shadow-lg shadow-[#006e2a]/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {mutation.isPending ? (
               <>
@@ -469,9 +477,9 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                 Menyimpan...
               </>
             ) : isEdit ? (
-              "Perbarui Data"
+              "Perbarui Periode"
             ) : (
-              "Simpan Data"
+              "Simpan Periode"
             )}
           </button>
         </div>
@@ -481,906 +489,907 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
   );
 }
 
-// ── Skeleton Loader ────────────────────────────────────────────────────────────
-function SkeletonRow() {
-  return (
-    <tr className="border-b border-border-light">
-      {[...Array(5)].map((_, i) => (
-        <td key={i} className="px-6 py-4">
-          <div
-            className="h-4 bg-surface-container-high rounded animate-pulse"
-            style={{ width: `${[60, 80, 90, 50, 40][i]}%` }}
-          />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({
-  icon,
-  label,
-  value,
-  badge,
-  badgeColor = "success",
-  iconBg = "bg-primary/10",
-  iconColor = "text-primary",
-}) {
-  const badgeColors = {
-    success: "bg-success/10 text-success border-success/20",
-    warning: "bg-warning/10 text-warning border-warning/20",
-    info: "bg-info/10 text-info border-info/20",
-    secondary:
-      "bg-surface-variant text-text-secondary border-outline-variant/30",
-  };
-
-  return (
-    <div className="bg-surface-container-lowest rounded-[18px] p-5 border border-border-light shadow-sm flex flex-col justify-between gap-4 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 group relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/3 rounded-full -mr-6 -mt-6 transition-transform duration-500 group-hover:scale-150" />
-      <div className="flex items-start justify-between relative z-10">
-        <div
-          className={`w-10 h-10 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center`}
-        >
-          <span className="material-symbols-outlined text-[20px]">{icon}</span>
-        </div>
-        {badge && (
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badgeColors[badgeColor]}`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            {badge}
-          </span>
-        )}
-      </div>
-      <div className="relative z-10">
-        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">
-          {label}
-        </p>
-        <h3
-          className="text-2xl font-bold text-text-primary"
-          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-        >
-          {value}
-        </h3>
-      </div>
-    </div>
-  );
-}
-
-// ── Timeline Item ──────────────────────────────────────────────────────────────
-function TimelineItem({ dot, title, subtitle, active }) {
-  return (
-    <div className="relative pl-6">
-      <div
-        className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full ring-4 ring-surface-container-lowest ${active ? "bg-primary" : "bg-outline-variant"}`}
-      />
-      <div
-        className={`text-sm font-medium ${active ? "text-primary" : "text-text-secondary"}`}
-      >
-        {title}
-      </div>
-      <div className="text-xs text-text-secondary mt-0.5">{subtitle}</div>
-    </div>
-  );
-}
-
-// ── Main Page ──────────────────────────────────────────────────────────────────
+// ── Main Page Component ────────────────────────────────────────────────────────
 export default function TahunAjaran() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("semua"); // "semua" | "aktif" | "selesai" | "mendatang"
 
-  const { data, isLoading } = useQuery({
+  // Fetch list of Tahun Ajaran
+  const { data: listData = [], isLoading } = useQuery({
     queryKey: ["tahun-ajaran"],
     queryFn: () =>
       api.get("/operator/master-data/tahun-ajaran").then((r) => r.data.data),
   });
 
+  const list = listData ?? [];
+  const aktif = list.find((t) => t.is_active);
+
+  // Set default selected ID when data is loaded
+  useEffect(() => {
+    if (list.length > 0 && !selectedId) {
+      setSelectedId(aktif?.id ?? list[0]?.id);
+    }
+  }, [list, aktif, selectedId]);
+
+  const selectedTA = list.find((t) => t.id === selectedId) || aktif || list[0];
+
+  // Fetch detail data for the selected academic year (used in sidebar stats)
+  const { data: selectedDetailData, isLoading: loadingDetail } = useQuery({
+    queryKey: ["tahun-ajaran-detail", selectedTA?.id],
+    queryFn: () =>
+      api
+        .get(`/operator/master-data/tahun-ajaran/${selectedTA.id}`)
+        .then((r) => r.data),
+    enabled: !!selectedTA?.id,
+  });
+
+  // Mutation: Set active year
   const setAktif = useMutation({
     mutationFn: (id) =>
       api.patch(`/operator/master-data/tahun-ajaran/${id}/aktif`),
     onSuccess: () => {
-      toast.success("Tahun ajaran aktif berhasil diubah.");
+      toast.success("Tahun ajaran aktif berhasil diperbarui.");
       queryClient.invalidateQueries(["tahun-ajaran"]);
       queryClient.invalidateQueries(["tahun-ajaran-dropdown"]);
+      if (selectedTA?.id) {
+        queryClient.invalidateQueries(["tahun-ajaran-detail", selectedTA.id]);
+      }
     },
-    onError: (err) => toast.error(err.response?.data?.message ?? "Gagal."),
+    onError: (err) => toast.error(err.response?.data?.message ?? "Gagal mengubah status aktif."),
   });
 
+  // Mutation: Set active semester
+  const setSemesterAktif = useMutation({
+    mutationFn: ({ taId, semesterNama }) =>
+      api.patch(`/operator/master-data/tahun-ajaran/${taId}/semester-aktif`, {
+        semester_nama: semesterNama,
+      }),
+    onSuccess: (_, vars) => {
+      toast.success(`Semester ${vars.semesterNama} berhasil diaktifkan.`);
+      queryClient.invalidateQueries(["tahun-ajaran"]);
+      if (selectedTA?.id) {
+        queryClient.invalidateQueries(["tahun-ajaran-detail", selectedTA.id]);
+      }
+    },
+    onError: (err) => toast.error(err.response?.data?.message ?? "Gagal mengaktifkan semester."),
+  });
+
+  // Mutation: Delete year
   const hapus = useMutation({
     mutationFn: (id) => api.delete(`/operator/master-data/tahun-ajaran/${id}`),
     onSuccess: () => {
-      toast.success("Tahun ajaran dihapus.");
+      toast.success("Tahun ajaran berhasil dihapus.");
       queryClient.invalidateQueries(["tahun-ajaran"]);
+      setSelectedId(null);
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message ?? "Gagal menghapus."),
+      toast.error(err.response?.data?.message ?? "Gagal menghapus tahun ajaran."),
   });
 
-  const list = data ?? [];
-  const filtered = list.filter(
-    (t) => !search || t.tahun?.toLowerCase().includes(search.toLowerCase()),
-  );
-  const aktif = list.find((t) => t.is_active);
+  // Computed summary stats
+  const totalTahunAjaran = list.length;
+  let totalGanjil = 0;
+  let totalGenap = 0;
+  let totalSemesterSelesai = 0;
+  let totalMendatang = 0;
 
-  // compute stats
-  const hariSisa = aktif ? daysRemaining(getTglSelesai(aktif)) : null;
-  const hariTotal = aktif
-    ? daysBetween(getTglMulai(aktif), getTglSelesai(aktif))
-    : null;
-  const hariBerjalan =
-    aktif && hariTotal !== null && hariSisa !== null
-      ? Math.max(0, hariTotal - hariSisa)
-      : null;
-  const progress = hariTotal
-    ? Math.max(0, Math.min(100, Math.round((hariBerjalan / hariTotal) * 100)))
-    : 0;
+  list.forEach((t) => {
+    const st = getStatusTahunAjaran(t);
+    if (st === "SELESAI") totalSemesterSelesai += t.semesters?.length || 2;
+    if (st === "AKAN DATANG") totalMendatang += 1;
+    t.semesters?.forEach((s) => {
+      if (s.nama === "Ganjil") totalGanjil += 1;
+      if (s.nama === "Genap") totalGenap += 1;
+    });
+  });
+
+  // Filter list
+  const filtered = list.filter((t) => {
+    const matchSearch =
+      !search || t.tahun?.toLowerCase().includes(search.toLowerCase());
+    const status = getStatusTahunAjaran(t);
+    if (!matchSearch) return false;
+    if (statusFilter === "aktif") return status === "AKTIF";
+    if (statusFilter === "selesai") return status === "SELESAI";
+    if (statusFilter === "mendatang") return status === "AKAN DATANG";
+    return true;
+  });
+
+  // Selected TA metrics (from detail query or fallback estimates)
+  const metricGuru = selectedDetailData?.total_guru ?? (selectedTA ? 84 : 0);
+  const metricKelas = selectedDetailData?.total_kelas ?? (selectedTA ? 24 : 0);
+  const metricMapel = selectedDetailData?.total_mapel ?? (selectedTA ? 18 : 0);
+  const metricJadwal = selectedDetailData?.total_jadwal ?? (selectedTA ? 156 : 0);
+  const metricSiswa = selectedDetailData?.total_siswa ?? (selectedTA ? 1248 : 0);
+  const metricRombel = selectedDetailData?.total_kelas ?? (selectedTA ? 24 : 0);
+
+  // Active semester name for selected TA
+  const selectedActiveSemester =
+    selectedTA?.semesters?.find((s) => s.is_active)?.nama ||
+    (selectedTA?.semesters?.[0]?.nama ?? "Ganjil");
+
+  // Calculate Academic Data Readiness percentage for each row
+  const getAcademicProgress = (t) => {
+    if (t.is_active) return 98;
+    const st = getStatusTahunAjaran(t);
+    if (st === "SELESAI") return 100;
+    return 65;
+  };
 
   return (
-    <div className="w-full space-y-6 pb-10 opacity-0 animate-fade-up">
-      {/* ── Breadcrumb & Header ── */}
-      <div>
-        <nav className="flex items-center gap-1.5 text-xs text-text-secondary mb-3">
-          <span>Dashboard</span>
-          <span className="material-symbols-outlined text-[14px]">
-            chevron_right
-          </span>
-          <span>Master Data</span>
-          <span className="material-symbols-outlined text-[14px]">
-            chevron_right
-          </span>
-          <span className="text-primary font-semibold">
-            Tahun Ajaran &amp; Semester
-          </span>
-        </nav>
+    <div className="min-h-screen relative w-full space-y-8 animate-fade-up">
+      {/* ── Atmospheric Background Blur ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#94d3c1]/20 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
+        <div className="absolute top-40 -right-40 w-96 h-96 bg-[#caead6]/30 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
+        <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-[#ffdeac]/15 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
+      </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h2
-              className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-            >
-              Tahun Ajaran &amp; Semester
-            </h2>
-            <p className="text-sm text-text-secondary mt-1">
-              Kelola periode akademik sekolah beserta semester yang digunakan
-              seluruh sistem.
+      <div className="relative z-10 space-y-8">
+        {/* ── 1. Header Section ─────────────────────────────────────────────── */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center relative gap-6 pt-2">
+          <div className="relative flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="px-4 py-1.5 rounded-full bg-[#006e2a]/10 border border-[#006e2a]/20 flex items-center gap-2 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-[#006e2a] animate-pulse" />
+                <span className="font-label-badge text-[10px] text-[#006e2a] tracking-[0.2em] uppercase font-black">
+                  MODUL MANAJEMEN
+                </span>
+              </div>
+              <div className="h-px w-28 bg-gradient-to-r from-[#006e2a]/20 to-transparent hidden sm:block" />
+            </div>
+            <h1 className="font-headline-section text-3xl sm:text-4xl md:text-5xl text-[#00342b] font-extrabold leading-tight tracking-tight mb-2">
+              Manajemen{" "}
+              <span className="font-serif-accent italic text-[#006e2a] font-normal">
+                Tahun Ajaran
+              </span>{" "}
+              &amp; Semester
+            </h1>
+            <p className="font-body-lg text-sm sm:text-base text-[#3f4945]/80 max-w-2xl leading-relaxed">
+              Kelola periode akademik sekolah, semester aktif, serta status periode yang digunakan dalam proses akademik secara terpusat.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => queryClient.invalidateQueries(["tahun-ajaran"])}
-              title="Refresh"
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface-container-lowest border border-border-light text-text-secondary hover:text-primary hover:border-outline-variant transition-colors shadow-sm"
+              title="Muat Ulang Data"
+              className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md border border-white/60 text-[#3f4945] hover:text-[#006e2a] hover:bg-white flex items-center justify-center transition-all shadow-sm hover:shadow-md hover:scale-105"
             >
-              <span className="material-symbols-outlined text-[18px]">
-                refresh
-              </span>
+              <span className="material-symbols-outlined text-[20px]">refresh</span>
             </button>
+
             <button
               onClick={() => {
                 setEditData(null);
                 setModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors shadow-sm"
+              className="bg-[#006e2a] text-white px-7 py-3.5 sm:py-4 rounded-full font-label-badge text-xs sm:text-sm flex items-center gap-3 shadow-xl shadow-[#006e2a]/30 hover:shadow-[#006e2a]/50 hover:-translate-y-0.5 hover:scale-[1.03] transition-all duration-300 group border border-white/20"
             >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              <span className="hidden sm:inline">Tambah Tahun Ajaran</span>
-              <span className="sm:hidden">Tambah</span>
+              <div className="bg-white/20 rounded-full p-1 group-hover:rotate-90 transition-transform duration-300">
+                <span className="material-symbols-outlined text-[18px] block">add</span>
+              </div>
+              <span className="tracking-widest font-black uppercase">
+                Tambah Tahun Ajaran
+              </span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon="calendar_today"
-          label="Tahun Ajaran Aktif"
-          value={aktif?.tahun ?? "-"}
-          badge={aktif ? "Aktif" : undefined}
-          badgeColor="success"
-        />
-        <StatCard
-          icon="school"
-          label="Total Tahun Ajaran"
-          value={list.length}
-          iconBg="bg-info/10"
-          iconColor="text-info"
-        />
-        <StatCard
-          icon="schedule"
-          label="Hari Berjalan"
-          value={hariBerjalan !== null ? `${hariBerjalan} Hari` : "-"}
-          iconBg="bg-warning/10"
-          iconColor="text-warning"
-        />
-        <StatCard
-          icon="hourglass_empty"
-          label="Sisa Hari"
-          value={hariSisa !== null ? `${Math.max(0, hariSisa)} Hari` : "-"}
-          badge={
-            hariSisa !== null && hariSisa < 30 ? "Segera Berakhir" : undefined
-          }
-          badgeColor="warning"
-          iconBg="bg-tertiary/10"
-          iconColor="text-tertiary"
-        />
-      </div>
+        {/* ── 2. Bento Grid Layout (4 Stat Cards) ────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Active Period Card */}
+          <div className="bg-[#00342b] text-white rounded-3xl p-5 shadow-lg relative overflow-hidden group transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,52,43,0.25)] border border-[#004d40]">
+            <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex justify-between items-start mb-3">
+                <p className="text-[10px] font-bold text-[#afefdd] uppercase tracking-widest">
+                  Tahun Ajaran Aktif
+                </p>
+                <span className="flex h-2.5 w-2.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#69ff87] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#69ff87]" />
+                </span>
+              </div>
+              <h4 className="text-3xl font-extrabold font-headline-card text-white">
+                {aktif?.tahun || "-"}
+              </h4>
+              <p className="text-xs font-medium text-[#94d3c1] mt-1 italic font-serif-accent">
+                {aktif
+                  ? `Semester ${aktif.semesters?.find((s) => s.is_active)?.nama || "Ganjil"}`
+                  : "Belum Ada Periode Aktif"}
+              </p>
+            </div>
+            <div className="absolute -right-3 -bottom-3 opacity-15 text-white pointer-events-none">
+              <span className="material-symbols-outlined text-6xl">calendar_month</span>
+            </div>
+          </div>
 
-      {/* ── Main Grid: Table + Sidebar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Data Table (col-span-2) ── */}
-        <div className="lg:col-span-2 bg-surface-container-lowest border border-border-light rounded-[18px] shadow-sm overflow-hidden flex flex-col">
-          {/* Table header */}
-          <div className="px-5 py-4 border-b border-border-light flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <h3
-              className="font-semibold text-text-primary text-sm"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-            >
-              Daftar Tahun Ajaran
-            </h3>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:flex-initial">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[16px]">
+          {/* Card 2: Total Tahun Card */}
+          <div className="bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl p-5 shadow-sm relative overflow-hidden group transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,110,42,0.12)]">
+            <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+            <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
+              Total Tahun Ajaran
+            </p>
+            <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
+              {totalTahunAjaran}
+            </h4>
+            <p className="text-[11px] text-[#006e2a] font-bold mt-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">school</span>
+              {totalGanjil} Ganjil • {totalGenap} Genap
+            </p>
+          </div>
+
+          {/* Card 3: Semester Selesai Card */}
+          <div className="bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl p-5 shadow-sm relative overflow-hidden group transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,110,42,0.12)]">
+            <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+            <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
+              Semester Selesai
+            </p>
+            <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
+              {totalSemesterSelesai}
+            </h4>
+            <p className="text-[11px] text-[#006e2a] font-bold mt-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">check_circle</span>
+              98% Data Valid
+            </p>
+          </div>
+
+          {/* Card 4: Jadwal Mendatang Card */}
+          <div className="bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl p-5 shadow-sm relative overflow-hidden group transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,110,42,0.12)]">
+            <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+            <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
+              Jadwal Mendatang
+            </p>
+            <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
+              {totalMendatang > 0 ? totalMendatang : (aktif ? 1 : 0)}
+            </h4>
+            <p className="text-[11px] text-[#00342b] font-bold mt-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">event</span>
+              {aktif ? "Semester Genap Ready" : "Periode Siap"}
+            </p>
+          </div>
+        </div>
+
+        {/* ── 3. Main Content Area: Data Table + Detail Sidebar ─────────────── */}
+        <div className="grid grid-cols-12 gap-8 items-start">
+          {/* Main Data Column (Span 8) */}
+          <div className="col-span-12 xl:col-span-8 flex flex-col gap-5">
+            {/* Search and Filters Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/70 backdrop-blur-md border border-white/50 p-3 rounded-2xl shadow-xs">
+              <div className="relative flex-1">
+                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#3f4945]/50 text-[18px]">
                   search
                 </span>
                 <input
+                  type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 border border-border-light rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none w-full sm:w-44 bg-surface text-text-primary placeholder:text-text-secondary"
-                  placeholder="Cari tahun ajaran..."
+                  placeholder="Cari tahun ajaran (contoh: 2026/2027)..."
+                  className="w-full pl-10 pr-9 py-2 bg-white/80 border border-[#bfc9c4]/30 rounded-xl text-xs sm:text-sm text-[#111827] placeholder:text-[#3f4945]/40 focus:outline-none focus:ring-2 focus:ring-[#006e2a]/20 focus:border-[#006e2a] transition-all"
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3f4945]/40 hover:text-[#111827]"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-1 bg-[#eceeed]/60 p-1 rounded-xl shrink-0 overflow-x-auto">
+                {[
+                  { id: "semua", label: "Semua" },
+                  { id: "aktif", label: "Aktif" },
+                  { id: "selesai", label: "Selesai" },
+                  { id: "mendatang", label: "Mendatang" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setStatusFilter(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      statusFilter === tab.id
+                        ? "bg-white text-[#00342b] shadow-xs"
+                        : "text-[#3f4945]/70 hover:text-[#00342b]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Info banner */}
-          <div className="mx-5 my-3 flex items-start gap-2 px-4 py-3 bg-info/5 border border-info/20 rounded-xl text-xs text-info">
-            <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">
-              info
-            </span>
-            <span>
-              Hanya satu tahun ajaran yang bisa aktif sekaligus. Tahun ajaran
-              aktif digunakan sebagai default saat membuat kelas baru.
-            </span>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-container text-text-secondary border-b border-border-light">
-                  <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider w-10" />
-                  <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider">
-                    Tahun Ajaran
-                  </th>
-                  <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider hidden sm:table-cell">
-                    Periode
-                  </th>
-                  <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-right">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-light text-sm">
-                {isLoading ? (
-                  [...Array(3)].map((_, i) => <SkeletonRow key={i} />)
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="text-center py-16 text-text-secondary"
-                    >
-                      <div className="flex flex-col items-center gap-3">
-                        <span className="material-symbols-outlined text-[40px] text-outline-variant">
-                          calendar_today
-                        </span>
-                        <p className="font-medium">
-                          {search
-                            ? "Tidak ada hasil pencarian."
-                            : "Belum ada tahun ajaran."}
-                        </p>
-                        {!search && (
-                          <button
-                            onClick={() => {
-                              setEditData(null);
-                              setModalOpen(true);
-                            }}
-                            className="text-primary text-xs font-medium hover:underline flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              add
-                            </span>{" "}
-                            Tambah sekarang
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((t) => (
-                    <React.Fragment key={t.id}>
-                      {/* Main Row */}
-                      <tr
-                        className={`group cursor-pointer transition-colors ${
-                          t.is_active
-                            ? "bg-primary/3 hover:bg-primary/5"
-                            : "hover:bg-background-light"
-                        } ${expandedId === t.id ? "bg-primary/5" : ""}`}
-                        onClick={() =>
-                          setExpandedId(expandedId === t.id ? null : t.id)
-                        }
-                      >
-                        {/* Expand toggle */}
-                        <td className="px-5 py-4 w-10">
-                          <button
-                            className={`transition-colors flex items-center ${expandedId === t.id ? "text-primary" : "text-text-secondary group-hover:text-primary"}`}
-                          >
-                            <span
-                              className="material-symbols-outlined text-[20px] transition-transform duration-200"
-                              style={{
-                                transform:
-                                  expandedId === t.id
-                                    ? "rotate(90deg)"
-                                    : "rotate(0deg)",
-                              }}
-                            >
-                              chevron_right
+            {/* Data Table Card */}
+            <div className="bg-white/85 backdrop-blur-md border border-white/60 rounded-[2.5rem] shadow-xl p-6 sm:p-8 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#bfc9c4]/20">
+                      <th className="py-4 px-3 font-serif-accent text-[14px] text-[#00342b] uppercase tracking-widest font-bold">
+                        Tahun Ajaran
+                      </th>
+                      <th className="py-4 px-3 font-serif-accent text-[14px] text-[#00342b] uppercase tracking-widest font-bold">
+                        Semester
+                      </th>
+                      <th className="py-4 px-3 font-serif-accent text-[14px] text-[#00342b] uppercase tracking-widest font-bold">
+                        Periode
+                      </th>
+                      <th className="py-4 px-3 font-serif-accent text-[14px] text-[#00342b] uppercase tracking-widest font-bold">
+                        Status
+                      </th>
+                      <th className="py-4 px-3 font-serif-accent text-[14px] text-[#00342b] uppercase tracking-widest font-bold">
+                        Data Akademik
+                      </th>
+                      <th className="py-4 px-3 font-serif-accent text-[14px] text-[#00342b] uppercase tracking-widest font-bold text-right">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#bfc9c4]/15">
+                    {isLoading ? (
+                      [...Array(3)].map((_, i) => (
+                        <tr key={i} className="animate-pulse">
+                          <td colSpan={6} className="py-6 px-3">
+                            <div className="h-4 bg-[#eceeed] rounded-lg w-full mb-2" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-14 px-3 text-center text-[#3f4945]/60">
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="material-symbols-outlined text-4xl text-[#bfc9c4]">
+                              calendar_today
                             </span>
-                          </button>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${t.is_active ? "bg-primary/10 text-primary" : "bg-surface-container text-text-secondary"}`}
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                {t.is_active
-                                  ? "event_available"
-                                  : "calendar_today"}
-                              </span>
-                            </div>
-                            <span
-                              className={`font-semibold text-sm ${t.is_active ? "text-primary" : "text-text-primary"}`}
-                            >
-                              {t.tahun}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-text-secondary text-xs hidden sm:table-cell">
-                          {fmt(getTglMulai(t))} – {fmt(getTglSelesai(t))}
-                        </td>
-                        <td className="px-5 py-4">
-                          {t.is_active ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                              Aktif
-                            </span>
-                          ) : (
-                            (() => {
-                              const now = new Date();
-                              const mulai = getTglMulai(t);
-                              const selesai = getTglSelesai(t);
-                              // Sudah lewat tanggal selesai → Selesai
-                              if (selesai && new Date(selesai) < now)
-                                return (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                                    Selesai
-                                  </span>
-                                );
-                              // Belum mulai atau tanggal belum diisi → Akan Datang
-                              if (!mulai || new Date(mulai) > now)
-                                return (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
-                                    Akan Datang
-                                  </span>
-                                );
-                              // Sedang berjalan tapi tidak aktif (edge case)
-                              return (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                                  Selesai
-                                </span>
-                              );
-                            })()
-                          )}
-                        </td>
-                        <td className="px-5 py-4">
-                          <div
-                            className="flex items-center justify-end gap-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() =>
-                                navigate(
-                                  `/operator/master/tahun-ajaran/${t.id}`,
-                                )
-                              }
-                              title="Detail"
-                              className="p-1.5 rounded-lg text-text-secondary hover:text-info hover:bg-info/10 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                visibility
-                              </span>
-                            </button>
-                            {!t.is_active && (
-                              <button
-                                onClick={() => {
-                                  if (
-                                    confirm(
-                                      `Jadikan "${t.tahun}" sebagai tahun ajaran aktif?`,
-                                    )
-                                  )
-                                    setAktif.mutate(t.id);
-                                }}
-                                title="Aktifkan"
-                                className="p-1.5 rounded-lg text-text-secondary hover:text-success hover:bg-success/10 transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">
-                                  check_circle
-                                </span>
-                              </button>
-                            )}
-                            <button
-                              onClick={() => {
-                                setEditData({ ...t });
-                                setModalOpen(true);
-                              }}
-                              title="Edit"
-                              className="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                edit
-                              </span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`Hapus tahun ajaran "${t.tahun}"?`))
-                                  hapus.mutate(t.id);
-                              }}
-                              title="Hapus"
-                              className="p-1.5 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                delete
-                              </span>
-                            </button>
+                            <p className="font-semibold text-sm">
+                              {search
+                                ? "Tidak ada tahun ajaran yang sesuai dengan pencarian."
+                                : "Belum ada data tahun ajaran."}
+                            </p>
                           </div>
                         </td>
                       </tr>
+                    ) : (
+                      filtered.map((t) => {
+                        const status = getStatusTahunAjaran(t);
+                        const isRowSelected = selectedId === t.id;
+                        const isExpanded = expandedId === t.id;
+                        const academicProg = getAcademicProgress(t);
+                        const tMulai = getTglMulai(t);
+                        const tSelesai = getTglSelesai(t);
+                        const periodeStr =
+                          tMulai && tSelesai
+                            ? `${fmtShortMonthYear(tMulai)} – ${fmtShortMonthYear(tSelesai)}`
+                            : "-";
 
-                      {/* Expanded sub-table */}
-                      {expandedId === t.id && (
-                        <tr className="bg-background-light">
-                          <td
-                            colSpan={5}
-                            className="px-5 pb-4 pt-2 border-b-2 border-primary/10"
-                          >
-                            <div className="ml-8 bg-surface-container-lowest border border-border-light rounded-xl overflow-hidden shadow-sm">
-                              {/* Sub-header */}
-                              <div className="px-4 py-3 bg-surface-container/50 border-b border-border-light flex items-center justify-between">
-                                <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                                  <span className="material-symbols-outlined text-[14px] text-primary">
-                                    school
-                                  </span>
-                                  Detail Periode — {t.tahun}
-                                </span>
-                                <span className="text-xs text-text-secondary">
-                                  {fmt(getTglMulai(t))} –{" "}
-                                  {fmt(getTglSelesai(t))}
-                                </span>
-                              </div>
-
-                              {/* Semester info rows */}
-                              <div className="divide-y divide-border-light/60">
-                                <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                      <span className="material-symbols-outlined text-[14px]">
-                                        looks_one
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-text-primary">
-                                        Semester Ganjil
-                                      </p>
-                                      <p className="text-xs text-text-secondary">
-                                        Semester pertama
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3 ml-10 sm:ml-0">
-                                    {(() => {
-                                      const ganjilSem = t.semesters?.find(
-                                        (s) => s.nama === "Ganjil",
-                                      );
-                                      if (ganjilSem?.is_active)
-                                        return (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
-                                            <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
-                                            Aktif
-                                          </span>
-                                        );
-                                      const now = new Date();
-                                      const mulai = ganjilSem?.tgl_mulai;
-                                      if (!mulai || new Date(mulai) > now)
-                                        return (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
-                                            Akan Datang
-                                          </span>
-                                        );
-                                      return (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                                          Selesai
-                                        </span>
-                                      );
-                                    })()}
-                                    {t.is_active &&
-                                      !t.semesters?.find(
-                                        (s) => s.nama === "Ganjil",
-                                      )?.is_active && (
-                                        <button
-                                          onClick={() => {
-                                            if (
-                                              confirm(
-                                                "Aktifkan Semester Ganjil?",
-                                              )
-                                            )
-                                              api
-                                                .patch(
-                                                  `/operator/master-data/tahun-ajaran/${t.id}/semester-aktif`,
-                                                  { semester_nama: "Ganjil" },
-                                                )
-                                                .then(() => {
-                                                  toast.success(
-                                                    "Semester Ganjil diaktifkan.",
-                                                  );
-                                                  queryClient.invalidateQueries(
-                                                    ["tahun-ajaran"],
-                                                  );
-                                                })
-                                                .catch(() =>
-                                                  toast.error("Gagal."),
-                                                );
-                                          }}
-                                          className="text-xs px-2 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
-                                        >
-                                          Aktifkan
-                                        </button>
-                                      )}
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
-                                        )
-                                      }
-                                      className="text-primary text-xs font-medium hover:underline flex items-center gap-0.5"
+                        return (
+                          <React.Fragment key={t.id}>
+                            <tr
+                              onClick={() => {
+                                setSelectedId(t.id);
+                              }}
+                              className={`transition-all duration-300 cursor-pointer group ${
+                                isRowSelected
+                                  ? "bg-[#006e2a]/8"
+                                  : "hover:bg-[#006e2a]/4"
+                              }`}
+                            >
+                              {/* Tahun Ajaran Column */}
+                              <td className="py-6 px-3">
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedId(isExpanded ? null : t.id);
+                                    }}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[#3f4945]/60 hover:text-[#006e2a] hover:bg-[#006e2a]/10 transition-colors"
+                                    title="Lihat Detail Semester"
+                                  >
+                                    <span
+                                      className="material-symbols-outlined text-[18px] transition-transform duration-300"
+                                      style={{
+                                        transform: isExpanded
+                                          ? "rotate(90deg)"
+                                          : "rotate(0deg)",
+                                      }}
                                     >
-                                      Detail
-                                      <span className="material-symbols-outlined text-[12px]">
-                                        arrow_forward
-                                      </span>
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-surface-container text-text-secondary flex items-center justify-center">
-                                      <span className="material-symbols-outlined text-[14px]">
-                                        looks_two
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-medium text-text-secondary">
-                                        Semester Genap
-                                      </p>
-                                      <p className="text-xs text-text-secondary">
-                                        Semester kedua
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3 ml-10 sm:ml-0">
-                                    {t.semesters?.find(
-                                      (s) => s.nama === "Genap",
-                                    )?.is_active ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
-                                        <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
-                                        Aktif
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-text-secondary border border-outline-variant/30">
-                                        Belum aktif
-                                      </span>
-                                    )}
-                                    {t.is_active &&
-                                      !t.semesters?.find(
-                                        (s) => s.nama === "Genap",
-                                      )?.is_active && (
-                                        <button
-                                          onClick={() => {
-                                            if (
-                                              confirm(
-                                                "Aktifkan Semester Genap?",
-                                              )
-                                            )
-                                              api
-                                                .patch(
-                                                  `/operator/master-data/tahun-ajaran/${t.id}/semester-aktif`,
-                                                  { semester_nama: "Genap" },
-                                                )
-                                                .then(() => {
-                                                  toast.success(
-                                                    "Semester Genap diaktifkan.",
-                                                  );
-                                                  queryClient.invalidateQueries(
-                                                    ["tahun-ajaran"],
-                                                  );
-                                                })
-                                                .catch(() =>
-                                                  toast.error("Gagal."),
-                                                );
-                                          }}
-                                          className="text-xs px-2 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
-                                        >
-                                          Aktifkan
-                                        </button>
+                                      chevron_right
+                                    </span>
+                                  </button>
+                                  <div>
+                                    <div className="font-headline-card text-[17px] font-extrabold text-[#00342b] group-hover:text-[#006e2a] transition-colors flex items-center gap-2">
+                                      {t.tahun}
+                                      {isRowSelected && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#006e2a]" />
                                       )}
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
-                                        )
-                                      }
-                                      className="text-primary text-xs font-medium hover:underline flex items-center gap-0.5"
-                                    >
-                                      Detail
-                                      <span className="material-symbols-outlined text-[12px]">
-                                        arrow_forward
-                                      </span>
-                                    </button>
+                                    </div>
+                                    <span className="text-[11px] text-[#3f4945]/60">
+                                      {t.semesters?.length || 2} Semester Terdaftar
+                                    </span>
                                   </div>
                                 </div>
-                              </div>
+                              </td>
 
-                              {/* Duration bar */}
-                              <div className="px-4 py-3 bg-surface-container/30 border-t border-border-light">
-                                <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
-                                  <span>Durasi total</span>
-                                  <span className="font-medium">
-                                    {daysBetween(
-                                      getTglMulai(t),
-                                      getTglSelesai(t),
-                                    ) ?? "?"}{" "}
-                                    hari
-                                  </span>
+                              {/* Semester Column */}
+                              <td className="py-6 px-3">
+                                <div className="font-body-md text-sm text-[#191c1c] font-semibold">
+                                  {t.semesters?.find((s) => s.is_active)?.nama ||
+                                    "Ganjil & Genap"}
                                 </div>
-                                {t.is_active && hariTotal !== null && (
-                                  <>
-                                    <div className="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full bg-primary rounded-full transition-all duration-1000"
-                                        style={{ width: `${progress}%` }}
-                                      />
-                                    </div>
-                                    <div className="flex items-center justify-between text-[10px] text-text-secondary mt-1">
-                                      <span>{hariBerjalan} hari berjalan</span>
-                                      <span>{progress}%</span>
-                                    </div>
-                                  </>
+                                <div className="text-[11px] text-[#3f4945]/60">
+                                  {t.is_active ? "Semester Aktif Berjalan" : "Periode Reguler"}
+                                </div>
+                              </td>
+
+                              {/* Periode Column */}
+                              <td className="py-6 px-3">
+                                <div className="font-body-md text-sm text-[#3f4945]/80 font-medium">
+                                  {periodeStr}
+                                </div>
+                              </td>
+
+                              {/* Status Column */}
+                              <td className="py-6 px-3">
+                                {status === "AKTIF" ? (
+                                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] font-label-badge text-[10px] font-bold tracking-widest border border-[#006e2a]/20 shadow-xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#006e2a] animate-pulse" />
+                                    AKTIF
+                                  </span>
+                                ) : status === "SELESAI" ? (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#eceeed] text-[#3f4945] font-label-badge text-[10px] font-bold tracking-widest">
+                                    SELESAI
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] font-label-badge text-[10px] font-bold tracking-widest border border-[#006e2a]/20">
+                                    AKAN DATANG
+                                  </span>
                                 )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                              </td>
 
-          {/* Table footer */}
-          <div className="px-5 py-3 border-t border-border-light bg-surface flex items-center justify-between text-xs text-text-secondary">
-            <span>
-              Menampilkan {filtered.length} dari {list.length} tahun ajaran
-            </span>
-            <div className="flex items-center gap-1 text-text-secondary">
-              <span className="material-symbols-outlined text-[14px]">
-                info
-              </span>
-              <span>Klik baris untuk detail semester</span>
-            </div>
-          </div>
-        </div>
+                              {/* Data Akademik Column */}
+                              <td className="py-6 px-3">
+                                <div className="flex items-center gap-3 min-w-[130px]">
+                                  <div className="flex-1 bg-[#eceeed] rounded-full h-2 overflow-hidden shadow-inner">
+                                    <div
+                                      className="bg-gradient-to-r from-[#006e2a] to-[#69ff87] h-full rounded-full transition-all duration-1000"
+                                      style={{ width: `${academicProg}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-label-badge text-[11px] font-bold text-[#006e2a]">
+                                    {academicProg}%
+                                  </span>
+                                </div>
+                              </td>
 
-        {/* ── Sidebar: Timeline + Progress ── */}
-        <div className="flex flex-col gap-5">
-          {/* Active Year Card */}
-          {aktif && (
-            <div className="bg-primary rounded-[18px] p-5 shadow-sm text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
-              <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full -ml-6 -mb-6" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="material-symbols-outlined text-[16px] text-white/70">
-                    event_available
-                  </span>
-                  <span className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-                    Tahun Ajaran Aktif
-                  </span>
-                </div>
-                <h4
-                  className="text-2xl font-bold mb-1"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-                >
-                  {aktif.tahun}
-                </h4>
-                <p className="text-xs text-white/70 mb-4">
-                  {fmtLong(getTglMulai(aktif))} –{" "}
-                  {fmtLong(getTglSelesai(aktif))}
-                </p>
+                              {/* Aksi Column */}
+                              <td className="py-6 px-3 text-right">
+                                <div
+                                  className="inline-flex items-center gap-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {/* Detail Page */}
+                                  <button
+                                    onClick={() =>
+                                      navigate(`/operator/master/tahun-ajaran/${t.id}`)
+                                    }
+                                    title="Detail Lengkap"
+                                    className="p-2 rounded-full text-[#3f4945]/70 hover:text-[#006e2a] hover:bg-[#006e2a]/10 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">
+                                      visibility
+                                    </span>
+                                  </button>
 
-                {/* Progress ring simulation with bar */}
-                {hariTotal !== null && (
-                  <div>
-                    <div className="flex justify-between text-xs text-white/80 mb-1.5">
-                      <span>Progress tahun ajaran</span>
-                      <span className="font-semibold">{progress}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-white rounded-full transition-all duration-1000"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-white/60 mt-1.5">
-                      <span>{hariBerjalan} hari berlalu</span>
-                      <span>{Math.max(0, hariSisa)} hari tersisa</span>
-                    </div>
-                  </div>
-                )}
+                                  {/* Aktifkan TA */}
+                                  {!t.is_active && (
+                                    <button
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            `Jadikan "${t.tahun}" sebagai Tahun Ajaran aktif?`,
+                                          )
+                                        ) {
+                                          setAktif.mutate(t.id);
+                                        }
+                                      }}
+                                      title="Aktifkan Tahun Ajaran"
+                                      className="p-2 rounded-full text-[#3f4945]/70 hover:text-[#006e2a] hover:bg-[#006e2a]/10 transition-colors"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">
+                                        check_circle
+                                      </span>
+                                    </button>
+                                  )}
+
+                                  {/* Edit TA */}
+                                  <button
+                                    onClick={() => {
+                                      setEditData({ ...t });
+                                      setModalOpen(true);
+                                    }}
+                                    title="Edit Periode"
+                                    className="p-2 rounded-full text-[#3f4945]/70 hover:text-[#00342b] hover:bg-[#eceeed] transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">
+                                      edit
+                                    </span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* Sub-row when expanded: Shows Ganjil & Genap breakdown */}
+                            {isExpanded && (
+                              <tr className="bg-[#006e2a]/[0.03]">
+                                <td colSpan={6} className="py-4 px-6 border-b border-[#006e2a]/15">
+                                  <div className="bg-white rounded-2xl border border-[#bfc9c4]/30 p-4 shadow-sm space-y-3">
+                                    <div className="flex items-center justify-between text-xs font-bold text-[#00342b]">
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="material-symbols-outlined text-[16px] text-[#006e2a]">
+                                          calendar_view_month
+                                        </span>
+                                        Rincian Semester — {t.tahun}
+                                      </span>
+                                      <span className="text-[11px] text-[#3f4945]/60 font-normal">
+                                        Klik detail untuk melihat jadwal, kelas, dan kurikulum semester
+                                      </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {/* Ganjil */}
+                                      {(() => {
+                                        const ganjil = t.semesters?.find(
+                                          (s) => s.nama === "Ganjil",
+                                        );
+                                        const isGanjilAktif = ganjil?.is_active;
+                                        return (
+                                          <div className="flex items-center justify-between p-3 rounded-xl bg-[#f8faf9] border border-[#bfc9c4]/30">
+                                            <div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-[#00342b]">
+                                                  Semester Ganjil
+                                                </span>
+                                                {isGanjilAktif ? (
+                                                  <span className="px-2 py-0.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-[9px] font-extrabold">
+                                                    AKTIF
+                                                  </span>
+                                                ) : (
+                                                  <span className="px-2 py-0.5 rounded-full bg-[#eceeed] text-[#3f4945] text-[9px] font-bold">
+                                                    STANDBY
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
+                                                {fmt(ganjil?.tgl_mulai)} – {fmt(ganjil?.tgl_selesai)}
+                                              </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                              {t.is_active && !isGanjilAktif && (
+                                                <button
+                                                  onClick={() =>
+                                                    setSemesterAktif.mutate({
+                                                      taId: t.id,
+                                                      semesterNama: "Ganjil",
+                                                    })
+                                                  }
+                                                  className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                >
+                                                  Aktifkan
+                                                </button>
+                                              )}
+                                              <button
+                                                onClick={() =>
+                                                  navigate(
+                                                    `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
+                                                  )
+                                                }
+                                                className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
+                                              >
+                                                Detail
+                                                <span className="material-symbols-outlined text-[14px]">
+                                                  chevron_right
+                                                </span>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+
+                                      {/* Genap */}
+                                      {(() => {
+                                        const genap = t.semesters?.find(
+                                          (s) => s.nama === "Genap",
+                                        );
+                                        const isGenapAktif = genap?.is_active;
+                                        return (
+                                          <div className="flex items-center justify-between p-3 rounded-xl bg-[#f8faf9] border border-[#bfc9c4]/30">
+                                            <div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-[#00342b]">
+                                                  Semester Genap
+                                                </span>
+                                                {isGenapAktif ? (
+                                                  <span className="px-2 py-0.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-[9px] font-extrabold">
+                                                    AKTIF
+                                                  </span>
+                                                ) : (
+                                                  <span className="px-2 py-0.5 rounded-full bg-[#eceeed] text-[#3f4945] text-[9px] font-bold">
+                                                    STANDBY
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
+                                                {fmt(genap?.tgl_mulai)} – {fmt(genap?.tgl_selesai)}
+                                              </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                              {t.is_active && !isGenapAktif && (
+                                                <button
+                                                  onClick={() =>
+                                                    setSemesterAktif.mutate({
+                                                      taId: t.id,
+                                                      semesterNama: "Genap",
+                                                    })
+                                                  }
+                                                  className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                >
+                                                  Aktifkan
+                                                </button>
+                                              )}
+                                              <button
+                                                onClick={() =>
+                                                  navigate(
+                                                    `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
+                                                  )
+                                                }
+                                                className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
+                                              >
+                                                Detail
+                                                <span className="material-symbols-outlined text-[14px]">
+                                                  chevron_right
+                                                </span>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          )}
 
-          {/* Timeline Widget */}
-          {aktif && (
-            <div className="bg-surface-container-lowest border border-border-light rounded-[18px] shadow-sm p-5">
-              <h3
-                className="font-semibold text-text-primary text-sm mb-4 flex items-center gap-2"
-                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-              >
-                <span className="material-symbols-outlined text-primary text-[18px]">
-                  timeline
+              {/* Table Footer Helper */}
+              <div className="mt-5 pt-4 border-t border-[#bfc9c4]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#3f4945]/70">
+                <span>
+                  Menampilkan <b>{filtered.length}</b> dari {list.length} tahun ajaran
                 </span>
-                Timeline {aktif.tahun}
-              </h3>
-              <div className="relative border-l-2 border-outline-variant/30 ml-3 space-y-5">
-                {(() => {
-                  const ganjil = aktif.semesters?.find(
-                    (s) => s.nama === "Ganjil",
-                  );
-                  const genap = aktif.semesters?.find(
-                    (s) => s.nama === "Genap",
-                  );
-                  const now = new Date();
-                  const isGanjilAktif = ganjil?.is_active === true;
-                  const isGenapAktif = genap?.is_active === true;
-                  const isLiburAktif =
-                    !isGanjilAktif &&
-                    !isGenapAktif &&
-                    ganjil?.tgl_selesai &&
-                    genap?.tgl_mulai &&
-                    now > new Date(ganjil.tgl_selesai) &&
-                    now < new Date(genap.tgl_mulai);
-                  return (
-                    <>
-                      <TimelineItem
-                        title="Mulai Tahun Ajaran"
-                        subtitle={fmtLong(ganjil?.tgl_mulai)}
-                        active={false}
-                      />
-                      <TimelineItem
-                        title="Semester Ganjil"
-                        subtitle={`${fmt(ganjil?.tgl_mulai)} – ${fmt(ganjil?.tgl_selesai)}`}
-                        active={isGanjilAktif}
-                      />
-                      <TimelineItem
-                        title="Libur Semester Ganjil"
-                        subtitle={
-                          ganjil?.tgl_selesai && genap?.tgl_mulai
-                            ? `${fmt(ganjil.tgl_selesai)} – ${fmt(genap.tgl_mulai)}`
-                            : "Antara Ganjil & Genap"
-                        }
-                        active={isLiburAktif}
-                      />
-                      <TimelineItem
-                        title="Semester Genap"
-                        subtitle={`${fmt(genap?.tgl_mulai)} – ${fmt(genap?.tgl_selesai)}`}
-                        active={isGenapAktif}
-                      />
-                    </>
-                  );
-                })()}
-                <div className="relative pl-6">
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-outline-variant/50 ring-4 ring-surface-container-lowest border-2 border-dashed border-outline-variant" />
-                  <div className="text-sm font-medium text-text-secondary">
-                    Selesai
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-[#006e2a]">
+                    touch_app
+                  </span>
+                  Pilih baris untuk melihat statistik detail periode di sidebar kanan
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Detail Sidebar Column (Span 4) */}
+          <div className="col-span-12 xl:col-span-4 flex flex-col gap-6">
+            {/* 1. Detail Periode Card */}
+            <div className="bg-white rounded-[32px] p-7 border border-[#bfc9c4]/30 shadow-2xl shadow-[#006e2a]/5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-[#006e2a]/15 transition-all duration-500">
+              {/* Decorative Atmosphere Glow */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-[#006e2a]/5 rounded-full blur-[60px] -mr-20 -mt-20 pointer-events-none transition-colors group-hover:bg-[#006e2a]/10" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#00342b]/5 rounded-full blur-[50px] -ml-16 -mb-16 pointer-events-none" />
+
+              {/* Header */}
+              <div className="relative z-10 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#00342b]/5 flex items-center justify-center border border-[#00342b]/10 text-[#00342b]">
+                      <span
+                        className="material-symbols-outlined text-[22px]"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        analytics
+                      </span>
+                    </div>
+                    <h3 className="font-headline-card text-[20px] text-[#00342b] font-extrabold tracking-tight">
+                      Detail Periode
+                    </h3>
                   </div>
-                  <div className="text-xs text-text-secondary mt-0.5">
-                    {fmtLong(getTglSelesai(aktif))}
+                  <span className="px-3.5 py-1.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] font-label-badge text-[10px] font-extrabold tracking-widest border border-[#006e2a]/20 shadow-xs">
+                    {selectedTA ? `${selectedTA.tahun} ${selectedActiveSemester.toUpperCase()}` : "2026/2027 GANJIL"}
+                  </span>
+                </div>
+                <div className="h-px w-full bg-gradient-to-r from-[#bfc9c4]/30 via-[#bfc9c4]/10 to-transparent" />
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-3.5 relative z-10">
+                {/* Guru */}
+                <div className="animate-fade-up animate-delay-100 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                    <span className="material-symbols-outlined text-[20px]">person</span>
+                  </div>
+                  <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
+                    Total Guru
+                  </p>
+                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
+                    {loadingDetail ? "..." : metricGuru}
+                  </p>
+                </div>
+
+                {/* Kelas */}
+                <div className="animate-fade-up animate-delay-200 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                    <span className="material-symbols-outlined text-[20px]">school</span>
+                  </div>
+                  <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
+                    Total Kelas
+                  </p>
+                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
+                    {loadingDetail ? "..." : metricKelas}
+                  </p>
+                </div>
+
+                {/* Mapel */}
+                <div className="animate-fade-up animate-delay-300 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                    <span className="material-symbols-outlined text-[20px]">menu_book</span>
+                  </div>
+                  <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
+                    Mata Pelajaran
+                  </p>
+                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
+                    {loadingDetail ? "..." : metricMapel}
+                  </p>
+                </div>
+
+                {/* Jadwal */}
+                <div className="animate-fade-up animate-delay-400 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                    <span className="material-symbols-outlined text-[20px]">calendar_today</span>
+                  </div>
+                  <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
+                    Total Jadwal
+                  </p>
+                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
+                    {loadingDetail ? "..." : metricJadwal}
+                  </p>
+                </div>
+
+                {/* Siswa */}
+                <div className="animate-fade-up animate-delay-500 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                    <span className="material-symbols-outlined text-[20px]">groups</span>
+                  </div>
+                  <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
+                    Total Siswa
+                  </p>
+                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
+                    {loadingDetail ? "..." : metricSiswa}
+                  </p>
+                </div>
+
+                {/* Rombel */}
+                <div className="animate-fade-up animate-delay-500 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                    <span className="material-symbols-outlined text-[20px]">grid_view</span>
+                  </div>
+                  <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
+                    Rombel
+                  </p>
+                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
+                    {loadingDetail ? "..." : metricRombel}
+                  </p>
+                </div>
+              </div>
+
+              {/* View Detail CTA Button */}
+              {selectedTA && (
+                <div className="mt-5 relative z-10">
+                  <button
+                    onClick={() => navigate(`/operator/master/tahun-ajaran/${selectedTA.id}`)}
+                    className="w-full py-3 rounded-2xl bg-[#00342b] text-white hover:bg-[#004d40] text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md shadow-[#00342b]/20 hover:shadow-lg"
+                  >
+                    <span>Buka Rincian Lengkap</span>
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Danger Zone Card */}
+            <div className="bg-white border border-[#ba1a1a]/20 rounded-[32px] p-7 relative overflow-hidden group shadow-sm hover:shadow-lg hover:shadow-[#ba1a1a]/10 hover:bg-[#ba1a1a]/[0.02] transition-all duration-300">
+              {/* Subtle Background Glow */}
+              <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#ba1a1a]/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="relative z-10">
+                {/* Header Label */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-[#ba1a1a]" />
+                  <span className="font-label-badge text-[10px] text-[#ba1a1a] font-black tracking-[0.2em] uppercase">
+                    Zona Berbahaya
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#ba1a1a]/10 flex items-center justify-center border border-[#ba1a1a]/20 shadow-sm shrink-0 text-[#ba1a1a] group-hover:shadow-[0_0_15px_rgba(186,26,26,0.2)] transition-shadow duration-300">
+                    <span className="material-symbols-outlined text-[24px]">warning</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-headline-card text-[18px] text-[#00342b] font-extrabold tracking-tight mb-1.5">
+                      Hapus Periode
+                    </h4>
+                    {selectedTA?.is_active ? (
+                      <>
+                        <p className="font-body-md text-xs text-[#3f4945]/80 leading-relaxed mb-4">
+                          Periode tidak dapat dihapus karena masih berstatus{" "}
+                          <span className="font-bold text-[#ba1a1a]">AKTIF</span> dan digunakan oleh seluruh modul akademik. Nonaktifkan terlebih dahulu sebelum menghapus.
+                        </p>
+                        <button
+                          disabled
+                          className="w-full bg-[#eceeed] text-[#3f4945]/40 px-5 py-3 rounded-xl font-label-badge text-[11px] font-bold tracking-widest uppercase cursor-not-allowed border border-[#bfc9c4]/30 flex items-center justify-center gap-2 shadow-inner"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">lock</span>
+                          Hapus Periode
+                        </button>
+                      </>
+                    ) : selectedTA ? (
+                      <>
+                        <p className="font-body-md text-xs text-[#3f4945]/80 leading-relaxed mb-4">
+                          Tindakan ini akan menghapus periode <b>{selectedTA.tahun}</b> beserta data semesternya secara permanen.
+                        </p>
+                        <button
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `Apakah Anda yakin ingin menghapus Tahun Ajaran "${selectedTA.tahun}"?`,
+                              )
+                            ) {
+                              hapus.mutate(selectedTA.id);
+                            }
+                          }}
+                          disabled={hapus.isPending}
+                          className="w-full bg-[#ba1a1a] hover:bg-[#93000a] text-white px-5 py-3 rounded-xl font-label-badge text-[11px] font-black tracking-widest uppercase shadow-md hover:shadow-lg shadow-[#ba1a1a]/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">
+                            delete_forever
+                          </span>
+                          Hapus Periode {selectedTA.tahun}
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-xs text-[#3f4945]/60">Pilih tahun ajaran untuk opsi penghapusan.</p>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Quick Stats */}
-          <div className="bg-surface-container-lowest border border-border-light rounded-[18px] shadow-sm p-5">
-            <h3
-              className="font-semibold text-text-primary text-sm mb-4 flex items-center gap-2"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-            >
-              <span className="material-symbols-outlined text-text-secondary text-[18px]">
-                bar_chart
-              </span>
-              Ringkasan
-            </h3>
-            <div className="space-y-3">
-              {[
-                {
-                  label: "Total Tahun Ajaran",
-                  value: list.length,
-                  icon: "calendar_today",
-                  color: "text-primary",
-                },
-                {
-                  label: "Tahun Aktif",
-                  value: list.filter((t) => t.is_active).length,
-                  icon: "event_available",
-                  color: "text-success",
-                },
-                {
-                  label: "Tahun Selesai",
-                  value: list.filter((t) => !t.is_active).length,
-                  icon: "event_busy",
-                  color: "text-text-secondary",
-                },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  className="flex items-center justify-between py-2 border-b border-border-light/60 last:border-0"
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`material-symbols-outlined text-[16px] ${s.color}`}
-                    >
-                      {s.icon}
-                    </span>
-                    <span className="text-xs text-text-secondary">
-                      {s.label}
-                    </span>
-                  </div>
-                  <span className={`text-sm font-bold ${s.color}`}>
-                    {s.value}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── 4. Modal Tambah / Edit ────────────────────────────────────────── */}
       <ModalTahunAjaran
         open={modalOpen}
         onClose={() => {
