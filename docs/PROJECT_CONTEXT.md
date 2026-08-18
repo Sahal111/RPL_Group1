@@ -121,11 +121,11 @@ Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with
 ### Current Phase
 - Phase 0 (Multi-Tenant Foundation): `[COMPLETED]`
 - Phase 1 (Backend Refactor): `[MOSTLY_COMPLETED]` — controller splitting done, FormRequests organized, ApiResponse trait in use
-- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, layout NOT yet unified
+- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, AppLayout.jsx created but not yet adopted by all roles
 - Phase 3-5 modules (LMS, Keuangan, PPDB): `[EARLY_IMPLEMENTATION]` — controllers and basic frontend exist
 
 ### Technical Debt
-- Multiple separate layouts per role (14 layout files) — should be unified to one AppLayout `[IN_PROGRESS]`
+- Multiple separate layouts per role (14 layout files) — `AppLayout.jsx` created in `components/layout/` but not yet adopted by all roles `[IN_PROGRESS]`
 - Multiple sidebars exist (OperatorSidebar, Sidebar) — should be unified `[IN_PROGRESS]`
 - Some pages still use `useEffect` + axios instead of React Query `[IN_PROGRESS]`
 - `MasterGuru.jsx` is still large (~114KB) `[NEEDS_ATTENTION]`
@@ -469,10 +469,11 @@ src/hooks/
 - Actual reusable components: Badge, ComingSoonDashboard, Confirm, DataTable, Modal, Pagination, Skeleton
 - **Missing** (documented but not yet created): StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 
-### Layout Rule (TARGET — NOT YET ACHIEVED)
+### Layout Rule (TARGET — PARTIALLY STARTED)
 - **One `AppLayout` for all roles** — differences only in menu items based on permissions
-- **Current reality**: 14 separate layouts exist (OperatorLayout, GuruLayout, KepsekLayout, OrtuLayout, WaliKelasLayout, BendaharaLayout, AdminPpdbLayout, SuperAdminLayout, SiswaLayout, WakasekLayout, GuruBkLayout, TataUsahaLayout, PustakawanLayout, AdminKeuanganLayout)
-- **NOT** a single AppLayout yet — this is tech debt for Phase 2
+- **Current status**: `AppLayout.jsx` has been created in `components/layout/` but is NOT yet adopted by all roles
+- **Current reality**: 14 separate layouts still exist (OperatorLayout, GuruLayout, KepsekLayout, OrtuLayout, WaliKelasLayout, BendaharaLayout, AdminPpdbLayout, SuperAdminLayout, SiswaLayout, WakasekLayout, GuruBkLayout, TataUsahaLayout, PustakawanLayout, AdminKeuanganLayout)
+- Migration to unified AppLayout is tech debt for Phase 2
 
 ### Auth Context
 ```jsx
@@ -757,8 +758,11 @@ backend/
 frontend/src/
 ├── components/
 │   ├── layout/
+│   │   ├── AppLayout.jsx                          ← created, not yet adopted by all roles
 │   │   ├── OperatorSidebar.jsx, OperatorTopBar.jsx, OperatorFooter.jsx
 │   │   └── Sidebar.jsx
+│   ├── ortu/
+│   │   └── AnakSelector.jsx                       ← domain-specific component
 │   └── ui/
 │       ├── Badge.jsx, ComingSoonDashboard.jsx, Confirm.jsx
 │       ├── DataTable.jsx, Modal.jsx, Pagination.jsx, Skeleton.jsx
@@ -773,11 +777,12 @@ frontend/src/
 │   ├── axios.js
 │   └── storage.js
 ├── pages/
+│   ├── LandingPage.jsx, UnauthorizedPage.jsx      ← root-level pages
 │   ├── auth/         LoginPage, RegisterOrtuPage, ForgotPasswordPage, ResetPasswordPage
 │   ├── public/       PublicNavbar, PublicFooter, AboutPage, AkademikPage, ContactPage, GalleryPage, PpdbPage, ProgramPage
 │   ├── operator/     DashboardOperator, ManajemenAkun, ApprovalOrtu, OperatorLayout
 │   │   └── master/   masterDataGuru/ (MasterGuru, DetailGuru, TambahEditGuru + 8 tabs), masterDataSiswa/, masterDataKelas/, masterDataMapel/, masterDataOrtu/, masterDataTahunAjaranSemester/, MasterJadwal, NaikKelas, PengumumanOperator, GaleriOperator
-│   ├── guru/         DashboardGuru, ProfilGuru, InputAbsensi, RekapAbsensiGuru, JadwalMengajarGuru, DataSiswaGuru, DetailSiswaGuru, PengumumanGuru, GuruLayout
+│   ├── guru/         DashboardGuru, ProfilGuru, InputAbsensi, RekapAbsensiGuru, RiwayatAbsensiSiswaGuru, JadwalMengajarGuru, DataSiswaGuru, DetailSiswaGuru, PengumumanGuru, GuruLayout
 │   │   └── lms/      LmsMateri, LmsTugas, LmsUjian
 │   ├── kepsek/       DashboardKepsek, DataGuruKepsek, DataSiswaKepsek, DetailGuruKepsek, DetailSiswaKepsek, MonitoringAbsensi, KalenderAkademik, PengumumanKepsek, ProfilKepsek, KepsekLayout
 │   ├── ortu/         DataAnak, AbsensiAnak, RiwayatAbsensiAnak, TambahAnak, PengumumanOrtu, ProfilOrtu, OrtuLayout
@@ -802,8 +807,9 @@ frontend/src/
 2. `hooks/api/` — MUST NOT import from `components/` or `pages/`
 3. `pages/` — may import from everywhere
 4. `PublicNavbar.jsx` and `PublicFooter.jsx` are in `pages/public/` (correct location)
-5. Layout files are inside each role's `pages/{role}/` directory (e.g. `OperatorLayout.jsx`, `GuruLayout.jsx`) — NOT in `components/layout/` (except OperatorSidebar/TopBar/Footer)
-6. No `utils/` folder — use `lib/`
+5. Layout files are inside each role's `pages/{role}/` directory (e.g. `OperatorLayout.jsx`, `GuruLayout.jsx`) — NOT in `components/layout/` (except AppLayout, OperatorSidebar/TopBar/Footer, Sidebar)
+6. `components/ortu/` is an exception — contains `AnakSelector.jsx` (domain-specific shared component for Ortu portal)
+7. No `utils/` folder — use `lib/`
 
 ---
 
@@ -1099,7 +1105,7 @@ grep -r "console.log" src/  # no console.log
 | FormRequests organized into 18 domain subdirectories | `[COMPLETED]` |
 | `super_operator` merged into `operator` | `[COMPLETED]` — migration applied |
 | `useEffect` + axios for data fetching in some pages | `[IN_PROGRESS]` — migrating to React Query |
-| Multiple separate layouts per role (14 files) | `[IN_PROGRESS]` — unifying to single AppLayout |
+| Multiple separate layouts per role (14 files) | `[IN_PROGRESS]` — `AppLayout.jsx` created in `components/layout/`, not yet adopted by all roles |
 | Multiple sidebars (OperatorSidebar, Sidebar) | `[IN_PROGRESS]` — needs unification |
 | `RoleMiddleware` still in use alongside `PermissionMiddleware` | `[IN_PROGRESS]` |
 | `app/Observers/` folder does not exist | `[NOT_STARTED]` — Observer pattern not implemented |
@@ -1215,7 +1221,7 @@ grep -r "console.log" src/  # no console.log
 - **Phase 2**: Frontend Refactor — `[IN_PROGRESS]`
   - ✅ React Query hooks created (7 api hooks)
   - ✅ Split DetailGuru.jsx into 8 tab components
-  - ⬜ Unified AppLayout not yet done (14 separate layouts still exist)
+  - 🔄 `AppLayout.jsx` created in `components/layout/` — not yet adopted by all roles (14 separate layouts still exist)
   - ⬜ Missing UI components: StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 
 ### Early Implementations (Ahead of Roadmap)
