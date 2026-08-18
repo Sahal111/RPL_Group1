@@ -23,7 +23,7 @@
 
 ## 2. Executive Summary
 
-Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with **Laravel 12 (API)** + **React 19 (SPA)**. It uses a **shared database with `school_id`** for tenant isolation. The system supports **14 tenant-level roles** and a separate **platform admin tier**. Current development is in Phase 0 (multi-tenant foundation) completed, with Phase 1 (backend refactor) and Phase 2 (frontend refactor) in progress.
+Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with **Laravel 12 (API)** + **React 19 (SPA)**. It uses a **shared database with `school_id`** for tenant isolation. The system supports **13 tenant-level roles** (after `super_operator` was merged into `operator`) and a separate **platform admin tier**. Current development: Phase 0 (multi-tenant foundation) completed, Phase 1 (backend refactor) mostly completed, Phase 2 (frontend refactor) in progress, and several Phase 3-5 modules (LMS, Keuangan, PPDB, BK, Perpustakaan, Surat/TU) have early implementations.
 
 ---
 
@@ -57,7 +57,7 @@ Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with
 |---|---|
 | Auth (login, register, multi-role) | `[IMPLEMENTED]` |
 | Multi-tenant (SchoolScope, TenantMiddleware) | `[IMPLEMENTED]` |
-| Master Data Guru (CRUD, photo, detail) | `[IMPLEMENTED]` |
+| Master Data Guru (CRUD, photo, detail, import/export) | `[IMPLEMENTED]` |
 | Master Data Siswa (CRUD, photo, class assign, transfer) | `[IMPLEMENTED]` |
 | Master Data Kelas, Mapel, Jadwal, TA/Semester | `[IMPLEMENTED]` |
 | Master Data Orang Tua | `[IMPLEMENTED]` |
@@ -66,13 +66,15 @@ Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with
 | Pengumuman, Galeri | `[IMPLEMENTED]` |
 | Kalender Akademik | `[IMPLEMENTED]` |
 | Naik Kelas | `[IMPLEMENTED]` |
-| RBAC (14 roles, permissions table) | `[IMPLEMENTED]` |
-| DMS (Document Management) | `[PLANNED]` — tables exist |
-| Akademik (Nilai, Rapor) | `[PLANNED]` — Phase 3 |
-| Keuangan (SPP, Tagihan) | `[PLANNED]` — Phase 4, tables exist |
-| PPDB Online | `[PLANNED]` — Phase 5, tables exist |
-| LMS | `[PLANNED]` — tables exist |
-| BK, Perpustakaan, Surat/TU | `[PLANNED]` — tables exist |
+| RBAC (13 roles, permissions table) | `[IMPLEMENTED]` |
+| DMS (Document Management) | `[IMPLEMENTED]` — GuruDokumenController + frontend tabs |
+| LMS (Materi, Tugas, Ujian) | `[IMPLEMENTED]` — Controllers + Guru frontend pages |
+| Keuangan (Tagihan, Pembayaran, Jenis Tagihan) | `[IMPLEMENTED]` — Controllers + Bendahara frontend pages |
+| PPDB (Calon Siswa, Berkas, Pembayaran) | `[IMPLEMENTED]` — Controllers + AdminPPDB frontend pages |
+| BK (Konseling, Catatan) | `[IMPLEMENTED]` — Controllers exist |
+| Perpustakaan (Buku, Peminjaman) | `[IMPLEMENTED]` — Controllers exist |
+| Surat/TU (Surat, Legalisir) | `[IMPLEMENTED]` — Controllers exist |
+| Akademik (Nilai, Rapor) | `[PLANNED]` — permissions seeded, no controllers yet |
 | Platform Admin Dashboard | `[PLANNED]` — Phase 8 |
 
 ---
@@ -102,25 +104,34 @@ Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with
 ### What's Working
 - ✅ Full auth: login multi-role, register ortu, forgot/reset password
 - ✅ Multi-tenant: cross-tenant prevention via subdomain + SchoolScope
-- ✅ 14 system roles seeded per school
-- ✅ Master Data: Guru, Siswa, Kelas, Mapel, Jadwal, Tahun Ajaran, Orang Tua
-- ✅ Portals: Guru, Kepsek, Ortu (functional), WaliKelas/Bendahara/AdminPPDB (placeholder)
+- ✅ 13 system roles seeded per school (super_operator merged into operator)
+- ✅ Master Data: Guru (split into 9 sub-controllers), Siswa, Kelas, Mapel, Jadwal, Tahun Ajaran, Orang Tua
+- ✅ Portals: Guru, Kepsek, Ortu (functional with full pages)
+- ✅ Bendahara portal with Keuangan module (Tagihan, Pembayaran, JenisTagihan)
+- ✅ AdminPPDB portal with Calon Siswa management
+- ✅ LMS for Guru (Materi, Tugas, Ujian)
 - ✅ Absensi: input, recap, history
 - ✅ Pengumuman, Galeri, Kalender Akademik
-- ✅ DB tables for: BK, Perpustakaan, Surat/TU, LMS, Keuangan, PPDB
+- ✅ DMS: guru dokumen upload, versioning, approval
+- ✅ BK, Perpustakaan, Surat/TU — backend controllers exist
+- ✅ FormRequests organized by domain (18 subdirectories)
+- ✅ DetailGuru.jsx split into 8 tab components
+- ⬜ WaliKelas, Wakasek, GuruBK, TataUsaha, Pustakawan, AdminKeuangan, Siswa, SuperAdmin — dashboard only (placeholder)
 
 ### Current Phase
 - Phase 0 (Multi-Tenant Foundation): `[COMPLETED]`
-- Phase 1 (Backend Refactor): `[IN_PROGRESS]` — controller splitting, Form Requests, ApiResponse trait, API Resources
-- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components, React Query migration, layout unification
+- Phase 1 (Backend Refactor): `[MOSTLY_COMPLETED]` — controller splitting done, FormRequests organized, ApiResponse trait in use
+- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, layout NOT yet unified
+- Phase 3-5 modules (LMS, Keuangan, PPDB): `[EARLY_IMPLEMENTATION]` — controllers and basic frontend exist
 
 ### Technical Debt
-- `MasterDataGuruController` is monolithic (~5000+ lines) — needs splitting into 9 controllers `[IN_PROGRESS]`
-- `DetailGuru.jsx` is ~7600+ lines — needs splitting into 15 tab components `[IN_PROGRESS]`
-- Many controllers still use inline `$request->validate()` instead of Form Request
-- Some pages still use `useEffect` + axios instead of React Query
-- Multiple separate layouts per role (OperatorLayout, GuruLayout, etc.) — should be unified to one AppLayout
-- Multiple sidebars exist (OperatorSidebar, Sidebar) — should be unified
+- Multiple separate layouts per role (14 layout files) — should be unified to one AppLayout `[IN_PROGRESS]`
+- Multiple sidebars exist (OperatorSidebar, Sidebar) — should be unified `[IN_PROGRESS]`
+- Some pages still use `useEffect` + axios instead of React Query `[IN_PROGRESS]`
+- `MasterGuru.jsx` is still large (~114KB) `[NEEDS_ATTENTION]`
+- `TambahEditGuru.jsx` is still large (~64KB) `[NEEDS_ATTENTION]`
+- `app/Observers/` folder does not exist — Observer pattern not yet implemented `[NOT_STARTED]`
+- `app/Models/create_new_role_users.php` — file misplaced in Models directory `[BUG]`
 
 ---
 
@@ -286,6 +297,9 @@ erDiagram
 | Table `mata_pelajaran` | Table `mapels` |
 | Table `absensi` (singular) | Table `absensis` (plural) |
 
+### Migration Count
+**26 migration files** (as of August 2026), including the `merge_super_operator_into_operator` migration.
+
 ### Migration Rules
 - Migration MUST have both `up()` and `down()` — `down()` must never be empty
 - NEVER edit committed migrations — create a new migration instead
@@ -293,7 +307,7 @@ erDiagram
 - **NEVER run `migrate:fresh` or `migrate:reset`** without explicit permission
 
 ### Seeder Order (FK dependency)
-1. PlanSeeder → 2. SchoolSeeder (+ roles + permissions) → 3. UserSeeder → 4. Data seeders
+1. GlobalSaaSSeeder → 2. SchoolSeeder (+ roles + permissions) → 3. TestingUserSeeder → 4. Data seeders (MasterDataSeeder, TahunAjaranSeeder, OperatorSeeder, PengumumanSeeder)
 
 ---
 
@@ -443,18 +457,22 @@ routes/api/
 ### Hook Structure
 ```
 src/hooks/
-  api/         useGuru.js, useSiswa.js, useAbsensi.js, ...
-  ui/          useDebounce.js, useDisclosure.js
+  api/         useAbsensi.js, useGuru.js, useKelas.js, useKeuangan.js, useLms.js, usePpdb.js, useSiswa.js
+  useDebounce.js, useDisclosure.js, useSelectedAnak.js
 ```
+
+> **Note**: UI hooks (`useDebounce`, `useDisclosure`) are NOT in a `ui/` subfolder — they are directly in `hooks/`.
 
 ### Component Rules
 - Max **200-250 lines** per file — split into sub-components if larger
 - UI components in `src/components/ui/` — MUST NOT import from `hooks/api/`
-- Standard reusable components: DataTable, Modal, ConfirmDialog, Badge, StatusBadge, Skeleton, FileUpload, Pagination, SearchInput, EmptyState, DataField, SectionCard
+- Actual reusable components: Badge, ComingSoonDashboard, Confirm, DataTable, Modal, Pagination, Skeleton
+- **Missing** (documented but not yet created): StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 
-### Layout Rule (TARGET)
+### Layout Rule (TARGET — NOT YET ACHIEVED)
 - **One `AppLayout` for all roles** — differences only in menu items based on permissions
-- **NOT** separate layouts per role (OperatorLayout, GuruLayout, etc.)
+- **Current reality**: 14 separate layouts exist (OperatorLayout, GuruLayout, KepsekLayout, OrtuLayout, WaliKelasLayout, BendaharaLayout, AdminPpdbLayout, SuperAdminLayout, SiswaLayout, WakasekLayout, GuruBkLayout, TataUsahaLayout, PustakawanLayout, AdminKeuanganLayout)
+- **NOT** a single AppLayout yet — this is tech debt for Phase 2
 
 ### Auth Context
 ```jsx
@@ -469,6 +487,13 @@ const { user, token, isAuthenticated, login, logout, hasPermission, hasRole } = 
 5. Assets, utils, constants
 
 Use `@` alias for `src/` (configured in `vite.config.js`).
+
+### Lib Files
+```
+src/lib/
+  axios.js    — Axios instance with interceptors
+  storage.js  — localStorage helper utilities
+```
 
 ---
 
@@ -517,8 +542,7 @@ public function delete(User $user, Guru $guru): bool {
 
 | Slug | Name | System | Description |
 |---|---|---|---|
-| `super_operator` | Operator Utama | ✓ | Full access to all school features |
-| `operator` | Operator | ✓ | Master data, accounts, announcements |
+| `operator` | Operator | ✓ | Full access to all school features (includes former super_operator permissions) |
 | `kepsek` | Kepala Sekolah | ✓ | Read-only all data + approve documents |
 | `wakasek` | Wakil Kepsek | ✓ | Near kepsek — curriculum & student affairs |
 | `guru` | Guru | ✓ | Own class data + attendance + profile |
@@ -532,6 +556,8 @@ public function delete(User $user, Guru $guru): bool {
 | `siswa` | Siswa | ✓ | Student portal |
 | `admin_ppdb` | Admin PPDB | ✓ | Admissions module |
 
+> **Note**: `super_operator` was merged into `operator` via migration `2026_08_17_000001_merge_super_operator_into_operator.php`. Operator now has ALL permissions.
+
 System roles (`is_system = 1`) cannot be deleted by school operators.
 
 ### Permission Format
@@ -542,17 +568,20 @@ Examples: master_data.guru.view, dms.approve, absensi.input, pengaturan.rbac.man
 
 ### Permission Matrix (Key permissions)
 
-| Permission | super_operator | operator | kepsek | guru | wali_kelas | bendahara | ortu |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| master_data.guru.view | ✓ | ✓ | ✓ | - | - | - | - |
-| master_data.guru.create | ✓ | ✓ | - | - | - | - | - |
-| master_data.guru.delete | ✓ | ✓ | - | - | - | - | - |
-| dms.approve | ✓ | ✓ | ✓ | - | - | - | - |
-| dms.upload | ✓ | ✓ | - | ✓ | ✓ | - | - |
-| absensi.input | ✓ | ✓ | - | ✓ | ✓ | - | - |
-| absensi.view_all | ✓ | ✓ | ✓ | - | - | - | - |
-| keuangan.* | ✓ | - | - | - | - | ✓ | - |
-| pengaturan.rbac.manage | ✓ | - | - | - | - | - | - |
+> `super_operator` column removed — merged into `operator`. Operator now has ALL permissions.
+
+| Permission | operator | kepsek | guru | wali_kelas | bendahara | ortu |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| master_data.guru.view | ✓ | ✓ | - | - | - | - |
+| master_data.guru.create | ✓ | - | - | - | - | - |
+| master_data.guru.delete | ✓ | - | - | - | - | - |
+| dms.approve | ✓ | ✓ | - | - | - | - |
+| dms.upload | ✓ | - | ✓ | ✓ | - | - |
+| absensi.input | ✓ | - | ✓ | ✓ | - | - |
+| absensi.view_all | ✓ | ✓ | - | - | - | - |
+| keuangan.tagihan.manage | ✓ | - | - | - | ✓ | - |
+| keuangan.pembayaran.input | ✓ | - | - | - | ✓ | - |
+| pengaturan.rbac.manage | ✓ | - | - | - | - | - |
 
 Full permission matrix in `doc2-rbac-design.md`.
 
@@ -658,37 +687,68 @@ backend/
 │   │   ├── Controllers/
 │   │   │   ├── Auth/AuthController.php
 │   │   │   ├── MasterData/
-│   │   │   │   ├── MasterDataGuruController.php
+│   │   │   │   ├── Guru/                          ← 9 sub-controllers (SPLIT COMPLETED)
+│   │   │   │   │   ├── GuruController.php
+│   │   │   │   │   ├── GuruAdministrasiController.php
+│   │   │   │   │   ├── GuruDokumenController.php
+│   │   │   │   │   ├── GuruExportController.php
+│   │   │   │   │   ├── GuruImportController.php
+│   │   │   │   │   ├── GuruKeluargaController.php
+│   │   │   │   │   ├── GuruKepegawaianController.php
+│   │   │   │   │   ├── GuruKompetensiController.php
+│   │   │   │   │   └── GuruMutasiController.php
 │   │   │   │   ├── MasterDataSiswaController.php
 │   │   │   │   ├── MasterDataKelasController.php
 │   │   │   │   ├── MasterDataOrtuController.php
 │   │   │   │   ├── MasterDataMapelController.php
+│   │   │   │   ├── GuruCutiController.php
 │   │   │   │   ├── JadwalPelajaranController.php
 │   │   │   │   ├── TahunAjaranController.php
 │   │   │   │   └── NaikKelasController.php
-│   │   │   ├── Operator/
-│   │   │   ├── Guru/ Kepsek/ Ortu/
-│   │   │   ├── Absensi/ Bk/ Keuangan/ Lms/
-│   │   │   ├── Perpustakaan/ Ppdb/ TataUsaha/
-│   │   │   └── Controller.php (base, uses ApiResponse)
+│   │   │   ├── Operator/OperatorController.php
+│   │   │   ├── Guru/                              ← Guru portal (GuruController, GuruProfileController, GuruDokumenController, GuruKepegawaianController)
+│   │   │   ├── Kepsek/                            ← KepsekController, KalenderAkademikController
+│   │   │   ├── Ortu/OrtuController.php
+│   │   │   ├── Absensi/AbsensiController.php
+│   │   │   ├── Bk/                               ← CatatanController, KonselingController
+│   │   │   ├── Keuangan/                          ← JenisTagihanController, PembayaranController, TagihanController
+│   │   │   ├── Lms/                               ← AssignmentController, CourseMaterialController, ExamController
+│   │   │   ├── Perpustakaan/                      ← BukuController, PeminjamanController
+│   │   │   ├── Ppdb/                              ← BerkasPendaftarController, CalonSiswaController, PembayaranPpdbController
+│   │   │   ├── TataUsaha/                         ← LegalisirController, SuratController
+│   │   │   ├── GaleriController.php
+│   │   │   ├── PengumumanController.php
+│   │   │   └── Controller.php                    ← base, uses ApiResponse trait
 │   │   ├── Middleware/
 │   │   │   ├── TenantMiddleware.php
 │   │   │   ├── PermissionMiddleware.php
 │   │   │   ├── RoleMiddleware.php
 │   │   │   └── InjectTokenFromCookie.php
-│   │   └── Requests/ (organized by domain)
-│   ├── Models/ (76 models)
+│   │   └── Requests/                             ← 18 subdirs by domain (Absensi, Auth, Cuti, Galeri, Guru, Jadwal, Kelas, Kepsek, Keuangan, Lms, Mapel, NaikKelas, Operator, Ortu, Pengumuman, Ppdb, Siswa, TahunAjaran)
+│   ├── Models/ (76 files + Scopes/)
 │   │   ├── Scopes/SchoolScope.php
-│   │   ├── Guru.php, Siswa.php, User.php, Role.php, Permission.php, ...
-│   │   └── (LMS, BK, Keuangan, Perpustakaan models exist)
-│   ├── Services/ (by domain)
+│   │   ├── Guru.php, Siswa.php, User.php, Role.php, Permission.php
+│   │   ├── School.php, GlobalUser.php, PlatformAdmin.php
+│   │   ├── LMS: Assignment, CourseMaterial, Exam, ExamQuestion, ...
+│   │   ├── Keuangan: JenisTagihan, Tagihan, Pembayaran, ...
+│   │   ├── BK: BkCatatan, BkKonseling
+│   │   └── Perpustakaan: PerpustakaanBuku, PerpustakaanPeminjaman
+│   ├── Services/
+│   │   ├── GuruCutiService.php, GuruDokumenService.php
+│   │   ├── GuruExportService.php, GuruImportService.php
+│   │   ├── MutasiGuruService.php
+│   │   └── Excel/
 │   ├── Traits/ApiResponse.php
-│   ├── Observers/ Jobs/ Events/ Listeners/ Policies/
+│   ├── Jobs/                                     ← ProcessGuruImport, ProcessGuruZipImport
+│   ├── Policies/                                 ← GuruPolicy, KelasPolicy, SiswaPolicy
 │   └── Providers/
-├── database/migrations/ (25 migration files)
+│   ⚠️ NOTE: app/Observers/ does NOT exist — Observer pattern not yet implemented
+├── database/
+│   ├── migrations/                               ← 26 migration files
+│   └── seeders/                                  ← GlobalSaaSSeeder, SchoolSeeder, MasterDataSeeder, TahunAjaranSeeder, OperatorSeeder, PengumumanSeeder, TestingUserSeeder
 ├── routes/
 │   ├── api.php (includes sub-files)
-│   └── api/ (14 route files by domain)
+│   └── api/                                      ← 14 route files: auth, operator, guru, kepsek, ortu, absensi, master-data, public, lms, keuangan, ppdb, bk, perpustakaan, tata-usaha
 └── storage/app/schools/{school_id}/
 ```
 
@@ -699,18 +759,39 @@ frontend/src/
 │   ├── layout/
 │   │   ├── OperatorSidebar.jsx, OperatorTopBar.jsx, OperatorFooter.jsx
 │   │   └── Sidebar.jsx
-│   └── ui/ (reusable components)
+│   └── ui/
+│       ├── Badge.jsx, ComingSoonDashboard.jsx, Confirm.jsx
+│       ├── DataTable.jsx, Modal.jsx, Pagination.jsx, Skeleton.jsx
+│       ⚠️ Missing: StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 ├── contexts/AuthContext.jsx
-├── hooks/useSelectedAnak.js
-├── lib/axios.js
+├── hooks/
+│   ├── api/
+│   │   ├── useAbsensi.js, useGuru.js, useKelas.js
+│   │   ├── useKeuangan.js, useLms.js, usePpdb.js, useSiswa.js
+│   ├── useDebounce.js, useDisclosure.js, useSelectedAnak.js
+├── lib/
+│   ├── axios.js
+│   └── storage.js
 ├── pages/
-│   ├── auth/ (LoginPage, RegisterOrtuPage)
-│   ├── public/ (LandingPage, etc.)
-│   ├── operator/ (dashboard, master data, management)
-│   ├── guru/ kepsek/ ortu/ walikelas/ bendahara/ adminppdb/
-│   ├── siswa/ wakasek/ guru-bk/ tata-usaha/ pustakawan/
-│   ├── admin-keuangan/ superadmin/
-│   └── LandingPage.jsx
+│   ├── auth/         LoginPage, RegisterOrtuPage, ForgotPasswordPage, ResetPasswordPage
+│   ├── public/       PublicNavbar, PublicFooter, AboutPage, AkademikPage, ContactPage, GalleryPage, PpdbPage, ProgramPage
+│   ├── operator/     DashboardOperator, ManajemenAkun, ApprovalOrtu, OperatorLayout
+│   │   └── master/   masterDataGuru/ (MasterGuru, DetailGuru, TambahEditGuru + 8 tabs), masterDataSiswa/, masterDataKelas/, masterDataMapel/, masterDataOrtu/, masterDataTahunAjaranSemester/, MasterJadwal, NaikKelas, PengumumanOperator, GaleriOperator
+│   ├── guru/         DashboardGuru, ProfilGuru, InputAbsensi, RekapAbsensiGuru, JadwalMengajarGuru, DataSiswaGuru, DetailSiswaGuru, PengumumanGuru, GuruLayout
+│   │   └── lms/      LmsMateri, LmsTugas, LmsUjian
+│   ├── kepsek/       DashboardKepsek, DataGuruKepsek, DataSiswaKepsek, DetailGuruKepsek, DetailSiswaKepsek, MonitoringAbsensi, KalenderAkademik, PengumumanKepsek, ProfilKepsek, KepsekLayout
+│   ├── ortu/         DataAnak, AbsensiAnak, RiwayatAbsensiAnak, TambahAnak, PengumumanOrtu, ProfilOrtu, OrtuLayout
+│   ├── bendahara/    DashboardBendahara, BendaharaLayout
+│   │   └── keuangan/ DashboardKeuangan, JenisTagihan, Tagihan, Pembayaran
+│   ├── adminppdb/    DashboardAdminPpdb, PpdbCalonSiswa, AdminPpdbLayout
+│   ├── walikelas/    DashboardWaliKelas, WaliKelasLayout           ← placeholder
+│   ├── wakasek/      DashboardWakasek, WakasekLayout               ← placeholder
+│   ├── guru-bk/      DashboardGuruBk, GuruBkLayout                 ← placeholder
+│   ├── tata-usaha/   DashboardTataUsaha, TataUsahaLayout           ← placeholder
+│   ├── pustakawan/   DashboardPustakawan, PustakawanLayout         ← placeholder
+│   ├── admin-keuangan/ DashboardAdminKeuangan, AdminKeuanganLayout ← placeholder
+│   ├── siswa/        DashboardSiswa, SiswaLayout                   ← placeholder
+│   └── superadmin/   DashboardSuperAdmin, SuperAdminLayout         ← placeholder
 ├── routes/ProtectedRoute.jsx
 ├── App.jsx, main.jsx
 └── index.css, App.css
@@ -720,9 +801,9 @@ frontend/src/
 1. `components/ui/` — MUST NOT import from `hooks/api/` or `pages/`
 2. `hooks/api/` — MUST NOT import from `components/` or `pages/`
 3. `pages/` — may import from everywhere
-4. Public components (PublicNavbar, PublicFooter) go in `pages/public/components/`
-5. Layout in `components/layout/`, NOT inside `pages/`
-6. No `utils/` folder — use `lib/utils.js`
+4. `PublicNavbar.jsx` and `PublicFooter.jsx` are in `pages/public/` (correct location)
+5. Layout files are inside each role's `pages/{role}/` directory (e.g. `OperatorLayout.jsx`, `GuruLayout.jsx`) — NOT in `components/layout/` (except OperatorSidebar/TopBar/Footer)
+6. No `utils/` folder — use `lib/`
 
 ---
 
@@ -1013,16 +1094,19 @@ grep -r "console.log" src/  # no console.log
 
 | Issue | Status |
 |---|---|
-| `MasterDataGuruController` monolithic (~5000 lines) | `[IN_PROGRESS]` — needs split into 9 controllers |
-| `DetailGuru.jsx` monolithic (~7600 lines) | `[IN_PROGRESS]` — needs split into 15 tab components |
-| Inline `$request->validate()` in many controllers | `[IN_PROGRESS]` — migrating to FormRequest |
+| `MasterDataGuruController` split into 9 sub-controllers | `[COMPLETED]` |
+| `DetailGuru.jsx` split into 8 tab components | `[COMPLETED]` |
+| FormRequests organized into 18 domain subdirectories | `[COMPLETED]` |
+| `super_operator` merged into `operator` | `[COMPLETED]` — migration applied |
 | `useEffect` + axios for data fetching in some pages | `[IN_PROGRESS]` — migrating to React Query |
-| Multiple separate layouts per role | `[IN_PROGRESS]` — unifying to AppLayout |
+| Multiple separate layouts per role (14 files) | `[IN_PROGRESS]` — unifying to single AppLayout |
 | Multiple sidebars (OperatorSidebar, Sidebar) | `[IN_PROGRESS]` — needs unification |
-| `RoleMiddleware` still in use — should be replaced by `PermissionMiddleware` | `[IN_PROGRESS]` |
-| `app/jobs/` naming (lowercase) | `[NEEDS_DECISION]` — documented as issue but actual path is `app/Jobs/` (correct) |
-| Some API responses may not use ApiResponse trait | `[IN_PROGRESS]` |
-| `PublicNavbar.jsx` in wrong location | `[IN_PROGRESS]` — should be in `pages/public/components/` |
+| `RoleMiddleware` still in use alongside `PermissionMiddleware` | `[IN_PROGRESS]` |
+| `app/Observers/` folder does not exist | `[NOT_STARTED]` — Observer pattern not implemented |
+| `app/Models/create_new_role_users.php` file misplaced in Models | `[BUG]` — should be a migration, not in Models/ |
+| `MasterGuru.jsx` (~114KB) still very large | `[NEEDS_ATTENTION]` |
+| `TambahEditGuru.jsx` (~64KB) still very large | `[NEEDS_ATTENTION]` |
+| `PublicNavbar.jsx` and `PublicFooter.jsx` already in `pages/public/` | `[COMPLETED]` — was previously listed as issue |
 
 ---
 
@@ -1116,28 +1200,39 @@ grep -r "console.log" src/  # no console.log
   - JSON i18n fields (national_ids, address_details)
 
 ### Current (In Progress)
-- **Phase 1**: Backend Refactor (no new features)
-  - Split monolithic controllers, create FormRequests, ApiResponse trait, API Resources
-  - Add Policies, Observers, model scopes
-- **Phase 2**: Frontend Refactor (no new features)
-  - Reusable UI components, unify layout, React Query migration
-  - Split large pages into tabs
+- **Phase 1**: Backend Refactor — `[MOSTLY_COMPLETED]`
+  - ✅ Split monolithic Guru controllers (9 sub-controllers)
+  - ✅ FormRequests organized by domain (18 subdirs)
+  - ✅ ApiResponse trait in use
+  - ✅ Policies: GuruPolicy, KelasPolicy, SiswaPolicy
+  - ⬜ Observers not yet implemented
+  - ⬜ API Resources not yet systematically applied
+- **Phase 2**: Frontend Refactor — `[IN_PROGRESS]`
+  - ✅ React Query hooks created (7 api hooks)
+  - ✅ Split DetailGuru.jsx into 8 tab components
+  - ⬜ Unified AppLayout not yet done (14 separate layouts still exist)
+  - ⬜ Missing UI components: StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 
-### Next
-- **Phase 3**: Akademik Core — nilai, rapor, kalender akademik
-- **Phase 4**: Keuangan — tagihan SPP, pembayaran, laporan
+### Early Implementations (Ahead of Roadmap)
+- **Phase 3 (partial)**: Kalender Akademik `[DONE]`, Nilai/Rapor `[PLANNED]`
+- **Phase 4 (partial)**: Keuangan (Tagihan, Pembayaran, JenisTagihan) `[EARLY_IMPL]` — controllers + bendahara frontend
+- **Phase 5 (partial)**: PPDB (CalonSiswa, BerkasPendaftar, PembayaranPpdb) `[EARLY_IMPL]` — controllers + admin frontend
+- **Other modules early**: LMS (Materi, Tugas, Ujian), BK (Konseling, Catatan), Perpustakaan (Buku, Peminjaman), Surat/TU — backend controllers exist
+
+### Next Priority
+- **Phase 2 completion**: Unify layouts, add missing UI components, finish React Query migration
+- **Phase 3**: Akademik Core — nilai, rapor
 
 ### Future
-- **Phase 5**: PPDB Online
 - **Phase 6**: Notification Center (in-app, email, WhatsApp)
 - **Phase 7**: Integrasi Dapodik & EMIS
 - **Phase 8**: Platform Admin Dashboard
 - **Phase 9+**: Enterprise Features (workflow engine, global search, plugin system, AI, CI/CD)
 
 ### Priority Rule
-**Phase N must complete before Phase N+1 starts.**
+**Refactor Phase 2 must complete before adding more features.**
 ```
-Phase 0 (foundation) → Phase 1 (backend clean) → Phase 2 (frontend clean) → Phase 3+
+Phase 0 ✅ → Phase 1 ✅ (mostly) → Phase 2 (IN PROGRESS) → Phase 3+
 ```
 
 ---
@@ -1200,7 +1295,7 @@ Frontend:       React 19 + Vite 8, React Query, Tailwind CSS 4
 Database:       MySQL 8.x, school_id on all operational tables, ULID for public IDs
 Authentication: Laravel Sanctum (token-based, Bearer header)
 Authorization:  Two layers — PermissionMiddleware + Policy (ownership check)
-Main Roles:     super_operator, operator, kepsek, guru, wali_kelas, bendahara, ortu (14 total)
+Main Roles:     operator, kepsek, guru, wali_kelas, bendahara, ortu (13 total — super_operator merged into operator)
 API Style:      RESTful JSON, /api/v1/, { success, data, meta, code }
 UI Framework:   Tailwind CSS 4.x + Lucide React icons
 Testing:        PHPUnit (php artisan test)

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SidebarContent } from "../../components/layout/OperatorSidebar";
 import OperatorTopBar from "../../components/layout/OperatorTopBar";
+import OperatorFooter from "../../components/layout/OperatorFooter";
 
 export default function OperatorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -85,6 +86,7 @@ export default function OperatorLayout() {
             </div>
           )}
         </main>
+        <OperatorFooter />
       </div>
     </div>
   );
