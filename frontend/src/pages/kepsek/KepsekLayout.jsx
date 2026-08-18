@@ -1,5 +1,4 @@
-import { Outlet } from "react-router-dom";
-import Sidebar from "../../components/layout/Sidebar";
+import AppLayout from "../../components/layout/AppLayout";
 import {
   LayoutDashboard,
   Users,
@@ -25,12 +24,5 @@ const menus = [
 ];
 
 export default function KepsekLayout() {
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar menus={menus} />
-      <main className="flex-1 p-8 overflow-auto">
-        <Outlet />
-      </main>
-    </div>
-  );
+  return <AppLayout menus={menus} />;
 }

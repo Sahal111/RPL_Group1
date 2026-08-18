@@ -6,7 +6,7 @@ import { BookOpen, LogOut } from "lucide-react";
 const BASE_URL =
   import.meta.env.VITE_API_URL?.replace("/api", "") ?? "http://127.0.0.1:8001";
 
-export default function Sidebar({ menus }) {
+export default function Sidebar({ menus, onClose }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -63,6 +63,7 @@ export default function Sidebar({ menus }) {
             key={item.path}
             to={item.path}
             end={item.end}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 ${
                 isActive
