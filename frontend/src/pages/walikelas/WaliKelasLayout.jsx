@@ -10,16 +10,15 @@ import {
 } from "lucide-react";
 
 const menus = [
-  { path: "/wakasek", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { path: "/wakasek/guru", label: "Data Guru", icon: Users },
-  { path: "/wakasek/siswa", label: "Data Siswa", icon: Users },
-  { path: "/wakasek/jadwal", label: "Jadwal Pelajaran", icon: CalendarDays },
-  { path: "/wakasek/absensi", label: "Rekap Absensi", icon: ClipboardList },
-  { path: "/wakasek/laporan", label: "Laporan", icon: FileText },
-  { path: "/wakasek/pengumuman", label: "Pengumuman", icon: BookOpen },
-  { path: "/wakasek/profil", label: "Profil", icon: UserCircle },
+  { path: "/walikelas", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { path: "/walikelas/siswa", label: "Data Siswa", icon: Users },
+  { path: "/walikelas/jadwal", label: "Jadwal Pelajaran", icon: CalendarDays },
+  { path: "/walikelas/absensi", label: "Rekap Absensi", icon: ClipboardList },
+  { path: "/walikelas/laporan", label: "Laporan", icon: FileText },
+  { path: "/walikelas/pengumuman", label: "Pengumuman", icon: BookOpen },
+  { path: "/walikelas/profil", label: "Profil", icon: UserCircle },
 ];
 
-export default function WakasekLayout() {
+export default function WaliKelasLayout() {
   return <AppLayout menus={menus} />;
 }

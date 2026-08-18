@@ -121,17 +121,17 @@ Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with
 ### Current Phase
 - Phase 0 (Multi-Tenant Foundation): `[COMPLETED]`
 - Phase 1 (Backend Refactor): `[MOSTLY_COMPLETED]` — controller splitting done, FormRequests organized, ApiResponse trait in use
-- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, AppLayout.jsx created but not yet adopted by all roles
+- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, AppLayout adopted by 12/14 roles (only SiswaLayout & SuperAdminLayout remain custom)
 - Phase 3-5 modules (LMS, Keuangan, PPDB): `[EARLY_IMPLEMENTATION]` — controllers and basic frontend exist
 
 ### Technical Debt
-- Multiple separate layouts per role (14 layout files) — `AppLayout.jsx` created in `components/layout/` but not yet adopted by all roles `[IN_PROGRESS]`
+- Layout unification: 12/14 roles now use `AppLayout.jsx` — only SiswaLayout (blue theme) & SuperAdminLayout (dark purple theme) remain custom `[MOSTLY_COMPLETED]`
 - Multiple sidebars exist (OperatorSidebar, Sidebar) — should be unified `[IN_PROGRESS]`
 - Some pages still use `useEffect` + axios instead of React Query `[IN_PROGRESS]`
-- `MasterGuru.jsx` is still large (~114KB) `[NEEDS_ATTENTION]`
+- `MasterGuru.jsx` split into modular components (MasterGuru, ModalImportGuru, ModalExportGuru, ModalPerhatianData, guruConstants) `[COMPLETED]` — reduced from 114KB (2516 lines) to 35KB (442 lines)
 - `TambahEditGuru.jsx` is still large (~64KB) `[NEEDS_ATTENTION]`
 - `app/Observers/` folder does not exist — Observer pattern not yet implemented `[NOT_STARTED]`
-- `app/Models/create_new_role_users.php` — file misplaced in Models directory `[BUG]`
+- `app/Models/create_new_role_users.php` — was misplaced in Models directory `[FIXED]` — deleted (functionality covered by TestingUserSeeder)
 
 ---
 
@@ -469,11 +469,12 @@ src/hooks/
 - Actual reusable components: Badge, ComingSoonDashboard, Confirm, DataTable, Modal, Pagination, Skeleton
 - **Missing** (documented but not yet created): StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 
-### Layout Rule (TARGET — PARTIALLY STARTED)
-- **One `AppLayout` for all roles** — differences only in menu items based on permissions
-- **Current status**: `AppLayout.jsx` has been created in `components/layout/` but is NOT yet adopted by all roles
-- **Current reality**: 14 separate layouts still exist (OperatorLayout, GuruLayout, KepsekLayout, OrtuLayout, WaliKelasLayout, BendaharaLayout, AdminPpdbLayout, SuperAdminLayout, SiswaLayout, WakasekLayout, GuruBkLayout, TataUsahaLayout, PustakawanLayout, AdminKeuanganLayout)
-- Migration to unified AppLayout is tech debt for Phase 2
+### Layout Rule (MOSTLY ACHIEVED)
+- **One `AppLayout` for all roles** — differences only in menu items and optional custom sidebar/topbar/footer
+- **Current status**: 12/14 roles use `AppLayout.jsx` as their base layout
+- **Using AppLayout (12)**: OperatorLayout, GuruLayout, KepsekLayout, OrtuLayout, WaliKelasLayout, BendaharaLayout, AdminPpdbLayout, WakasekLayout, GuruBkLayout, TataUsahaLayout, PustakawanLayout, AdminKeuanganLayout
+- **Custom layout (2)**: SiswaLayout (blue theme), SuperAdminLayout (dark purple theme) — will be migrated when redesigned
+- AppLayout supports two modes: simple (`menus` prop) and custom (`sidebar`/`topBar`/`footer` props for Operator)
 
 ### Auth Context
 ```jsx
@@ -758,7 +759,7 @@ backend/
 frontend/src/
 ├── components/
 │   ├── layout/
-│   │   ├── AppLayout.jsx                          ← created, not yet adopted by all roles
+│   │   ├── AppLayout.jsx                          ← unified layout, used by 12/14 roles
 │   │   ├── OperatorSidebar.jsx, OperatorTopBar.jsx, OperatorFooter.jsx
 │   │   └── Sidebar.jsx
 │   ├── ortu/
@@ -1105,12 +1106,13 @@ grep -r "console.log" src/  # no console.log
 | FormRequests organized into 18 domain subdirectories | `[COMPLETED]` |
 | `super_operator` merged into `operator` | `[COMPLETED]` — migration applied |
 | `useEffect` + axios for data fetching in some pages | `[IN_PROGRESS]` — migrating to React Query |
-| Multiple separate layouts per role (14 files) | `[IN_PROGRESS]` — `AppLayout.jsx` created in `components/layout/`, not yet adopted by all roles |
+| Layout unification (14 files → AppLayout) | `[MOSTLY_COMPLETED]` — 12/14 roles use AppLayout; SiswaLayout & SuperAdminLayout remain custom |
+| `WaliKelasLayout.jsx` had wrong path bug (`/wakasek/*`) | `[COMPLETED]` — fixed to `/walikelas/*` |
 | Multiple sidebars (OperatorSidebar, Sidebar) | `[IN_PROGRESS]` — needs unification |
 | `RoleMiddleware` still in use alongside `PermissionMiddleware` | `[IN_PROGRESS]` |
 | `app/Observers/` folder does not exist | `[NOT_STARTED]` — Observer pattern not implemented |
-| `app/Models/create_new_role_users.php` file misplaced in Models | `[BUG]` — should be a migration, not in Models/ |
-| `MasterGuru.jsx` (~114KB) still very large | `[NEEDS_ATTENTION]` |
+| `app/Models/create_new_role_users.php` file misplaced in Models | `[FIXED]` — deleted (covered by TestingUserSeeder) |
+| `MasterGuru.jsx` (~114KB) split into 5 modular files | `[COMPLETED]` — reduced to 35KB (442 lines) |
 | `TambahEditGuru.jsx` (~64KB) still very large | `[NEEDS_ATTENTION]` |
 | `PublicNavbar.jsx` and `PublicFooter.jsx` already in `pages/public/` | `[COMPLETED]` — was previously listed as issue |
 
@@ -1221,7 +1223,9 @@ grep -r "console.log" src/  # no console.log
 - **Phase 2**: Frontend Refactor — `[IN_PROGRESS]`
   - ✅ React Query hooks created (7 api hooks)
   - ✅ Split DetailGuru.jsx into 8 tab components
-  - 🔄 `AppLayout.jsx` created in `components/layout/` — not yet adopted by all roles (14 separate layouts still exist)
+  - ✅ Split MasterGuru.jsx into 5 modular components (MasterGuru, ModalImportGuru, ModalExportGuru, ModalPerhatianData, guruConstants)
+  - ✅ `AppLayout.jsx` adopted by 12/14 roles — OperatorLayout migrated, WakasekLayout & WaliKelasLayout fixed
+  - ⬜ SiswaLayout & SuperAdminLayout still custom (will be migrated when redesigned)
   - ⬜ Missing UI components: StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
 
 ### Early Implementations (Ahead of Roadmap)

@@ -1,5 +1,4 @@
-import { Outlet } from "react-router-dom";
-import Sidebar from "../../components/layout/Sidebar";
+import AppLayout from "../../components/layout/AppLayout";
 import {
   LayoutDashboard,
   Users,
@@ -22,12 +21,5 @@ const menus = [
 ];
 
 export default function WakasekLayout() {
-  return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <Sidebar menus={menus} />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <Outlet />
-      </main>
-    </div>
-  );
+  return <AppLayout menus={menus} />;
 }
