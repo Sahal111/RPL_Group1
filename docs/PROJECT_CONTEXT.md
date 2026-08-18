@@ -819,14 +819,14 @@ frontend/src/
 
 | Role | Class / Hex | Usage |
 |---|---|---|
-| Primary | `bg-blue-600` / Emerald `#15803D` | Main actions, active links |
+| Primary | `bg-emerald-700` / `#15803D` | Main actions, active links, CTA buttons |
 | Danger | `bg-red-600` / `#DC2626` | Delete, errors |
 | Success | `bg-green-600` / `#16A34A` | Active, verified |
 | Warning | `bg-amber-500` / `#F59E0B` | Pending, warnings |
 | Neutral | `bg-gray-100` | Backgrounds |
 | Accent | `#D4AF37` (gold) | Madrasah identity accent |
 
-> **[CONFLICT]**: `10-ui-design-system.md` specifies Tailwind utility classes with **blue-600** as primary, while `desain.md` specifies **Emerald Green #15803D** as primary (Madrasah identity). See Documentation Conflicts section.
+> **Decision**: Emerald Green `#15803D` (`bg-emerald-700`) is the **official primary color** — Madrasah identity. `bg-blue-600` references in older docs are outdated and must not be used for primary actions.
 
 ### Typography
 - Font: Inter or Plus Jakarta Sans
@@ -1120,7 +1120,7 @@ grep -r "console.log" src/  # no console.log
 | `desain.md` | Primary = Emerald Green `#15803D` (Islamic/Madrasah identity) |
 
 **Impact**: Inconsistent UI color across the app.
-**Decision**: `[NEEDS_DECISION]` — User should decide: blue (neutral SaaS) or emerald green (Madrasah identity). Both documents are valid specifications.
+**Decision**: **Emerald Green `#15803D`** is the official primary color (Madrasah identity). `10-ui-design-system.md` reference to `bg-blue-600` is outdated. All primary actions, active links, and CTA buttons must use emerald. Update `10-ui-design-system.md` to reflect this.
 
 ### CONFLICT 2: PhpSpreadsheet Availability
 
@@ -1183,6 +1183,11 @@ grep -r "console.log" src/  # no console.log
 | Response | ApiResponse trait | No copy-paste per controller |
 | Frontend state | React Query (TanStack) | Auto cache, no manual loading/error |
 | File storage | `storage/app/schools/{school_id}/` | Per-tenant file isolation |
+| **Primary color** | **Emerald Green `#15803D`** | Madrasah identity — `bg-blue-600` refs are outdated |
+| **CSS framework** | **Tailwind CSS 4.x** | Actual implementation — pure CSS rule in `Spesifikasi_Backend_SaaS.md` not adopted |
+| **Excel backend** | **PhpSpreadsheet** | Installed in `composer.json` — CLAUDE.md claim "belum install" is outdated |
+| **Guru route param** | **ULID** | Standard per `03-database-standard.md` — nuptk/integer ID not used in routes |
+| **Database** | **MySQL 8.x** | Actual — PostgreSQL suggestion in `Spesifikasi_Backend_SaaS.md` not adopted |
 | Queue driver | Database (current) → Redis (scaling) | `[PLANNED]` |
 | Search | MySQL LIKE → Meilisearch/Typesense | `[PLANNED]` |
 | Email | SMTP → Amazon SES | `[PLANNED]` |
