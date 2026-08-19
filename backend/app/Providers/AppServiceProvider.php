@@ -6,12 +6,14 @@ use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\Siswa;
 use App\Models\Scopes\SchoolScope;
+use App\Observers\GuruObserver;
+use App\Observers\KelasObserver;
+use App\Observers\SiswaObserver;
 use App\Policies\GuruPolicy;
 use App\Policies\KelasPolicy;
 use App\Policies\SiswaPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,9 +30,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Policies
         foreach ($this->policies as $model => $policy) {
             Gate::policy($model, $policy);
         }
+
+        // Observers
+        Guru::observe(GuruObserver::class);
+        Siswa::observe(SiswaObserver::class);
+        Kelas::observe(KelasObserver::class);
 
         // Pakai custom PersonalAccessToken yang bypass SchoolScope
         \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(

@@ -36,7 +36,7 @@ class MasterDataKelasController extends Controller
             return $k;
         });
 
-        return response()->json(['success' => true, 'data' => $kelas]);
+        return $this->success($kelas);
     }
 
     public function show($id)
@@ -46,14 +46,11 @@ class MasterDataKelasController extends Controller
         $siswaAktif = RiwayatKelas::with('siswa')->where('kelas_id', $id)->aktif()->orderBy('no_absen')->get();
         $siswaKeluar = RiwayatKelas::with('siswa')->where('kelas_id', $id)->whereNotNull('tanggal_keluar')->orderByDesc('tanggal_keluar')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => array_merge($kelas->toArray(), [
-                'total_siswa' => $siswaAktif->count(),
-                'siswas' => $siswaAktif,
-                'siswa_keluar' => $siswaKeluar,
-            ]),
-        ]);
+        return $this->success(array_merge($kelas->toArray(), [
+            'total_siswa' => $siswaAktif->count(),
+            'siswas' => $siswaAktif,
+            'siswa_keluar' => $siswaKeluar,
+        ]));
     }
 
     public function store(StoreKelasRequest $request)
@@ -62,10 +59,7 @@ class MasterDataKelasController extends Controller
         $semesterAktif = \App\Models\Semester::where('is_active', true)->first();
 
         if (!$request->tahun_ajaran_id && !$tahunAjaranAktif) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Belum ada Tahun Ajaran aktif. Silakan aktifkan Tahun Ajaran terlebih dahulu.',
-            ], 422);
+            return $this->error('Belum ada Tahun Ajaran aktif. Silakan aktifkan Tahun Ajaran terlebih dahulu.', 'NO_ACTIVE_TAHUN_AJARAN', 422);
         }
 
         $kelas = Kelas::create([
@@ -80,7 +74,7 @@ class MasterDataKelasController extends Controller
             'is_active' => 1,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Kelas berhasil ditambahkan.', 'data' => $kelas], 201);
+        return $this->created($kelas, 'Kelas berhasil ditambahkan.');
     }
 
     public function update(UpdateKelasRequest $request, $id)
@@ -99,7 +93,10 @@ class MasterDataKelasController extends Controller
             'is_active' => $request->has('is_active') ? $request->is_active : $kelas->is_active,
         ], fn($v) => !is_null($v)));
 
-        return response()->json(['success' => true, 'message' => 'Kelas berhasil diperbarui.', 'data' => $kelas->fresh(['wali:id,nama,nuptk', 'tahunAjaran:id,tahun', 'semester:id,nama'])]);
+        return $this->success(
+            $kelas->fresh(['wali:id,nama,nuptk', 'tahunAjaran:id,tahun', 'semester:id,nama']),
+            'Kelas berhasil diperbarui.'
+        );
     }
 
     public function destroy($id)
@@ -108,23 +105,23 @@ class MasterDataKelasController extends Controller
         $adaSiswa = RiwayatKelas::where('kelas_id', $id)->aktif()->exists();
 
         if ($adaSiswa) {
-            return response()->json(['success' => false, 'message' => 'Kelas masih memiliki siswa aktif.'], 422);
+            return $this->error('Kelas masih memiliki siswa aktif.', 'KELAS_HAS_SISWA', 422);
         }
 
         $kelas->delete();
-        return response()->json(['success' => true, 'message' => 'Kelas berhasil dihapus.']);
+        return $this->success(null, 'Kelas berhasil dihapus.');
     }
 
     public function dropdown()
     {
         $kelas = Kelas::where('is_active', 1)->orderBy('tingkat')->orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat']);
-        return response()->json(['success' => true, 'data' => $kelas]);
+        return $this->success($kelas);
     }
 
     public function tahunAjaranDropdown()
     {
         $data = TahunAjaran::orderByDesc('is_active')->orderByDesc('id')->get(['id', 'tahun', 'is_active']);
-        return response()->json(['success' => true, 'data' => $data]);
+        return $this->success($data);
     }
 
     public function riwayatAkademik($id)
@@ -157,17 +154,14 @@ class MasterDataKelasController extends Controller
             return ['guru_nama' => $w->guru?->nama, 'guru_foto' => $w->guru?->foto, 'tahun_ajaran' => $w->tahunAjaran?->tahun, 'is_active' => (bool) $w->tahunAjaran?->is_active];
         });
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'kelas' => $kelas,
-                'riwayat_akademik' => $riwayat->values(),
-                'riwayat_wali' => $riwayatWali->values(),
-                'stats' => [
-                    'total_tahun' => $tahunAjaranIds->count(),
-                    'total_siswa_unik' => RiwayatKelas::where('kelas_id', $id)->distinct('siswa_id')->count('siswa_id'),
-                    'total_wali' => \App\Models\UserWaliKelas::where('kelas_id', $id)->count(),
-                ],
+        return $this->success([
+            'kelas' => $kelas,
+            'riwayat_akademik' => $riwayat->values(),
+            'riwayat_wali' => $riwayatWali->values(),
+            'stats' => [
+                'total_tahun' => $tahunAjaranIds->count(),
+                'total_siswa_unik' => RiwayatKelas::where('kelas_id', $id)->distinct('siswa_id')->count('siswa_id'),
+                'total_wali' => \App\Models\UserWaliKelas::where('kelas_id', $id)->count(),
             ],
         ]);
     }
@@ -182,18 +176,15 @@ class MasterDataKelasController extends Controller
         $siswaAktif = $siswaList->whereNull('tanggal_keluar')->values();
         $siswaKeluar = $siswaList->whereNotNull('tanggal_keluar')->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'kelas' => $kelas,
-                'tahun_ajaran' => $tahunAjaran,
-                'wali_periode' => $waliPeriode,
-                'siswa_aktif' => $siswaAktif,
-                'siswa_keluar' => $siswaKeluar,
-                'total_siswa' => $siswaAktif->count(),
-                'total_laki' => $siswaAktif->filter(fn($r) => $r->siswa?->jenis_kelamin === 'L')->count(),
-                'total_perempuan' => $siswaAktif->filter(fn($r) => $r->siswa?->jenis_kelamin === 'P')->count(),
-            ],
+        return $this->success([
+            'kelas' => $kelas,
+            'tahun_ajaran' => $tahunAjaran,
+            'wali_periode' => $waliPeriode,
+            'siswa_aktif' => $siswaAktif,
+            'siswa_keluar' => $siswaKeluar,
+            'total_siswa' => $siswaAktif->count(),
+            'total_laki' => $siswaAktif->filter(fn($r) => $r->siswa?->jenis_kelamin === 'L')->count(),
+            'total_perempuan' => $siswaAktif->filter(fn($r) => $r->siswa?->jenis_kelamin === 'P')->count(),
         ]);
     }
 
@@ -203,7 +194,7 @@ class MasterDataKelasController extends Controller
 
         $sudahAda = RiwayatKelas::where('kelas_id', $id)->where('siswa_id', $request->siswa_id)->aktif()->exists();
         if ($sudahAda) {
-            return response()->json(['success' => false, 'message' => 'Siswa sudah terdaftar di kelas ini.'], 422);
+            return $this->error('Siswa sudah terdaftar di kelas ini.', 'SISWA_ALREADY_IN_KELAS', 422);
         }
 
         $noAbsen = (RiwayatKelas::where('kelas_id', $id)->aktif()->max('no_absen') ?? 0) + 1;
@@ -220,7 +211,7 @@ class MasterDataKelasController extends Controller
             'jenis_perubahan' => $request->jenis_perubahan,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Siswa berhasil ditambahkan ke kelas.'], 201);
+        return $this->created(null, 'Siswa berhasil ditambahkan ke kelas.');
     }
 
     public function keluarkanSiswa(RemoveSiswaKelasRequest $request, $id, $riwayatId)
@@ -232,7 +223,7 @@ class MasterDataKelasController extends Controller
             'catatan' => $request->catatan,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Siswa berhasil dikeluarkan dari kelas.']);
+        return $this->success(null, 'Siswa berhasil dikeluarkan dari kelas.');
     }
 
     public function batalkanKeluar($id, $riwayatId)
@@ -240,6 +231,6 @@ class MasterDataKelasController extends Controller
         $riwayat = RiwayatKelas::where('id', $riwayatId)->where('kelas_id', $id)->firstOrFail();
         $riwayat->update(['tanggal_keluar' => null, 'jenis_perubahan' => 'masuk_kembali', 'catatan' => null]);
 
-        return response()->json(['success' => true, 'message' => 'Status siswa dikembalikan ke aktif.']);
+        return $this->success(null, 'Status siswa dikembalikan ke aktif.');
     }
 }

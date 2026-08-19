@@ -30,7 +30,7 @@ class MasterDataMapelController extends Controller
             ->orderBy('kelompok')->orderBy('nama_mapel')
             ->paginate(20);
 
-        return response()->json(['success' => true, 'data' => $query]);
+        return $this->success($query);
     }
 
     /* ── STORE ───────────────────────────────────────────────── */
@@ -47,13 +47,13 @@ class MasterDataMapelController extends Controller
             'is_active' => true,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Mata pelajaran berhasil ditambahkan.', 'data' => $mapel], 201);
+        return $this->created($mapel, 'Mata pelajaran berhasil ditambahkan.');
     }
 
     /* ── SHOW ────────────────────────────────────────────────── */
     public function show($id)
     {
-        return response()->json(['success' => true, 'data' => MataPelajaran::findOrFail($id)]);
+        return $this->success(MataPelajaran::findOrFail($id));
     }
 
     /* ── UPDATE ──────────────────────────────────────────────── */
@@ -69,7 +69,7 @@ class MasterDataMapelController extends Controller
             'kurikulum' => $request->kurikulum,
             'is_active' => $request->boolean('is_active', $mapel->is_active),
         ]);
-        return response()->json(['success' => true, 'message' => 'Mata pelajaran berhasil diperbarui.', 'data' => $mapel->fresh()]);
+        return $this->success($mapel->fresh(), 'Mata pelajaran berhasil diperbarui.');
     }
 
     /* ── TOGGLE ACTIVE ───────────────────────────────────────── */
@@ -77,14 +77,14 @@ class MasterDataMapelController extends Controller
     {
         $mapel = MataPelajaran::findOrFail($id);
         $mapel->update(['is_active' => !$mapel->is_active]);
-        return response()->json(['success' => true, 'message' => 'Status berhasil diubah.', 'data' => $mapel->fresh()]);
+        return $this->success($mapel->fresh(), 'Status berhasil diubah.');
     }
 
     /* ── DESTROY ─────────────────────────────────────────────── */
     public function destroy($id)
     {
         MataPelajaran::findOrFail($id)->delete();
-        return response()->json(['success' => true, 'message' => 'Mata pelajaran berhasil dihapus.']);
+        return $this->success(null, 'Mata pelajaran berhasil dihapus.');
     }
 
     /* ── DROPDOWN ────────────────────────────────────────────── */
@@ -93,7 +93,7 @@ class MasterDataMapelController extends Controller
         $data = MataPelajaran::where('is_active', true)
             ->orderBy('kelompok')->orderBy('nama_mapel')
             ->get(['id', 'kode', 'nama_mapel', 'kelompok', 'tingkat']);
-        return response()->json(['success' => true, 'data' => $data]);
+        return $this->success($data);
     }
 
     /* ─────────────────────────────────────────────────────────── */
@@ -171,7 +171,7 @@ class MasterDataMapelController extends Controller
             // ── Baca xlsx via ZipArchive + SimpleXML ──────────────
             $zip = new \ZipArchive();
             if ($zip->open($file->getRealPath()) !== true) {
-                return response()->json(['success' => false, 'message' => 'File Excel tidak bisa dibuka.'], 422);
+                return $this->error('File Excel tidak bisa dibuka.', 'INVALID_EXCEL', 422);
             }
 
             // Baca shared strings
@@ -197,7 +197,7 @@ class MasterDataMapelController extends Controller
             $zip->close();
 
             if ($sheetXml === false) {
-                return response()->json(['success' => false, 'message' => 'Sheet Excel tidak ditemukan.'], 422);
+                return $this->error('Sheet Excel tidak ditemukan.', 'INVALID_EXCEL_SHEET', 422);
             }
 
             $sheet = simplexml_load_string($sheetXml);
