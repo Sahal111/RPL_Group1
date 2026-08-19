@@ -121,13 +121,13 @@ Scholara/SIAKAD is a multi-tenant SaaS platform for school management built with
 ### Current Phase
 - Phase 0 (Multi-Tenant Foundation): `[COMPLETED]`
 - Phase 1 (Backend Refactor): `[MOSTLY_COMPLETED]` — controller splitting done, FormRequests organized, ApiResponse trait in use
-- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, AppLayout adopted by 12/14 roles (only SiswaLayout & SuperAdminLayout remain custom)
+- Phase 2 (Frontend Refactor): `[IN_PROGRESS]` — reusable components exist, React Query hooks created, AppLayout adopted by 14/14 roles (layout unification COMPLETED), missing UI components COMPLETED
 - Phase 3-5 modules (LMS, Keuangan, PPDB): `[EARLY_IMPLEMENTATION]` — controllers and basic frontend exist
 
 ### Technical Debt
-- Layout unification: 12/14 roles now use `AppLayout.jsx` — only SiswaLayout (blue theme) & SuperAdminLayout (dark purple theme) remain custom `[MOSTLY_COMPLETED]`
+- Layout unification: 14/14 roles now use `AppLayout.jsx` — SiswaLayout & SuperAdminLayout migrated via extracted sidebar components (SiswaSidebar.jsx, SuperAdminSidebar.jsx) `[COMPLETED]`
 - Multiple sidebars exist (OperatorSidebar, Sidebar) — should be unified `[IN_PROGRESS]`
-- Some pages still use `useEffect` + axios instead of React Query `[IN_PROGRESS]`
+- Some pages still use `useEffect` + axios instead of React Query `[COMPLETED]` — DashboardKepsek.jsx migrated; remaining useEffect usages are all valid (form reset, UI sync, non-fetch)
 - `MasterGuru.jsx` split into modular components (MasterGuru, ModalImportGuru, ModalExportGuru, ModalPerhatianData, guruConstants) `[COMPLETED]` — reduced from 114KB (2516 lines) to 35KB (442 lines)
 - `TambahEditGuru.jsx` is still large (~64KB) `[NEEDS_ATTENTION]`
 - `app/Observers/` folder does not exist — Observer pattern not yet implemented `[NOT_STARTED]`
@@ -467,7 +467,7 @@ src/hooks/
 - Max **200-250 lines** per file — split into sub-components if larger
 - UI components in `src/components/ui/` — MUST NOT import from `hooks/api/`
 - Actual reusable components: Badge, ComingSoonDashboard, Confirm, DataTable, Modal, Pagination, Skeleton
-- **Missing** (documented but not yet created): StatusBadge, FileUpload, SearchInput, EmptyState, DataField, SectionCard
+- Actual reusable components: Badge, ComingSoonDashboard, Confirm, DataField, DataTable, EmptyState, FileUpload, Modal, Pagination, SearchInput, SectionCard, Skeleton, StatusBadge
 
 ### Layout Rule (MOSTLY ACHIEVED)
 - **One `AppLayout` for all roles** — differences only in menu items and optional custom sidebar/topbar/footer

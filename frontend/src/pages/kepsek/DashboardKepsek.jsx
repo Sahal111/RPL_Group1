@@ -52,24 +52,11 @@ function NotifIcon({ tipe }) {
 }
 
 export default function DashboardKepsek() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const res = await api.get("/kepsek/dashboard");
-        setData(res.data.data);
-      } catch (err) {
-        setError("Gagal memuat data dashboard.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboard();
-  }, []);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["kepsek-dashboard"],
+    queryFn: () => api.get("/kepsek/dashboard").then((r) => r.data.data),
+    staleTime: 5 * 60 * 1000,
+  });
 
   if (loading) {
     return (
