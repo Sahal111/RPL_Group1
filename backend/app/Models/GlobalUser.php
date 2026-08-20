@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedJson;
+use App\Casts\EncryptedString;
 use App\Traits\HasUlid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -48,6 +50,9 @@ class GlobalUser extends Authenticatable
         'last_login_at' => 'datetime',
         'is_active' => 'boolean',
         'password' => 'hashed',
+        // Keamanan 2FA — dienkripsi di DB, plaintext hanya di memory
+        'two_factor_secret' => EncryptedString::class,
+        'two_factor_recovery_codes' => EncryptedJson::class,
     ];
 
     public function schools(): BelongsToMany
