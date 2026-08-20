@@ -2,47 +2,74 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import api from "../../../lib/axios";
 import toast from "react-hot-toast";
-import {
-  ArrowRight,
-  ArrowUpCircle,
-  Users,
-  CheckCircle2,
-  AlertCircle,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
 
 /* ─── Modal Konfirmasi ─────────────────────────────────────────── */
-function ModalKonfirmasi({ open, onClose, onConfirm, kelasAsal, kelasTujuan, total, loading }) {
+function ModalKonfirmasi({
+  open,
+  onClose,
+  onConfirm,
+  kelasAsal,
+  kelasTujuan,
+  total,
+  loading,
+}) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-[#bfc9c4]/30 animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-[#00342b] px-6 py-5">
           <div className="flex items-center gap-3">
-            <ArrowUpCircle className="text-white" size={24} />
-            <h2 className="text-white font-bold text-lg">Konfirmasi Naik Kelas</h2>
+            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-[22px]">
+                upgrade
+              </span>
+            </div>
+            <div>
+              <h2 className="text-white font-extrabold text-[17px] font-headline-card">
+                Konfirmasi Naik Kelas
+              </h2>
+              <p className="text-[#afefdd] text-[11px]">
+                Proses ini tidak dapat dibatalkan
+              </p>
+            </div>
           </div>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-gray-600 text-sm">
-            Anda akan memindahkan <strong>{total} siswa</strong> secara massal:
+          <p className="text-[#3f4945] text-sm">
+            Anda akan memindahkan{" "}
+            <strong className="text-[#00342b]">{total} siswa</strong> secara
+            massal:
           </p>
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+          <div className="flex items-center gap-3 bg-[#f8faf9] rounded-2xl p-4 border border-[#bfc9c4]/30">
             <div className="flex-1 text-center">
-              <p className="text-xs text-gray-500 mb-1">Kelas Asal</p>
-              <p className="font-bold text-gray-800">{kelasAsal}</p>
+              <p className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-wider mb-1">
+                Kelas Asal
+              </p>
+              <p className="font-extrabold text-[#00342b] text-[15px]">
+                {kelasAsal}
+              </p>
             </div>
-            <ArrowRight className="text-blue-500 shrink-0" size={20} />
+            <div className="w-8 h-8 rounded-full bg-[#006e2a]/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#006e2a] text-[18px]">
+                arrow_forward
+              </span>
+            </div>
             <div className="flex-1 text-center">
-              <p className="text-xs text-gray-500 mb-1">Kelas Tujuan</p>
-              <p className="font-bold text-blue-700">{kelasTujuan}</p>
+              <p className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-wider mb-1">
+                Kelas Tujuan
+              </p>
+              <p className="font-extrabold text-[#006e2a] text-[15px]">
+                {kelasTujuan}
+              </p>
             </div>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2">
-            <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-amber-700 text-xs">
-              Tindakan ini tidak dapat dibatalkan. Pastikan kelas tujuan sudah benar.
+          <div className="bg-[#fff8f0] border border-[#f59e0b]/30 rounded-2xl p-3 flex gap-2.5">
+            <span className="material-symbols-outlined text-[#f59e0b] text-[18px] shrink-0 mt-0.5">
+              warning
+            </span>
+            <p className="text-[#92400e] text-xs leading-relaxed">
+              Tindakan ini tidak dapat dibatalkan. Pastikan kelas tujuan sudah
+              benar sebelum melanjutkan.
             </p>
           </div>
         </div>
@@ -50,19 +77,29 @@ function ModalKonfirmasi({ open, onClose, onConfirm, kelasAsal, kelasTujuan, tot
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex-1 py-3 rounded-full border border-[#bfc9c4]/50 text-[#3f4945] font-bold text-xs uppercase tracking-wider hover:bg-[#eceeed] transition disabled:opacity-50"
           >
             Batal
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition flex items-center justify-center gap-2 disabled:opacity-60"
+            className="flex-1 py-3 rounded-full bg-[#006e2a] hover:bg-[#00531e] text-white font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg shadow-[#006e2a]/30 disabled:opacity-60"
           >
             {loading ? (
-              <><Loader2 size={16} className="animate-spin" /> Memproses...</>
+              <>
+                <span className="material-symbols-outlined text-[16px] animate-spin">
+                  progress_activity
+                </span>
+                Memproses...
+              </>
             ) : (
-              <><ArrowUpCircle size={16} /> Proses Sekarang</>
+              <>
+                <span className="material-symbols-outlined text-[16px]">
+                  upgrade
+                </span>
+                Proses Sekarang
+              </>
             )}
           </button>
         </div>
@@ -75,23 +112,40 @@ function ModalKonfirmasi({ open, onClose, onConfirm, kelasAsal, kelasTujuan, tot
 function ModalHasil({ open, onClose, hasil }) {
   if (!open || !hasil) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-5 flex flex-col items-center">
-          <CheckCircle2 className="text-white mb-2" size={40} />
-          <h2 className="text-white font-bold text-lg">Berhasil!</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-sm mx-4 overflow-hidden border border-[#bfc9c4]/30 animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-[#006e2a] px-6 py-7 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-3">
+            <span
+              className="material-symbols-outlined text-white text-[36px]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              check_circle
+            </span>
+          </div>
+          <h2 className="text-white font-extrabold text-[20px] font-headline-card">
+            Berhasil!
+          </h2>
         </div>
-        <div className="p-6 space-y-3 text-center">
-          <p className="text-gray-600 text-sm">{hasil.message}</p>
-          <div className="flex justify-center gap-6 pt-2">
+        <div className="p-6 space-y-4 text-center">
+          <p className="text-[#3f4945] text-sm">{hasil.message}</p>
+          <div className="flex justify-center gap-8 pt-2">
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">{hasil.berhasil}</p>
-              <p className="text-xs text-gray-500">Dipindah</p>
+              <p className="text-4xl font-extrabold text-[#006e2a] font-headline-card">
+                {hasil.berhasil}
+              </p>
+              <p className="text-xs font-bold text-[#3f4945]/60 uppercase tracking-wider mt-1">
+                Dipindah
+              </p>
             </div>
             {hasil.dilewati > 0 && (
               <div className="text-center">
-                <p className="text-3xl font-bold text-amber-500">{hasil.dilewati}</p>
-                <p className="text-xs text-gray-500">Dilewati</p>
+                <p className="text-4xl font-extrabold text-[#f59e0b] font-headline-card">
+                  {hasil.dilewati}
+                </p>
+                <p className="text-xs font-bold text-[#3f4945]/60 uppercase tracking-wider mt-1">
+                  Dilewati
+                </p>
               </div>
             )}
           </div>
@@ -99,7 +153,7 @@ function ModalHasil({ open, onClose, hasil }) {
         <div className="px-6 pb-6">
           <button
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+            className="w-full py-3 rounded-full bg-[#00342b] hover:bg-[#004d40] text-white font-black text-xs uppercase tracking-wider transition shadow-md"
           >
             Tutup
           </button>
@@ -117,19 +171,13 @@ export default function NaikKelas() {
   const [hasilProses, setHasilProses] = useState(null);
   const [showHasil, setShowHasil] = useState(false);
 
-  /* Dropdown semua kelas aktif */
   const { data: kelasList = [] } = useQuery({
     queryKey: ["kelas-dropdown"],
     queryFn: () =>
       api.get("/operator/master-data/kelas/dropdown").then((r) => r.data.data),
   });
 
-  /* Preview siswa di kelas asal */
-  const {
-    data: preview,
-    isFetching: loadingPreview,
-    refetch: fetchPreview,
-  } = useQuery({
+  const { data: preview, isFetching: loadingPreview } = useQuery({
     queryKey: ["naik-kelas-preview", kelasAsal],
     queryFn: () =>
       api
@@ -141,7 +189,6 @@ export default function NaikKelas() {
     retry: false,
   });
 
-  /* Mutasi proses */
   const prosesMutation = useMutation({
     mutationFn: () =>
       api.post("/operator/master-data/naik-kelas/proses", {
@@ -152,7 +199,6 @@ export default function NaikKelas() {
       setShowKonfirmasi(false);
       setHasilProses(res.data);
       setShowHasil(true);
-      // Reset state
       setKelasAsal("");
       setKelasTujuan("");
     },
@@ -166,173 +212,263 @@ export default function NaikKelas() {
     kelasList.find((k) => k.id === kelasAsal)?.nama_kelas ?? "-";
   const namaKelasTujuan =
     kelasList.find((k) => k.id === kelasTujuan)?.nama_kelas ?? "-";
-
   const siswaTampil = preview?.data ?? [];
   const totalSiswa = preview?.total ?? 0;
   const bisaProses =
     kelasAsal && kelasTujuan && kelasAsal !== kelasTujuan && totalSiswa > 0;
 
+  const inputCls =
+    "w-full px-4 py-2.5 bg-[#f8faf9] border border-[#bfc9c4]/40 rounded-xl text-sm text-[#111827] focus:ring-2 focus:ring-[#006e2a]/20 focus:border-[#006e2a] outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed";
+
+  const stepCls = (active) =>
+    `flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+      active
+        ? "bg-[#006e2a]/10 text-[#006e2a] border border-[#006e2a]/20"
+        : "bg-[#eceeed] text-[#3f4945]/60"
+    }`;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <ArrowUpCircle className="text-blue-600" size={28} />
-          Naik Kelas Massal
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Pindahkan seluruh siswa dari kelas asal ke kelas tujuan secara massal.
-        </p>
+    <div className="min-h-screen space-y-8 animate-fade-up">
+      {/* Atmospheric Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#94d3c1]/20 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
+        <div className="absolute top-40 -right-40 w-96 h-96 bg-[#caead6]/30 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 text-sm">
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium transition-colors ${kelasAsal ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}>
-          <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold">1</span>
-          Pilih Kelas Asal
-        </div>
-        <ChevronRight size={16} className="text-gray-400" />
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium transition-colors ${kelasTujuan ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}>
-          <span className={`w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold ${kelasTujuan ? "bg-blue-600" : "bg-gray-400"}`}>2</span>
-          Pilih Kelas Tujuan
-        </div>
-        <ChevronRight size={16} className="text-gray-400" />
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium transition-colors ${bisaProses ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}>
-          <span className={`w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold ${bisaProses ? "bg-blue-600" : "bg-gray-400"}`}>3</span>
-          Proses
-        </div>
-      </div>
-
-      {/* Panel Utama */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Kelas Asal */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Kelas Asal <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={kelasAsal}
-              onChange={(e) => {
-                setKelasAsal(e.target.value);
-                setKelasTujuan("");
-              }}
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-            >
-              <option value="">-- Pilih kelas asal --</option>
-              {kelasList.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.nama_kelas} (Tingkat {k.tingkat})
-                </option>
-              ))}
-            </select>
+      <div className="relative z-10 space-y-8">
+        {/* ── Header ── */}
+        <div className="flex flex-col gap-3 pt-2">
+          <div className="flex items-center gap-2">
+            <div className="px-4 py-1.5 rounded-full bg-[#006e2a]/10 border border-[#006e2a]/20 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#006e2a]" />
+              <span className="font-label-badge text-[10px] text-[#006e2a] tracking-[0.2em] uppercase font-black">
+                MODUL AKADEMIK
+              </span>
+            </div>
           </div>
+          <h1 className="font-headline-section text-3xl sm:text-4xl text-[#00342b] font-extrabold leading-tight tracking-tight">
+            Naik Kelas{" "}
+            <span className="font-serif-accent italic text-[#006e2a] font-normal">
+              Massal
+            </span>
+          </h1>
+          <p className="text-sm text-[#3f4945]/80 max-w-xl leading-relaxed">
+            Pindahkan seluruh siswa dari kelas asal ke kelas tujuan secara
+            massal dalam satu langkah.
+          </p>
+        </div>
 
-          {/* Kelas Tujuan */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Kelas Tujuan <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={kelasTujuan}
-              onChange={(e) => setKelasTujuan(e.target.value)}
-              disabled={!kelasAsal}
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-50 disabled:text-gray-400"
+        {/* ── Step Indicator ── */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className={stepCls(!!kelasAsal)}>
+            <span
+              className={`w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center font-black ${kelasAsal ? "bg-[#006e2a]" : "bg-[#bfc9c4]"}`}
             >
-              <option value="">-- Pilih kelas tujuan --</option>
-              {kelasList
-                .filter((k) => k.id !== kelasAsal)
-                .map((k) => (
+              1
+            </span>
+            Pilih Kelas Asal
+          </div>
+          <span className="material-symbols-outlined text-[#bfc9c4] text-[18px]">
+            chevron_right
+          </span>
+          <div className={stepCls(!!kelasTujuan)}>
+            <span
+              className={`w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center font-black ${kelasTujuan ? "bg-[#006e2a]" : "bg-[#bfc9c4]"}`}
+            >
+              2
+            </span>
+            Pilih Kelas Tujuan
+          </div>
+          <span className="material-symbols-outlined text-[#bfc9c4] text-[18px]">
+            chevron_right
+          </span>
+          <div className={stepCls(bisaProses)}>
+            <span
+              className={`w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center font-black ${bisaProses ? "bg-[#006e2a]" : "bg-[#bfc9c4]"}`}
+            >
+              3
+            </span>
+            Proses
+          </div>
+        </div>
+
+        {/* ── Form Panel ── */}
+        <div className="bg-white/85 backdrop-blur-md border border-white/60 rounded-[2.5rem] shadow-xl p-6 sm:p-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Kelas Asal */}
+            <div>
+              <label className="block text-xs font-bold text-[#00342b] uppercase tracking-wider mb-1.5">
+                Kelas Asal <span className="text-[#ba1a1a]">*</span>
+              </label>
+              <select
+                value={kelasAsal}
+                onChange={(e) => {
+                  setKelasAsal(e.target.value);
+                  setKelasTujuan("");
+                }}
+                className={inputCls}
+              >
+                <option value="">-- Pilih kelas asal --</option>
+                {kelasList.map((k) => (
                   <option key={k.id} value={k.id}>
                     {k.nama_kelas} (Tingkat {k.tingkat})
                   </option>
                 ))}
-            </select>
-            {!kelasAsal && (
-              <p className="text-xs text-gray-400 mt-1">Pilih kelas asal terlebih dahulu</p>
-            )}
+              </select>
+            </div>
+
+            {/* Kelas Tujuan */}
+            <div>
+              <label className="block text-xs font-bold text-[#00342b] uppercase tracking-wider mb-1.5">
+                Kelas Tujuan <span className="text-[#ba1a1a]">*</span>
+              </label>
+              <select
+                value={kelasTujuan}
+                onChange={(e) => setKelasTujuan(e.target.value)}
+                disabled={!kelasAsal}
+                className={inputCls}
+              >
+                <option value="">-- Pilih kelas tujuan --</option>
+                {kelasList
+                  .filter((k) => k.id !== kelasAsal)
+                  .map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.nama_kelas} (Tingkat {k.tingkat})
+                    </option>
+                  ))}
+              </select>
+              {!kelasAsal && (
+                <p className="text-[11px] text-[#3f4945]/50 mt-1">
+                  Pilih kelas asal terlebih dahulu
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Tombol Proses */}
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => setShowKonfirmasi(true)}
+              disabled={!bisaProses}
+              className="flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#006e2a] hover:bg-[#00531e] text-white font-black text-xs uppercase tracking-widest transition shadow-xl shadow-[#006e2a]/30 hover:shadow-[#006e2a]/50 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                upgrade
+              </span>
+              Proses Naik Kelas
+            </button>
           </div>
         </div>
 
-        {/* Tombol Proses */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => setShowKonfirmasi(true)}
-            disabled={!bisaProses}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-          >
-            <ArrowUpCircle size={18} />
-            Proses Naik Kelas
-          </button>
-        </div>
+        {/* ── Preview Siswa ── */}
+        {kelasAsal && (
+          <div className="bg-white/85 backdrop-blur-md border border-white/60 rounded-[2.5rem] shadow-xl overflow-hidden">
+            <div className="px-6 sm:px-8 py-5 border-b border-[#bfc9c4]/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#006e2a]/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#006e2a] text-[18px]">
+                    groups
+                  </span>
+                </div>
+                <div>
+                  <h2 className="font-headline-card text-[16px] font-extrabold text-[#00342b]">
+                    Preview Siswa — {namaKelasAsal}
+                  </h2>
+                  <p className="text-[11px] text-[#3f4945]/60">
+                    Siswa yang akan dipindahkan
+                  </p>
+                </div>
+              </div>
+              {!loadingPreview && totalSiswa > 0 && (
+                <span className="px-4 py-1.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-xs font-extrabold border border-[#006e2a]/20">
+                  {totalSiswa} siswa
+                </span>
+              )}
+            </div>
+
+            {loadingPreview ? (
+              <div className="flex items-center justify-center py-16 gap-3 text-[#3f4945]/50">
+                <span className="material-symbols-outlined text-[22px] animate-spin">
+                  progress_activity
+                </span>
+                <span className="text-sm">Memuat data siswa...</span>
+              </div>
+            ) : siswaTampil.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-[#3f4945]/50 gap-3">
+                <span className="material-symbols-outlined text-5xl text-[#bfc9c4]">
+                  group_off
+                </span>
+                <p className="font-semibold text-sm">
+                  Tidak ada siswa aktif di kelas ini
+                </p>
+                <p className="text-xs">
+                  Pilih kelas lain atau tambah siswa terlebih dahulu.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#bfc9c4]/20 bg-[#f8faf9]">
+                      <th className="py-3.5 px-6 text-[11px] font-extrabold text-[#3f4945]/60 uppercase tracking-widest w-16 text-center">
+                        No.
+                      </th>
+                      <th className="py-3.5 px-4 text-[11px] font-extrabold text-[#3f4945]/60 uppercase tracking-widest">
+                        NISN
+                      </th>
+                      <th className="py-3.5 px-4 text-[11px] font-extrabold text-[#3f4945]/60 uppercase tracking-widest">
+                        Nama Lengkap
+                      </th>
+                      <th className="py-3.5 px-4 text-[11px] font-extrabold text-[#3f4945]/60 uppercase tracking-widest">
+                        Jenis Kelamin
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#bfc9c4]/15">
+                    {siswaTampil.map((s) => (
+                      <tr
+                        key={s.nisn}
+                        className="hover:bg-[#006e2a]/4 transition-colors"
+                      >
+                        <td className="py-4 px-6 text-center">
+                          <span className="text-sm font-bold text-[#3f4945]/60">
+                            {s.no_absen}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="font-mono text-[13px] text-[#3f4945]/80">
+                            {s.nisn}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="font-semibold text-[#00342b] text-sm">
+                            {s.nama_lengkap}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                              s.jenis_kelamin === "L"
+                                ? "bg-[#006e2a]/10 text-[#006e2a] border border-[#006e2a]/20"
+                                : "bg-[#f472b6]/10 text-[#9d174d] border border-[#f472b6]/20"
+                            }`}
+                          >
+                            {s.jenis_kelamin === "L"
+                              ? "Laki-laki"
+                              : "Perempuan"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Preview Siswa */}
-      {kelasAsal && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users size={18} className="text-blue-600" />
-              <h2 className="font-semibold text-gray-800">
-                Preview Siswa — {namaKelasAsal}
-              </h2>
-            </div>
-            {!loadingPreview && (
-              <span className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">
-                {totalSiswa} siswa
-              </span>
-            )}
-          </div>
-
-          {loadingPreview ? (
-            <div className="flex items-center justify-center py-16 gap-2 text-gray-400">
-              <Loader2 size={20} className="animate-spin" />
-              <span>Memuat data siswa...</span>
-            </div>
-          ) : siswaTampil.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <Users size={40} className="mb-3 opacity-30" />
-              <p className="font-medium">Tidak ada siswa aktif di kelas ini</p>
-              <p className="text-sm mt-1">Pilih kelas lain atau tambah siswa ke kelas ini terlebih dahulu.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
-                  <tr>
-                    <th className="px-4 py-3 text-left w-12">No. Absen</th>
-                    <th className="px-4 py-3 text-left">NISN</th>
-                    <th className="px-4 py-3 text-left">Nama Lengkap</th>
-                    <th className="px-4 py-3 text-left">Jenis Kelamin</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {siswaTampil.map((s, i) => (
-                    <tr key={s.nisn} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-center font-medium text-gray-500">
-                        {s.no_absen}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-gray-600">{s.nisn}</td>
-                      <td className="px-4 py-3 font-medium text-gray-800">{s.nama_lengkap}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          s.jenis_kelamin === "L"
-                            ? "bg-blue-50 text-blue-700"
-                            : "bg-pink-50 text-pink-700"
-                        }`}>
-                          {s.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Modals */}
+      {/* ── Modals ── */}
       <ModalKonfirmasi
         open={showKonfirmasi}
         onClose={() => setShowKonfirmasi(false)}
