@@ -177,10 +177,7 @@ export default function DashboardOperator() {
     kelasList.length > 0
       ? kelasList.map((k) => ({
           kelas: k.nama_kelas ?? k.nama ?? k.label ?? "Kelas",
-          siswa:
-            k.jumlah_siswa ??
-            k.total_siswa ??
-            Math.floor(Math.random() * 40 + 20),
+          siswa: k.jumlah_siswa ?? k.total_siswa ?? 0,
         }))
       : [
           { kelas: "K1", siswa: 0 },
