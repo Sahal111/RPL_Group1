@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedJson;
+use App\Casts\EncryptedString;
 use App\Traits\HasSchoolScope;
 use App\Traits\HasUlid;
 use Illuminate\Database\Eloquent\Model;
@@ -84,7 +86,12 @@ class Guru extends Model
     ];
 
     protected $casts = [
-        'national_ids' => 'array',
+        // PII — UU PDP No. 27/2022: wajib dienkripsi
+        'nik' => EncryptedString::class,
+        'no_kk' => EncryptedString::class,
+        'nip' => EncryptedString::class,
+        'nuptk' => EncryptedString::class,
+        'national_ids' => EncryptedJson::class,   // JSON berisi NIK, NIP, NUPTK, No.KK
         'address_details' => 'array',
         'status_aktif' => 'boolean',
         'is_verified' => 'boolean',

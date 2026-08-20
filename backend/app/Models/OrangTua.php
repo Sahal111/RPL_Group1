@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedString;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -37,6 +38,9 @@ class OrangTua extends Model
     ];
 
     protected $casts = [
+        // PII — UU PDP No. 27/2022: wajib dienkripsi
+        'nik' => EncryptedString::class,
+        'no_kk' => EncryptedString::class,
         'tahun_lahir' => 'integer',
     ];
 
