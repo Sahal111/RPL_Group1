@@ -151,17 +151,35 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $siswa = \App\Models\Siswa::where('nisn', $request->nisn)->first();
+        // NISN tersimpan terenkripsi — WHERE nisn = ? tidak akan match ciphertext.
+        // Sementara gunakan kode_anak (plain text, dibagikan ke calon ortu oleh operator).
+        // @TODO: Implementasikan nisn_hash (SHA256 NISN) sebagai kolom terindeks
+        //        untuk lookup yang aman dan efisien.
+        $siswa = \App\Models\Siswa::where('kode_anak', $request->kode_anak)->first();
         if (!$siswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'NISN tidak ditemukan.',
+                'message' => 'Kode anak tidak ditemukan.',
             ], 422);
         }
 
-        DB::transaction(function () use ($request, $siswa) {
-            // Buat user tanpa role_id (skema baru pakai user_roles)
-            $user = User::create([
+        // school_id wajib ada — sudah di-set oleh TenantMiddleware dari subdomain
+        // atau dari Siswa yang ditemukan
+        $schoolId = app()->bound('current_school_id')
+            ? app('current_school_id')
+            : $siswa->school_id;
+
+        if (!$schoolId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menentukan sekolah. Akses melalui subdomain sekolah Anda.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($request, $siswa, $schoolId) {
+            // Buat user dengan school_id agar ter-isolasi ke tenant yang benar
+            $user = User::withoutGlobalScopes()->create([
+                'school_id' => $schoolId,
                 'name' => $request->nama_lengkap,
                 'username' => $request->username,
                 'email' => $request->email,
@@ -169,12 +187,16 @@ class AuthController extends Controller
                 'is_active' => 0,
             ]);
 
-            // Assign role ortu via Eloquent
-            $role = Role::where('slug', 'ortu')->firstOrFail();
+            // Assign role ortu via Eloquent — cari role di sekolah yang sama
+            $role = Role::withoutGlobalScopes()
+                ->where('slug', 'ortu')
+                ->where('school_id', $schoolId)
+                ->firstOrFail();
             $user->roles()->syncWithoutDetaching([$role->id]);
 
-            // Buat record orang_tua
-            $ortu = OrangTua::create([
+            // Buat record orang_tua dengan school_id
+            $ortu = OrangTua::withoutGlobalScopes()->create([
+                'school_id' => $schoolId,
                 'user_id' => $user->id,
                 'nama' => $request->nama_lengkap,
                 'hubungan' => $request->hubungan,

@@ -19,12 +19,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // ponytail: local Vite origins + FRONTEND_URL (credentials=true butuh exact origin)
-    'allowed_origins' => array_values(array_unique(array_filter([
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        env('FRONTEND_URL'),
-    ]))),
+    // credentials=true (cookie auth) butuh exact origin — tidak boleh '*'
+    // CORS_ALLOWED_ORIGINS di .env: comma-separated list untuk multi-subdomain
+    // Contoh production: CORS_ALLOWED_ORIGINS=https://sdn1.scholara.id,https://sdn2.scholara.id
+    // Contoh local:      CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    'allowed_origins' => array_values(array_unique(array_filter(
+        array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')))
+    ))),
 
     'allowed_origins_patterns' => [],
 

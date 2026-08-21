@@ -3,16 +3,18 @@
 namespace App\Models;
 
 use App\Casts\EncryptedString;
+use App\Traits\HasSchoolScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OrangTua extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasSchoolScope;
 
     protected $table = 'orang_tuas';
 
     protected $fillable = [
+        'school_id',
         'user_id',
         'nama',
         'nik',

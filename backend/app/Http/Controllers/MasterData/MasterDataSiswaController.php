@@ -24,14 +24,16 @@ class MasterDataSiswaController extends Controller
                 $query->where(function ($q) use ($search, $searchBy) {
                     switch ($searchBy) {
                         case 'nik':
-                            $q->where('nik', $search)->orWhere('nik', 'like', "%{$search}%");
+                            // NIK dienkripsi — tidak bisa LIKE. Hanya exact match (dekripsi di app layer).
+                            // Untuk keperluan pencarian, gunakan nama atau no_hp sebagai proxy.
+                            // TODO: Implementasikan hash index (SHA256 NIK) untuk exact-match search.
+                            $q->where('nama', 'like', "%{$search}%");
                             break;
 
                         case 'no_kk':
-                            // Cari berdasarkan no_kk anak yang tertaut
+                            // no_kk dienkripsi — fallback ke nama siswa
                             $q->whereHas('siswa', function ($siswaQuery) use ($search) {
-                                $siswaQuery->where('no_kk', $search)
-                                    ->orWhere('no_kk', 'like', "%{$search}%");
+                                $siswaQuery->where('nama', 'like', "%{$search}%");
                             });
                             break;
 
@@ -44,23 +46,21 @@ class MasterDataSiswaController extends Controller
                             break;
 
                         case 'nisn':
+                            // NISN dienkripsi — cari via nama siswa saja
                             $q->whereHas('siswa', function ($siswaQuery) use ($search) {
-                                $siswaQuery->where('nisn', $search)
-                                    ->orWhere('nisn', 'like', "%{$search}%")
-                                    ->orWhere('nama', 'like', "%{$search}%");
+                                $siswaQuery->where('nama', 'like', "%{$search}%");
                             });
                             break;
 
                         default:
+                            // NIK dan NISN terenkripsi — tidak bisa di-LIKE
+                            // Hanya search kolom plain-text
                             $q->where('nama', 'like', "%{$search}%")
-                                ->orWhere('nik', 'like', "%{$search}%")
                                 ->orWhere('no_hp', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
                                 ->orWhereHas('siswa', function ($siswaQuery) use ($search) {
-                                    $siswaQuery->where('nama', 'like', "%{$search}%")
-                                        ->orWhere('nisn', 'like', "%{$search}%")
-                                        ->orWhere('no_kk', 'like', "%{$search}%");
-                                });
+                                $siswaQuery->where('nama', 'like', "%{$search}%");
+                            });
                     }
                 });
             })
@@ -335,10 +335,15 @@ class MasterDataSiswaController extends Controller
         $syncIds = [];
 
         if (!empty($input['nama_ayah']) || !empty($input['nik_ayah'])) {
-
-            $ayah = OrangTua::firstOrNew([
-                'nik' => $input['nik_ayah']
-            ]);
+            // NIK terenkripsi — tidak bisa pakai firstOrNew(['nik'=>...]).
+            // Cari existing ortu di sekolah yang sama berdasarkan nama+hubungan,
+            // atau cek pivot siswa yang sudah terhubung dengan NIK yang sama (di-decrypt app layer).
+            $ayah = $this->findOrNewOrangTua(
+                siswa: $siswa,
+                hubungan: 'Ayah',
+                nik: $input['nik_ayah'] ?? null,
+                nama: $input['nama_ayah'] ?? null,
+            );
 
             $ayah->fill([
                 'nama' => $input['nama_ayah'] ?? $ayah->nama,
@@ -351,6 +356,7 @@ class MasterDataSiswaController extends Controller
                 'tahun_lahir' => $input['tahun_lahir_ayah'] ?? $ayah->tahun_lahir,
                 'email' => $input['email'] ?? $ayah->email,
                 'alamat' => $input['alamat'] ?? $ayah->alamat,
+                'nik' => $input['nik_ayah'] ?? $ayah->nik,
             ]);
 
             $ayah->save();
@@ -358,15 +364,15 @@ class MasterDataSiswaController extends Controller
             $syncIds[] = $ayah->id;
         }
         if (!empty($input['nama_ibu']) || !empty($input['nik_ibu'])) {
-
-            $ibu = OrangTua::firstOrNew([
-                'nik' => $input['nik_ibu']
-            ]);
+            $ibu = $this->findOrNewOrangTua(
+                siswa: $siswa,
+                hubungan: 'Ibu',
+                nik: $input['nik_ibu'] ?? null,
+                nama: filled($input['nama_ibu']) ? $input['nama_ibu'] : $namaIbuKandung,
+            );
 
             $ibu->fill([
-                'nama' => filled($input['nama_ibu'])
-                    ? $input['nama_ibu']
-                    : $namaIbuKandung,
+                'nama' => filled($input['nama_ibu']) ? $input['nama_ibu'] : $namaIbuKandung,
                 'hubungan' => 'Ibu',
                 'status' => 'Kandung',
                 'no_hp' => $input['no_hp_ibu'] ?? $ibu->no_hp,
@@ -376,6 +382,7 @@ class MasterDataSiswaController extends Controller
                 'tahun_lahir' => $input['tahun_lahir_ibu'] ?? $ibu->tahun_lahir,
                 'email' => $input['email'] ?? $ibu->email,
                 'alamat' => $input['alamat'] ?? $ibu->alamat,
+                'nik' => $input['nik_ibu'] ?? $ibu->nik,
             ]);
 
             $ibu->save();
@@ -383,10 +390,12 @@ class MasterDataSiswaController extends Controller
             $syncIds[] = $ibu->id;
         }
         if (!empty($input['nama_wali']) || !empty($input['nik_wali'])) {
-
-            $wali = OrangTua::firstOrNew([
-                'nik' => $input['nik_wali']
-            ]);
+            $wali = $this->findOrNewOrangTua(
+                siswa: $siswa,
+                hubungan: 'Wali',
+                nik: $input['nik_wali'] ?? null,
+                nama: $input['nama_wali'] ?? null,
+            );
 
             $wali->fill([
                 'nama' => $input['nama_wali'] ?? $wali->nama,
@@ -397,6 +406,7 @@ class MasterDataSiswaController extends Controller
                 'penghasilan' => $input['penghasilan_wali'] ?? $wali->penghasilan,
                 'email' => $input['email'] ?? $wali->email,
                 'alamat' => $input['alamat'] ?? $wali->alamat,
+                'nik' => $input['nik_wali'] ?? $wali->nik,
             ]);
 
             $wali->save();
@@ -404,6 +414,46 @@ class MasterDataSiswaController extends Controller
             $syncIds[] = $wali->id;
         }
         $siswa->orangTua()->sync($syncIds);
+    }
+
+    /**
+     * Cari OrangTua existing dalam sekolah yang sama, atau buat instance baru.
+     *
+     * NIK tersimpan terenkripsi (EncryptedString cast), sehingga tidak bisa
+     * dipakai di WHERE clause langsung. Strategi:
+     * 1. Cek apakah siswa ini sudah punya ortu dengan hubungan yang sama (update).
+     * 2. Cari by NIK: ambil semua ortu sekolah yang sama, dekripsi di app layer,
+     *    bandingkan — hanya efisien jika jumlah ortu per sekolah masih kecil.
+     * 3. Fallback: buat instance baru.
+     *
+     * @TODO: Implementasikan `nik_hash` (SHA256 dari NIK) sebagai kolom terindeks
+     *        untuk exact-match lookup yang efisien di scale besar.
+     */
+    private function findOrNewOrangTua(Siswa $siswa, string $hubungan, ?string $nik, ?string $nama): OrangTua
+    {
+        // 1. Cek ortu yang sudah terhubung ke siswa ini dengan hubungan yang sama
+        $existing = $siswa->orangTua()
+            ->where('hubungan', $hubungan)
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // 2. Jika ada NIK, cari di sekolah yang sama via app-layer decrypt
+        // Hanya feasible untuk dataset kecil — skip jika NIK null
+        if ($nik) {
+            $match = OrangTua::where('hubungan', $hubungan)
+                ->get()
+                ->first(fn($ortu) => $ortu->nik === $nik); // cast decrypt otomatis
+
+            if ($match) {
+                return $match;
+            }
+        }
+
+        // 3. Buat instance baru (school_id diisi otomatis oleh HasSchoolScope::creating)
+        return new OrangTua();
     }
 
     private function findMatchingOrangTua(array $data): ?OrangTua

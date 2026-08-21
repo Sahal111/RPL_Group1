@@ -19,7 +19,9 @@ class RegisterOrtuRequest extends FormRequest
             'password' => 'required|string|min:8|confirmed',
             'nama_lengkap' => 'required|string|max:100',
             'no_hp' => 'required|string|max:20',
-            'nisn' => 'required|string|size:10|exists:siswas,nisn',
+            // Ganti nisn → kode_anak karena nisn dienkripsi dan tidak bisa di-exists: check.
+            // kode_anak adalah plain-text identifier yang dibagikan operator ke orang tua.
+            'kode_anak' => 'required|string|size:10|exists:siswas,kode_anak',
             'kode_sekolah' => 'required|string',
             'hubungan' => 'required|in:Ayah,Ibu,Wali',
         ];
@@ -28,8 +30,9 @@ class RegisterOrtuRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'nisn.exists' => 'NISN tidak ditemukan dalam data siswa.',
-            'nisn.size' => 'NISN harus 10 digit.',
+            'kode_anak.required' => 'Kode anak wajib diisi.',
+            'kode_anak.exists' => 'Kode anak tidak ditemukan. Minta kode ini ke operator sekolah.',
+            'kode_anak.size' => 'Kode anak harus 10 karakter.',
             'hubungan.in' => 'Hubungan harus Ayah, Ibu, atau Wali.',
         ];
     }
