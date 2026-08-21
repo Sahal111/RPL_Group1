@@ -200,7 +200,10 @@ class TahunAjaranController extends Controller
                     Semester::query()->update(['is_active' => false]);
                 }
 
+                $schoolId = $tahunAjaran->school_id;
+
                 Semester::create([
+                    'school_id' => $schoolId,
                     'tahun_ajaran_id' => $tahunAjaran->id,
                     'nama' => 'Ganjil',
                     'tgl_mulai' => $request->semester_ganjil_mulai,
@@ -209,6 +212,7 @@ class TahunAjaranController extends Controller
                 ]);
 
                 Semester::create([
+                    'school_id' => $schoolId,
                     'tahun_ajaran_id' => $tahunAjaran->id,
                     'nama' => 'Genap',
                     'tgl_mulai' => $request->semester_genap_mulai,
@@ -258,10 +262,15 @@ class TahunAjaranController extends Controller
             if ($request->buat_semester) {
                 // Ambil nilai lama dari DB sebelum di-update,
                 // agar tidak kehilangan tanggal/status aktif saat update salah satu semester saja.
-                $semGanjilLama = Semester::where('tahun_ajaran_id', $tahunAjaran->id)
+                // Gunakan withoutGlobalScope supaya pencarian tidak terhalang school_id NULL pada data lama.
+                $semGanjilLama = Semester::withoutGlobalScopes()
+                    ->where('tahun_ajaran_id', $tahunAjaran->id)
                     ->where('nama', 'Ganjil')->first();
-                $semGenapLama = Semester::where('tahun_ajaran_id', $tahunAjaran->id)
+                $semGenapLama = Semester::withoutGlobalScopes()
+                    ->where('tahun_ajaran_id', $tahunAjaran->id)
                     ->where('nama', 'Genap')->first();
+
+                $schoolId = $tahunAjaran->school_id;
 
                 // Kalau semester_aktif eksplisit dikirim dan TA ini aktif,
                 // reset semua semester lain baru set yang dipilih.
@@ -270,9 +279,10 @@ class TahunAjaranController extends Controller
                 }
 
                 if ($request->has('semester_ganjil_mulai') || $request->has('semester_ganjil_selesai') || !$semGanjilLama) {
-                    Semester::updateOrCreate(
+                    Semester::withoutGlobalScopes()->updateOrCreate(
                         ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Ganjil'],
                         [
+                            'school_id' => $schoolId,
                             'tgl_mulai' => $request->has('semester_ganjil_mulai')
                                 ? $request->semester_ganjil_mulai
                                 : $semGanjilLama?->tgl_mulai,
@@ -287,9 +297,10 @@ class TahunAjaranController extends Controller
                 }
 
                 if ($request->has('semester_genap_mulai') || $request->has('semester_genap_selesai') || !$semGenapLama) {
-                    Semester::updateOrCreate(
+                    Semester::withoutGlobalScopes()->updateOrCreate(
                         ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Genap'],
                         [
+                            'school_id' => $schoolId,
                             'tgl_mulai' => $request->has('semester_genap_mulai')
                                 ? $request->semester_genap_mulai
                                 : $semGenapLama?->tgl_mulai,
@@ -329,9 +340,12 @@ class TahunAjaranController extends Controller
 
     public function setAktif($id)
     {
-        // Non-aktifkan semua tahun ajaran & semester
-        TahunAjaran::query()->update(['is_active' => false]);
-        Semester::query()->update(['is_active' => false]);
+        // Scope manual via relasi — aman multi-tenant
+        // TahunAjaran pakai SchoolScope, jadi ::all() sudah ter-filter by school_id.
+        // Tapi ::query()->update() tidak trigger scope, jadi harus via loop atau subquery.
+        $taIds = TahunAjaran::pluck('id'); // SchoolScope aktif di sini
+        TahunAjaran::whereIn('id', $taIds)->update(['is_active' => false]);
+        Semester::whereIn('tahun_ajaran_id', $taIds)->update(['is_active' => false]);
 
         // Aktifkan tahun ajaran yang dipilih
         $tahunAjaran = TahunAjaran::findOrFail($id);
@@ -342,15 +356,17 @@ class TahunAjaranController extends Controller
             ->where('nama', 'Ganjil')
             ->update(['is_active' => true]);
 
+        ActivityLog::log('set_aktif', 'tahun_ajaran', $id, "Mengaktifkan tahun ajaran {$tahunAjaran->tahun}.");
+
         return response()->json([
             'success' => true,
             'message' => 'Tahun ajaran aktif berhasil diubah.',
             'data' => $tahunAjaran->load('semesters'),
         ]);
     }
+
     public function setSemesterAktif(SetSemesterAktifRequest $request, $id)
     {
-
         $tahunAjaran = TahunAjaran::findOrFail($id);
         if (!$tahunAjaran->is_active) {
             return response()->json([
@@ -359,6 +375,7 @@ class TahunAjaranController extends Controller
             ], 422);
         }
 
+        // Scope via tahun_ajaran_id sudah cukup aman (id sudah dikonfirmasi milik school ini)
         Semester::where('tahun_ajaran_id', $id)->update(['is_active' => false]);
         Semester::where('tahun_ajaran_id', $id)
             ->where('nama', $request->semester_nama)
@@ -374,6 +391,7 @@ class TahunAjaranController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Semester {$request->semester_nama} berhasil diaktifkan.",
+            'data' => $tahunAjaran->load('semesters'), // ← tambah ini agar frontend bisa update state
         ]);
     }
     public function destroy($id)

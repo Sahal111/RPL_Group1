@@ -3,6 +3,7 @@
 namespace App\Http\Requests\TahunAjaran;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTahunAjaranRequest extends FormRequest
 {
@@ -13,8 +14,16 @@ class StoreTahunAjaranRequest extends FormRequest
 
     public function rules(): array
     {
+        $schoolId = auth()->user()?->school_id;
+
         return [
-            'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', 'unique:tahun_ajarans,tahun'],
+            'tahun' => [
+                'required',
+                'string',
+                'max:9',
+                'regex:/^\d{4}\/\d{4}$/',
+                Rule::unique('tahun_ajarans', 'tahun')->where('school_id', $schoolId),
+            ],
             'is_active' => 'nullable|boolean',
             'buat_semester' => 'nullable|boolean',
             'semester_ganjil_mulai' => 'nullable|date',

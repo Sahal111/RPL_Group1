@@ -3,6 +3,7 @@
 namespace App\Http\Requests\TahunAjaran;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateTahunAjaranRequest extends FormRequest
 {
@@ -14,9 +15,16 @@ class UpdateTahunAjaranRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('id') ?? $this->route('tahun_ajaran');
+        $schoolId = auth()->user()?->school_id;
 
         return [
-            'tahun' => ['required', 'string', 'max:9', 'regex:/^\d{4}\/\d{4}$/', "unique:tahun_ajarans,tahun,{$id}"],
+            'tahun' => [
+                'required',
+                'string',
+                'max:9',
+                'regex:/^\d{4}\/\d{4}$/',
+                Rule::unique('tahun_ajarans', 'tahun')->where('school_id', $schoolId)->ignore($id),
+            ],
             'is_active' => 'nullable|boolean',
             'buat_semester' => 'nullable|boolean',
             'semester_ganjil_mulai' => 'nullable|date',

@@ -175,17 +175,21 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
     setForm((f) => {
       const updated = { ...f, tahun: val };
       const match = val.match(/^(\d{4})\/(\d{4})$/);
-      if (match && !f.tgl_mulai_ta && !f.tgl_selesai_ta) {
+      // Auto-fill selalu dijalankan saat format lengkap — tidak peduli ada tanggal lama
+      if (match) {
         const y1 = match[1];
         const y2 = match[2];
+        // Kalender madrasah Indonesia: Ganjil Jul–Des, Genap Jan–Jun
         const startTA = `${y1}-07-14`;
         const endTA = `${y2}-06-30`;
-        const autoSem = calcSemesterDates(startTA, endTA);
         return {
           ...updated,
           tgl_mulai_ta: startTA,
           tgl_selesai_ta: endTA,
-          ...autoSem,
+          semester_ganjil_mulai: startTA,
+          semester_ganjil_selesai: `${y1}-12-31`,
+          semester_genap_mulai: `${y2}-01-02`,
+          semester_genap_selesai: endTA,
         };
       }
       return updated;
@@ -334,6 +338,7 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                   type="checkbox"
                   checked={form.buat_semester}
                   onChange={(e) => set("buat_semester", e.target.checked)}
+                  defaultChecked
                   className="w-4 h-4 rounded text-[#006e2a] focus:ring-[#006e2a] accent-[#006e2a]"
                 />
                 <span className="text-xs font-bold text-[#006e2a]">
@@ -506,8 +511,8 @@ export default function TahunAjaran() {
   const [editData, setEditData] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
-const [openActionId, setOpenActionId] = useState(null);
-const [actionMenuPosition, setActionMenuPosition] = useState(null);
+  const [openActionId, setOpenActionId] = useState(null);
+  const [actionMenuPosition, setActionMenuPosition] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua"); // "semua" | "aktif" | "selesai" | "mendatang"
 
@@ -580,7 +585,7 @@ const [actionMenuPosition, setActionMenuPosition] = useState(null);
     queryFn: () =>
       api
         .get(`/operator/master-data/tahun-ajaran/${selectedTA.id}`)
-        .then((r) => r.data),
+        .then((r) => r.data.data),
     enabled: !!selectedTA?.id,
     staleTime: 60_000,
   });
@@ -613,8 +618,12 @@ const [actionMenuPosition, setActionMenuPosition] = useState(null);
       }),
     onSuccess: (_, vars) => {
       toast.success(`Semester ${vars.semesterNama} berhasil diaktifkan.`);
+      // Invalidate list DAN detail dari TA yang baru saja diubah (bukan cuma selectedTA)
       queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
-      if (selectedTA?.id) {
+      queryClient.invalidateQueries({
+        queryKey: tahunAjaranKeys.detail(vars.taId),
+      });
+      if (selectedTA?.id && selectedTA.id !== vars.taId) {
         queryClient.invalidateQueries({
           queryKey: tahunAjaranKeys.detail(selectedTA.id),
         });
@@ -1119,7 +1128,11 @@ const [actionMenuPosition, setActionMenuPosition] = useState(null);
                                                 <span className="text-xs font-bold text-[#00342b]">
                                                   Semester Ganjil
                                                 </span>
-                                                {isGanjilAktif ? (
+                                                {!ganjil ? (
+                                                  <span className="px-2 py-0.5 rounded-full bg-[#ba1a1a]/10 text-[#ba1a1a] text-[9px] font-bold">
+                                                    BELUM DIBUAT
+                                                  </span>
+                                                ) : isGanjilAktif ? (
                                                   <span className="px-2 py-0.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-[9px] font-extrabold">
                                                     AKTIF
                                                   </span>
@@ -1130,39 +1143,57 @@ const [actionMenuPosition, setActionMenuPosition] = useState(null);
                                                 )}
                                               </div>
                                               <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
-                                                {fmt(ganjil?.tgl_mulai)} –{" "}
-                                                {fmt(ganjil?.tgl_selesai)}
+                                                {ganjil
+                                                  ? `${fmt(ganjil.tgl_mulai)} – ${fmt(ganjil.tgl_selesai)}`
+                                                  : "Edit tahun ajaran untuk membuat semester"}
                                               </p>
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                              {t.is_active &&
-                                                !isGanjilAktif && (
+                                              {!ganjil ? (
+                                                <button
+                                                  onClick={() => {
+                                                    setEditData({ ...t });
+                                                    setModalOpen(true);
+                                                  }}
+                                                  className="text-[11px] font-bold text-[#ba1a1a] hover:underline"
+                                                >
+                                                  Buat
+                                                </button>
+                                              ) : (
+                                                <>
+                                                  {t.is_active &&
+                                                    !isGanjilAktif && (
+                                                      <button
+                                                        onClick={() =>
+                                                          setSemesterAktif.mutate(
+                                                            {
+                                                              taId: t.id,
+                                                              semesterNama:
+                                                                "Ganjil",
+                                                            },
+                                                          )
+                                                        }
+                                                        className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                      >
+                                                        Aktifkan
+                                                      </button>
+                                                    )}
                                                   <button
                                                     onClick={() =>
-                                                      setSemesterAktif.mutate({
-                                                        taId: t.id,
-                                                        semesterNama: "Ganjil",
-                                                      })
+                                                      navigate(
+                                                        `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
+                                                      )
                                                     }
-                                                    className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                    className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
                                                   >
-                                                    Aktifkan
+                                                    Detail
+                                                    <span className="material-symbols-outlined text-[14px]">
+                                                      chevron_right
+                                                    </span>
                                                   </button>
-                                                )}
-                                              <button
-                                                onClick={() =>
-                                                  navigate(
-                                                    `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
-                                                  )
-                                                }
-                                                className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
-                                              >
-                                                Detail
-                                                <span className="material-symbols-outlined text-[14px]">
-                                                  chevron_right
-                                                </span>
-                                              </button>
+                                                </>
+                                              )}
                                             </div>
                                           </div>
                                         );
@@ -1181,7 +1212,11 @@ const [actionMenuPosition, setActionMenuPosition] = useState(null);
                                                 <span className="text-xs font-bold text-[#00342b]">
                                                   Semester Genap
                                                 </span>
-                                                {isGenapAktif ? (
+                                                {!genap ? (
+                                                  <span className="px-2 py-0.5 rounded-full bg-[#ba1a1a]/10 text-[#ba1a1a] text-[9px] font-bold">
+                                                    BELUM DIBUAT
+                                                  </span>
+                                                ) : isGenapAktif ? (
                                                   <span className="px-2 py-0.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-[9px] font-extrabold">
                                                     AKTIF
                                                   </span>
@@ -1192,38 +1227,57 @@ const [actionMenuPosition, setActionMenuPosition] = useState(null);
                                                 )}
                                               </div>
                                               <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
-                                                {fmt(genap?.tgl_mulai)} –{" "}
-                                                {fmt(genap?.tgl_selesai)}
+                                                {genap
+                                                  ? `${fmt(genap.tgl_mulai)} – ${fmt(genap.tgl_selesai)}`
+                                                  : "Edit tahun ajaran untuk membuat semester"}
                                               </p>
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                              {t.is_active && !isGenapAktif && (
+                                              {!genap ? (
                                                 <button
-                                                  onClick={() =>
-                                                    setSemesterAktif.mutate({
-                                                      taId: t.id,
-                                                      semesterNama: "Genap",
-                                                    })
-                                                  }
-                                                  className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                  onClick={() => {
+                                                    setEditData({ ...t });
+                                                    setModalOpen(true);
+                                                  }}
+                                                  className="text-[11px] font-bold text-[#ba1a1a] hover:underline"
                                                 >
-                                                  Aktifkan
+                                                  Buat
                                                 </button>
+                                              ) : (
+                                                <>
+                                                  {t.is_active &&
+                                                    !isGenapAktif && (
+                                                      <button
+                                                        onClick={() =>
+                                                          setSemesterAktif.mutate(
+                                                            {
+                                                              taId: t.id,
+                                                              semesterNama:
+                                                                "Genap",
+                                                            },
+                                                          )
+                                                        }
+                                                        className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                      >
+                                                        Aktifkan
+                                                      </button>
+                                                    )}
+                                                  <button
+                                                    onClick={() =>
+                                                      navigate(
+                                                        `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
+                                                      )
+                                                    }
+                                                    className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
+                                                  >
+                                                    Detail
+                                                    <span className="material-symbols-outlined text-[14px]">
+                                                      chevron_right
+                                                    </span>
+                                                  </button>
+                                                </>
                                               )}
-                                              <button
-                                                onClick={() =>
-                                                  navigate(
-                                                    `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
-                                                  )
-                                                }
-                                                className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
-                                              >
-                                                Detail
-                                                <span className="material-symbols-outlined text-[14px]">
-                                                  chevron_right
-                                                </span>
-                                              </button>
                                             </div>
                                           </div>
                                         );
