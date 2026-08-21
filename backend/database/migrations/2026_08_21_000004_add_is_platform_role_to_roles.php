@@ -34,7 +34,7 @@ return new class extends Migration
         // Tandai super_admin sebagai platform role
         DB::table('roles')
             ->where('is_system', true)
-            ->whereIn('name', ['super_admin', 'Developer', 'superadmin'])
+            ->whereIn('slug', ['super_admin', 'developer', 'superadmin'])
             ->update(['is_platform_role' => true]);
     }
 

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 /**
@@ -92,6 +93,7 @@ class TestingUserSeeder extends Seeder
 
             return DB::table('gurus')->insertGetId([
                 'school_id' => $schoolId,
+                'ulid' => Str::ulid()->toBase32(),
                 'user_id' => $userId,
                 'nuptk' => $nuptk,
                 'nama' => $nama,
@@ -200,6 +202,7 @@ class TestingUserSeeder extends Seeder
         if (!$anakOrtuId) {
             $anakOrtuId = DB::table('siswas')->insertGetId([
                 'school_id' => $schoolId,
+                'ulid' => Str::ulid()->toBase32(),
                 'nisn' => '1234567890',
                 'nama' => 'Siswa Anak Ortu Test',
                 'jenis_kelamin' => 'L',
@@ -237,6 +240,7 @@ class TestingUserSeeder extends Seeder
         if (!$siswaId) {
             $siswaId = DB::table('siswas')->insertGetId([
                 'school_id' => $schoolId,
+                'ulid' => Str::ulid()->toBase32(),
                 'user_id' => $userId,
                 'nisn' => '9999999999',
                 'nama' => 'Siswa Test',
