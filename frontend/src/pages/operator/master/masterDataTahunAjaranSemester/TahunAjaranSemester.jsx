@@ -502,15 +502,305 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
   );
 }
 
+// ── Modal Buat Semester (untuk TA yang belum punya semester) ──────────────────
+function ModalBuatSemester({ open, onClose, tahunAjaran, queryClient }) {
+  const tahun = tahunAjaran?.tahun ?? "";
+  const y1 = tahun.split("/")[0];
+  const y2 = tahun.split("/")[1];
+
+  const [form, setForm] = useState({
+    semester_ganjil_mulai: "",
+    semester_ganjil_selesai: "",
+    semester_genap_mulai: "",
+    semester_genap_selesai: "",
+  });
+
+  // Auto-fill tanggal saat modal dibuka
+  useEffect(() => {
+    if (open && y1 && y2) {
+      setForm({
+        semester_ganjil_mulai: `${y1}-07-14`,
+        semester_ganjil_selesai: `${y1}-12-31`,
+        semester_genap_mulai: `${y2}-01-02`,
+        semester_genap_selesai: `${y2}-06-30`,
+      });
+    }
+  }, [open, y1, y2]);
+
+  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const inputCls =
+    "w-full px-4 py-2.5 bg-[#f8faf9] border border-[#bfc9c4]/40 rounded-xl text-sm text-[#111827] focus:ring-2 focus:ring-[#006e2a]/20 focus:border-[#006e2a] outline-none transition-all";
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.put(`/operator/master-data/tahun-ajaran/${tahunAjaran.id}`, {
+        tahun: tahunAjaran.tahun,
+        buat_semester: true,
+        semester_ganjil_mulai: form.semester_ganjil_mulai,
+        semester_ganjil_selesai: form.semester_ganjil_selesai,
+        semester_genap_mulai: form.semester_genap_mulai,
+        semester_genap_selesai: form.semester_genap_selesai,
+      }),
+    onSuccess: () => {
+      toast.success("Semester berhasil dibuat.");
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: tahunAjaranKeys.detail(tahunAjaran.id),
+      });
+      onClose();
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.message ?? "Gagal membuat semester."),
+  });
+
+  if (!open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-7 py-5 border-b border-[#bfc9c4]/20">
+          <div className="w-10 h-10 rounded-2xl bg-[#00342b] flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-white text-[20px]">
+              date_range
+            </span>
+          </div>
+          <div>
+            <h3 className="text-base font-black text-[#00342b]">
+              Buat Semester
+            </h3>
+            <p className="text-xs text-[#3f4945]/70">
+              Tahun Ajaran {tahun}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="ml-auto text-[#3f4945]/50 hover:text-[#00342b] transition-colors"
+          >
+            <span className="material-symbols-outlined text-[22px]">close</span>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-7 py-5 space-y-4">
+          {/* Semester Ganjil */}
+          <div className="p-4 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/30">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-6 h-6 rounded-lg bg-[#00342b] text-white font-bold text-xs flex items-center justify-center">
+                1
+              </span>
+              <span className="text-sm font-bold text-[#00342b]">
+                Semester Ganjil
+              </span>
+              <span className="text-[10px] bg-[#006e2a]/10 text-[#006e2a] font-bold px-2 py-0.5 rounded-full ml-auto">
+                Semester 1
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                  Tgl Mulai
+                </label>
+                <input
+                  type="date"
+                  value={form.semester_ganjil_mulai}
+                  onChange={(e) => set("semester_ganjil_mulai", e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                  Tgl Selesai
+                </label>
+                <input
+                  type="date"
+                  value={form.semester_ganjil_selesai}
+                  onChange={(e) =>
+                    set("semester_ganjil_selesai", e.target.value)
+                  }
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Semester Genap */}
+          <div className="p-4 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/30">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-6 h-6 rounded-lg bg-[#3f4945]/20 text-[#3f4945] font-bold text-xs flex items-center justify-center">
+                2
+              </span>
+              <span className="text-sm font-bold text-[#00342b]">
+                Semester Genap
+              </span>
+              <span className="text-[10px] bg-[#eceeed] text-[#3f4945] font-bold px-2 py-0.5 rounded-full ml-auto">
+                Semester 2
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                  Tgl Mulai
+                </label>
+                <input
+                  type="date"
+                  value={form.semester_genap_mulai}
+                  onChange={(e) => set("semester_genap_mulai", e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[#3f4945] block mb-1">
+                  Tgl Selesai
+                </label>
+                <input
+                  type="date"
+                  value={form.semester_genap_selesai}
+                  onChange={(e) =>
+                    set("semester_genap_selesai", e.target.value)
+                  }
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-7 py-5 border-t border-[#bfc9c4]/20 bg-[#f8faf9]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-3 rounded-full border border-[#bfc9c4]/50 text-[#3f4945] hover:bg-[#eceeed] text-xs font-bold uppercase tracking-wider transition-all"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={() => mutation.mutate()}
+            disabled={
+              mutation.isPending ||
+              !form.semester_ganjil_mulai ||
+              !form.semester_ganjil_selesai ||
+              !form.semester_genap_mulai ||
+              !form.semester_genap_selesai
+            }
+            className="flex-1 py-3 rounded-full bg-[#006e2a] text-white text-xs font-black uppercase tracking-wider hover:bg-[#00531e] shadow-lg shadow-[#006e2a]/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {mutation.isPending ? (
+              <>
+                <span className="material-symbols-outlined text-[18px] animate-spin">
+                  progress_activity
+                </span>
+                Menyimpan...
+              </>
+            ) : (
+              "Buat Semester"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ── SemesterCard — sub-row rincian semester ───────────────────────────────────
+function SemesterCard({ semester, nama, nomor, taId, taIsActive, onAktifkan, onDetail, onBuat }) {
+  const isAktif = semester?.is_active;
+  const belumDibuat = !semester;
+
+  return (
+    <div className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+      isAktif
+        ? "bg-success/5 border-success/20"
+        : "bg-surface-container-lowest border-border-light"
+    }`}>
+      {/* Kiri — info */}
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Nomor badge */}
+        <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+          isAktif
+            ? "bg-success text-white"
+            : "bg-surface-container text-text-secondary"
+        }`}>
+          {nomor}
+        </span>
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-bold text-text-primary">
+              Semester {nama}
+            </span>
+            {belumDibuat ? (
+              <span className="px-1.5 py-0.5 rounded-full bg-danger/10 text-danger text-[9px] font-bold tracking-wide">
+                BELUM DIBUAT
+              </span>
+            ) : isAktif ? (
+              <span className="px-1.5 py-0.5 rounded-full bg-success/15 text-success text-[9px] font-extrabold tracking-wide">
+                AKTIF
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 rounded-full bg-surface-container text-text-secondary text-[9px] font-bold tracking-wide">
+                STANDBY
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-text-secondary mt-0.5 truncate">
+            {belumDibuat
+              ? "Belum ada periode semester"
+              : `${fmt(semester.tgl_mulai)} – ${fmt(semester.tgl_selesai)}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Kanan — aksi */}
+      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+        {belumDibuat ? (
+          <button
+            onClick={onBuat}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary-container text-on-primary text-[11px] font-bold hover:opacity-90 transition-opacity"
+          >
+            <span className="material-symbols-outlined text-[13px]">add</span>
+            Buat
+          </button>
+        ) : (
+          <>
+            {taIsActive && !isAktif && (
+              <button
+                onClick={onAktifkan}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success/10 text-success text-[11px] font-bold hover:bg-success/20 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                Aktifkan
+              </button>
+            )}
+            <button
+              onClick={onDetail}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container text-text-primary text-[11px] font-bold hover:bg-surface-container-high hover:text-primary transition-colors"
+            >
+              Detail
+              <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page Component ────────────────────────────────────────────────────────
 export default function TahunAjaran() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+ const [modalOpen, setModalOpen] = useState(false);
+ const [editData, setEditData] = useState(null);
+ const [expandedId, setExpandedId] = useState(null);
+ const [selectedId, setSelectedId] = useState(null);
+ const [buatSemesterOpen, setBuatSemesterOpen] = useState(false);
+ const [buatSemesterTA, setBuatSemesterTA] = useState(null);
   const [openActionId, setOpenActionId] = useState(null);
   const [actionMenuPosition, setActionMenuPosition] = useState(null);
   const [search, setSearch] = useState("");
@@ -703,7 +993,7 @@ export default function TahunAjaran() {
   };
 
   return (
-    <div className="min-h-screen relative w-full space-y-8 animate-fade-up">
+    <div className="min-h-screen relative w-full space-y-5 animate-fade-up">
       {/* ── Atmospheric Background Blur ── */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#94d3c1]/20 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
@@ -711,41 +1001,32 @@ export default function TahunAjaran() {
         <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-[#ffdeac]/15 rounded-full mix-blend-multiply filter blur-[100px] opacity-70" />
       </div>
 
-      <div className="relative z-10 space-y-8">
+      <div className="relative z-10 space-y-5">
         {/* ── 1. Header Section ─────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center relative gap-6 pt-2">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center relative gap-4">
           <div className="relative flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="px-4 py-1.5 rounded-full bg-[#006e2a]/10 border border-[#006e2a]/20 flex items-center gap-2 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-[#006e2a] animate-pulse" />
-                <span className="font-label-badge text-[10px] text-[#006e2a] tracking-[0.2em] uppercase font-black">
-                  MODUL MANAJEMEN
-                </span>
-              </div>
-              <div className="h-px w-28 bg-gradient-to-r from-[#006e2a]/20 to-transparent hidden sm:block" />
-            </div>
-            <h1 className="font-headline-section text-3xl sm:text-4xl md:text-5xl text-[#00342b] font-extrabold leading-tight tracking-tight mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight mb-1">
               Manajemen{" "}
-              <span className="font-serif-accent italic text-[#006e2a] font-normal">
+              <span className="font-serif-accent italic text-primary font-normal">
                 Tahun Ajaran
               </span>{" "}
               &amp; Semester
             </h1>
-            <p className="font-body-lg text-sm sm:text-base text-[#3f4945]/80 max-w-2xl leading-relaxed">
+            <p className="text-sm text-text-secondary max-w-2xl">
               Kelola periode akademik sekolah, semester aktif, serta status
               periode yang digunakan dalam proses akademik secara terpusat.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() =>
                 queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.all })
               }
               title="Muat Ulang Data"
-              className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md border border-white/60 text-[#3f4945] hover:text-[#006e2a] hover:bg-white flex items-center justify-center transition-all shadow-sm hover:shadow-md hover:scale-105"
+              className="w-9 h-9 rounded-xl bg-surface-container-lowest border border-border-light text-text-secondary hover:text-primary hover:bg-surface-container-low flex items-center justify-center transition-all shadow-sm"
             >
-              <span className="material-symbols-outlined text-[20px]">
+              <span className="material-symbols-outlined text-[18px]">
                 refresh
               </span>
             </button>
@@ -755,24 +1036,18 @@ export default function TahunAjaran() {
                 setEditData(null);
                 setModalOpen(true);
               }}
-              className="bg-[#006e2a] text-white px-7 py-3.5 sm:py-4 rounded-full font-label-badge text-xs sm:text-sm flex items-center gap-3 shadow-xl shadow-[#006e2a]/30 hover:shadow-[#006e2a]/50 hover:-translate-y-0.5 hover:scale-[1.03] transition-all duration-300 group border border-white/20"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-primary-container text-on-primary rounded-xl text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors shadow-sm"
             >
-              <div className="bg-white/20 rounded-full p-1 group-hover:rotate-90 transition-transform duration-300">
-                <span className="material-symbols-outlined text-[18px] block">
-                  add
-                </span>
-              </div>
-              <span className="tracking-widest font-black uppercase">
-                Tambah Tahun Ajaran
-              </span>
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Tambah Tahun Ajaran
             </button>
           </div>
         </div>
 
         {/* ── 2. Bento Grid Layout (4 Stat Cards) ────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Card 1: Active Period Card */}
-          <div className="bg-[#00342b] text-white rounded-3xl p-5 shadow-lg relative overflow-hidden group transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,52,43,0.25)] border border-[#004d40]">
+          <div className="bg-[#00342b] text-white rounded-2xl p-4 shadow-md relative overflow-hidden border border-[#004d40]">
             <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
             <div className="relative z-10">
               <div className="flex justify-between items-start mb-3">
@@ -784,7 +1059,7 @@ export default function TahunAjaran() {
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#69ff87]" />
                 </span>
               </div>
-              <h4 className="text-3xl font-extrabold font-headline-card text-white">
+              <h4 className="text-2xl font-bold text-white">
                 {aktif?.tahun || "-"}
               </h4>
               <p className="text-xs font-medium text-[#94d3c1] mt-1 italic font-serif-accent">
@@ -801,12 +1076,12 @@ export default function TahunAjaran() {
           </div>
 
           {/* Card 2: Total Tahun Card */}
-          <div className="bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl p-5 shadow-sm relative overflow-hidden group transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,110,42,0.12)]">
+          <div className="bg-surface-container-lowest border border-border-light rounded-2xl p-4 shadow-sm">
             <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
             <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
               Total Tahun Ajaran
             </p>
-            <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
+            <h4 className="text-2xl font-bold text-text-primary">
               {totalTahunAjaran}
             </h4>
             <p className="text-[11px] text-[#006e2a] font-bold mt-2 flex items-center gap-1.5">
@@ -816,7 +1091,7 @@ export default function TahunAjaran() {
           </div>
 
           {/* Card 3: Semester Selesai Card */}
-          <div className="bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl p-5 shadow-sm relative overflow-hidden group transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,110,42,0.12)]">
+          <div className="bg-surface-container-lowest border border-border-light rounded-2xl p-4 shadow-sm">
             <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
             <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
               Semester Selesai
@@ -833,7 +1108,7 @@ export default function TahunAjaran() {
           </div>
 
           {/* Card 4: Jadwal Mendatang Card */}
-          <div className="bg-white/75 backdrop-blur-md border border-white/60 rounded-3xl p-5 shadow-sm relative overflow-hidden group transition-all duration-500 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,110,42,0.12)]">
+          <div className="bg-surface-container-lowest border border-border-light rounded-2xl p-4 shadow-sm">
             <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[150%] transition-transform duration-1000 ease-out z-20 pointer-events-none" />
             <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
               Jadwal Mendatang
@@ -849,7 +1124,7 @@ export default function TahunAjaran() {
         </div>
 
         {/* ── 3. Main Content Area: Data Table + Detail Sidebar ─────────────── */}
-        <div className="grid grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-12 gap-5 items-start">
           {/* Main Data Column (Span 8) */}
           <div className="col-span-12 xl:col-span-8 flex flex-col gap-5">
             {/* Search and Filters Bar */}
@@ -971,6 +1246,7 @@ export default function TahunAjaran() {
                             <tr
                               onClick={() => {
                                 setSelectedId(t.id);
+                                setExpandedId(isExpanded ? null : t.id);
                               }}
                               className={`transition-all duration-300 cursor-pointer group ${
                                 isRowSelected
@@ -1115,173 +1391,54 @@ export default function TahunAjaran() {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                      {/* Ganjil */}
-                                      {(() => {
-                                        const ganjil = t.semesters?.find(
+                                      <SemesterCard
+                                        semester={t.semesters?.find(
                                           (s) => s.nama === "Ganjil",
-                                        );
-                                        const isGanjilAktif = ganjil?.is_active;
-                                        return (
-                                          <div className="flex items-center justify-between p-3 rounded-xl bg-[#f8faf9] border border-[#bfc9c4]/30">
-                                            <div>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-[#00342b]">
-                                                  Semester Ganjil
-                                                </span>
-                                                {!ganjil ? (
-                                                  <span className="px-2 py-0.5 rounded-full bg-[#ba1a1a]/10 text-[#ba1a1a] text-[9px] font-bold">
-                                                    BELUM DIBUAT
-                                                  </span>
-                                                ) : isGanjilAktif ? (
-                                                  <span className="px-2 py-0.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-[9px] font-extrabold">
-                                                    AKTIF
-                                                  </span>
-                                                ) : (
-                                                  <span className="px-2 py-0.5 rounded-full bg-[#eceeed] text-[#3f4945] text-[9px] font-bold">
-                                                    STANDBY
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
-                                                {ganjil
-                                                  ? `${fmt(ganjil.tgl_mulai)} – ${fmt(ganjil.tgl_selesai)}`
-                                                  : "Edit tahun ajaran untuk membuat semester"}
-                                              </p>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                              {!ganjil ? (
-                                                <button
-                                                  onClick={() => {
-                                                    setEditData({ ...t });
-                                                    setModalOpen(true);
-                                                  }}
-                                                  className="text-[11px] font-bold text-[#ba1a1a] hover:underline"
-                                                >
-                                                  Buat
-                                                </button>
-                                              ) : (
-                                                <>
-                                                  {t.is_active &&
-                                                    !isGanjilAktif && (
-                                                      <button
-                                                        onClick={() =>
-                                                          setSemesterAktif.mutate(
-                                                            {
-                                                              taId: t.id,
-                                                              semesterNama:
-                                                                "Ganjil",
-                                                            },
-                                                          )
-                                                        }
-                                                        className="text-[11px] font-bold text-[#006e2a] hover:underline"
-                                                      >
-                                                        Aktifkan
-                                                      </button>
-                                                    )}
-                                                  <button
-                                                    onClick={() =>
-                                                      navigate(
-                                                        `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
-                                                      )
-                                                    }
-                                                    className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
-                                                  >
-                                                    Detail
-                                                    <span className="material-symbols-outlined text-[14px]">
-                                                      chevron_right
-                                                    </span>
-                                                  </button>
-                                                </>
-                                              )}
-                                            </div>
-                                          </div>
-                                        );
-                                      })()}
-
-                                      {/* Genap */}
-                                      {(() => {
-                                        const genap = t.semesters?.find(
+                                        )}
+                                        nama="Ganjil"
+                                        nomor="1"
+                                        taId={t.id}
+                                        taIsActive={t.is_active}
+                                        onAktifkan={() =>
+                                          setSemesterAktif.mutate({
+                                            taId: t.id,
+                                            semesterNama: "Ganjil",
+                                          })
+                                        }
+                                        onDetail={() =>
+                                          navigate(
+                                            `/operator/master/tahun-ajaran/${t.id}/semester/Ganjil`,
+                                          )
+                                        }
+                                        onBuat={() => {
+                                          setBuatSemesterTA(t);
+                                          setBuatSemesterOpen(true);
+                                        }}
+                                      />
+                                      <SemesterCard
+                                        semester={t.semesters?.find(
                                           (s) => s.nama === "Genap",
-                                        );
-                                        const isGenapAktif = genap?.is_active;
-                                        return (
-                                          <div className="flex items-center justify-between p-3 rounded-xl bg-[#f8faf9] border border-[#bfc9c4]/30">
-                                            <div>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-[#00342b]">
-                                                  Semester Genap
-                                                </span>
-                                                {!genap ? (
-                                                  <span className="px-2 py-0.5 rounded-full bg-[#ba1a1a]/10 text-[#ba1a1a] text-[9px] font-bold">
-                                                    BELUM DIBUAT
-                                                  </span>
-                                                ) : isGenapAktif ? (
-                                                  <span className="px-2 py-0.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] text-[9px] font-extrabold">
-                                                    AKTIF
-                                                  </span>
-                                                ) : (
-                                                  <span className="px-2 py-0.5 rounded-full bg-[#eceeed] text-[#3f4945] text-[9px] font-bold">
-                                                    STANDBY
-                                                  </span>
-                                                )}
-                                              </div>
-                                              <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
-                                                {genap
-                                                  ? `${fmt(genap.tgl_mulai)} – ${fmt(genap.tgl_selesai)}`
-                                                  : "Edit tahun ajaran untuk membuat semester"}
-                                              </p>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                              {!genap ? (
-                                                <button
-                                                  onClick={() => {
-                                                    setEditData({ ...t });
-                                                    setModalOpen(true);
-                                                  }}
-                                                  className="text-[11px] font-bold text-[#ba1a1a] hover:underline"
-                                                >
-                                                  Buat
-                                                </button>
-                                              ) : (
-                                                <>
-                                                  {t.is_active &&
-                                                    !isGenapAktif && (
-                                                      <button
-                                                        onClick={() =>
-                                                          setSemesterAktif.mutate(
-                                                            {
-                                                              taId: t.id,
-                                                              semesterNama:
-                                                                "Genap",
-                                                            },
-                                                          )
-                                                        }
-                                                        className="text-[11px] font-bold text-[#006e2a] hover:underline"
-                                                      >
-                                                        Aktifkan
-                                                      </button>
-                                                    )}
-                                                  <button
-                                                    onClick={() =>
-                                                      navigate(
-                                                        `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
-                                                      )
-                                                    }
-                                                    className="text-xs text-[#00342b] font-bold hover:text-[#006e2a] flex items-center gap-0.5"
-                                                  >
-                                                    Detail
-                                                    <span className="material-symbols-outlined text-[14px]">
-                                                      chevron_right
-                                                    </span>
-                                                  </button>
-                                                </>
-                                              )}
-                                            </div>
-                                          </div>
-                                        );
-                                      })()}
+                                        )}
+                                        nama="Genap"
+                                        nomor="2"
+                                        taId={t.id}
+                                        taIsActive={t.is_active}
+                                        onAktifkan={() =>
+                                          setSemesterAktif.mutate({
+                                            taId: t.id,
+                                            semesterNama: "Genap",
+                                          })
+                                        }
+                                        onDetail={() =>
+                                          navigate(
+                                            `/operator/master/tahun-ajaran/${t.id}/semester/Genap`,
+                                          )
+                                        }
+                                        onBuat={() => {
+                                          setBuatSemesterTA(t);
+                                          setBuatSemesterOpen(true);
+                                        }}
+                                      />
                                     </div>
                                   </div>
                                 </td>
@@ -1315,7 +1472,7 @@ export default function TahunAjaran() {
           {/* Detail Sidebar Column (Span 4) */}
           <div className="col-span-12 xl:col-span-4 flex flex-col gap-6">
             {/* 1. Detail Periode Card */}
-            <div className="bg-white rounded-[32px] p-7 border border-[#bfc9c4]/30 shadow-2xl shadow-[#006e2a]/5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-[#006e2a]/15 transition-all duration-500">
+            <div className="bg-surface-container-lowest border border-border-light rounded-2xl p-5 shadow-sm relative overflow-hidden">
               {/* Decorative Atmosphere Glow */}
               <div className="absolute top-0 right-0 w-40 h-40 bg-[#006e2a]/5 rounded-full blur-[60px] -mr-20 -mt-20 pointer-events-none transition-colors group-hover:bg-[#006e2a]/10" />
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#00342b]/5 rounded-full blur-[50px] -ml-16 -mb-16 pointer-events-none" />
@@ -1332,7 +1489,7 @@ export default function TahunAjaran() {
                         analytics
                       </span>
                     </div>
-                    <h3 className="font-headline-card text-[20px] text-[#00342b] font-extrabold tracking-tight">
+                    <h3 className="text-sm font-bold text-text-primary">
                       Detail Periode
                     </h3>
                   </div>
@@ -1346,10 +1503,10 @@ export default function TahunAjaran() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3.5 relative z-10">
+              <div className="grid grid-cols-2 gap-2.5 relative z-10">
                 {/* Guru */}
-                <div className="animate-fade-up animate-delay-100 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                <div className="bg-surface-container p-3 rounded-xl border border-border-light flex flex-col items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">
                       person
                     </span>
@@ -1544,61 +1701,62 @@ export default function TahunAjaran() {
         actionMenuPosition &&
         (() => {
           const actionItem = list.find((item) => item.id === openActionId);
-
           if (!actionItem) return null;
-
+          const close = () => {
+            setOpenActionId(null);
+            setActionMenuPosition(null);
+          };
           return createPortal(
             <div
-              className="fixed z-[9999] w-48"
+              className="fixed z-[9999] w-52"
               style={{
                 top: actionMenuPosition.top,
                 left: actionMenuPosition.left,
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-white rounded-2xl border border-[#bfc9c4]/30 shadow-2xl shadow-[#00342b]/15 p-1.5 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150">
+              <div className="bg-surface rounded-2xl border border-border-light shadow-xl shadow-black/8 p-1 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150">
+                {/* HEADER — nama TA */}
+                <div className="px-3 pt-2.5 pb-2 border-b border-border-light mb-1">
+                  <p className="text-[11px] font-bold text-text-primary truncate">
+                    {actionItem.tahun}
+                  </p>
+                  <p className="text-[10px] text-text-secondary mt-0.5">
+                    {actionItem.is_active
+                      ? "Tahun Ajaran Aktif"
+                      : "Periode Tidak Aktif"}
+                  </p>
+                </div>
+
                 {/* DETAIL */}
                 <button
                   type="button"
                   onClick={() => {
-                    setOpenActionId(null);
-                    setActionMenuPosition(null);
-
+                    close();
                     navigate(`/operator/master/tahun-ajaran/${actionItem.id}`);
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#3f4945] hover:bg-[#006e2a]/8 hover:text-[#00342b] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium text-text-primary hover:bg-surface-container-low hover:text-primary transition-colors"
                 >
-                  <span className="w-8 h-8 rounded-lg bg-[#006e2a]/8 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[17px] text-[#006e2a]">
-                      visibility
-                    </span>
+                  <span className="material-symbols-outlined text-[18px] text-text-secondary">
+                    visibility
                   </span>
-
-                  <span>Detail</span>
+                  <span>Lihat Detail</span>
                 </button>
 
                 {/* EDIT */}
                 <button
                   type="button"
                   onClick={() => {
-                    setOpenActionId(null);
-                    setActionMenuPosition(null);
-
-                    setEditData({
-                      ...actionItem,
-                    });
-
+                    close();
+                    setEditData({ ...actionItem });
                     setModalOpen(true);
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#3f4945] hover:bg-[#eceeed] hover:text-[#00342b] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium text-text-primary hover:bg-surface-container-low hover:text-primary transition-colors"
                 >
-                  <span className="w-8 h-8 rounded-lg bg-[#eceeed] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[17px] text-[#3f4945]">
-                      edit
-                    </span>
+                  <span className="material-symbols-outlined text-[18px] text-text-secondary">
+                    edit
                   </span>
-
-                  <span>Edit</span>
+                  <span>Edit Periode</span>
                 </button>
 
                 {/* SET AKTIF */}
@@ -1606,9 +1764,7 @@ export default function TahunAjaran() {
                   <button
                     type="button"
                     onClick={() => {
-                      setOpenActionId(null);
-                      setActionMenuPosition(null);
-
+                      close();
                       if (
                         confirm(
                           `Jadikan "${actionItem.tahun}" sebagai Tahun Ajaran aktif?`,
@@ -1618,28 +1774,23 @@ export default function TahunAjaran() {
                       }
                     }}
                     disabled={setAktif.isPending}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#006e2a] hover:bg-[#006e2a]/8 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium text-success hover:bg-success/8 transition-colors disabled:opacity-50"
                   >
-                    <span className="w-8 h-8 rounded-lg bg-[#006e2a]/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[17px] text-[#006e2a]">
-                        check_circle
-                      </span>
+                    <span className="material-symbols-outlined text-[18px] text-success">
+                      check_circle
                     </span>
-
-                    <span>Set Aktif</span>
+                    <span>Jadikan Aktif</span>
                   </button>
                 )}
 
                 {/* DIVIDER */}
-                <div className="h-px bg-[#bfc9c4]/20 my-1" />
+                <div className="h-px bg-border-light mx-1 my-1" />
 
                 {/* DELETE */}
                 <button
                   type="button"
                   onClick={() => {
-                    setOpenActionId(null);
-                    setActionMenuPosition(null);
-
+                    close();
                     if (
                       confirm(
                         `Apakah Anda yakin ingin menghapus Tahun Ajaran "${actionItem.tahun}"?`,
@@ -1649,22 +1800,19 @@ export default function TahunAjaran() {
                     }
                   }}
                   disabled={hapus.isPending || actionItem.is_active}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#ba1a1a] hover:bg-[#ba1a1a]/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium text-danger hover:bg-danger/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <span className="w-8 h-8 rounded-lg bg-[#ba1a1a]/8 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[17px] text-[#ba1a1a]">
-                      delete
-                    </span>
+                  <span className="material-symbols-outlined text-[18px] text-danger">
+                    delete
                   </span>
-
-                  <span>Delete</span>
+                  <span>Hapus Periode</span>
                 </button>
 
                 {/* INFO UNTUK DATA AKTIF */}
                 {actionItem.is_active && (
-                  <div className="px-3 pt-1 pb-1.5">
-                    <p className="text-[10px] leading-relaxed text-[#3f4945]/50">
-                      Tahun ajaran aktif tidak dapat dihapus.
+                  <div className="px-3 pb-2">
+                    <p className="text-[10px] text-text-secondary/70">
+                      Periode aktif tidak dapat dihapus.
                     </p>
                   </div>
                 )}
@@ -1681,6 +1829,15 @@ export default function TahunAjaran() {
           setEditData(null);
         }}
         editData={editData}
+        queryClient={queryClient}
+      />
+      <ModalBuatSemester
+        open={buatSemesterOpen}
+        onClose={() => {
+          setBuatSemesterOpen(false);
+          setBuatSemesterTA(null);
+        }}
+        tahunAjaran={buatSemesterTA}
         queryClient={queryClient}
       />
     </div>
