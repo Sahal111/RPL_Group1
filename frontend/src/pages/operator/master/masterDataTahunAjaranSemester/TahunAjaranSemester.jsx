@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
+import { tahunAjaranKeys } from "../../../../hooks/api/useTahunAjaran";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmt(str) {
@@ -202,8 +203,13 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
       toast.success(
         `Tahun ajaran berhasil ${isEdit ? "diperbarui" : "ditambahkan"}.`,
       );
-      queryClient.invalidateQueries(["tahun-ajaran"]);
-      queryClient.invalidateQueries(["tahun-ajaran-dropdown"]);
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.dropdown() });
+      if (isEdit) {
+        queryClient.invalidateQueries({
+          queryKey: tahunAjaranKeys.detail(editData.id),
+        });
+      }
       onClose();
     },
     onError: (err) => {
@@ -280,7 +286,8 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                   maxLength={9}
                 />
                 <p className="text-[11px] text-[#3f4945]/60 mt-1">
-                  Format: YYYY/YYYY (otomatis menetapkan rentang tanggal semester).
+                  Format: YYYY/YYYY (otomatis menetapkan rentang tanggal
+                  semester).
                 </p>
               </div>
 
@@ -447,7 +454,8 @@ function ModalTahunAjaran({ open, onClose, editData, queryClient }) {
                   Jadikan Sebagai Tahun Ajaran Aktif
                 </span>
                 <span className="text-xs text-[#3f4945]/70">
-                  Mengaktifkan periode ini akan menonaktifkan periode aktif yang sedang berjalan.
+                  Mengaktifkan periode ini akan menonaktifkan periode aktif yang
+                  sedang berjalan.
                 </span>
               </div>
             </label>
@@ -498,14 +506,17 @@ export default function TahunAjaran() {
   const [editData, setEditData] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+const [openActionId, setOpenActionId] = useState(null);
+const [actionMenuPosition, setActionMenuPosition] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua"); // "semua" | "aktif" | "selesai" | "mendatang"
 
   // Fetch list of Tahun Ajaran
   const { data: listData = [], isLoading } = useQuery({
-    queryKey: ["tahun-ajaran"],
+    queryKey: tahunAjaranKeys.lists(),
     queryFn: () =>
       api.get("/operator/master-data/tahun-ajaran").then((r) => r.data.data),
+    staleTime: 30_000,
   });
 
   const list = listData ?? [];
@@ -520,14 +531,58 @@ export default function TahunAjaran() {
 
   const selectedTA = list.find((t) => t.id === selectedId) || aktif || list[0];
 
+  const handleOpenAction = (e, id) => {
+    e.stopPropagation();
+
+    // Tutup kalau tombol yang sama diklik lagi
+    if (openActionId === id) {
+      setOpenActionId(null);
+      setActionMenuPosition(null);
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    const menuWidth = 192;
+    const menuHeight = 220;
+    const gap = 8;
+
+    let top = rect.bottom + gap;
+    let left = rect.right - menuWidth;
+
+    // Jika ruang bawah tidak cukup,
+    // dropdown muncul ke atas
+    if (top + menuHeight > window.innerHeight) {
+      top = rect.top - menuHeight - gap;
+    }
+
+    // Jangan keluar dari kanan layar
+    if (left + menuWidth > window.innerWidth - 12) {
+      left = window.innerWidth - menuWidth - 12;
+    }
+
+    // Jangan keluar dari kiri layar
+    if (left < 12) {
+      left = 12;
+    }
+
+    setActionMenuPosition({
+      top,
+      left,
+    });
+
+    setOpenActionId(id);
+  };
+
   // Fetch detail data for the selected academic year (used in sidebar stats)
   const { data: selectedDetailData, isLoading: loadingDetail } = useQuery({
-    queryKey: ["tahun-ajaran-detail", selectedTA?.id],
+    queryKey: tahunAjaranKeys.detail(selectedTA?.id),
     queryFn: () =>
       api
         .get(`/operator/master-data/tahun-ajaran/${selectedTA.id}`)
         .then((r) => r.data),
     enabled: !!selectedTA?.id,
+    staleTime: 60_000,
   });
 
   // Mutation: Set active year
@@ -536,13 +591,18 @@ export default function TahunAjaran() {
       api.patch(`/operator/master-data/tahun-ajaran/${id}/aktif`),
     onSuccess: () => {
       toast.success("Tahun ajaran aktif berhasil diperbarui.");
-      queryClient.invalidateQueries(["tahun-ajaran"]);
-      queryClient.invalidateQueries(["tahun-ajaran-dropdown"]);
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.dropdown() });
       if (selectedTA?.id) {
-        queryClient.invalidateQueries(["tahun-ajaran-detail", selectedTA.id]);
+        queryClient.invalidateQueries({
+          queryKey: tahunAjaranKeys.detail(selectedTA.id),
+        });
       }
     },
-    onError: (err) => toast.error(err.response?.data?.message ?? "Gagal mengubah status aktif."),
+    onError: (err) =>
+      toast.error(
+        err.response?.data?.message ?? "Gagal mengubah status aktif.",
+      ),
   });
 
   // Mutation: Set active semester
@@ -553,12 +613,17 @@ export default function TahunAjaran() {
       }),
     onSuccess: (_, vars) => {
       toast.success(`Semester ${vars.semesterNama} berhasil diaktifkan.`);
-      queryClient.invalidateQueries(["tahun-ajaran"]);
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
       if (selectedTA?.id) {
-        queryClient.invalidateQueries(["tahun-ajaran-detail", selectedTA.id]);
+        queryClient.invalidateQueries({
+          queryKey: tahunAjaranKeys.detail(selectedTA.id),
+        });
       }
     },
-    onError: (err) => toast.error(err.response?.data?.message ?? "Gagal mengaktifkan semester."),
+    onError: (err) =>
+      toast.error(
+        err.response?.data?.message ?? "Gagal mengaktifkan semester.",
+      ),
   });
 
   // Mutation: Delete year
@@ -566,11 +631,14 @@ export default function TahunAjaran() {
     mutationFn: (id) => api.delete(`/operator/master-data/tahun-ajaran/${id}`),
     onSuccess: () => {
       toast.success("Tahun ajaran berhasil dihapus.");
-      queryClient.invalidateQueries(["tahun-ajaran"]);
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.dropdown() });
       setSelectedId(null);
     },
     onError: (err) =>
-      toast.error(err.response?.data?.message ?? "Gagal menghapus tahun ajaran."),
+      toast.error(
+        err.response?.data?.message ?? "Gagal menghapus tahun ajaran.",
+      ),
   });
 
   // Computed summary stats
@@ -606,8 +674,10 @@ export default function TahunAjaran() {
   const metricGuru = selectedDetailData?.total_guru ?? (selectedTA ? 84 : 0);
   const metricKelas = selectedDetailData?.total_kelas ?? (selectedTA ? 24 : 0);
   const metricMapel = selectedDetailData?.total_mapel ?? (selectedTA ? 18 : 0);
-  const metricJadwal = selectedDetailData?.total_jadwal ?? (selectedTA ? 156 : 0);
-  const metricSiswa = selectedDetailData?.total_siswa ?? (selectedTA ? 1248 : 0);
+  const metricJadwal =
+    selectedDetailData?.total_jadwal ?? (selectedTA ? 156 : 0);
+  const metricSiswa =
+    selectedDetailData?.total_siswa ?? (selectedTA ? 1248 : 0);
   const metricRombel = selectedDetailData?.total_kelas ?? (selectedTA ? 24 : 0);
 
   // Active semester name for selected TA
@@ -653,17 +723,22 @@ export default function TahunAjaran() {
               &amp; Semester
             </h1>
             <p className="font-body-lg text-sm sm:text-base text-[#3f4945]/80 max-w-2xl leading-relaxed">
-              Kelola periode akademik sekolah, semester aktif, serta status periode yang digunakan dalam proses akademik secara terpusat.
+              Kelola periode akademik sekolah, semester aktif, serta status
+              periode yang digunakan dalam proses akademik secara terpusat.
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => queryClient.invalidateQueries(["tahun-ajaran"])}
+              onClick={() =>
+                queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.all })
+              }
               title="Muat Ulang Data"
               className="w-12 h-12 rounded-full bg-white/80 backdrop-blur-md border border-white/60 text-[#3f4945] hover:text-[#006e2a] hover:bg-white flex items-center justify-center transition-all shadow-sm hover:shadow-md hover:scale-105"
             >
-              <span className="material-symbols-outlined text-[20px]">refresh</span>
+              <span className="material-symbols-outlined text-[20px]">
+                refresh
+              </span>
             </button>
 
             <button
@@ -674,7 +749,9 @@ export default function TahunAjaran() {
               className="bg-[#006e2a] text-white px-7 py-3.5 sm:py-4 rounded-full font-label-badge text-xs sm:text-sm flex items-center gap-3 shadow-xl shadow-[#006e2a]/30 hover:shadow-[#006e2a]/50 hover:-translate-y-0.5 hover:scale-[1.03] transition-all duration-300 group border border-white/20"
             >
               <div className="bg-white/20 rounded-full p-1 group-hover:rotate-90 transition-transform duration-300">
-                <span className="material-symbols-outlined text-[18px] block">add</span>
+                <span className="material-symbols-outlined text-[18px] block">
+                  add
+                </span>
               </div>
               <span className="tracking-widest font-black uppercase">
                 Tambah Tahun Ajaran
@@ -708,7 +785,9 @@ export default function TahunAjaran() {
               </p>
             </div>
             <div className="absolute -right-3 -bottom-3 opacity-15 text-white pointer-events-none">
-              <span className="material-symbols-outlined text-6xl">calendar_month</span>
+              <span className="material-symbols-outlined text-6xl">
+                calendar_month
+              </span>
             </div>
           </div>
 
@@ -737,7 +816,9 @@ export default function TahunAjaran() {
               {totalSemesterSelesai}
             </h4>
             <p className="text-[11px] text-[#006e2a] font-bold mt-2 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm">check_circle</span>
+              <span className="material-symbols-outlined text-sm">
+                check_circle
+              </span>
               98% Data Valid
             </p>
           </div>
@@ -749,7 +830,7 @@ export default function TahunAjaran() {
               Jadwal Mendatang
             </p>
             <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
-              {totalMendatang > 0 ? totalMendatang : (aktif ? 1 : 0)}
+              {totalMendatang > 0 ? totalMendatang : aktif ? 1 : 0}
             </h4>
             <p className="text-[11px] text-[#00342b] font-bold mt-2 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">event</span>
@@ -780,7 +861,9 @@ export default function TahunAjaran() {
                     onClick={() => setSearch("")}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3f4945]/40 hover:text-[#111827]"
                   >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
+                    <span className="material-symbols-outlined text-[16px]">
+                      close
+                    </span>
                   </button>
                 )}
               </div>
@@ -845,7 +928,10 @@ export default function TahunAjaran() {
                       ))
                     ) : filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-14 px-3 text-center text-[#3f4945]/60">
+                        <td
+                          colSpan={6}
+                          className="py-14 px-3 text-center text-[#3f4945]/60"
+                        >
                           <div className="flex flex-col items-center gap-2">
                             <span className="material-symbols-outlined text-4xl text-[#bfc9c4]">
                               calendar_today
@@ -914,7 +1000,8 @@ export default function TahunAjaran() {
                                       )}
                                     </div>
                                     <span className="text-[11px] text-[#3f4945]/60">
-                                      {t.semesters?.length || 2} Semester Terdaftar
+                                      {t.semesters?.length || 2} Semester
+                                      Terdaftar
                                     </span>
                                   </div>
                                 </div>
@@ -923,11 +1010,13 @@ export default function TahunAjaran() {
                               {/* Semester Column */}
                               <td className="py-6 px-3">
                                 <div className="font-body-md text-sm text-[#191c1c] font-semibold">
-                                  {t.semesters?.find((s) => s.is_active)?.nama ||
-                                    "Ganjil & Genap"}
+                                  {t.semesters?.find((s) => s.is_active)
+                                    ?.nama || "Ganjil & Genap"}
                                 </div>
                                 <div className="text-[11px] text-[#3f4945]/60">
-                                  {t.is_active ? "Semester Aktif Berjalan" : "Periode Reguler"}
+                                  {t.is_active
+                                    ? "Semester Aktif Berjalan"
+                                    : "Periode Reguler"}
                                 </div>
                               </td>
 
@@ -974,54 +1063,21 @@ export default function TahunAjaran() {
                               {/* Aksi Column */}
                               <td className="py-6 px-3 text-right">
                                 <div
-                                  className="inline-flex items-center gap-1"
+                                  className="inline-flex"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  {/* Detail Page */}
                                   <button
-                                    onClick={() =>
-                                      navigate(`/operator/master/tahun-ajaran/${t.id}`)
-                                    }
-                                    title="Detail Lengkap"
-                                    className="p-2 rounded-full text-[#3f4945]/70 hover:text-[#006e2a] hover:bg-[#006e2a]/10 transition-colors"
+                                    type="button"
+                                    onClick={(e) => handleOpenAction(e, t.id)}
+                                    title="Opsi"
+                                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                                      openActionId === t.id
+                                        ? "bg-[#00342b] text-white shadow-md"
+                                        : "text-[#3f4945]/70 hover:text-[#00342b] hover:bg-[#eceeed]"
+                                    }`}
                                   >
-                                    <span className="material-symbols-outlined text-[18px]">
-                                      visibility
-                                    </span>
-                                  </button>
-
-                                  {/* Aktifkan TA */}
-                                  {!t.is_active && (
-                                    <button
-                                      onClick={() => {
-                                        if (
-                                          confirm(
-                                            `Jadikan "${t.tahun}" sebagai Tahun Ajaran aktif?`,
-                                          )
-                                        ) {
-                                          setAktif.mutate(t.id);
-                                        }
-                                      }}
-                                      title="Aktifkan Tahun Ajaran"
-                                      className="p-2 rounded-full text-[#3f4945]/70 hover:text-[#006e2a] hover:bg-[#006e2a]/10 transition-colors"
-                                    >
-                                      <span className="material-symbols-outlined text-[18px]">
-                                        check_circle
-                                      </span>
-                                    </button>
-                                  )}
-
-                                  {/* Edit TA */}
-                                  <button
-                                    onClick={() => {
-                                      setEditData({ ...t });
-                                      setModalOpen(true);
-                                    }}
-                                    title="Edit Periode"
-                                    className="p-2 rounded-full text-[#3f4945]/70 hover:text-[#00342b] hover:bg-[#eceeed] transition-colors"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px]">
-                                      edit
+                                    <span className="material-symbols-outlined text-[20px]">
+                                      more_vert
                                     </span>
                                   </button>
                                 </div>
@@ -1031,7 +1087,10 @@ export default function TahunAjaran() {
                             {/* Sub-row when expanded: Shows Ganjil & Genap breakdown */}
                             {isExpanded && (
                               <tr className="bg-[#006e2a]/[0.03]">
-                                <td colSpan={6} className="py-4 px-6 border-b border-[#006e2a]/15">
+                                <td
+                                  colSpan={6}
+                                  className="py-4 px-6 border-b border-[#006e2a]/15"
+                                >
                                   <div className="bg-white rounded-2xl border border-[#bfc9c4]/30 p-4 shadow-sm space-y-3">
                                     <div className="flex items-center justify-between text-xs font-bold text-[#00342b]">
                                       <span className="flex items-center gap-1.5">
@@ -1041,7 +1100,8 @@ export default function TahunAjaran() {
                                         Rincian Semester — {t.tahun}
                                       </span>
                                       <span className="text-[11px] text-[#3f4945]/60 font-normal">
-                                        Klik detail untuk melihat jadwal, kelas, dan kurikulum semester
+                                        Klik detail untuk melihat jadwal, kelas,
+                                        dan kurikulum semester
                                       </span>
                                     </div>
 
@@ -1070,24 +1130,26 @@ export default function TahunAjaran() {
                                                 )}
                                               </div>
                                               <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
-                                                {fmt(ganjil?.tgl_mulai)} – {fmt(ganjil?.tgl_selesai)}
+                                                {fmt(ganjil?.tgl_mulai)} –{" "}
+                                                {fmt(ganjil?.tgl_selesai)}
                                               </p>
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                              {t.is_active && !isGanjilAktif && (
-                                                <button
-                                                  onClick={() =>
-                                                    setSemesterAktif.mutate({
-                                                      taId: t.id,
-                                                      semesterNama: "Ganjil",
-                                                    })
-                                                  }
-                                                  className="text-[11px] font-bold text-[#006e2a] hover:underline"
-                                                >
-                                                  Aktifkan
-                                                </button>
-                                              )}
+                                              {t.is_active &&
+                                                !isGanjilAktif && (
+                                                  <button
+                                                    onClick={() =>
+                                                      setSemesterAktif.mutate({
+                                                        taId: t.id,
+                                                        semesterNama: "Ganjil",
+                                                      })
+                                                    }
+                                                    className="text-[11px] font-bold text-[#006e2a] hover:underline"
+                                                  >
+                                                    Aktifkan
+                                                  </button>
+                                                )}
                                               <button
                                                 onClick={() =>
                                                   navigate(
@@ -1130,7 +1192,8 @@ export default function TahunAjaran() {
                                                 )}
                                               </div>
                                               <p className="text-[11px] text-[#3f4945]/70 mt-0.5">
-                                                {fmt(genap?.tgl_mulai)} – {fmt(genap?.tgl_selesai)}
+                                                {fmt(genap?.tgl_mulai)} –{" "}
+                                                {fmt(genap?.tgl_selesai)}
                                               </p>
                                             </div>
 
@@ -1181,13 +1244,15 @@ export default function TahunAjaran() {
               {/* Table Footer Helper */}
               <div className="mt-5 pt-4 border-t border-[#bfc9c4]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#3f4945]/70">
                 <span>
-                  Menampilkan <b>{filtered.length}</b> dari {list.length} tahun ajaran
+                  Menampilkan <b>{filtered.length}</b> dari {list.length} tahun
+                  ajaran
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[16px] text-[#006e2a]">
                     touch_app
                   </span>
-                  Pilih baris untuk melihat statistik detail periode di sidebar kanan
+                  Pilih baris untuk melihat statistik detail periode di sidebar
+                  kanan
                 </span>
               </div>
             </div>
@@ -1218,7 +1283,9 @@ export default function TahunAjaran() {
                     </h3>
                   </div>
                   <span className="px-3.5 py-1.5 rounded-full bg-[#006e2a]/10 text-[#006e2a] font-label-badge text-[10px] font-extrabold tracking-widest border border-[#006e2a]/20 shadow-xs">
-                    {selectedTA ? `${selectedTA.tahun} ${selectedActiveSemester.toUpperCase()}` : "2026/2027 GANJIL"}
+                    {selectedTA
+                      ? `${selectedTA.tahun} ${selectedActiveSemester.toUpperCase()}`
+                      : "2026/2027 GANJIL"}
                   </span>
                 </div>
                 <div className="h-px w-full bg-gradient-to-r from-[#bfc9c4]/30 via-[#bfc9c4]/10 to-transparent" />
@@ -1229,7 +1296,9 @@ export default function TahunAjaran() {
                 {/* Guru */}
                 <div className="animate-fade-up animate-delay-100 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
                   <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
-                    <span className="material-symbols-outlined text-[20px]">person</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      person
+                    </span>
                   </div>
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Guru
@@ -1242,7 +1311,9 @@ export default function TahunAjaran() {
                 {/* Kelas */}
                 <div className="animate-fade-up animate-delay-200 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
                   <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
-                    <span className="material-symbols-outlined text-[20px]">school</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      school
+                    </span>
                   </div>
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Kelas
@@ -1255,7 +1326,9 @@ export default function TahunAjaran() {
                 {/* Mapel */}
                 <div className="animate-fade-up animate-delay-300 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
                   <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
-                    <span className="material-symbols-outlined text-[20px]">menu_book</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      menu_book
+                    </span>
                   </div>
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Mata Pelajaran
@@ -1268,7 +1341,9 @@ export default function TahunAjaran() {
                 {/* Jadwal */}
                 <div className="animate-fade-up animate-delay-400 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
                   <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
-                    <span className="material-symbols-outlined text-[20px]">calendar_today</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      calendar_today
+                    </span>
                   </div>
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Jadwal
@@ -1281,7 +1356,9 @@ export default function TahunAjaran() {
                 {/* Siswa */}
                 <div className="animate-fade-up animate-delay-500 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
                   <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
-                    <span className="material-symbols-outlined text-[20px]">groups</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      groups
+                    </span>
                   </div>
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Siswa
@@ -1294,7 +1371,9 @@ export default function TahunAjaran() {
                 {/* Rombel */}
                 <div className="animate-fade-up animate-delay-500 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
                   <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
-                    <span className="material-symbols-outlined text-[20px]">grid_view</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      grid_view
+                    </span>
                   </div>
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Rombel
@@ -1309,11 +1388,15 @@ export default function TahunAjaran() {
               {selectedTA && (
                 <div className="mt-5 relative z-10">
                   <button
-                    onClick={() => navigate(`/operator/master/tahun-ajaran/${selectedTA.id}`)}
+                    onClick={() =>
+                      navigate(`/operator/master/tahun-ajaran/${selectedTA.id}`)
+                    }
                     className="w-full py-3 rounded-2xl bg-[#00342b] text-white hover:bg-[#004d40] text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md shadow-[#00342b]/20 hover:shadow-lg"
                   >
                     <span>Buka Rincian Lengkap</span>
-                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    <span className="material-symbols-outlined text-[16px]">
+                      arrow_forward
+                    </span>
                   </button>
                 </div>
               )}
@@ -1334,7 +1417,9 @@ export default function TahunAjaran() {
 
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-[#ba1a1a]/10 flex items-center justify-center border border-[#ba1a1a]/20 shadow-sm shrink-0 text-[#ba1a1a] group-hover:shadow-[0_0_15px_rgba(186,26,26,0.2)] transition-shadow duration-300">
-                    <span className="material-symbols-outlined text-[24px]">warning</span>
+                    <span className="material-symbols-outlined text-[24px]">
+                      warning
+                    </span>
                   </div>
                   <div className="flex-1">
                     <h4 className="font-headline-card text-[18px] text-[#00342b] font-extrabold tracking-tight mb-1.5">
@@ -1344,20 +1429,28 @@ export default function TahunAjaran() {
                       <>
                         <p className="font-body-md text-xs text-[#3f4945]/80 leading-relaxed mb-4">
                           Periode tidak dapat dihapus karena masih berstatus{" "}
-                          <span className="font-bold text-[#ba1a1a]">AKTIF</span> dan digunakan oleh seluruh modul akademik. Nonaktifkan terlebih dahulu sebelum menghapus.
+                          <span className="font-bold text-[#ba1a1a]">
+                            AKTIF
+                          </span>{" "}
+                          dan digunakan oleh seluruh modul akademik. Nonaktifkan
+                          terlebih dahulu sebelum menghapus.
                         </p>
                         <button
                           disabled
                           className="w-full bg-[#eceeed] text-[#3f4945]/40 px-5 py-3 rounded-xl font-label-badge text-[11px] font-bold tracking-widest uppercase cursor-not-allowed border border-[#bfc9c4]/30 flex items-center justify-center gap-2 shadow-inner"
                         >
-                          <span className="material-symbols-outlined text-[16px]">lock</span>
+                          <span className="material-symbols-outlined text-[16px]">
+                            lock
+                          </span>
                           Hapus Periode
                         </button>
                       </>
                     ) : selectedTA ? (
                       <>
                         <p className="font-body-md text-xs text-[#3f4945]/80 leading-relaxed mb-4">
-                          Tindakan ini akan menghapus periode <b>{selectedTA.tahun}</b> beserta data semesternya secara permanen.
+                          Tindakan ini akan menghapus periode{" "}
+                          <b>{selectedTA.tahun}</b> beserta data semesternya
+                          secara permanen.
                         </p>
                         <button
                           onClick={() => {
@@ -1379,7 +1472,9 @@ export default function TahunAjaran() {
                         </button>
                       </>
                     ) : (
-                      <p className="text-xs text-[#3f4945]/60">Pilih tahun ajaran untuk opsi penghapusan.</p>
+                      <p className="text-xs text-[#3f4945]/60">
+                        Pilih tahun ajaran untuk opsi penghapusan.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1390,6 +1485,141 @@ export default function TahunAjaran() {
       </div>
 
       {/* ── 4. Modal Tambah / Edit ────────────────────────────────────────── */}
+      {/* ── Action Dropdown Portal ─────────────────────────────── */}
+      {openActionId &&
+        actionMenuPosition &&
+        (() => {
+          const actionItem = list.find((item) => item.id === openActionId);
+
+          if (!actionItem) return null;
+
+          return createPortal(
+            <div
+              className="fixed z-[9999] w-48"
+              style={{
+                top: actionMenuPosition.top,
+                left: actionMenuPosition.left,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-2xl border border-[#bfc9c4]/30 shadow-2xl shadow-[#00342b]/15 p-1.5 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150">
+                {/* DETAIL */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenActionId(null);
+                    setActionMenuPosition(null);
+
+                    navigate(`/operator/master/tahun-ajaran/${actionItem.id}`);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#3f4945] hover:bg-[#006e2a]/8 hover:text-[#00342b] transition-colors"
+                >
+                  <span className="w-8 h-8 rounded-lg bg-[#006e2a]/8 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[17px] text-[#006e2a]">
+                      visibility
+                    </span>
+                  </span>
+
+                  <span>Detail</span>
+                </button>
+
+                {/* EDIT */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenActionId(null);
+                    setActionMenuPosition(null);
+
+                    setEditData({
+                      ...actionItem,
+                    });
+
+                    setModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#3f4945] hover:bg-[#eceeed] hover:text-[#00342b] transition-colors"
+                >
+                  <span className="w-8 h-8 rounded-lg bg-[#eceeed] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[17px] text-[#3f4945]">
+                      edit
+                    </span>
+                  </span>
+
+                  <span>Edit</span>
+                </button>
+
+                {/* SET AKTIF */}
+                {!actionItem.is_active && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenActionId(null);
+                      setActionMenuPosition(null);
+
+                      if (
+                        confirm(
+                          `Jadikan "${actionItem.tahun}" sebagai Tahun Ajaran aktif?`,
+                        )
+                      ) {
+                        setAktif.mutate(actionItem.id);
+                      }
+                    }}
+                    disabled={setAktif.isPending}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#006e2a] hover:bg-[#006e2a]/8 transition-colors disabled:opacity-50"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-[#006e2a]/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[17px] text-[#006e2a]">
+                        check_circle
+                      </span>
+                    </span>
+
+                    <span>Set Aktif</span>
+                  </button>
+                )}
+
+                {/* DIVIDER */}
+                <div className="h-px bg-[#bfc9c4]/20 my-1" />
+
+                {/* DELETE */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenActionId(null);
+                    setActionMenuPosition(null);
+
+                    if (
+                      confirm(
+                        `Apakah Anda yakin ingin menghapus Tahun Ajaran "${actionItem.tahun}"?`,
+                      )
+                    ) {
+                      hapus.mutate(actionItem.id);
+                    }
+                  }}
+                  disabled={hapus.isPending || actionItem.is_active}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-[#ba1a1a] hover:bg-[#ba1a1a]/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="w-8 h-8 rounded-lg bg-[#ba1a1a]/8 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[17px] text-[#ba1a1a]">
+                      delete
+                    </span>
+                  </span>
+
+                  <span>Delete</span>
+                </button>
+
+                {/* INFO UNTUK DATA AKTIF */}
+                {actionItem.is_active && (
+                  <div className="px-3 pt-1 pb-1.5">
+                    <p className="text-[10px] leading-relaxed text-[#3f4945]/50">
+                      Tahun ajaran aktif tidak dapat dihapus.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body,
+          );
+        })()}
+
       <ModalTahunAjaran
         open={modalOpen}
         onClose={() => {
