@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\MasterData;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\TahunAjaran\SetSemesterAktifRequest;
+use App\Http\Requests\TahunAjaran\AktifkanSemesterRequest as SetSemesterAktifRequest;
 use App\Http\Requests\TahunAjaran\StoreTahunAjaranRequest;
 use App\Http\Requests\TahunAjaran\UpdateTahunAjaranRequest;
 use App\Models\TahunAjaran;
@@ -219,15 +219,12 @@ class TahunAjaranController extends Controller
 
             DB::commit();
 
-            ActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'create',
-                'module' => 'tahun_ajaran',
-                'subject_id' => $tahunAjaran->id,
-                'keterangan' => "Membuat tahun ajaran {$tahunAjaran->tahun}" . ($request->buat_semester ? ' beserta semester.' : '.'),
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
+            ActivityLog::log(
+                'create',
+                'tahun_ajaran',
+                $tahunAjaran->id,
+                "Membuat tahun ajaran {$tahunAjaran->tahun}" . ($request->buat_semester ? ' beserta semester.' : '.'),
+            );
 
             return response()->json([
                 'success' => true,
@@ -309,15 +306,12 @@ class TahunAjaranController extends Controller
 
             DB::commit();
 
-            ActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'update',
-                'module' => 'tahun_ajaran',
-                'subject_id' => $tahunAjaran->id,
-                'keterangan' => "Memperbarui tahun ajaran {$tahunAjaran->tahun}" . ($request->buat_semester ? ' dan semester.' : '.'),
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
+            ActivityLog::log(
+                'update',
+                'tahun_ajaran',
+                $tahunAjaran->id,
+                "Memperbarui tahun ajaran {$tahunAjaran->tahun}" . ($request->buat_semester ? ' dan semester.' : '.'),
+            );
 
             return response()->json([
                 'success' => true,
@@ -370,15 +364,12 @@ class TahunAjaranController extends Controller
             ->where('nama', $request->semester_nama)
             ->update(['is_active' => true]);
 
-        ActivityLog::create([
-            'user_id' => auth()->id(),
-            'action' => 'set_semester_aktif',
-            'module' => 'tahun_ajaran',
-            'subject_id' => $id,
-            'keterangan' => "Mengaktifkan Semester {$request->semester_nama} pada tahun ajaran {$tahunAjaran->tahun}.",
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        ActivityLog::log(
+            'set_semester_aktif',
+            'tahun_ajaran',
+            $id,
+            "Mengaktifkan Semester {$request->semester_nama} pada tahun ajaran {$tahunAjaran->tahun}.",
+        );
 
         return response()->json([
             'success' => true,

@@ -148,7 +148,11 @@ class SchoolSeeder extends Seeder
                 ->map(fn($slug) => $permissions[$slug]->id)
                 ->toArray();
 
-            $role->permissions()->sync($permIds);
+            $pivotData = collect($permIds)
+                ->mapWithKeys(fn($id) => [$id => ['school_id' => $role->school_id]])
+                ->toArray();
+
+            $role->permissions()->sync($pivotData);
         }
     }
 
@@ -164,7 +168,7 @@ class SchoolSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $user->roles()->attach($role->id);
+        $user->roles()->attach($role->id, ['school_id' => $school->id]);
     }
 
     // ────────────────────────────────────────────────────────

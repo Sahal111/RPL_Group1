@@ -64,8 +64,8 @@ class TenantMiddleware
             }
         }
 
-        // 2. Dari user yang sudah login
-        $user = $request->user();
+        // 2. Dari user yang sudah login (resolve manual dari Sanctum token)
+        $user = $request->user('sanctum');
         if ($user && $user->school_id) {
             return $user->school_id;
         }
