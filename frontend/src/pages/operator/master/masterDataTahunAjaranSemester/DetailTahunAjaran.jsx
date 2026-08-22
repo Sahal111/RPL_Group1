@@ -1257,6 +1257,667 @@ export default function DetailTahunAjaran() {
         </div>
       </section>
 
+      {/* ── 5b. Ringkasan Tahunan ── */}
+      <section className="mb-16 space-y-6 sm:space-y-8">
+        {/* Section Header */}
+        <div className="flex flex-col gap-3">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#00342b]/5 border border-[#00342b]/10 w-fit">
+            <span className="material-symbols-outlined text-[#00342b] text-[18px]">
+              summarize
+            </span>
+            <span className="text-[10px] font-bold text-[#00342b] uppercase tracking-[0.3em]">
+              Ringkasan Tahunan
+            </span>
+          </div>
+          <h3 className="font-headline-section text-3xl sm:text-4xl font-extrabold text-[#00342b] tracking-tight">
+            Kondisi{" "}
+            <span className="serif-italic font-light text-[#006e2a]">
+              Keseluruhan
+            </span>
+          </h3>
+          <p className="text-[#3f4945]/70 text-sm sm:text-base max-w-xl leading-relaxed">
+            Ringkasan data level tahunan — gambaran menyeluruh tahun ajaran{" "}
+            {ta.tahun}.
+          </p>
+        </div>
+
+        {/* Grid 2 kolom: Siswa + Guru */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* ─ A. Ringkasan Siswa ─ */}
+          {(() => {
+            const totalL = kelasList.reduce(
+              (s, k) => s + (k.total_siswa_laki ?? 0),
+              0,
+            );
+            const totalP = kelasList.reduce(
+              (s, k) => s + (k.total_siswa_perempuan ?? 0),
+              0,
+            );
+            const pctL =
+              totalSiswa > 0 ? Math.round((totalL / totalSiswa) * 100) : 0;
+            const pctP =
+              totalSiswa > 0 ? Math.round((totalP / totalSiswa) * 100) : 0;
+            const siswaItems = [
+              {
+                label: "Laki-laki",
+                value: totalL || "—",
+                sub: totalL > 0 ? `${pctL}%` : null,
+                color: "#006e2a",
+                icon: "man",
+              },
+              {
+                label: "Perempuan",
+                value: totalP || "—",
+                sub: totalP > 0 ? `${pctP}%` : null,
+                color: "#00342b",
+                icon: "woman",
+              },
+              {
+                label: "Siswa Masuk",
+                value: data.total_siswa_masuk ?? "—",
+                sub: "Tahun ini",
+                color: "#006e2a",
+                icon: "person_add",
+              },
+              {
+                label: "Keluar/Mutasi",
+                value: data.total_siswa_keluar ?? "—",
+                sub: "Tahun ini",
+                color: "#ba1a1a",
+                icon: "person_remove",
+              },
+              {
+                label: "Naik Kelas",
+                value: ta.is_tutup_buku ? (data.total_siswa_naik ?? "—") : null,
+                sub: ta.is_tutup_buku ? null : "Belum diproses",
+                color: "#006e2a",
+                icon: "trending_up",
+              },
+              {
+                label: "Tidak Naik",
+                value: ta.is_tutup_buku
+                  ? (data.total_siswa_tidak_naik ?? "—")
+                  : null,
+                sub: ta.is_tutup_buku ? null : "Belum diproses",
+                color: "#eaa300",
+                icon: "trending_flat",
+              },
+            ];
+            return (
+              <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 border border-white/60 shadow-[0_20px_50px_rgba(0,52,43,0.05)] relative overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-500">
+                <div className="absolute -right-12 -top-12 w-48 h-48 bg-[#006e2a]/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-[#006e2a]/10 transition-colors duration-500" />
+                <div className="relative z-10">
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-[#006e2a]/10 flex items-center justify-center text-[#006e2a] group-hover:scale-110 group-hover:bg-[#006e2a]/20 transition-all duration-500">
+                        <span
+                          className="material-symbols-outlined text-[26px]"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          groups
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3f4945]/50 uppercase tracking-[0.2em]">
+                          Ringkasan
+                        </p>
+                        <h4 className="text-xl font-extrabold text-[#00342b] font-headline-card tracking-tight">
+                          Siswa Tahunan
+                        </h4>
+                      </div>
+                    </div>
+                    {/* Total bubble */}
+                    <div className="flex flex-col items-end">
+                      <span className="text-3xl font-black text-[#006e2a] font-headline-card leading-none">
+                        {disp(totalSiswa)}
+                      </span>
+                      <span className="text-[10px] font-bold text-[#3f4945]/50 uppercase tracking-wider mt-1">
+                        Total Aktif
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Gender bar visual */}
+                  {(totalL > 0 || totalP > 0) && (
+                    <div className="mb-6">
+                      <div className="flex rounded-full overflow-hidden h-2.5 mb-2">
+                        <div
+                          className="bg-[#006e2a] transition-all duration-700"
+                          style={{ width: `${pctL}%` }}
+                        />
+                        <div
+                          className="bg-[#00342b]/30 transition-all duration-700"
+                          style={{ width: `${pctP}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-4 text-[10px] font-bold text-[#3f4945]/60">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-[#006e2a]" />
+                          L: {pctL}%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-[#00342b]/30" />
+                          P: {pctP}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grid items */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {siswaItems.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-1.5 p-3.5 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/20 hover:bg-white transition-all duration-300"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="material-symbols-outlined text-[16px]"
+                            style={{ color: item.color, opacity: 0.7 }}
+                          >
+                            {item.icon}
+                          </span>
+                          {item.value === null ? (
+                            <span className="text-[9px] font-bold text-[#eaa300] uppercase tracking-wide bg-[#eaa300]/10 px-2 py-0.5 rounded-full border border-[#eaa300]/20">
+                              {item.sub}
+                            </span>
+                          ) : null}
+                        </div>
+                        <span
+                          className="text-xl font-black font-headline-card"
+                          style={{
+                            color: item.value === null ? "#bfc9c4" : item.color,
+                          }}
+                        >
+                          {item.value === null ? "—" : item.value}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-wider leading-tight">
+                          {item.label}
+                        </span>
+                        {item.sub && item.value !== null && (
+                          <span className="text-[9px] font-bold text-[#3f4945]/40">
+                            {item.sub}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ─ B. Ringkasan Guru ─ */}
+          {(() => {
+            const totalTetap = data.total_guru_tetap ?? 0;
+            const totalHonorer = data.total_guru_honorer ?? 0;
+            const totalTanpaTugas = data.total_guru_tanpa_tugas ?? 0;
+            const pctTetap =
+              totalGuru > 0 ? Math.round((totalTetap / totalGuru) * 100) : 0;
+            const guruItems = [
+              {
+                label: "Guru Tetap",
+                value: totalTetap || "—",
+                sub: totalTetap > 0 ? `${pctTetap}%` : null,
+                color: "#006e2a",
+                icon: "verified_user",
+              },
+              {
+                label: "Honorer",
+                value: totalHonorer || "—",
+                sub: totalHonorer > 0 ? `${100 - pctTetap}%` : null,
+                color: "#eaa300",
+                icon: "badge",
+              },
+              {
+                label: "Wali Kelas",
+                value: totalWaliKelas || "—",
+                sub: "Ditugaskan",
+                color: "#00342b",
+                icon: "supervised_user_circle",
+              },
+              {
+                label: "Guru Mengajar",
+                value: totalGuru || "—",
+                sub: "Aktif semester ini",
+                color: "#006e2a",
+                icon: "school",
+              },
+              {
+                label: "Mutasi Masuk",
+                value: data.total_guru_mutasi_masuk ?? "—",
+                sub: "Tahun ini",
+                color: "#006e2a",
+                icon: "login",
+              },
+              {
+                label: "Tanpa Tugas",
+                value: totalTanpaTugas > 0 ? totalTanpaTugas : "—",
+                sub: totalTanpaTugas > 0 ? "Perlu perhatian" : "Semua bertugas",
+                color: totalTanpaTugas > 0 ? "#ba1a1a" : "#006e2a",
+                icon: totalTanpaTugas > 0 ? "person_off" : "check_circle",
+              },
+            ];
+            return (
+              <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 border border-white/60 shadow-[0_20px_50px_rgba(0,52,43,0.05)] relative overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-500">
+                <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-[#00342b]/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-[#00342b]/10 transition-colors duration-500" />
+                <div className="relative z-10">
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-[#00342b]/10 flex items-center justify-center text-[#00342b] group-hover:scale-110 group-hover:bg-[#00342b]/20 transition-all duration-500">
+                        <span
+                          className="material-symbols-outlined text-[26px]"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          person_celebrate
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3f4945]/50 uppercase tracking-[0.2em]">
+                          Ringkasan
+                        </p>
+                        <h4 className="text-xl font-extrabold text-[#00342b] font-headline-card tracking-tight">
+                          Guru Tahunan
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-3xl font-black text-[#006e2a] font-headline-card leading-none">
+                        {disp(totalGuru)}
+                      </span>
+                      <span className="text-[10px] font-bold text-[#3f4945]/50 uppercase tracking-wider mt-1">
+                        Total Aktif
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tetap vs Honorer bar */}
+                  {(totalTetap > 0 || totalHonorer > 0) && (
+                    <div className="mb-6">
+                      <div className="flex rounded-full overflow-hidden h-2.5 mb-2">
+                        <div
+                          className="bg-[#006e2a] transition-all duration-700"
+                          style={{ width: `${pctTetap}%` }}
+                        />
+                        <div
+                          className="bg-[#eaa300]/40 transition-all duration-700"
+                          style={{ width: `${100 - pctTetap}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-4 text-[10px] font-bold text-[#3f4945]/60">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-[#006e2a]" />
+                          Tetap: {pctTetap}%
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-[#eaa300]/40" />
+                          Honorer: {100 - pctTetap}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grid items */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {guruItems.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-1.5 p-3.5 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/20 hover:border-[#00342b]/20 hover:bg-white transition-all duration-300"
+                      >
+                        <span
+                          className="material-symbols-outlined text-[16px]"
+                          style={{ color: item.color, opacity: 0.7 }}
+                        >
+                          {item.icon}
+                        </span>
+                        <span
+                          className="text-xl font-black font-headline-card"
+                          style={{
+                            color: item.value === "—" ? "#bfc9c4" : item.color,
+                          }}
+                        >
+                          {item.value}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-wider leading-tight">
+                          {item.label}
+                        </span>
+                        {item.sub && (
+                          <span className="text-[9px] font-bold text-[#3f4945]/40">
+                            {item.sub}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Grid 2 kolom: Rombel + Akademik */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* ─ C. Ringkasan Rombel ─ */}
+          {(() => {
+            const siswaPerKelas =
+              totalKelas > 0 ? Math.round(totalSiswa / totalKelas) : 0;
+            const kelasHampirPenuh = kelasList.filter((k) => {
+              const kap = Number(k.kapasitas) || 0;
+              const isi = k.total_siswa ?? 0;
+              return kap > 0 && isi > 0 && isi / kap >= 0.8 && isi / kap < 1;
+            }).length;
+            const kelasPenuh = kelasList.filter((k) => {
+              const kap = Number(k.kapasitas) || 0;
+              const isi = k.total_siswa ?? 0;
+              return kap > 0 && isi >= kap;
+            }).length;
+            const sisaKapasitas = Math.max(0, totalKapasitas - totalSiswa);
+
+            const rombelItems = [
+              {
+                label: "Total Rombel",
+                value: disp(totalKelas),
+                color: "#006e2a",
+                icon: "account_tree",
+              },
+              {
+                label: "Kapasitas Total",
+                value: totalKapasitas > 0 ? disp(totalKapasitas) : "—",
+                color: "#00342b",
+                icon: "people",
+              },
+              {
+                label: "Siswa Terdistribusi",
+                value: disp(totalSiswa),
+                color: "#006e2a",
+                icon: "groups",
+              },
+              {
+                label: "Sisa Kapasitas",
+                value: totalKapasitas > 0 ? disp(sisaKapasitas) : "—",
+                color: sisaKapasitas < 10 ? "#ba1a1a" : "#3f4945",
+                icon: "reduce_capacity",
+              },
+              {
+                label: "Rombel Penuh",
+                value: kelasPenuh > 0 ? kelasPenuh : "—",
+                color: "#ba1a1a",
+                icon: "meeting_room",
+              },
+              {
+                label: "Hampir Penuh",
+                value: kelasHampirPenuh > 0 ? kelasHampirPenuh : "—",
+                color: "#eaa300",
+                icon: "door_front",
+              },
+            ];
+            return (
+              <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 border border-white/60 shadow-[0_20px_50px_rgba(0,52,43,0.05)] relative overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-500">
+                <div className="absolute -right-10 -top-10 w-44 h-44 bg-[#006e2a]/5 rounded-full blur-[70px] pointer-events-none" />
+                <div className="relative z-10">
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-[#006e2a]/10 flex items-center justify-center text-[#006e2a] group-hover:scale-110 group-hover:bg-[#006e2a]/20 transition-all duration-500">
+                        <span
+                          className="material-symbols-outlined text-[26px]"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          meeting_room
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#3f4945]/50 uppercase tracking-[0.2em]">
+                          Ringkasan
+                        </p>
+                        <h4 className="text-xl font-extrabold text-[#00342b] font-headline-card tracking-tight">
+                          Rombel Tahunan
+                        </h4>
+                      </div>
+                    </div>
+                    {/* Donut kapasitas */}
+                    <div className="flex flex-col items-center">
+                      <div className="relative w-14 h-14">
+                        <svg
+                          className="w-full h-full -rotate-90"
+                          viewBox="0 0 36 36"
+                        >
+                          <circle
+                            className="stroke-[#e1e3e2]"
+                            cx="18"
+                            cy="18"
+                            fill="none"
+                            r="14"
+                            strokeWidth="4"
+                          />
+                          <circle
+                            cx="18"
+                            cy="18"
+                            fill="none"
+                            r="14"
+                            stroke="#006e2a"
+                            strokeDasharray={`${kapasitasPct}, 100`}
+                            strokeLinecap="round"
+                            strokeWidth="4"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-[10px] font-black text-[#00342b]">
+                            {kapasitasPct}%
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold text-[#3f4945]/50 uppercase tracking-wider mt-1">
+                        Terisi
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Capacity fill bar */}
+                  {totalKapasitas > 0 && (
+                    <div className="mb-6 p-3.5 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-wider">
+                          Tingkat Pengisian
+                        </span>
+                        <span className="text-[10px] font-black text-[#006e2a]">
+                          {totalSiswa} / {totalKapasitas}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-[#e6e9e8] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${kapasitasPct >= 90 ? "bg-[#ba1a1a]" : kapasitasPct >= 75 ? "bg-[#eaa300]" : "bg-[#006e2a]"}`}
+                          style={{ width: `${kapasitasPct}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[9px] text-[#3f4945]/40">
+                          Rata-rata {siswaPerKelas} siswa/kelas
+                        </span>
+                        <span className="text-[9px] text-[#3f4945]/40">
+                          Sisa {disp(sisaKapasitas)} slot
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grid items */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {rombelItems.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-1.5 p-3.5 bg-[#f8faf9] rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/20 hover:bg-white transition-all duration-300"
+                      >
+                        <span
+                          className="material-symbols-outlined text-[16px]"
+                          style={{ color: item.color, opacity: 0.7 }}
+                        >
+                          {item.icon}
+                        </span>
+                        <span
+                          className="text-xl font-black font-headline-card"
+                          style={{
+                            color: item.value === "—" ? "#bfc9c4" : item.color,
+                          }}
+                        >
+                          {item.value}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-wider leading-tight">
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ─ D. Ringkasan Akademik ─ */}
+          {(() => {
+            const totalHariEfektif = ta.total_hari_efektif ?? 0;
+            const totalHariLibur = ta.total_hari_libur ?? 0;
+            const totalAgenda = data.kalender?.length ?? 0;
+            const totalMapelWajib = data.total_mapel_wajib ?? 0;
+            const totalMapelLokal = data.total_mapel_lokal ?? 0;
+            const totalPengampu = totalGuru;
+
+            const akademikItems = [
+              {
+                label: "Total Mapel",
+                value: disp(totalMapel),
+                color: "#006e2a",
+                icon: "menu_book",
+              },
+              {
+                label: "Mapel Wajib",
+                value: totalMapelWajib > 0 ? disp(totalMapelWajib) : "—",
+                color: "#00342b",
+                icon: "check_box",
+              },
+              {
+                label: "Muatan Lokal",
+                value: totalMapelLokal > 0 ? disp(totalMapelLokal) : "—",
+                color: "#eaa300",
+                icon: "local_library",
+              },
+              {
+                label: "Total Pengampu",
+                value: disp(totalPengampu),
+                color: "#006e2a",
+                icon: "co_present",
+              },
+              {
+                label: "Hari Efektif",
+                value: totalHariEfektif > 0 ? disp(totalHariEfektif) : "—",
+                color: "#00342b",
+                icon: "today",
+              },
+              {
+                label: "Agenda Kalender",
+                value: totalAgenda > 0 ? disp(totalAgenda) : "—",
+                color: "#3f4945",
+                icon: "event_note",
+              },
+            ];
+            return (
+              <div className="bg-[#00342b] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,52,43,0.2)] relative overflow-hidden group hover:-translate-y-1 hover:shadow-2xl transition-all duration-500">
+                {/* Decorative dot pattern */}
+                <div
+                  className="absolute inset-0 opacity-[0.06] pointer-events-none rounded-[2.5rem] overflow-hidden"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(#69ff87 0.5px, transparent 0.5px)",
+                    backgroundSize: "16px 16px",
+                  }}
+                />
+                <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-[#69ff87]/10 rounded-full blur-[80px] pointer-events-none" />
+                <div className="relative z-10">
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-[#69ff87]/10 flex items-center justify-center text-[#69ff87] group-hover:scale-110 group-hover:bg-[#69ff87]/20 transition-all duration-500">
+                        <span
+                          className="material-symbols-outlined text-[26px]"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
+                          auto_stories
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">
+                          Ringkasan
+                        </p>
+                        <h4 className="text-xl font-extrabold text-white font-headline-card tracking-tight">
+                          Akademik Tahunan
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-3xl font-black text-[#69ff87] font-headline-card leading-none">
+                        {disp(totalJadwal)}
+                      </span>
+                      <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider mt-1">
+                        Total Jadwal
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Hari Efektif progress bar */}
+                  {totalHariEfektif > 0 && hariTotal > 0 && (
+                    <div className="mb-6 p-3.5 bg-white/5 rounded-2xl border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                          Hari Efektif
+                        </span>
+                        <span className="text-[10px] font-black text-[#69ff87]">
+                          {totalHariEfektif} dari {hariTotal} hari
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#006e2a] to-[#69ff87] rounded-full transition-all duration-700"
+                          style={{
+                            width: `${Math.min(100, Math.round((totalHariEfektif / hariTotal) * 100))}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[9px] text-white/30 mt-1 block">
+                        {totalHariLibur} hari libur dikurangi
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Grid items */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {akademikItems.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-1.5 p-3.5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300"
+                      >
+                        <span className="material-symbols-outlined text-[16px] text-[#69ff87] opacity-70">
+                          {item.icon}
+                        </span>
+                        <span
+                          className={`text-xl font-black font-headline-card ${item.value === "—" ? "text-white/20" : "text-white"}`}
+                        >
+                          {item.value}
+                        </span>
+                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider leading-tight">
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
       {/* ── 6. Semester Panels (Semester Ganjil & Genap) ── */}
       <section className="mb-16">
         <div className="relative mb-10">
