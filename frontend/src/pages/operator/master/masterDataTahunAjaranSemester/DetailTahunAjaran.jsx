@@ -607,6 +607,9 @@ export default function DetailTahunAjaran() {
   const totalWaliKelas = data.total_wali_kelas ?? 0;
   const totalRuangan = data.total_ruangan ?? 0;
   const totalJadwal = data.total_jadwal ?? 0;
+
+  // Helper: tampil angka atau "—" jika 0/null
+  const disp = (n) => (n > 0 ? n.toLocaleString("id-ID") : "—");
   const aktivitas = data.aktivitas ?? [];
   const taPrev = data.ta_prev ?? null;
   const taNext = data.ta_next ?? null;
@@ -927,7 +930,7 @@ export default function DetailTahunAjaran() {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-2xl sm:text-3xl font-extrabold text-[#00342b] leading-none truncate">
-                {Number(totalSiswa || 1248).toLocaleString("id-ID")}
+                {disp(totalSiswa)}
               </span>
               <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1.5">
                 Siswa
@@ -944,7 +947,7 @@ export default function DetailTahunAjaran() {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-2xl sm:text-3xl font-extrabold text-[#00342b] leading-none truncate">
-                {totalGuru || 84}
+                {disp(totalGuru)}
               </span>
               <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1.5">
                 Guru
@@ -961,7 +964,7 @@ export default function DetailTahunAjaran() {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-2xl sm:text-3xl font-extrabold text-[#00342b] leading-none truncate">
-                {totalKelas || 24}
+                {disp(totalKelas)}
               </span>
               <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1.5">
                 Kelas
@@ -978,7 +981,7 @@ export default function DetailTahunAjaran() {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-2xl sm:text-3xl font-extrabold text-[#00342b] leading-none truncate">
-                {totalMapel || 18}
+                {disp(totalMapel)}
               </span>
               <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1.5">
                 Mata Pelajaran
@@ -995,7 +998,7 @@ export default function DetailTahunAjaran() {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-2xl sm:text-3xl font-extrabold text-[#00342b] leading-none truncate">
-                {totalKelas || 24}
+                {disp(totalKelas)}
               </span>
               <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1.5">
                 Rombel
@@ -1214,7 +1217,7 @@ export default function DetailTahunAjaran() {
                   Ruang Kelas
                 </span>
                 <span className="text-2xl font-black text-[#00342b] group-hover:scale-110 transition-transform">
-                  {totalRuangan || totalKelas || 24}
+                  {disp(totalRuangan || totalKelas)}
                 </span>
               </div>
               <div className="bg-white border border-[#bfc9c4]/20 hover:border-[#00342b]/30 rounded-2xl p-4 flex flex-col items-center justify-center group hover:-translate-y-1 transition-all duration-500 ease-out shadow-sm hover:shadow-xl">
@@ -1350,9 +1353,7 @@ export default function DetailTahunAjaran() {
                       Siswa
                     </span>
                     <span className="text-lg sm:text-xl font-black text-[#00342b]">
-                      {ganjil?.is_active
-                        ? Number(totalSiswa || 1248).toLocaleString("id-ID")
-                        : "1.248"}
+                      {ganjil?.is_active ? disp(totalSiswa) : "—"}
                     </span>
                   </div>
                 </div>
@@ -1367,7 +1368,7 @@ export default function DetailTahunAjaran() {
                       Kelas
                     </span>
                     <span className="text-lg sm:text-xl font-black text-[#00342b]">
-                      {totalKelas || 24}
+                      {ganjil?.is_active ? disp(totalKelas) : "—"}
                     </span>
                   </div>
                 </div>
@@ -1382,7 +1383,7 @@ export default function DetailTahunAjaran() {
                       Guru
                     </span>
                     <span className="text-lg sm:text-xl font-black text-[#00342b]">
-                      {totalGuru || 84}
+                      {ganjil?.is_active ? disp(totalGuru) : "—"}
                     </span>
                   </div>
                 </div>
@@ -1397,25 +1398,37 @@ export default function DetailTahunAjaran() {
                       Jadwal
                     </span>
                     <span className="text-lg sm:text-xl font-black text-[#00342b]">
-                      {totalJadwal || 156}
+                      {ganjil?.is_active ? disp(totalJadwal) : "—"}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="mb-8 bg-[#f2f4f3]/40 p-4 sm:p-5 rounded-2xl border border-[#bfc9c4]/15">
-                <div className="flex justify-between items-center mb-2.5">
-                  <span className="text-[11px] font-bold text-[#3f4945]/70 uppercase tracking-widest">
-                    Kesiapan akademik
-                  </span>
-                  <span className="text-xs sm:text-sm font-black text-[#006e2a]">
-                    96%
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#006e2a] w-[96%] rounded-full"></div>
-                </div>
-              </div>
+              {(() => {
+                const doneCount =
+                  Object.values(checklist).filter(Boolean).length;
+                const total = Object.keys(checklist).length || 10;
+                const pct =
+                  total > 0 ? Math.round((doneCount / total) * 100) : 0;
+                return (
+                  <div className="mb-8 bg-[#f2f4f3]/40 p-4 sm:p-5 rounded-2xl border border-[#bfc9c4]/15">
+                    <div className="flex justify-between items-center mb-2.5">
+                      <span className="text-[11px] font-bold text-[#3f4945]/70 uppercase tracking-widest">
+                        Kesiapan akademik
+                      </span>
+                      <span className="text-xs sm:text-sm font-black text-[#006e2a]">
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#006e2a] rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
 
               <button
                 onClick={() =>
@@ -1611,7 +1624,7 @@ export default function DetailTahunAjaran() {
                   </span>
                 </div>
                 <span className="text-xl sm:text-2xl font-black text-[#00342b]">
-                  {Number(totalSiswa || 1248).toLocaleString("id-ID")}
+                  {disp(totalSiswa)}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-[#f2f4f3]/50">
@@ -1626,7 +1639,7 @@ export default function DetailTahunAjaran() {
                   </span>
                 </div>
                 <span className="text-xl sm:text-2xl font-black text-[#00342b]">
-                  {totalKelas || 24}
+                  {disp(totalKelas)}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-[#f2f4f3]/50">
@@ -1641,7 +1654,7 @@ export default function DetailTahunAjaran() {
                   </span>
                 </div>
                 <span className="text-xl sm:text-2xl font-black text-[#00342b]">
-                  {totalGuru || 84}
+                  {disp(totalGuru)}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-[#f2f4f3]/50">
@@ -1656,7 +1669,7 @@ export default function DetailTahunAjaran() {
                   </span>
                 </div>
                 <span className="text-xl sm:text-2xl font-black text-[#00342b]">
-                  {totalMapel || 18}
+                  {disp(totalMapel)}
                 </span>
               </div>
             </div>
@@ -1768,128 +1781,91 @@ export default function DetailTahunAjaran() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-              {/* Data Siswa */}
-              <div className="group/stat bg-white/50 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:shadow-[#006e2a]/20 hover:-translate-y-1 transition-all duration-500 ease-out">
-                <div className="flex justify-between items-start mb-6 sm:mb-8">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#006e2a]/20 to-[#006e2a]/5 flex items-center justify-center text-[#006e2a] shadow-[0_0_15px_rgba(0,110,42,0.15)] group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
-                    <span className="material-symbols-outlined text-[24px] sm:text-[28px]">
-                      person
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#006e2a]/10 text-[#006e2a] border border-[#006e2a]/20 text-[9px] font-black uppercase tracking-[0.2em]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#006e2a] animate-pulse"></span>
-                    Lengkap
-                  </span>
-                </div>
-                <div className="flex flex-col gap-3 sm:gap-4">
-                  <p className="text-xs font-bold text-[#3f4945]/50 uppercase tracking-widest font-headline-card">
-                    Data Siswa
-                  </p>
-                  <div className="flex items-end justify-between gap-4">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-[#00342b] font-headline-card leading-none">
-                      100%
-                    </span>
-                    <div className="flex-1 max-w-[120px] mb-1">
-                      <div className="relative w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#006e2a] w-full rounded-full drop-shadow-[0_0_5px_rgba(0,110,42,0.5)] animate-bar-fill"></div>
+              {/* Kesiapan cards — driven by checklist from API */}
+              {[
+                {
+                  key: "siswa_terdistribusi",
+                  label: "Data Siswa",
+                  icon: "person",
+                  color: "#006e2a",
+                },
+                {
+                  key: "guru_mengajar",
+                  label: "Data Guru",
+                  icon: "school",
+                  color: "#006e2a",
+                },
+                {
+                  key: "rombel_dibuat",
+                  label: "Data Kelas",
+                  icon: "meeting_room",
+                  color: "#006e2a",
+                },
+                {
+                  key: "mapel_lengkap",
+                  label: "Mata Pelajaran",
+                  icon: "menu_book",
+                  color: "#006e2a",
+                },
+              ].map(({ key, label, icon, color }) => {
+                const isDone = !!checklist[key];
+                const pct = isDone ? 100 : 0;
+                return (
+                  <div
+                    key={key}
+                    className="group/stat bg-white/50 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:shadow-[#006e2a]/20 hover:-translate-y-1 transition-all duration-500 ease-out"
+                  >
+                    <div className="flex justify-between items-start mb-6 sm:mb-8">
+                      <div
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500"
+                        style={{
+                          background: `${isDone ? color : "#3f4945"}22`,
+                          color: isDone ? color : "#3f4945",
+                        }}
+                      >
+                        <span className="material-symbols-outlined text-[24px] sm:text-[28px]">
+                          {icon}
+                        </span>
+                      </div>
+                      <span
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border"
+                        style={{
+                          background: isDone ? `${color}1a` : "#3f494522",
+                          color: isDone ? color : "#3f4945",
+                          borderColor: isDone ? `${color}33` : "#bfc9c430",
+                        }}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${isDone ? "animate-pulse" : ""}`}
+                          style={{ background: isDone ? color : "#3f4945" }}
+                        />
+                        {isDone ? "Terpenuhi" : "Belum"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                      <p className="text-xs font-bold text-[#3f4945]/50 uppercase tracking-widest font-headline-card">
+                        {label}
+                      </p>
+                      <div className="flex items-end justify-between gap-4">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-[#00342b] font-headline-card leading-none">
+                          {isDone ? "✓" : "—"}
+                        </span>
+                        <div className="flex-1 max-w-[120px] mb-1">
+                          <div className="relative w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{
+                                width: `${pct}%`,
+                                background: isDone ? color : "#bfc9c4",
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Data Guru */}
-              <div className="group/stat bg-white/50 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-1 transition-all duration-500 ease-out">
-                <div className="flex justify-between items-start mb-6 sm:mb-8">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#d99600]/20 to-[#d99600]/5 flex items-center justify-center text-[#d99600] shadow-[0_0_15px_rgba(217,150,0,0.15)] group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
-                    <span className="material-symbols-outlined text-[24px] sm:text-[28px]">
-                      school
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#d99600]/10 text-[#d99600] border border-[#d99600]/20 text-[9px] font-black uppercase tracking-[0.2em]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#d99600] animate-pulse"></span>
-                    Hampir Selesai
-                  </span>
-                </div>
-                <div className="flex flex-col gap-3 sm:gap-4">
-                  <p className="text-xs font-bold text-[#3f4945]/50 uppercase tracking-widest font-headline-card">
-                    Data Guru
-                  </p>
-                  <div className="flex items-end justify-between gap-4">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-[#00342b] font-headline-card leading-none">
-                      98%
-                    </span>
-                    <div className="flex-1 max-w-[120px] mb-1">
-                      <div className="relative w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#006e2a] rounded-full drop-shadow-[0_0_5px_rgba(0,110,42,0.5)] animate-bar-fill"
-                          style={{ width: "98%" }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Data Kelas */}
-              <div className="group/stat bg-white/50 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:shadow-[#006e2a]/20 hover:-translate-y-1 transition-all duration-500 ease-out">
-                <div className="flex justify-between items-start mb-6 sm:mb-8">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#006e2a]/20 to-[#006e2a]/5 flex items-center justify-center text-[#006e2a] shadow-[0_0_15px_rgba(0,110,42,0.15)] group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
-                    <span className="material-symbols-outlined text-[24px] sm:text-[28px]">
-                      meeting_room
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#006e2a]/10 text-[#006e2a] border border-[#006e2a]/20 text-[9px] font-black uppercase tracking-[0.2em]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#006e2a] animate-pulse"></span>
-                    Tervalidasi
-                  </span>
-                </div>
-                <div className="flex flex-col gap-3 sm:gap-4">
-                  <p className="text-xs font-bold text-[#3f4945]/50 uppercase tracking-widest font-headline-card">
-                    Data Kelas
-                  </p>
-                  <div className="flex items-end justify-between gap-4">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-[#00342b] font-headline-card leading-none">
-                      100%
-                    </span>
-                    <div className="flex-1 max-w-[120px] mb-1">
-                      <div className="relative w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#006e2a] w-full rounded-full drop-shadow-[0_0_5px_rgba(0,110,42,0.5)] animate-bar-fill"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mata Pelajaran */}
-              <div className="group/stat bg-white/50 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-2xl hover:shadow-[#006e2a]/20 hover:-translate-y-1 transition-all duration-500 ease-out">
-                <div className="flex justify-between items-start mb-6 sm:mb-8">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#006e2a]/20 to-[#006e2a]/5 flex items-center justify-center text-[#006e2a] shadow-[0_0_15px_rgba(0,110,42,0.15)] group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-500">
-                    <span className="material-symbols-outlined text-[24px] sm:text-[28px]">
-                      menu_book
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#006e2a]/10 text-[#006e2a] border border-[#006e2a]/20 text-[9px] font-black uppercase tracking-[0.2em]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#006e2a] animate-pulse"></span>
-                    Sinkron
-                  </span>
-                </div>
-                <div className="flex flex-col gap-3 sm:gap-4">
-                  <p className="text-xs font-bold text-[#3f4945]/50 uppercase tracking-widest font-headline-card">
-                    Mata Pelajaran
-                  </p>
-                  <div className="flex items-end justify-between gap-4">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-[#00342b] font-headline-card leading-none">
-                      100%
-                    </span>
-                    <div className="flex-1 max-w-[120px] mb-1">
-                      <div className="relative w-full h-1.5 bg-[#e1e3e2] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#006e2a] w-full rounded-full drop-shadow-[0_0_5px_rgba(0,110,42,0.5)] animate-bar-fill"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1907,91 +1883,138 @@ export default function DetailTahunAjaran() {
                   </span>
                 </div>
 
-                <div className="relative flex justify-center items-center py-4">
-                  <div className="relative w-48 h-48 sm:w-56 sm:h-56">
-                    <svg
-                      className="w-full h-full -rotate-90"
-                      viewBox="0 0 100 100"
-                    >
-                      {/* Outer Ring */}
-                      <circle
-                        className="stroke-[#e1e3e2]"
-                        cx="50"
-                        cy="50"
-                        fill="none"
-                        r="42"
-                        strokeWidth="8"
-                      ></circle>
-                      <circle
-                        className="stroke-[#006e2a] drop-shadow-[0_0_8px_rgba(0,200,83,0.4)]"
-                        cx="50"
-                        cy="50"
-                        fill="none"
-                        r="42"
-                        strokeDasharray="263.89"
-                        strokeDashoffset="10.55"
-                        strokeLinecap="round"
-                        strokeWidth="8"
-                      ></circle>
+                {(() => {
+                  const checklistItems = Object.values(checklist);
+                  const totalItems = checklistItems.length || 10;
+                  const doneItems = checklistItems.filter(Boolean).length;
+                  const overallPct =
+                    totalItems > 0
+                      ? Math.round((doneItems / totalItems) * 100)
+                      : 0;
 
-                      {/* Inner Ring */}
-                      <circle
-                        className="stroke-[#e1e3e2]"
-                        cx="50"
-                        cy="50"
-                        fill="none"
-                        r="30"
-                        strokeWidth="8"
-                      ></circle>
-                      <circle
-                        className="stroke-[#006e2a]/30"
-                        cx="50"
-                        cy="50"
-                        fill="none"
-                        r="30"
-                        strokeDasharray="188.5"
-                        strokeDashoffset="122.52"
-                        strokeLinecap="round"
-                        strokeWidth="8"
-                      ></circle>
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-black text-[#00342b] leading-none">
-                        96%
-                      </span>
-                      <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1">
-                        Ganjil
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  // Ganjil: ta_dibuat + semester_dibuat + rombel_dibuat + guru_mengajar + jadwal_selesai
+                  const ganjilKeys = [
+                    "ta_dibuat",
+                    "semester_dibuat",
+                    "rombel_dibuat",
+                    "guru_mengajar",
+                    "jadwal_selesai",
+                  ];
+                  const ganjilDone = ganjilKeys.filter(
+                    (k) => checklist[k],
+                  ).length;
+                  const ganjilPct = Math.round(
+                    (ganjilDone / ganjilKeys.length) * 100,
+                  );
 
-                {/* Ganjil / Genap Mini Stats */}
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div className="flex flex-col gap-1 p-3 rounded-2xl bg-[#006e2a]/5 border border-[#006e2a]/10">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-[#006e2a]"></span>
-                      <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-widest">
-                        Ganjil
-                      </span>
-                    </div>
-                    <span className="text-xl font-black text-[#00342b]">
-                      96%
-                    </span>
-                  </div>
+                  // Genap: mapel_lengkap + wali_kelas + kalender + siswa_terdistribusi + kepsek_dikunci
+                  const genapKeys = [
+                    "mapel_lengkap",
+                    "wali_kelas",
+                    "kalender",
+                    "siswa_terdistribusi",
+                    "kepsek_dikunci",
+                  ];
+                  const genapDone = genapKeys.filter(
+                    (k) => checklist[k],
+                  ).length;
+                  const genapPct = Math.round(
+                    (genapDone / genapKeys.length) * 100,
+                  );
 
-                  <div className="flex flex-col gap-1 p-3 rounded-2xl bg-[#e1e3e2]/30 border border-[#bfc9c4]/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-[#3f4945]/30"></span>
-                      <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-widest">
-                        Genap
-                      </span>
-                    </div>
-                    <span className="text-xl font-black text-[#3f4945]/60">
-                      35%
-                    </span>
-                  </div>
-                </div>
+                  const outerCircumference = 2 * Math.PI * 42; // ≈ 263.89
+                  const outerOffset =
+                    outerCircumference -
+                    (overallPct / 100) * outerCircumference;
+                  const innerCircumference = 2 * Math.PI * 30; // ≈ 188.5
+                  const innerOffset =
+                    innerCircumference - (ganjilPct / 100) * innerCircumference;
+
+                  return (
+                    <>
+                      <div className="relative flex justify-center items-center py-4">
+                        <div className="relative w-48 h-48 sm:w-56 sm:h-56">
+                          <svg
+                            className="w-full h-full -rotate-90"
+                            viewBox="0 0 100 100"
+                          >
+                            <circle
+                              className="stroke-[#e1e3e2]"
+                              cx="50"
+                              cy="50"
+                              fill="none"
+                              r="42"
+                              strokeWidth="8"
+                            />
+                            <circle
+                              className="stroke-[#006e2a] drop-shadow-[0_0_8px_rgba(0,200,83,0.4)]"
+                              cx="50"
+                              cy="50"
+                              fill="none"
+                              r="42"
+                              strokeDasharray={outerCircumference}
+                              strokeDashoffset={outerOffset}
+                              strokeLinecap="round"
+                              strokeWidth="8"
+                            />
+                            <circle
+                              className="stroke-[#e1e3e2]"
+                              cx="50"
+                              cy="50"
+                              fill="none"
+                              r="30"
+                              strokeWidth="8"
+                            />
+                            <circle
+                              className="stroke-[#006e2a]/30"
+                              cx="50"
+                              cy="50"
+                              fill="none"
+                              r="30"
+                              strokeDasharray={innerCircumference}
+                              strokeDashoffset={innerOffset}
+                              strokeLinecap="round"
+                              strokeWidth="8"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                            <span className="text-3xl font-black text-[#00342b] leading-none">
+                              {overallPct}%
+                            </span>
+                            <span className="text-[10px] font-bold text-[#006e2a] uppercase tracking-widest mt-1">
+                              Kesiapan
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        <div className="flex flex-col gap-1 p-3 rounded-2xl bg-[#006e2a]/5 border border-[#006e2a]/10">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="w-2 h-2 rounded-full bg-[#006e2a]" />
+                            <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-widest">
+                              Ganjil
+                            </span>
+                          </div>
+                          <span className="text-xl font-black text-[#00342b]">
+                            {ganjilPct}%
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1 p-3 rounded-2xl bg-[#e1e3e2]/30 border border-[#bfc9c4]/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="w-2 h-2 rounded-full bg-[#3f4945]/30" />
+                            <span className="text-[10px] font-bold text-[#3f4945]/60 uppercase tracking-widest">
+                              Genap
+                            </span>
+                          </div>
+                          <span className="text-xl font-black text-[#3f4945]/60">
+                            {genapPct}%
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div className="mt-6 pt-6 border-t border-[#bfc9c4]/15 flex flex-col gap-4">
                   {/* Info Tip */}
@@ -2085,7 +2108,7 @@ export default function DetailTahunAjaran() {
                   Struktur Kelas
                 </span>
                 <span className="text-base font-bold text-[#00342b]">
-                  {totalKelas || 24} Rombel
+                  {totalKelas > 0 ? `${totalKelas} Rombel` : "—"}
                 </span>
               </div>
             </div>
@@ -2108,7 +2131,7 @@ export default function DetailTahunAjaran() {
                   Mata Pelajaran
                 </span>
                 <span className="text-base font-bold text-[#00342b]">
-                  {totalMapel || 18} Mapel
+                  {totalMapel > 0 ? `${totalMapel} Mapel` : "—"}
                 </span>
               </div>
             </div>
@@ -2131,16 +2154,18 @@ export default function DetailTahunAjaran() {
                   Penugasan Guru
                 </span>
                 <span className="text-base font-bold text-[#00342b]">
-                  {totalWaliKelas || 82} / {totalGuru || 84} Guru
+                  {totalGuru > 0
+                    ? `${totalWaliKelas} / ${totalGuru} Guru`
+                    : "—"}
                 </span>
               </div>
             </div>
             <div className="pt-4 border-t border-[#bfc9c4]/15 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#d99600] animate-pulse"></span>
               <span className="text-[11px] font-bold text-[#d99600] uppercase tracking-wider">
-                {totalGuru && totalWaliKelas
+                {totalGuru > 0
                   ? `${Math.max(0, totalGuru - totalWaliKelas)} Belum Ditugaskan`
-                  : "2 Belum Ditugaskan"}
+                  : "Belum ada data"}
               </span>
             </div>
           </div>
