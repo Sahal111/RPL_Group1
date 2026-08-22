@@ -110,7 +110,7 @@
   --font-label-md: "Inter", sans-serif;
   --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
-  --font-serif: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
 
   /* Font Sizes — tuned for professional, compact UI */
   --text-headline-lg: 24px;
