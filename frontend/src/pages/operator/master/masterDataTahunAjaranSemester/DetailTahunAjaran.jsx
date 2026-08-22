@@ -498,9 +498,9 @@ export default function DetailTahunAjaran() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["detail-tahun-ajaran", id],
     queryFn: () =>
-      api
-        .get(`/operator/master-data/tahun-ajaran/${id}`)
-        .then((r) => r.data.data),
+      api.get(`/operator/master-data/tahun-ajaran/${id}`).then((r) => r.data),
+    retry: false, // ← jangan retry, biar error langsung kelihatan
+    staleTime: 30_000,
   });
 
   const setAktif = useMutation({
@@ -574,7 +574,7 @@ export default function DetailTahunAjaran() {
   }
 
   // Error State
-  if (isError || !data?.data) {
+  if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-[#3f4945]">
         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-[#ba1a1a]">

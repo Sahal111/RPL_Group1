@@ -795,12 +795,12 @@ export default function TahunAjaran() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
- const [modalOpen, setModalOpen] = useState(false);
- const [editData, setEditData] = useState(null);
- const [expandedId, setExpandedId] = useState(null);
- const [selectedId, setSelectedId] = useState(null);
- const [buatSemesterOpen, setBuatSemesterOpen] = useState(false);
- const [buatSemesterTA, setBuatSemesterTA] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [buatSemesterOpen, setBuatSemesterOpen] = useState(false);
+  const [buatSemesterTA, setBuatSemesterTA] = useState(null);
   const [openActionId, setOpenActionId] = useState(null);
   const [actionMenuPosition, setActionMenuPosition] = useState(null);
   const [search, setSearch] = useState("");
@@ -875,7 +875,7 @@ export default function TahunAjaran() {
     queryFn: () =>
       api
         .get(`/operator/master-data/tahun-ajaran/${selectedTA.id}`)
-        .then((r) => r.data.data),
+        .then((r) => r.data),
     enabled: !!selectedTA?.id,
     staleTime: 60_000,
   });
@@ -969,27 +969,37 @@ export default function TahunAjaran() {
     return true;
   });
 
-  // Selected TA metrics (from detail query or fallback estimates)
-  const metricGuru = selectedDetailData?.total_guru ?? (selectedTA ? 84 : 0);
-  const metricKelas = selectedDetailData?.total_kelas ?? (selectedTA ? 24 : 0);
-  const metricMapel = selectedDetailData?.total_mapel ?? (selectedTA ? 18 : 0);
-  const metricJadwal =
-    selectedDetailData?.total_jadwal ?? (selectedTA ? 156 : 0);
-  const metricSiswa =
-    selectedDetailData?.total_siswa ?? (selectedTA ? 1248 : 0);
-  const metricRombel = selectedDetailData?.total_kelas ?? (selectedTA ? 24 : 0);
+  // Selected TA metrics — dari API detail, null saat loading
+  const metricGuru = selectedDetailData?.total_guru ?? null;
+  const metricKelas = selectedDetailData?.total_kelas ?? null;
+  const metricMapel = selectedDetailData?.total_mapel ?? null;
+  const metricJadwal = selectedDetailData?.total_jadwal ?? null;
+  const metricSiswa = selectedDetailData?.total_siswa ?? null;
+  const metricRombel = selectedDetailData?.total_kelas ?? null;
 
   // Active semester name for selected TA
   const selectedActiveSemester =
     selectedTA?.semesters?.find((s) => s.is_active)?.nama ||
     (selectedTA?.semesters?.[0]?.nama ?? "Ganjil");
 
-  // Calculate Academic Data Readiness percentage for each row
+  // Hitung progress dari checklist jika ada, fallback dari status
   const getAcademicProgress = (t) => {
-    if (t.is_active) return 98;
+    // Kalau TA ini yang sedang dipilih dan detail sudah di-load
+    if (
+      selectedDetailData &&
+      selectedTA?.id === t.id &&
+      selectedDetailData.checklist
+    ) {
+      const checks = Object.values(selectedDetailData.checklist);
+      const done = checks.filter(Boolean).length;
+      return Math.round((done / checks.length) * 100);
+    }
+    // Fallback dari status saja (tanpa angka palsu)
     const st = getStatusTahunAjaran(t);
+    if (st === "AKTIF") return null; // render skeleton
     if (st === "SELESAI") return 100;
-    return 65;
+    if (st === "AKAN DATANG") return 0;
+    return null;
   };
 
   return (
@@ -1096,14 +1106,16 @@ export default function TahunAjaran() {
             <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
               Semester Selesai
             </p>
-            <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
+            <h4 className="text-2xl font-bold text-text-primary">
               {totalSemesterSelesai}
             </h4>
             <p className="text-[11px] text-[#006e2a] font-bold mt-2 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">
                 check_circle
               </span>
-              98% Data Valid
+              {totalSemesterSelesai > 0
+                ? `${totalSemesterSelesai} Semester Selesai`
+                : "Belum ada yg selesai"}
             </p>
           </div>
 
@@ -1113,12 +1125,16 @@ export default function TahunAjaran() {
             <p className="text-[10px] font-bold text-[#3f4945] uppercase tracking-widest mb-1">
               Jadwal Mendatang
             </p>
-            <h4 className="text-3xl font-extrabold font-headline-card text-[#00342b]">
+            <h4 className="text-2xl font-bold text-text-primary">
               {totalMendatang > 0 ? totalMendatang : aktif ? 1 : 0}
             </h4>
             <p className="text-[11px] text-[#00342b] font-bold mt-2 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">event</span>
-              {aktif ? "Semester Genap Ready" : "Periode Siap"}
+              {totalMendatang > 0
+                ? `${totalMendatang} TA Mendatang`
+                : aktif
+                  ? `Semester ${aktif.semesters?.find((s) => !s.is_active)?.nama ?? "Genap"} Berikutnya`
+                  : "Belum ada periode"}
             </p>
           </div>
         </div>
@@ -1332,17 +1348,26 @@ export default function TahunAjaran() {
 
                               {/* Data Akademik Column */}
                               <td className="py-6 px-3">
-                                <div className="flex items-center gap-3 min-w-[130px]">
-                                  <div className="flex-1 bg-[#eceeed] rounded-full h-2 overflow-hidden shadow-inner">
-                                    <div
-                                      className="bg-gradient-to-r from-[#006e2a] to-[#69ff87] h-full rounded-full transition-all duration-1000"
-                                      style={{ width: `${academicProg}%` }}
-                                    />
-                                  </div>
-                                  <span className="font-label-badge text-[11px] font-bold text-[#006e2a]">
-                                    {academicProg}%
-                                  </span>
-                                </div>
+                                {(() => {
+                                  const pct = getAcademicProgress(t);
+                                  return (
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1 h-1.5 bg-[#bfc9c4]/30 rounded-full overflow-hidden">
+                                        {pct !== null ? (
+                                          <div
+                                            className="h-full rounded-full bg-gradient-to-r from-[#006e2a] to-[#52b788] transition-all duration-700"
+                                            style={{ width: `${pct}%` }}
+                                          />
+                                        ) : (
+                                          <div className="h-full w-1/2 rounded-full bg-[#bfc9c4]/50 animate-pulse" />
+                                        )}
+                                      </div>
+                                      <span className="text-[11px] font-bold text-[#3f4945] w-8 text-right">
+                                        {pct !== null ? `${pct}%` : "—"}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
                               </td>
 
                               {/* Aksi Column */}
@@ -1514,14 +1539,18 @@ export default function TahunAjaran() {
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Guru
                   </p>
-                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
-                    {loadingDetail ? "..." : metricGuru}
-                  </p>
+                  {loadingDetail ? (
+                    <span className="inline-block w-10 h-6 bg-[#bfc9c4]/40 rounded-lg animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {metricGuru ?? "—"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Kelas */}
-                <div className="animate-fade-up animate-delay-200 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                <div className="bg-surface-container p-3 rounded-xl border border-border-light flex flex-col items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">
                       school
                     </span>
@@ -1529,14 +1558,18 @@ export default function TahunAjaran() {
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Kelas
                   </p>
-                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
-                    {loadingDetail ? "..." : metricKelas}
-                  </p>
+                  {loadingDetail ? (
+                    <span className="inline-block w-10 h-6 bg-[#bfc9c4]/40 rounded-lg animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {metricKelas ?? "—"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Mapel */}
-                <div className="animate-fade-up animate-delay-300 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                <div className="bg-surface-container p-3 rounded-xl border border-border-light flex flex-col items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">
                       menu_book
                     </span>
@@ -1544,14 +1577,18 @@ export default function TahunAjaran() {
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Mata Pelajaran
                   </p>
-                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
-                    {loadingDetail ? "..." : metricMapel}
-                  </p>
+                  {loadingDetail ? (
+                    <span className="inline-block w-10 h-6 bg-[#bfc9c4]/40 rounded-lg animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {metricMapel ?? "—"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Jadwal */}
-                <div className="animate-fade-up animate-delay-400 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                <div className="bg-surface-container p-3 rounded-xl border border-border-light flex flex-col items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">
                       calendar_today
                     </span>
@@ -1559,14 +1596,18 @@ export default function TahunAjaran() {
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Jadwal
                   </p>
-                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
-                    {loadingDetail ? "..." : metricJadwal}
-                  </p>
+                  {loadingDetail ? (
+                    <span className="inline-block w-10 h-6 bg-[#bfc9c4]/40 rounded-lg animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {metricJadwal ?? "—"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Siswa */}
-                <div className="animate-fade-up animate-delay-500 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                <div className="bg-surface-container p-3 rounded-xl border border-border-light flex flex-col items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">
                       groups
                     </span>
@@ -1574,14 +1615,18 @@ export default function TahunAjaran() {
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Total Siswa
                   </p>
-                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
-                    {loadingDetail ? "..." : metricSiswa}
-                  </p>
+                  {loadingDetail ? (
+                    <span className="inline-block w-10 h-6 bg-[#bfc9c4]/40 rounded-lg animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {metricSiswa ?? "—"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Rombel */}
-                <div className="animate-fade-up animate-delay-500 bg-[#f8faf9] p-4 rounded-2xl border border-[#bfc9c4]/20 hover:border-[#006e2a]/30 hover:bg-white hover:shadow-md transition-all duration-300 group/item flex flex-col items-start hover:-translate-y-0.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#006e2a]/10 flex items-center justify-center mb-3 group-hover/item:bg-[#006e2a]/20 transition-all duration-300 text-[#006e2a]">
+                <div className="bg-surface-container p-3 rounded-xl border border-border-light flex flex-col items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">
                       grid_view
                     </span>
@@ -1589,9 +1634,13 @@ export default function TahunAjaran() {
                   <p className="font-label-badge text-[10px] text-[#3f4945]/70 uppercase tracking-wider font-bold mb-1">
                     Rombel
                   </p>
-                  <p className="font-display-hero-mobile text-[24px] text-[#00342b] font-extrabold leading-none">
-                    {loadingDetail ? "..." : metricRombel}
-                  </p>
+                  {loadingDetail ? (
+                    <span className="inline-block w-10 h-6 bg-[#bfc9c4]/40 rounded-lg animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {metricRombel ?? "—"}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1614,7 +1663,7 @@ export default function TahunAjaran() {
             </div>
 
             {/* 2. Danger Zone Card */}
-            <div className="bg-white border border-[#ba1a1a]/20 rounded-[32px] p-7 relative overflow-hidden group shadow-sm hover:shadow-lg hover:shadow-[#ba1a1a]/10 hover:bg-[#ba1a1a]/[0.02] transition-all duration-300">
+            <div className="bg-surface-container-lowest border border-danger/20 rounded-2xl p-5 shadow-sm">
               {/* Subtle Background Glow */}
               <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#ba1a1a]/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               <div className="relative z-10">
@@ -1633,7 +1682,7 @@ export default function TahunAjaran() {
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-headline-card text-[18px] text-[#00342b] font-extrabold tracking-tight mb-1.5">
+                    <h4 className="text-sm font-bold text-text-primary mb-1.5">
                       Hapus Periode
                     </h4>
                     {selectedTA?.is_active ? (
