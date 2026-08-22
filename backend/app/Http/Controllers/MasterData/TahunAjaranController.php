@@ -260,26 +260,31 @@ class TahunAjaranController extends Controller
             ]);
 
             if ($request->buat_semester) {
-                // Ambil nilai lama dari DB sebelum di-update,
-                // agar tidak kehilangan tanggal/status aktif saat update salah satu semester saja.
-                // Gunakan withoutGlobalScope supaya pencarian tidak terhalang school_id NULL pada data lama.
-                $semGanjilLama = Semester::withoutGlobalScopes()
-                    ->where('tahun_ajaran_id', $tahunAjaran->id)
-                    ->where('nama', 'Ganjil')->first();
-                $semGenapLama = Semester::withoutGlobalScopes()
-                    ->where('tahun_ajaran_id', $tahunAjaran->id)
-                    ->where('nama', 'Genap')->first();
-
+                // Ambil semester lama dengan filter school_id eksplisit dari relasi TA.
+                // JANGAN pakai withoutGlobalScopes() — bisa membaca data semester sekolah lain
+                // karena tahun_ajaran_id adalah integer yang berurutan di shared DB.
                 $schoolId = $tahunAjaran->school_id;
 
-                // Kalau semester_aktif eksplisit dikirim dan TA ini aktif,
-                // reset semua semester lain baru set yang dipilih.
+                $semGanjilLama = Semester::where('school_id', $schoolId)
+                    ->where('tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('nama', 'Ganjil')
+                    ->withTrashed()  // inklusif soft-deleted supaya restore bisa jalan
+                    ->first();
+
+                $semGenapLama = Semester::where('school_id', $schoolId)
+                    ->where('tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('nama', 'Genap')
+                    ->withTrashed()
+                    ->first();
+
+                // Reset is_active semua semester milik sekolah ini jika semester_aktif dikirim.
+                // Semester::query() sudah inject SchoolScope via HasSchoolScope, aman.
                 if ($request->has('semester_aktif') && $request->semester_aktif && $request->is_active) {
                     Semester::query()->update(['is_active' => false]);
                 }
 
                 if ($request->has('semester_ganjil_mulai') || $request->has('semester_ganjil_selesai') || !$semGanjilLama) {
-                    Semester::withoutGlobalScopes()->updateOrCreate(
+                    Semester::where('school_id', $schoolId)->updateOrCreate(
                         ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Ganjil'],
                         [
                             'school_id' => $schoolId,
@@ -292,12 +297,13 @@ class TahunAjaranController extends Controller
                             'is_active' => $request->has('semester_aktif') && $request->is_active
                                 ? ($request->semester_aktif === 'Ganjil')
                                 : ($semGanjilLama?->is_active ?? false),
+                            'deleted_at' => null, // restore jika sebelumnya ter-soft-delete
                         ]
                     );
                 }
 
                 if ($request->has('semester_genap_mulai') || $request->has('semester_genap_selesai') || !$semGenapLama) {
-                    Semester::withoutGlobalScopes()->updateOrCreate(
+                    Semester::where('school_id', $schoolId)->updateOrCreate(
                         ['tahun_ajaran_id' => $tahunAjaran->id, 'nama' => 'Genap'],
                         [
                             'school_id' => $schoolId,
@@ -310,6 +316,7 @@ class TahunAjaranController extends Controller
                             'is_active' => $request->has('semester_aktif') && $request->is_active
                                 ? ($request->semester_aktif === 'Genap')
                                 : ($semGenapLama?->is_active ?? false),
+                            'deleted_at' => null,
                         ]
                     );
                 }

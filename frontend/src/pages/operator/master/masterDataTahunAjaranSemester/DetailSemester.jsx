@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import api from "../../../../lib/axios";
 import toast from "react-hot-toast";
+import { tahunAjaranKeys } from "../../../../hooks/api/useTahunAjaran";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(str) {
@@ -105,8 +106,12 @@ function ModalEditSemester({
       }),
     onSuccess: () => {
       toast.success("Semester berhasil diperbarui.");
-      queryClient.invalidateQueries(["detail-semester"]);
-      queryClient.invalidateQueries(["detail-tahun-ajaran"]);
+      // Gunakan tahunAjaranKeys agar cache yang di-invalidate sinkron
+      // dengan TahunAjaranSemester.jsx dan halaman lain yang pakai hook yang sama.
+      queryClient.invalidateQueries({
+        queryKey: tahunAjaranKeys.detail(tahunAjaranId),
+      });
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
       onClose();
     },
     onError: (err) =>
@@ -266,11 +271,15 @@ export default function DetailSemester() {
   const queryClient = useQueryClient();
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Pakai tahunAjaranKeys.detail() agar sinkron dengan cache dari halaman lain.
+  // Sebelumnya pakai ["detail-semester", taId] — tidak match dengan invalidateQueries
+  // yang dikirim dari TahunAjaranSemester.jsx maupun useTahunAjaran.js hook.
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["detail-semester", taId, semesterNama],
+    queryKey: tahunAjaranKeys.detail(taId),
     queryFn: () =>
       api.get(`/operator/master-data/tahun-ajaran/${taId}`).then((r) => r.data),
     enabled: !!taId,
+    staleTime: 60_000,
   });
 
   const setSemAktif = useMutation({
@@ -280,8 +289,8 @@ export default function DetailSemester() {
       }),
     onSuccess: () => {
       toast.success(`Semester ${semesterNama} berhasil diaktifkan.`);
-      queryClient.invalidateQueries(["detail-semester", taId]);
-      queryClient.invalidateQueries(["detail-tahun-ajaran", taId]);
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.detail(taId) });
+      queryClient.invalidateQueries({ queryKey: tahunAjaranKeys.lists() });
     },
     onError: (err) =>
       toast.error(

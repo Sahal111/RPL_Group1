@@ -570,9 +570,7 @@ function ModalBuatSemester({ open, onClose, tahunAjaran, queryClient }) {
             <h3 className="text-base font-black text-[#00342b]">
               Buat Semester
             </h3>
-            <p className="text-xs text-[#3f4945]/70">
-              Tahun Ajaran {tahun}
-            </p>
+            <p className="text-xs text-[#3f4945]/70">Tahun Ajaran {tahun}</p>
           </div>
           <button
             onClick={onClose}
@@ -707,24 +705,37 @@ function ModalBuatSemester({ open, onClose, tahunAjaran, queryClient }) {
 }
 
 // ── SemesterCard — sub-row rincian semester ───────────────────────────────────
-function SemesterCard({ semester, nama, nomor, taId, taIsActive, onAktifkan, onDetail, onBuat }) {
+function SemesterCard({
+  semester,
+  nama,
+  nomor,
+  taId,
+  taIsActive,
+  onAktifkan,
+  onDetail,
+  onBuat,
+}) {
   const isAktif = semester?.is_active;
   const belumDibuat = !semester;
 
   return (
-    <div className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-      isAktif
-        ? "bg-success/5 border-success/20"
-        : "bg-surface-container-lowest border-border-light"
-    }`}>
+    <div
+      className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+        isAktif
+          ? "bg-success/5 border-success/20"
+          : "bg-surface-container-lowest border-border-light"
+      }`}
+    >
       {/* Kiri — info */}
       <div className="flex items-center gap-3 min-w-0">
         {/* Nomor badge */}
-        <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-          isAktif
-            ? "bg-success text-white"
-            : "bg-surface-container text-text-secondary"
-        }`}>
+        <span
+          className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+            isAktif
+              ? "bg-success text-white"
+              : "bg-surface-container text-text-secondary"
+          }`}
+        >
           {nomor}
         </span>
 
@@ -772,7 +783,9 @@ function SemesterCard({ semester, nama, nomor, taId, taIsActive, onAktifkan, onD
                 onClick={onAktifkan}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success/10 text-success text-[11px] font-bold hover:bg-success/20 transition-colors"
               >
-                <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                <span className="material-symbols-outlined text-[13px]">
+                  check_circle
+                </span>
                 Aktifkan
               </button>
             )}
@@ -781,7 +794,9 @@ function SemesterCard({ semester, nama, nomor, taId, taIsActive, onAktifkan, onD
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container text-text-primary text-[11px] font-bold hover:bg-surface-container-high hover:text-primary transition-colors"
             >
               Detail
-              <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+              <span className="material-symbols-outlined text-[13px]">
+                chevron_right
+              </span>
             </button>
           </>
         )}
@@ -805,6 +820,21 @@ export default function TahunAjaran() {
   const [actionMenuPosition, setActionMenuPosition] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua"); // "semua" | "aktif" | "selesai" | "mendatang"
+
+  // State modal konfirmasi — menggantikan window.confirm() yang tidak bisa di-style
+  // dan diblokir di beberapa browser / WebView environment.
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    isDanger: true,
+  });
+
+  const openConfirm = ({ title, message, onConfirm, isDanger = true }) =>
+    setConfirmModal({ open: true, title, message, onConfirm, isDanger });
+  const closeConfirm = () =>
+    setConfirmModal((s) => ({ ...s, open: false, onConfirm: null }));
 
   // Fetch list of Tahun Ajaran
   const { data: listData = [], isLoading } = useQuery({
@@ -1713,15 +1743,13 @@ export default function TahunAjaran() {
                           secara permanen.
                         </p>
                         <button
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `Apakah Anda yakin ingin menghapus Tahun Ajaran "${selectedTA.tahun}"?`,
-                              )
-                            ) {
-                              hapus.mutate(selectedTA.id);
-                            }
-                          }}
+                          onClick={() =>
+                            openConfirm({
+                              title: "Hapus Tahun Ajaran",
+                              message: `Periode "${selectedTA.tahun}" beserta data semesternya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`,
+                              onConfirm: () => hapus.mutate(selectedTA.id),
+                            })
+                          }
                           disabled={hapus.isPending}
                           className="w-full bg-[#ba1a1a] hover:bg-[#93000a] text-white px-5 py-3 rounded-xl font-label-badge text-[11px] font-black tracking-widest uppercase shadow-md hover:shadow-lg shadow-[#ba1a1a]/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
                         >
@@ -1814,13 +1842,12 @@ export default function TahunAjaran() {
                     type="button"
                     onClick={() => {
                       close();
-                      if (
-                        confirm(
-                          `Jadikan "${actionItem.tahun}" sebagai Tahun Ajaran aktif?`,
-                        )
-                      ) {
-                        setAktif.mutate(actionItem.id);
-                      }
+                      openConfirm({
+                        title: "Aktifkan Tahun Ajaran",
+                        message: `"${actionItem.tahun}" akan dijadikan tahun ajaran aktif. Tahun ajaran yang sedang aktif akan dinonaktifkan secara otomatis.`,
+                        onConfirm: () => setAktif.mutate(actionItem.id),
+                        isDanger: false,
+                      });
                     }}
                     disabled={setAktif.isPending}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium text-success hover:bg-success/8 transition-colors disabled:opacity-50"
@@ -1840,13 +1867,11 @@ export default function TahunAjaran() {
                   type="button"
                   onClick={() => {
                     close();
-                    if (
-                      confirm(
-                        `Apakah Anda yakin ingin menghapus Tahun Ajaran "${actionItem.tahun}"?`,
-                      )
-                    ) {
-                      hapus.mutate(actionItem.id);
-                    }
+                    openConfirm({
+                      title: "Hapus Tahun Ajaran",
+                      message: `Periode "${actionItem.tahun}" beserta data semesternya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`,
+                      onConfirm: () => hapus.mutate(actionItem.id),
+                    });
                   }}
                   disabled={hapus.isPending || actionItem.is_active}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium text-danger hover:bg-danger/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1889,6 +1914,68 @@ export default function TahunAjaran() {
         tahunAjaran={buatSemesterTA}
         queryClient={queryClient}
       />
+
+      {/* ── Modal Konfirmasi — menggantikan window.confirm() ─────────────────── */}
+      {confirmModal.open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={closeConfirm}
+          >
+            <div
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className={`px-6 pt-6 pb-4 flex items-start gap-4`}>
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                    confirmModal.isDanger
+                      ? "bg-[#ba1a1a]/10 text-[#ba1a1a]"
+                      : "bg-[#006e2a]/10 text-[#006e2a]"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[22px]">
+                    {confirmModal.isDanger ? "warning" : "check_circle"}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-extrabold text-[#00342b] mb-1">
+                    {confirmModal.title}
+                  </h3>
+                  <p className="text-sm text-[#3f4945]/80 leading-relaxed">
+                    {confirmModal.message}
+                  </p>
+                </div>
+              </div>
+              {/* Footer */}
+              <div className="flex gap-2.5 px-6 pb-6 pt-2">
+                <button
+                  type="button"
+                  onClick={closeConfirm}
+                  className="flex-1 py-2.5 rounded-full border border-[#bfc9c4]/50 text-[#3f4945] hover:bg-[#eceeed] text-xs font-bold uppercase tracking-wider transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    confirmModal.onConfirm?.();
+                    closeConfirm();
+                  }}
+                  className={`flex-1 py-2.5 rounded-full text-white text-xs font-black uppercase tracking-wider shadow-md transition-all ${
+                    confirmModal.isDanger
+                      ? "bg-[#ba1a1a] hover:bg-[#93000a] shadow-[#ba1a1a]/30"
+                      : "bg-[#006e2a] hover:bg-[#00531e] shadow-[#006e2a]/30"
+                  }`}
+                >
+                  {confirmModal.isDanger ? "Ya, Hapus" : "Ya, Aktifkan"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
